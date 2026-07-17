@@ -1,0 +1,198 @@
+.container {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  color: var(--color-text-main);
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.filtersBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+
+.filterTabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+
+.tab:hover {
+  background: rgba(255, 77, 77, 0.1);
+  color: var(--color-primary);
+}
+
+.tabActive {
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: var(--shadow-glow);
+}
+
+.dropdowns {
+  display: flex;
+  gap: 8px;
+}
+
+.dropdown {
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dropdown option {
+  background: var(--color-bg-main);
+  color: var(--color-text-main);
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-main);
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: var(--color-text-main);
+  outline: none;
+  width: 100%;
+  margin-left: 12px;
+  font-size: 15px;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  padding: 16px 20px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 16px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-main);
+}
+
+.table tr {
+  transition: background-color 0.2s;
+}
+
+.table tr:hover td {
+  background: rgba(255, 77, 77, 0.05);
+}
+
+.modelNameCol {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.modelId {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.costCol {
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.capabilities {
+  display: flex;
+  gap: 4px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.capabilities span {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+  position: relative;
+  cursor: pointer;
+}
+
+.capabilities span:hover {
+  background: rgba(255, 77, 77, 0.2);
+  color: var(--color-primary);
+}
+
+.capabilities span::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.capabilities span:hover::after {
+  opacity: 1;
+}
