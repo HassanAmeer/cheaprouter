@@ -148,8 +148,7 @@ export default function Home() {
                 transition={{ duration: 0.1 }}
               >
                 <TextRoll>Cheap Rate.</TextRoll>
-                <TextRoll>High Speed.</TextRoll>
-                <TextRoll>Top Quality.</TextRoll>
+                <TextRoll>Free Coding.</TextRoll>
                 <TextRoll>One API Key.</TextRoll>
               </TextLoop>
             </h1>
@@ -188,10 +187,11 @@ export default function Home() {
             <HeroTerminal />
           </div>
         </section>
-      </div>
+      </div >
 
       {/* Marquee Providers Line */}
-      <div className={styles.marqueeContainer} style={{ marginTop: '-40px', position: 'relative', zIndex: 10 }}>
+      < div className={styles.marqueeContainer} style={{ marginTop: '-40px', position: 'relative', zIndex: 10 }
+      }>
         <div className={styles.marqueeContent}>
           {[...Array(2)].map((_, index) => (
             <React.Fragment key={index}>
@@ -204,7 +204,7 @@ export default function Home() {
             </React.Fragment>
           ))}
         </div>
-      </div>
+      </div >
 
       <div className="container">
 
@@ -440,6 +440,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-    </main>
+    </main >
   );
 }

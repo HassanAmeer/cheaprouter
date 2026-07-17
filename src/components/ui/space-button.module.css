@@ -14,7 +14,7 @@
   left: 0;
   top: 10px;
   z-index: -1;
-  background: linear-gradient(80deg, #ffcbf2, #ec38bc, #7303c0, #03001e);
+  background: rgba(0, 0, 0, 0.5);
   filter: blur(15px);
   opacity: 0;
   transition: all 1.2s cubic-bezier(0.15, 0.83, 0.66, 1);

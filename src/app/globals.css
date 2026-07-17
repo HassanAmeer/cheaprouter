@@ -13,13 +13,13 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-glow: 0 0 20px rgba(204, 0, 0, 0.15);
-  
+
   /* Radii */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  
+
   /* Transitions */
   --transition-fast: 0.15s ease-in-out;
   --transition-normal: 0.3s ease-in-out;
@@ -117,8 +117,13 @@ button {
 
 /* Shimmer Animation */
 @keyframes shimmerAnim {
-  0% { transform: translateX(-150%) skewX(-15deg); }
-  100% { transform: translateX(250%) skewX(-15deg); }
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+  }
+
+  100% {
+    transform: translateX(250%) skewX(-15deg);
+  }
 }
 
 .shimmer-btn {
@@ -133,7 +138,7 @@ button {
   left: 0;
   width: 30%;
   height: 100%;
-  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
   animation: shimmerAnim 3s infinite;
   pointer-events: none;
 }
@@ -159,6 +164,7 @@ button {
   position: relative;
   width: var(--size);
 }
+
 .tooltip::before,
 .tooltip::after {
   border-radius: inherit;
@@ -166,26 +172,32 @@ button {
   position: absolute;
   width: var(--size);
 }
+
 .tooltip::before {
   background: rgba(var(--color-background), 1);
-  box-shadow: 0 0 var(--size-shadow) rgba(0,0,0,0.3);
+  box-shadow: 0 0 var(--size-shadow) rgba(0, 0, 0, 0.3);
   content: "";
   z-index: 1;
 }
+
 .tooltip::after {
   background: rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
+
 .tooltip:hover::after {
   content: "";
 }
+
 .tooltip:active::before {
   border: 1px solid #000;
   box-shadow: none;
 }
+
 .tooltip:active::after {
   background: rgba(0, 0, 0, 0.4);
 }
+
 .tooltip__content {
   --size: calc(0.8 * var(--size-diameter));
   border-radius: var(--size);
@@ -197,13 +209,12 @@ button {
   align-items: center;
   justify-content: center;
 }
+
 .tooltip__label {
   --size: calc(1 * var(--size-diameter));
-  background: radial-gradient(
-    circle at center,
-    transparent 45%,
-    rgb(var(--color-background)) 46%
-  );
+  background: radial-gradient(circle at center,
+      transparent 45%,
+      rgb(var(--color-background)) 46%);
   border-radius: var(--size);
   font-size: calc(0.18 * var(--size-diameter));
   height: var(--size);
@@ -214,9 +225,11 @@ button {
   transition: all 0.3s linear;
   width: var(--size);
 }
+
 .tooltip__label #circlePath {
   display: none;
 }
+
 .tooltip__label text {
   dominant-baseline: middle;
   font-weight: 600;
@@ -224,15 +237,21 @@ button {
   fill: #fff;
   letter-spacing: 1px;
 }
+
 .tooltip:hover .tooltip__label {
   --size: calc(var(--size-diameter) + 5em);
-  box-shadow: 0 0 var(--size-shadow) rgba(0,0,0,0.3);
+  box-shadow: 0 0 var(--size-shadow) rgba(0, 0, 0, 0.3);
   animation: rotateText 10s linear infinite;
 }
 
 @keyframes rotateText {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Button Hints Animation (Exact from Uiverse.io) */
@@ -241,17 +260,20 @@ button {
   flex-wrap: wrap;
   gap: 16px;
 }
+
 .item-hints .hint {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .item-hints .hint[data-position="1"] .hint-content {
-  top: 35px; /* Moved up so the diagonal line connects directly to the button */
-  left: 50%;
-  margin-left: 56px;
+  top: 35px;
+  left: 40%;
+  margin-left: 0px;
 }
+
 .item-hints .hint-content {
   width: 300px;
   position: absolute;
@@ -266,11 +288,13 @@ button {
   font-size: 13px;
   text-align: left;
 }
+
 .item-hints .hint:hover .hint-content,
 .item-hints:not(:hover) .hint:first-child .hint-content {
   opacity: 1;
   visibility: visible;
 }
+
 .item-hints .hint-content::before {
   width: 0px;
   bottom: 29px;
@@ -281,14 +305,17 @@ button {
   position: absolute;
   transition: width 0.4s;
 }
+
 .item-hints .hint:hover .hint-content::before,
 .item-hints:not(:hover) .hint:first-child .hint-content::before {
   width: 180px;
   transition: width 0.4s;
 }
+
 .item-hints .hint-content::after {
   transform-origin: 0 50%;
-  transform: rotate(-135deg); /* Points UP-LEFT towards the button */
+  transform: rotate(-135deg);
+  /* Points UP-LEFT towards the button */
   bottom: 29px;
   left: 0;
   width: 80px;
@@ -300,6 +327,7 @@ button {
   transition: opacity 0.5s ease;
   transition-delay: 0s;
 }
+
 .item-hints .hint:hover .hint-content::after,
 .item-hints:not(:hover) .hint:first-child .hint-content::after {
   opacity: 1;
@@ -318,23 +346,31 @@ button {
 /* Subtle Grid Background for that "Modern Developer Tool" vibe */
 .bg-grid-light {
   background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), 
-    linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
 
 .bg-grid-dark {
   background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), 
-    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 }
 
 /* Floating Animation */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
