@@ -1,0 +1,102 @@
+.installBoxWrapper {
+  margin-top: 16px;
+  width: 100%;
+  animation: fadeIn 0.8s ease-out 1s both;
+}
+
+.installBox {
+  background: var(--color-bg-soft);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+
+.installBox::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff1a1a, #333333);
+}
+
+.installTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.installTab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.installTab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.installTabActive {
+  background: rgba(255, 77, 77, 0.1);
+  color: var(--color-primary);
+}
+
+.commandBox {
+  background: #000;
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 13px;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.commandBox::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -1px; /* Border thickness */
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff1a1a, #333333); /* Red to dark gray/black border */
+}
+
+.copyBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copyBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

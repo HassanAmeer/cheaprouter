@@ -8,6 +8,8 @@ import { TextRoll } from '../components/core/text-roll';
 import { TextLoop } from '../components/core/text-loop';
 import { PixelatedCanvasDemo } from '../components/PixelatedCanvasDemo';
 import BranchFeatures from '../components/BranchFeatures';
+import { SpaceButton } from '../components/ui/space-button';
+import InstallBox from '../components/InstallBox';
 
 export default function Home() {
   const models = [
@@ -122,37 +124,32 @@ export default function Home() {
               Access <strong style={{ color: '#aaaaaa' }}>ChatGPT 5.6, Claude Code, Fable, Grok, DeepSeek V4 Flash, Skana, GLM 5.2, Qwen 3.7</strong> and more.<br />
               These models are available at unbeatable cheap rates or even for free!
             </p>
-            <div className="item-hints" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '10px', alignItems: 'center' }}>
               
-              <div className="hint" data-position="1">
-                <Link href="/models" className="btn-primary shimmer-btn" style={{ padding: '12px 24px', fontSize: '16px', borderRadius: '30px' }}>Try free AI models</Link>
+              <div className="hint" data-position="1" style={{ flex: '1' }}>
+                <SpaceButton href="/docs">Try free AI models</SpaceButton>
                 <div className="hint-content">
                   Access 100+ premium AI models (GPT-4o, Claude 3.5) with our free tier or BYOK.
                 </div>
               </div>
 
-              <div className="hint" data-position="1">
-                <Link href="/cli" className="btn-secondary" style={{ padding: '12px 24px', fontSize: '16px', borderRadius: '30px', background: 'transparent' }}>Try free code CLI</Link>
-                <div className="hint-content">
-                  Install the cheap-cli to route API requests securely from your terminal.
-                </div>
-              </div>
-
-              <div className="hint" data-position="1">
-                <Link href="/chat" className="btn-secondary" style={{ padding: '12px 24px', fontSize: '16px', borderRadius: '30px', background: 'transparent' }}>Start chat</Link>
+              <div className="hint" data-position="1" style={{ flex: '1' }}>
+                <SpaceButton variant="outline" href="/chat">Try chat</SpaceButton>
                 <div className="hint-content">
                   Test and compare all AI models instantly in our interactive Chat Playground.
                 </div>
               </div>
 
-              <div className="hint" data-position="1">
-                <Link href="/docs" className="btn-secondary" style={{ padding: '12px 24px', fontSize: '16px', borderRadius: '30px', background: 'transparent' }}>Connect by API</Link>
+              <div className="hint" data-position="1" style={{ flex: '1' }}>
+                <SpaceButton variant="outline" href="/cli">Try cheap CLI</SpaceButton>
                 <div className="hint-content">
-                  Drop-in replacement for OpenAI SDK. Just change baseURL and API key.
+                  Install the cheap-cli to route API requests securely from your terminal.
                 </div>
               </div>
 
             </div>
+
+            <InstallBox />
           </div>
           <div style={{ flex: '0 0 55%', maxWidth: '55%', display: 'flex', justifyContent: 'center' }}>
             <HeroTerminal />

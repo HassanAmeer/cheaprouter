@@ -233,29 +233,6 @@ export default function HeroTerminal() {
         </button>
       </div>
 
-      {/* Installation Box */}
-      <div className={styles.installBoxWrapper}>
-        <div className={styles.installBox}>
-          <div className={styles.installTabs}>
-            {['Windows', 'Mac', 'Linux', 'npm'].map(tab => (
-              <button
-                key={tab}
-                className={`${styles.installTab} ${activeTab === tab ? styles.installTabActive : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div className={styles.commandBox}>
-            <span>$ {commands[activeTab]}</span>
-            <button className={styles.copyBtn} onClick={handleCopy} title="Copy to clipboard">
-              {copied ? <Check size={16} color="#27c93f" /> : <Copy size={16} />}
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }
