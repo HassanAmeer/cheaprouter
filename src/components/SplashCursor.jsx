@@ -5,21 +5,21 @@ import { useEffect, useRef } from 'react';
 
 function SplashCursor({
   SIM_RESOLUTION = 128,
-  DYE_RESOLUTION = 1440,
-  CAPTURE_RESOLUTION = 512,
-  DENSITY_DISSIPATION = 3.5,
+  DYE_RESOLUTION = 800,
+  CAPTURE_RESOLUTION = 200,
+  DENSITY_DISSIPATION = 1.5,
   VELOCITY_DISSIPATION = 2,
   PRESSURE = 0.1,
   PRESSURE_ITERATIONS = 20,
   CURL = 3,
   SPLAT_RADIUS = 0.2,
-  SPLAT_FORCE = 6000,
+  SPLAT_FORCE = 3000,
   SHADING = true,
-  COLOR_UPDATE_SPEED = 10,
-  BACK_COLOR = { r: 0.5, g: 0, b: 0 },
+  COLOR_UPDATE_SPEED = 5,
+  BACK_COLOR = { r: 0.3, g: 0, b: 0 },
   TRANSPARENT = true,
   RAINBOW_MODE = true,
-  COLOR = '#ff0000'
+  COLOR = '#d82a2ac1'
 }) {
   const canvasRef = useRef(null);
   const animationFrameId = useRef(null);
@@ -315,7 +315,7 @@ function SplashCursor({
 
           float a = max(c.r, max(c.g, c.b));
           float alpha = smoothstep(0.0, 0.3, a); // Boost alpha for darker dye to make it look black
-          gl_FragColor = vec4(c, alpha * 0.9);
+          gl_FragColor = vec4(c, alpha * 0.3);
       }
     `;
 
@@ -893,7 +893,7 @@ function SplashCursor({
       const r = parseInt(val.slice(0, 2), 16) / 255;
       const g = parseInt(val.slice(2, 4), 16) / 255;
       const b = parseInt(val.slice(4, 6), 16) / 255;
-      return { r: r * 0.15, g: g * 0.15, b: b * 0.15 };
+      return { r, g, b };
     }
 
     function generateColor() {

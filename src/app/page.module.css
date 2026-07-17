@@ -112,18 +112,89 @@
   }
 }
 
-.announcementBar {
+.announcementBarWrapper {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+}
+
+.announcementCubeContainer {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  perspective: 1200px;
+}
+
+.announcementCube {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.announcementCubeFace {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(90deg, #1A1A1A, #330000, #1A1A1A);
   color: white;
-  text-align: center;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+  font-weight: 600;
+  backface-visibility: hidden;
+}
+
+.faceFront {
+  transform: rotateX(0deg) translateZ(24px);
+}
+
+.faceTop {
+  transform: rotateX(90deg) translateZ(24px);
+}
+
+.faceBack {
+  transform: rotateX(180deg) translateZ(24px);
+}
+
+.faceBottom {
+  transform: rotateX(-90deg) translateZ(24px);
+}
+
+.announcementControlsRow {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  background: #1a1a1a;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 10;
+}
+
+.announcementBtn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.announcementBtn:hover {
+  background: var(--color-primary);
 }
 
 .announcementBadge {

@@ -12,6 +12,8 @@ import { SpaceButton } from '../components/ui/space-button';
 import InstallBox from '../components/InstallBox';
 import LaserFlow from '../components/LaserFlow';
 import SplashCursor from '../components/SplashCursor';
+import AnnouncementBar from '../components/AnnouncementBar';
+import { theme } from '../config/theme';
 
 export default function Home() {
   const models = [
@@ -52,10 +54,7 @@ export default function Home() {
       </div>
 
       {/* Announcement Bar */}
-      <div className={styles.announcementBar}>
-        <span className={styles.announcementBadge}>New</span>
-        DeepSeek Coder V2 & Llama 3.1 405B are now available! 🎉
-      </div>
+      <AnnouncementBar />
 
       <div className="container">
         {/* Navbar */}
@@ -98,7 +97,7 @@ export default function Home() {
               className=""
               style={{}}
               dpr={1}
-              color="#cc0000"
+              color={theme.colors.primary}
               wispDensity={2}
               flowSpeed={0.6}
               verticalSizing={5}
@@ -117,17 +116,17 @@ export default function Home() {
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}>
             <SplashCursor
               key="splash-red"
-              SIM_RESOLUTION={192}
-              DYE_RESOLUTION={1664}
+              SIM_RESOLUTION={128}
+              DYE_RESOLUTION={1440}
               DENSITY_DISSIPATION={3.5}
-              VELOCITY_DISSIPATION={3}
-              PRESSURE={0.2}
+              VELOCITY_DISSIPATION={2}
+              PRESSURE={0.1}
               CURL={3}
-              SPLAT_RADIUS={0.2}
-              SPLAT_FORCE={10000}
-              COLOR_UPDATE_SPEED={23}
+              SPLAT_RADIUS={0.25}
+              SPLAT_FORCE={2500}
+              COLOR_UPDATE_SPEED={10}
               RAINBOW_MODE={false}
-              COLOR="#cc0000"
+              COLOR={theme.colors.primary}
               BACK_COLOR={{ r: 0, g: 0, b: 0 }}
             />
           </div>
