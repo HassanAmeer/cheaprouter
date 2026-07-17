@@ -23,11 +23,12 @@ export default function InstallBox() {
 
   return (
     <div className={styles.installBoxWrapper}>
-      <p className={styles.shimmerText}>
-        For best and free coding editor, download and install cheap CLI.
-      </p>
+      <br />
       <div className={styles.arrowWrapper}>
         <div className={styles.shimmerArrow}></div>
+        <p className={styles.shimmerText}>
+          For best and free coding editor, download and install cheap CLI.
+        </p>
       </div>
       <div className={styles.installBox}>
         <div className={styles.installTabs}>

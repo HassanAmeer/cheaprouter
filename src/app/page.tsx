@@ -109,13 +109,14 @@ export default function Home() {
               wispIntensity={15}
               flowStrength={0.4}
               decay={2.9}
-              horizontalBeamOffset={-0.0}
+              horizontalBeamOffset={0.3}
               verticalBeamOffset={-0.5}
             />
           </div>
 
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}>
             <SplashCursor
+              key="splash-red"
               SIM_RESOLUTION={192}
               DYE_RESOLUTION={1664}
               DENSITY_DISSIPATION={3.5}
@@ -152,12 +153,11 @@ export default function Home() {
                 <TextRoll>One API Key.</TextRoll>
               </TextLoop>
             </h1>
-            <p className={styles.heroSubtitle}>
+            <p className={styles.heroSubtitle} style={{ color: 'black' }}>
               From Basic to Highly Capable Models.<br />
-              Access <strong style={{ color: '#aaaaaa' }}>ChatGPT 5.6, Claude Code, Fable, Grok, DeepSeek V4 Flash, Skana, GLM 5.2, Qwen 3.7</strong> and more.<br />
-              These models are available at unbeatable cheap rates or even for free!
+              Access <strong style={{ color: '#000000' }}>ChatGPT 5.6, Claude Code, Fable, Grok, DeepSeek V4 Flash, Skana, GLM 5.2, Qwen 3.7</strong> and more.<br />
             </p>
-            <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '10px', alignItems: 'center' }}>
+            <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '60px', alignItems: 'center' }}>
 
               <div className="hint" data-position="1" style={{ flex: '1' }}>
                 <SpaceButton href="/docs">Try free AI models</SpaceButton>

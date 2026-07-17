@@ -62,11 +62,13 @@
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 1100px;
   z-index: 0;
   background: radial-gradient(circle at 50% 0%, rgba(204, 0, 0, 0.1) 0%, transparent 60%);
   pointer-events: none;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 30%, red 70%);
+  mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
 }
 
 .heroWaves {
@@ -196,13 +198,15 @@
 
 /* Marquee Line */
 .marqueeContainer {
-  background-color: var(--color-card-bg);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
   padding: 24px 0;
   overflow: hidden;
   white-space: nowrap;
   display: flex;
+  background: transparent;
+}
+
+.marqueeContainer:hover .marqueeContent {
+  animation-play-state: paused;
 }
 
 .marqueeContent {
@@ -214,10 +218,25 @@
 .providerLogo {
   font-size: 24px;
   font-weight: 700;
-  color: var(--color-text-muted);
+  color: #777777;
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.providerLogo img {
+  filter: grayscale(100%) opacity(0.5);
+  transition: filter 0.3s ease;
+}
+
+.providerLogo:hover {
+  color: #cc0000;
+}
+
+.providerLogo:hover img {
+  filter: brightness(0) saturate(100%) invert(14%) sepia(89%) saturate(4974%) hue-rotate(352deg) brightness(107%) contrast(114%);
 }
 
 @keyframes scroll {

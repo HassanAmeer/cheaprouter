@@ -266,7 +266,8 @@ button {
   font-size: 13px;
   text-align: left;
 }
-.item-hints .hint:hover .hint-content {
+.item-hints .hint:hover .hint-content,
+.item-hints:not(:hover) .hint:first-child .hint-content {
   opacity: 1;
   visibility: visible;
 }
@@ -280,7 +281,8 @@ button {
   position: absolute;
   transition: width 0.4s;
 }
-.item-hints .hint:hover .hint-content::before {
+.item-hints .hint:hover .hint-content::before,
+.item-hints:not(:hover) .hint:first-child .hint-content::before {
   width: 180px;
   transition: width 0.4s;
 }
@@ -298,7 +300,8 @@ button {
   transition: opacity 0.5s ease;
   transition-delay: 0s;
 }
-.item-hints .hint:hover .hint-content::after {
+.item-hints .hint:hover .hint-content::after,
+.item-hints:not(:hover) .hint:first-child .hint-content::after {
   opacity: 1;
   visibility: visible;
 }

@@ -314,7 +314,8 @@ function SplashCursor({
           #endif
 
           float a = max(c.r, max(c.g, c.b));
-          gl_FragColor = vec4(c, a);
+          float alpha = smoothstep(0.0, 0.3, a); // Boost alpha for darker dye to make it look black
+          gl_FragColor = vec4(c, alpha * 0.9);
       }
     `;
 
