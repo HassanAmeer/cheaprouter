@@ -10,6 +10,8 @@ import { PixelatedCanvasDemo } from '../components/PixelatedCanvasDemo';
 import BranchFeatures from '../components/BranchFeatures';
 import { SpaceButton } from '../components/ui/space-button';
 import InstallBox from '../components/InstallBox';
+import LaserFlow from '../components/LaserFlow';
+import SplashCursor from '../components/SplashCursor';
 
 export default function Home() {
   const models = [
@@ -91,15 +93,46 @@ export default function Home() {
             />
           ))}
 
-          <div className={styles.heroWaves}>
-            {/* Horizontal Wavy Path 1 (Bottom aligned, Static) */}
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" style={{ fill: 'var(--color-bg-soft)', stroke: 'rgba(204,0,0,0.2)', strokeWidth: '1px' }}>
-              <path d="M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 C1350,120 1550,0 1800,60 C2050,120 2250,0 2400,60 L2400,120 L0,120 Z" />
-            </svg>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, opacity: 0.7 }}>
+            <LaserFlow
+              className=""
+              style={{}}
+              dpr={1}
+              color="#cc0000"
+              wispDensity={2}
+              flowSpeed={0.6}
+              verticalSizing={5}
+              horizontalSizing={1.4}
+              fogIntensity={1}
+              fogScale={0.2}
+              wispSpeed={14}
+              wispIntensity={15}
+              flowStrength={0.4}
+              decay={2.9}
+              horizontalBeamOffset={-0.0}
+              verticalBeamOffset={-0.5}
+            />
+          </div>
+
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}>
+            <SplashCursor
+              SIM_RESOLUTION={192}
+              DYE_RESOLUTION={1664}
+              DENSITY_DISSIPATION={3.5}
+              VELOCITY_DISSIPATION={3}
+              PRESSURE={0.2}
+              CURL={3}
+              SPLAT_RADIUS={0.2}
+              SPLAT_FORCE={10000}
+              COLOR_UPDATE_SPEED={23}
+              RAINBOW_MODE={false}
+              COLOR="#cc0000"
+              BACK_COLOR={{ r: 0, g: 0, b: 0 }}
+            />
           </div>
         </div>
 
-        <section className={styles.hero}>
+        <section className={styles.hero} style={{ position: 'relative', zIndex: 2 }}>
           <div style={{ flex: '0 0 40%', maxWidth: '40%' }}>
             <h1 className={styles.heroTitle}>
               All AI Models At <br />
@@ -125,7 +158,7 @@ export default function Home() {
               These models are available at unbeatable cheap rates or even for free!
             </p>
             <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '10px', alignItems: 'center' }}>
-              
+
               <div className="hint" data-position="1" style={{ flex: '1' }}>
                 <SpaceButton href="/docs">Try free AI models</SpaceButton>
                 <div className="hint-content">
