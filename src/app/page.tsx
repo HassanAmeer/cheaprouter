@@ -210,20 +210,27 @@ export default function Home() {
             </div>
 
             <div className={`${styles.codeSection} ${styles.apiTerminal}`}>
-              <div className={styles.codeHeader}>
-                <Terminal size={20} />
-                <span>index.js</span>
+              <div className={styles.codeHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#8b949e', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-inter)' }}>
+                  <Terminal size={16} /> index.ts
+                </div>
+                <div style={{ width: '44px' }} /> {/* Spacer for flex centering */}
               </div>
-              <pre style={{ margin: 0, fontSize: '14px' }}>
+              <pre style={{ margin: 0, fontSize: '15px', lineHeight: '1.6', color: '#e6edf3' }}>
                 <code>
-                  <span style={{ color: '#FF7B72' }}>import</span> OpenAI <span style={{ color: '#FF7B72' }}>from</span> <span style={{ color: '#A5D6FF' }}>"openai"</span>;<br /><br />
-                  <span style={{ color: '#FF7B72' }}>const</span> client = <span style={{ color: '#FF7B72' }}>new</span> OpenAI(&#123;<br />
-                  &nbsp;&nbsp;apiKey: <span style={{ color: '#A5D6FF' }}>"YOUR_CHEAPMODELS_API_KEY"</span>,<br />
-                  &nbsp;&nbsp;baseURL: <span style={{ color: '#A5D6FF' }}>"https://api.cheapmodels.com/v1"</span>, <span style={{ color: '#8b949e' }}>// Just change this!</span><br />
+                  <span style={{ color: '#ff7b72' }}>import</span> OpenAI <span style={{ color: '#ff7b72' }}>from</span> <span style={{ color: '#a5d6ff' }}>"openai"</span>;<br /><br />
+                  <span style={{ color: '#ff7b72' }}>const</span> client = <span style={{ color: '#ff7b72' }}>new</span> OpenAI(&#123;<br />
+                  &nbsp;&nbsp;apiKey: <span style={{ color: '#a5d6ff' }}>"YOUR_CHEAPMODELS_API_KEY"</span>,<br />
+                  &nbsp;&nbsp;baseURL: <span style={{ color: '#a5d6ff' }}>"https://api.cheapmodels.com/v1"</span>, <span style={{ color: '#8b949e', fontStyle: 'italic' }}>// Just change this!</span><br />
                   &#125;);<br /><br />
-                  <span style={{ color: '#FF7B72' }}>const</span> response = <span style={{ color: '#FF7B72' }}>await</span> client.chat.completions.create(&#123;<br />
-                  &nbsp;&nbsp;model: <span style={{ color: '#A5D6FF' }}>"claude-3-5-sonnet"</span>, <span style={{ color: '#8b949e' }}>// Or gemini-1.5-pro, llama-3-70b...</span><br />
-                  &nbsp;&nbsp;messages: [&#123; role: <span style={{ color: '#A5D6FF' }}>"user"</span>, content: <span style={{ color: '#A5D6FF' }}>"Hello World!"</span> &#125;],<br />
+                  <span style={{ color: '#ff7b72' }}>const</span> response = <span style={{ color: '#ff7b72' }}>await</span> client.chat.completions.create(&#123;<br />
+                  &nbsp;&nbsp;model: <span style={{ color: '#a5d6ff' }}>"claude-3-5-sonnet"</span>, <span style={{ color: '#8b949e', fontStyle: 'italic' }}>// Or gemini-1.5-pro, llama-3-70b...</span><br />
+                  &nbsp;&nbsp;messages: [&#123; role: <span style={{ color: '#a5d6ff' }}>"user"</span>, content: <span style={{ color: '#a5d6ff' }}>"Hello World!"</span> &#125;],<br />
                   &#125;);
                 </code>
               </pre>

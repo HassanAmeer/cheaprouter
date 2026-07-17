@@ -229,3 +229,333 @@
   background: rgba(255,255,255,0.1);
   color: #fff;
 }
+
+/* ========================================================= */
+/* MOCKUP UI STYLES FOR CARDS */
+/* ========================================================= */
+
+.prompt { color: #a5d6ff; font-weight: bold; }
+.cursorBlink {
+  animation: blink 1s step-end infinite;
+  color: #fff;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* CLI Editor */
+.cliEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cliLine {
+  display: flex;
+  gap: 8px;
+}
+.typingCmd {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 2s steps(40, end);
+}
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+.cliOutput {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards 2.5s;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+.cliSuccess {
+  color: #27c93f;
+  margin-bottom: 8px;
+}
+.cliDiffBlock {
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 8px 0;
+  border-left: 2px solid #555;
+  font-size: 12px;
+}
+.diffMinus {
+  color: #ff5f56;
+  background: rgba(255, 95, 86, 0.1);
+  padding: 2px 4px;
+  display: flex;
+  gap: 12px;
+}
+.diffPlus {
+  color: #27c93f;
+  background: rgba(39, 201, 63, 0.1);
+  padding: 2px 4px;
+  display: flex;
+  gap: 12px;
+}
+
+/* API Terminal */
+.apiTerminalUi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.typingApiCmd {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typingApi 2s steps(40, end);
+}
+@keyframes typingApi {
+  from { width: 0 }
+  to { width: 100% }
+}
+.apiLineIndented {
+  padding-left: 24px;
+  color: #d1d5db;
+  opacity: 0;
+  animation: fadeIn 0.1s ease forwards;
+}
+.apiLineIndented:nth-child(2) { animation-delay: 2.1s; }
+.apiLineIndented:nth-child(3) { animation-delay: 2.2s; }
+.apiLineIndented:nth-child(4) { animation-delay: 2.3s; }
+
+.apiResponse {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards 3s;
+}
+.apiConnecting {
+  color: #ffbd2e;
+  margin-bottom: 8px;
+}
+.apiStreaming {
+  color: #e5e7eb;
+  padding-left: 12px;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.apiStreaming::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 100%;
+  background: #050505;
+  animation: slideDownFade 3s ease forwards 3.5s;
+}
+@keyframes slideDownFade {
+  to { height: 0; }
+}
+
+/* Webchat Browser */
+.browserHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+}
+.browserDots {
+  display: flex;
+  gap: 6px;
+  width: 60px;
+}
+.browserDots span {
+  width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1;
+}
+.browserDots span:nth-child(1) { background: #ff5f56; }
+.browserDots span:nth-child(2) { background: #ffbd2e; }
+.browserDots span:nth-child(3) { background: #27c93f; }
+
+.browserUrl {
+  flex: 1;
+  text-align: center;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 0;
+  font-size: 11px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  margin-right: 60px;
+}
+.webChatUi {
+  display: flex;
+  height: 100%;
+}
+.webChatSidebar {
+  width: 60px;
+  border-right: 1px solid #e2e8f0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+}
+.webChatHistItem {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+.webChatMain {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+.webChatMsgWrapper {
+  display: flex;
+  width: 100%;
+}
+.webChatMsgUser {
+  background: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 12px 12px 0 12px;
+  font-size: 12px;
+  margin-left: auto;
+  max-width: 80%;
+}
+.webChatMsgAi {
+  background: rgba(204, 0, 0, 0.05);
+  border: 1px solid rgba(204, 0, 0, 0.1);
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 0;
+  font-size: 12px;
+  margin-right: auto;
+  max-width: 85%;
+  color: #333;
+}
+.typingChat {
+  display: inline-block;
+  overflow: hidden;
+  white-space: normal;
+  clip-path: inset(0 100% 0 0);
+  animation: revealChat 3s steps(40, end) forwards 1s;
+}
+@keyframes revealChat {
+  to { clip-path: inset(0 0 0 0); }
+}
+.webChatInputArea {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.webChatInputBox {
+  flex: 1;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+.webChatAttachBtn {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.webChatSendBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* VS Code Editor UI */
+.vscodeSidebar {
+  width: 140px;
+  background: #181818;
+  border-right: 1px solid #333;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vscodeSidebarTitle {
+  font-size: 10px;
+  color: #858585;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding-left: 8px;
+  letter-spacing: 0.5px;
+}
+.vscodeFile {
+  font-size: 12px;
+  color: #858585;
+  padding: 4px 8px;
+  cursor: default;
+}
+.vscodeFileActive {
+  font-size: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  cursor: default;
+}
+.vscodeMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.vscodeTabs {
+  display: flex;
+  margin-left: 16px;
+  height: 100%;
+}
+.vscodeTab {
+  padding: 6px 16px;
+  color: #858585;
+  font-size: 11px;
+  font-family: sans-serif;
+  cursor: default;
+}
+.vscodeTabActive {
+  padding: 6px 16px;
+  color: #d4d4d4;
+  font-size: 11px;
+  font-family: sans-serif;
+  background: #1e1e1e;
+  border-top: 1px solid var(--color-primary);
+  cursor: default;
+}
+.vscodeCode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.vscodeTerminalPanel {
+  height: 60px;
+  border-top: 1px solid #333;
+  background: #181818;
+  display: flex;
+  flex-direction: column;
+}
+.vscodeTerminalHeader {
+  font-size: 10px;
+  color: #d4d4d4;
+  padding: 4px 12px;
+  border-bottom: 1px solid #333;
+  letter-spacing: 0.5px;
+}
+.vscodeTerminalOutput {
+  padding: 8px 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+}

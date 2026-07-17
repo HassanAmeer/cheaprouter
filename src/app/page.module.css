@@ -436,18 +436,28 @@
   }
 }
 
+.apiSplitSection {
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .apiContent {
   flex: 1;
 }
 
 .apiTerminal {
-  flex: 1;
+  flex: 1.2;
   margin-top: 0;
+  width: 100%;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 968px) {
   .apiSplitSection {
     flex-direction: column;
+    gap: 40px;
   }
 }
 
