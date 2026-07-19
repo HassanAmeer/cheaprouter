@@ -28,6 +28,13 @@ const faqItems = [
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showDemandToast, setShowDemandToast] = useState(false);
+
+  const handleDemandSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowDemandToast(true);
+    setTimeout(() => setShowDemandToast(false), 3000);
+  };
 
   return (
     <main>
@@ -597,6 +604,108 @@ const response = await client.chat.completions.create({
                 <div className={styles.faqAnswer}>{item.a}</div>
               </div>
             ))}
+          </div>
+        </section>
+        {/* ═══════════════ DEMAND SECTION (CLEAN PREMIUM) ═══════════════ */}
+        <section className={styles.section}>
+          <div className={styles.demandOuter}>
+            <div className={styles.demandBgGlow} />
+
+            <div className={styles.demandWrap}>
+              
+              {/* LEFT SIDE: Copy & Stats */}
+              <div className={styles.demandLeft}>
+                <div className={styles.demandEyebrow}>
+                  <Sparkles size={14} /> Driven by community
+                </div>
+                
+                <h2 className={styles.demandTitle}>
+                  You demand it.<br />
+                  <span className={styles.demandTitleAccent}>We ship it.</span>
+                </h2>
+                
+                <p className={styles.demandDesc}>
+                  Our roadmap is entirely driven by you. Tell us what you need, and we'll prioritize it in our next sprint.
+                </p>
+
+                {/* Timeline Feature List */}
+                <div className={styles.demandTimeline}>
+                  <div className={styles.demandTimelineLabel}>Feature Roadmap</div>
+                  <div className={styles.demandTimelineList}>
+                    {[
+                      { label: 'Free AI models & unlimited access', tag: 'Live', type: 'live' },
+                      { label: 'Free coding via cheap-cli', tag: 'Live', type: 'live' },
+                      { label: 'Web Browser Agent', tag: 'Coming Soon', type: 'soon' },
+                      { label: 'CheapCode IDE', tag: 'Coming Soon', type: 'soon' },
+                    ].map((item, i) => (
+                      <div key={i} className={styles.demandTimelineItem}>
+                        <div className={styles.demandTimelineTrack}>
+                          <div className={`${styles.demandTimelineDot} ${styles[`demandDot_${item.type}`]}`} />
+                          {i < 3 && <div className={styles.demandTimelineLine} />}
+                        </div>
+                        <div className={styles.demandTimelineContent}>
+                          <div className={styles.demandTimelineRow}>
+                            <span className={styles.demandTimelineText}>{item.label}</span>
+                            <span className={`${styles.demandTimelineTag} ${styles[`demandTag_${item.type}`]}`}>{item.tag}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT SIDE: Clean Professional Form */}
+              <div className={styles.demandRight}>
+                <form className={styles.demandFormCard} onSubmit={handleDemandSubmit}>
+                  <div className={styles.demandFormHeader}>
+                    <h3 className={styles.demandFormTitle}>Submit Request</h3>
+                    <div className={styles.demandFormChips}>
+                      <span>Rate Issue</span> • <span>Improvement</span> • <span>Feature</span> • <span>Contact Support</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.demandFormBody}>
+                    <div className={styles.demandFormGroup}>
+                      <label className={styles.demandFormLabel}>Email Address</label>
+                      <input type="email" required className={styles.demandInput} placeholder="you@example.com" />
+                    </div>
+
+                    <div className={styles.demandFormGroup}>
+                      <label className={styles.demandFormLabel}>Subject Name</label>
+                      <input type="text" required className={styles.demandInput} placeholder="e.g., Add new Claude model" />
+                    </div>
+
+                    <div className={styles.demandFormGroup}>
+                      <label className={styles.demandFormLabel}>Message Box</label>
+                      <textarea 
+                        required
+                        className={styles.demandTextarea}
+                        placeholder="Describe your request..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <button type="submit" className={styles.demandSubmitBtn}>
+                      Submit Request
+                    </button>
+
+                    <div className={styles.demandFormFooter}>
+                      <span className={styles.demandShimmerText}>Founders will review your request soon.</span>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+
+            {/* Toast Notification */}
+            {showDemandToast && (
+              <div className={styles.demandToast}>
+                <Check size={16} color="#22c55e" />
+                Your request submitted successfully
+              </div>
+            )}
           </div>
         </section>
 
