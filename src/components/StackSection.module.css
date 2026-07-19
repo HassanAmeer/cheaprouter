@@ -1,0 +1,336 @@
+/* ─── STACK SECTION — Works with your stack ─── */
+
+.wrapper {
+  width: 100%;
+  overflow: hidden;
+  padding: 16px 0;
+  margin: -16px 0;
+}
+
+/* ── ROWS — grid so every chip stretches to fill full width ── */
+.rowsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  /* 8 per row — fills 100% width, no gaps on sides */
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+/* Last row has 7 chips + 1 more button = 8 cells, same grid */
+.row:last-child {
+  grid-template-columns: repeat(8, 1fr);
+}
+
+/* Keep these for backwards-compat but they're no-ops now */
+.slideFromLeft  {}
+.slideFromRight {}
+.rowVisible {}
+
+/* ── CHIP — full-width cell, transparent ghost with shimmer ── */
+.chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* generous padding — grid cell fills the rest */
+  padding: 16px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  cursor: default;
+  overflow: hidden;
+  width: 100%;
+  /* entrance state — hidden by default */
+  opacity: 0;
+  transform: translateX(-48px);
+  transition:
+    opacity  0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+  /* stagger each chip using its index: delay = row-offset + chip-index */
+  transition-delay: calc(var(--chip-delay, 0) * 1ms);
+}
+
+/* When the row becomes visible, chips slide in */
+.chipVisible {
+  opacity: 1;
+  transform: translateX(0);
+  animation: chipShimmer 4s ease-in-out infinite;
+  animation-delay: calc(var(--chip-index, 0) * 0.35s);
+}
+
+[data-theme="light"] .chip {
+  border-color: rgba(0, 0, 0, 0.09);
+  animation: none;
+}
+
+[data-theme="light"] .chipVisible {
+  animation: chipShimmerLight 4s ease-in-out infinite;
+  animation-delay: calc(var(--chip-index, 0) * 0.35s);
+}
+
+/* Pulsing glow — theme red */
+@keyframes chipShimmer {
+  0%, 75%, 100% {
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.10);
+    transform: scale(1);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(204, 0, 0, 0.28),
+                0 0 18px rgba(204, 0, 0, 0.15);
+    border-color: rgba(204, 0, 0, 0.45);
+    transform: scale(1.06);
+  }
+}
+
+@keyframes chipShimmerLight {
+  0%, 75%, 100% {
+    box-shadow: none;
+    border-color: rgba(0, 0, 0, 0.09);
+    transform: scale(1);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(204, 0, 0, 0.20),
+                0 0 16px rgba(204, 0, 0, 0.10);
+    border-color: rgba(204, 0, 0, 0.35);
+    transform: scale(1.06);
+  }
+}
+
+/* Diagonal sweep highlight */
+.shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(204, 0, 0, 0.07) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 4s ease-in-out infinite;
+  animation-delay: calc(var(--chip-index, 0) * 0.35s);
+  pointer-events: none;
+}
+
+@keyframes shimmerSweep {
+  0%        { background-position: 150% center; opacity: 0; }
+  30%       { opacity: 1; }
+  65%       { background-position: -50% center; opacity: 1; }
+  80%, 100% { opacity: 0; background-position: -50% center; }
+}
+
+.chipVisible:hover {
+  border-color: rgba(204, 0, 0, 0.60) !important;
+  background: rgba(204, 0, 0, 0.05);
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 1px rgba(204, 0, 0, 0.32),
+              0 8px 24px rgba(204, 0, 0, 0.13) !important;
+  animation-play-state: paused;
+}
+.chipVisible:hover .shimmer {
+  animation-play-state: paused;
+}
+
+.chipIcon {
+  display: block;
+  flex-shrink: 0;
+  border-radius: 4px;
+  opacity: 0.88;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.chip:hover .chipIcon {
+  opacity: 1;
+  transform: scale(1.14);
+}
+
+.chipName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+
+/* ── + MORE BUTTON — same grid cell size as a chip ── */
+.moreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 16px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(204, 0, 0, 0.50);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.moreBtn:hover {
+  background: rgba(204, 0, 0, 0.07);
+  border-color: var(--color-primary);
+  border-style: solid;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(204, 0, 0, 0.13);
+}
+
+.morePlus {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+/* ── TEXT NEXT TO MORE BUTTON ── */
+.integrationText {
+  grid-column: span 7;
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 700;
+  padding-left: 12px;
+  white-space: nowrap;
+}
+
+/* ── MODAL ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  padding: 44px 40px;
+  max-width: 680px;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(204, 0, 0, 0.08);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(28px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modalClose {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.modalClose:hover {
+  background: rgba(204, 0, 0, 0.09);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.modalTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin-bottom: 6px;
+}
+
+.modalSub {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.modalGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modalChip {
+  padding: 9px 20px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text-main);
+  background: transparent;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.modalChip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(204, 0, 0, 0.05);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .row { grid-template-columns: repeat(4, 1fr); }
+  .row:last-child { grid-template-columns: repeat(4, 1fr); }
+  .integrationText { grid-column: span 3; font-size: 14px; }
+}
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .row:last-child { grid-template-columns: repeat(3, 1fr); }
+  .chip { padding: 12px 8px; border-radius: 10px; }
+  .moreBtn { padding: 12px 8px; border-radius: 10px; }
+  .chipName { font-size: 12.5px; }
+  .modal { padding: 32px 22px; }
+  .integrationText { grid-column: span 2; font-size: 13px; white-space: normal; line-height: 1.2; }
+}
+
+@media (max-width: 420px) {
+  .row { grid-template-columns: repeat(2, 1fr); }
+  .row:last-child { grid-template-columns: repeat(2, 1fr); }
+  .integrationText { grid-column: span 1; font-size: 12px; }
+}

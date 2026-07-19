@@ -10,6 +10,8 @@
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
 - [charts.tsx](file://src/components/ui/charts.tsx)
 - [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [HeroTerminal.tsx](file://src/components/HeroTerminal.tsx)
+- [HeroTerminal.module.css](file://src/components/HeroTerminal.module.css)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme-toggle.tsx](file://src/components/theme-toggle.tsx)
 - [auth-provider.tsx](file://src/components/auth-provider.tsx)
@@ -20,12 +22,10 @@
 
 ## Update Summary
 **Changes Made**
-- Added authentication context and provider components to the component library
-- Enhanced theme switching capabilities with dedicated toggle component
-- Expanded UI primitives with additional form elements and interactive components
-- Integrated charting components for data visualization
-- Implemented comprehensive toast notification system with positioning and types
-- Updated component registration system for better discoverability
+- Updated Space Button component documentation to reflect spacing improvements
+- Added HeroTerminal component documentation for terminal-style hero sections
+- Enhanced supporting UI components section with recent styling refinements
+- Updated component examples to showcase improved spacing and visual consistency
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -42,10 +42,10 @@
 12. [Appendices](#appendices)
 
 ## Introduction
-This document describes the expanded UI component library built with Shadcn/ui and Tailwind CSS. The library now includes primitive components, authentication context, theme switching capabilities, charting components, and a comprehensive toast notification system. It focuses on primitive components, their props, styling patterns, customization options, composition approach, theme integration, accessibility features, and usage examples for buttons, forms, notifications, charts, and other reusable elements. It also explains how to register new components into the library and maintain consistency across the application.
+This document describes the expanded UI component library built with Shadcn/ui and Tailwind CSS. The library now includes primitive components, authentication context, theme switching capabilities, charting components, a comprehensive toast notification system, and enhanced supporting UI components including refined HeroTerminal styling and improved space-button spacing. It focuses on primitive components, their props, styling patterns, customization options, composition approach, theme integration, accessibility features, and usage examples for buttons, forms, notifications, charts, terminal components, and other reusable elements. It also explains how to register new components into the library and maintain consistency across the application.
 
 ## Project Structure
-The UI library is organized under src/components/ui for primitives and shared UI building blocks, with theme configuration centralized in src/config/theme.ts and global styles in src/app/globals.css. Authentication context is provided through src/components/auth-provider.tsx, and theme switching through src/components/theme-toggle.tsx. The Shadcn/ui configuration lives in components.json.
+The UI library is organized under src/components/ui for primitives and shared UI building blocks, with theme configuration centralized in src/config/theme.ts and global styles in src/app/globals.css. Authentication context is provided through src/components/auth-provider.tsx, and theme switching through src/components/theme-toggle.tsx. Supporting UI components like HeroTerminal are located in src/components/. The Shadcn/ui configuration lives in components.json.
 
 ```mermaid
 graph TB
@@ -58,6 +58,8 @@ space_button["space-button.tsx"]
 space_button_css["space-button.module.css"]
 charts["charts.tsx"]
 pixelated_canvas["pixelated-canvas.tsx"]
+hero_terminal["HeroTerminal.tsx"]
+hero_terminal_css["HeroTerminal.module.css"]
 end
 subgraph "Authentication"
 auth_provider["auth-provider.tsx"]
@@ -74,6 +76,7 @@ end
 primitives --> primitives_css
 toast --> toast_css
 space_button --> space_button_css
+hero_terminal --> hero_terminal_css
 auth_provider --> theme_provider
 theme_provider --> theme_config
 theme_toggle --> theme_provider
@@ -90,6 +93,8 @@ shadcn_cfg --> primitives
 - [space-button.module.css:1-200](file://src/components/ui/space-button.module.css#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
+- [HeroTerminal.module.css:1-200](file://src/components/HeroTerminal.module.css#L1-L200)
 - [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [theme-toggle.tsx:1-200](file://src/components/theme-toggle.tsx#L1-L200)
@@ -106,6 +111,8 @@ shadcn_cfg --> primitives
 - [space-button.module.css:1-200](file://src/components/ui/space-button.module.css#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
+- [HeroTerminal.module.css:1-200](file://src/components/HeroTerminal.module.css#L1-L200)
 - [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [theme-toggle.tsx:1-200](file://src/components/theme-toggle.tsx#L1-L200)
@@ -132,10 +139,10 @@ This section documents the primitive components that form the foundation of the 
 
 - Space Button
   - Props: label, onClick, variant, size, disabled, icon, loading.
-  - Styling: Themed background and border; hover/focus states; icon alignment.
+  - Styling: Themed background and border; hover/focus states; icon alignment; **updated spacing improvements for better visual hierarchy**.
   - Composition: Wraps content and icons; forwards events and attributes.
   - Accessibility: Keyboard support, focus ring, aria-disabled when disabled.
-  - Customization: Variant and size scale; icon slot; custom className.
+  - Customization: Variant and size scale; icon slot; custom className; **enhanced spacing controls**.
 
 - Charts
   - Props: data, type, height, width, theme, tooltip, legend.
@@ -151,6 +158,13 @@ This section documents the primitive components that form the foundation of the 
   - Accessibility: Focusable canvas, keyboard controls, descriptive labels.
   - Customization: Palette mapping, animation toggles, interaction callbacks.
 
+- Hero Terminal
+  - Props: title, commands, outputLines, typingSpeed, showCursor, theme.
+  - Styling: Terminal-inspired design with monospace fonts; syntax highlighting; **refined styling adjustments for better visual presentation**.
+  - Composition: Simulates terminal interface with command input and output display.
+  - Accessibility: Screen reader support for terminal content, keyboard navigation.
+  - Customization: Command themes, output formatting, animation speeds, cursor behavior.
+
 **Section sources**
 - [primitives.tsx:1-200](file://src/components/ui/primitives.tsx#L1-L200)
 - [primitives.module.css:1-200](file://src/components/ui/primitives.module.css#L1-L200)
@@ -160,6 +174,8 @@ This section documents the primitive components that form the foundation of the 
 - [space-button.module.css:1-200](file://src/components/ui/space-button.module.css#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
+- [HeroTerminal.module.css:1-200](file://src/components/HeroTerminal.module.css#L1-L200)
 
 ## Authentication Context
 The authentication context provides user state management and authentication methods throughout the application. It integrates seamlessly with the theme system and UI components.
@@ -206,7 +222,7 @@ The theme system provides comprehensive theming capabilities with light/dark mod
 - [config/theme.ts:1-200](file://src/config/theme.ts#L1-L200)
 
 ## Architecture Overview
-The UI library integrates with Shadcn/ui and Tailwind CSS through a theme provider and global styles. Components are composed from primitives and styled using CSS variables exposed by the theme. The registration system centralizes component metadata and paths for discovery and import. Authentication context provides user state management across the application.
+The UI library integrates with Shadcn/ui and Tailwind CSS through a theme provider and global styles. Components are composed from primitives and styled using CSS variables exposed by the theme. The registration system centralizes component metadata and paths for discovery and import. Authentication context provides user state management across the application. Supporting components like HeroTerminal enhance the visual experience with specialized styling.
 
 ```mermaid
 sequenceDiagram
@@ -216,11 +232,14 @@ participant Provider as "ThemeProvider"
 participant Root as "globals.css"
 participant Config as "components.json"
 participant Comp as "UI Component"
+participant Hero as "HeroTerminal"
 App->>Auth : Initialize auth context
 App->>Provider : Mount with theme config
 Provider->>Root : Apply CSS variables and base styles
 App->>Config : Read component registry
 App->>Comp : Import and render component
+App->>Hero : Render terminal interface
+Hero-->>App : Styled terminal with refined visuals
 Comp-->>App : Rendered UI with theme tokens
 Auth-->>Comp : Provide auth state
 ```
@@ -230,6 +249,7 @@ Auth-->>Comp : Provide auth state
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [app/globals.css:1-200](file://src/app/globals.css#L1-L200)
 - [components.json:1-200](file://components.json#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
 
 ## Detailed Component Analysis
 
@@ -295,7 +315,7 @@ Dismiss --> End(["Done"])
 - [toast.module.css:1-200](file://src/components/ui/toast.module.css#L1-L200)
 
 ### Space Button
-Space Button is a themed button component with variants, sizes, and icon support. It forwards events and attributes to the underlying element.
+Space Button is a themed button component with variants, sizes, and icon support. It forwards events and attributes to the underlying element. **Recent improvements include enhanced spacing for better visual hierarchy and consistent alignment across different button states.**
 
 ```mermaid
 classDiagram
@@ -380,6 +400,36 @@ PixelatedCanvas --> ThemeProvider : "uses palette"
 **Section sources**
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
 
+### Hero Terminal
+Hero Terminal provides a terminal-inspired interface for showcasing code examples, commands, and interactive demonstrations. **Recent styling adjustments improve visual clarity and ensure consistent appearance across different themes and screen sizes.**
+
+```mermaid
+classDiagram
+class HeroTerminal {
++title
++commands
++outputLines
++typingSpeed
++showCursor
++theme
++renderTerminal()
++handleCommandInput()
+}
+class ThemeProvider {
++getThemeTokens()
+}
+HeroTerminal --> ThemeProvider : "applies theme"
+```
+
+**Diagram sources**
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
+- [HeroTerminal.module.css:1-200](file://src/components/HeroTerminal.module.css#L1-L200)
+- [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+
+**Section sources**
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
+- [HeroTerminal.module.css:1-200](file://src/components/HeroTerminal.module.css#L1-L200)
+
 ### Authentication Provider
 The authentication provider manages user state, authentication methods, and session persistence throughout the application.
 
@@ -417,6 +467,7 @@ graph TB
 Page["Page Component"] --> UI["UI Components"]
 UI --> Theme["ThemeProvider"]
 UI --> Auth["AuthProvider"]
+UI --> Hero["HeroTerminal"]
 Theme --> Globals["Global Styles"]
 Auth --> UI
 UI --> Registry["Component Registry"]
@@ -425,7 +476,7 @@ UI --> Registry["Component Registry"]
 [No sources needed since this diagram shows conceptual workflow, not actual code structure]
 
 ## Dependency Analysis
-The UI library depends on Shadcn/ui primitives and Tailwind CSS utilities. The theme provider injects CSS variables consumed by components. The authentication provider manages user state and integrates with the theme system. The component registry in components.json maps logical names to file paths for consistent imports.
+The UI library depends on Shadcn/ui primitives and Tailwind CSS utilities. The theme provider injects CSS variables consumed by components. The authentication provider manages user state and integrates with the theme system. The component registry in components.json maps logical names to file paths for consistent imports. Supporting components like HeroTerminal extend the visual capabilities with specialized styling.
 
 ```mermaid
 graph TB
@@ -436,6 +487,7 @@ Theme --> Toast["toast.tsx"]
 Theme --> SpaceButton["space-button.tsx"]
 Theme --> Charts["charts.tsx"]
 Theme --> PixelatedCanvas["pixelated-canvas.tsx"]
+Theme --> HeroTerminal["HeroTerminal.tsx"]
 Auth["auth-provider.tsx"] --> Theme
 Auth --> UI["All UI Components"]
 Registry["components.json"] --> Primitives
@@ -443,6 +495,7 @@ Registry --> Toast
 Registry --> SpaceButton
 Registry --> Charts
 Registry --> PixelatedCanvas
+Registry --> HeroTerminal
 ```
 
 **Diagram sources**
@@ -451,6 +504,7 @@ Registry --> PixelatedCanvas
 - [space-button.tsx:1-200](file://src/components/ui/space-button.tsx#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
 - [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [components.json:1-200](file://components.json#L1-L200)
@@ -460,6 +514,7 @@ Registry --> PixelatedCanvas
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [primitives.tsx:1-200](file://src/components/ui/primitives.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
 
 ## Performance Considerations
 - Prefer memoization for expensive components like charts and pixelated canvas to avoid unnecessary re-renders.
@@ -469,6 +524,7 @@ Registry --> PixelatedCanvas
 - Debounce user interactions (e.g., pixel click handlers) to reduce overhead.
 - Implement authentication state caching to prevent unnecessary re-authentication.
 - Use React.memo for frequently used UI components to optimize rendering performance.
+- Optimize HeroTerminal rendering by virtualizing long command outputs and limiting active animations.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -479,6 +535,8 @@ Common issues and resolutions:
 - Canvas not interactive: Validate focus management and keyboard event bindings.
 - Authentication state lost: Check local storage permissions and session persistence configuration.
 - Theme toggle not working: Verify theme provider is properly wrapped around the application.
+- HeroTerminal styling issues: Check CSS module imports and theme token availability for terminal-specific styles.
+- Space button spacing problems: Verify spacing tokens and ensure proper CSS class application.
 
 **Section sources**
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
@@ -487,9 +545,10 @@ Common issues and resolutions:
 - [space-button.tsx:1-200](file://src/components/ui/space-button.tsx#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)
 
 ## Conclusion
-The expanded UI component library provides a cohesive set of primitives, authentication context, theme switching capabilities, charting components, and toast notifications styled with Tailwind CSS and integrated with Shadcn/ui. Through centralized providers for theming and authentication, components remain customizable, accessible, and state-aware. The registration system simplifies discovery and import, while composition patterns encourage reuse and consistency across the application.
+The expanded UI component library provides a cohesive set of primitives, authentication context, theme switching capabilities, charting components, toast notifications, and enhanced supporting UI components including refined HeroTerminal styling and improved space-button spacing. Through centralized providers for theming and authentication, components remain customizable, accessible, and state-aware. The registration system simplifies discovery and import, while composition patterns encourage reuse and consistency across the application. Recent refinements to supporting components demonstrate ongoing commitment to visual polish and user experience.
 
 ## Appendices
 
@@ -500,6 +559,7 @@ The expanded UI component library provides a cohesive set of primitives, authent
   - Variants and sizes: select variant and size props to match design tokens.
   - Disabled state: set disabled to prevent interaction and update focus behavior.
   - Icon support: compose with an icon slot for enhanced affordance.
+  - **Enhanced spacing**: utilize improved spacing properties for better visual hierarchy.
 
 - Forms
   - Inputs and Labels: pair Input with Label for semantics and accessibility.
@@ -520,6 +580,12 @@ The expanded UI component library provides a cohesive set of primitives, authent
   - Initialization: define width, height, and initial pixel map.
   - Interaction: handle pixel clicks and toggle colors via colorMap.
   - Animation: toggle animate flag for dynamic effects.
+
+- Hero Terminal
+  - Setup: configure title, commands array, and output lines for demonstration.
+  - Customization: adjust typing speed, cursor visibility, and theme settings.
+  - Styling: leverage refined styling for consistent terminal appearance.
+  - Integration: embed in landing pages or documentation sections.
 
 - Authentication
   - Setup: wrap application with AuthProvider at the root level.
@@ -542,9 +608,11 @@ To add a new component to the library:
 - Export the component for consumption by pages and feature modules.
 - If the component requires authentication context, integrate with AuthProvider.
 - Test the component with both light and dark themes for consistency.
+- **For supporting components**: place in src/components/ and ensure proper styling isolation.
 
 **Section sources**
 - [components.json:1-200](file://components.json#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [app/globals.css:1-200](file://src/app/globals.css#L1-L200)
+- [HeroTerminal.tsx:1-200](file://src/components/HeroTerminal.tsx#L1-L200)

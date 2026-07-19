@@ -7,6 +7,7 @@
 - [tsconfig.json](file://tsconfig.json)
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/app/globals.css](file://src/app/globals.css)
 - [src/app/not-found.tsx](file://src/app/not-found.tsx)
 - [src/app/chat/page.tsx](file://src/app/chat/page.tsx)
@@ -43,6 +44,13 @@
 - [src/lib/utils.ts](file://src/lib/utils.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated landing page architecture section to reflect major UI overhaul with enhanced components and responsive design
+- Added documentation for modernized visual architecture patterns in the root page component
+- Enhanced CSS module usage examples with new styling approaches
+- Updated component composition patterns to reflect improved modular structure
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -55,7 +63,7 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document explains the Next.js application structure with a focus on the App Router organization, layout composition patterns, and global configuration. It covers how pages are structured under src/app, the root layout hierarchy, global styles management, and the integration between frontend and backend services. It also documents environment configuration, build process setup, and the modular architecture used to organize features within the app directory.
+This document explains the Next.js application structure with a focus on the App Router organization, layout composition patterns, and global configuration. It covers how pages are structured under src/app, the root layout hierarchy, global styles management, and the integration between frontend and backend services. It also documents environment configuration, build process setup, and the modular architecture used to organize features within the app directory. The landing page has undergone a major overhaul with enhanced UI components, improved responsive design, and modernized visual architecture.
 
 ## Project Structure
 The project follows the Next.js App Router convention with feature-based directories under src/app. The top-level routes include chat, cli, dashboard, docs, login, pricing, privacy, signup, and terms. API endpoints are colocated under src/app/api using file-based routing. Shared UI components live under src/components, theme configuration under src/config, and shared utilities under src/lib.
@@ -77,12 +85,14 @@ N["src/config"] --> O["theme.ts"]
 P["src/lib"] --> Q["api.ts<br/>db.ts<br/>utils.ts"]
 R["public"] --> S["Static assets"]
 T["next.config.ts"] --> U["Build & runtime config"]
+V["Enhanced Landing Page<br/>Modern UI Architecture"]
 ```
 
 **Diagram sources**
 - [next.config.ts](file://next.config.ts)
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/app/chat/page.tsx](file://src/app/chat/page.tsx)
 - [src/app/cli/page.tsx](file://src/app/cli/page.tsx)
 - [src/app/dashboard/layout.tsx](file://src/app/dashboard/layout.tsx)
@@ -115,6 +125,7 @@ T["next.config.ts"] --> U["Build & runtime config"]
 - [next.config.ts](file://next.config.ts)
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/app/chat/page.tsx](file://src/app/chat/page.tsx)
 - [src/app/cli/page.tsx](file://src/app/cli/page.tsx)
 - [src/app/dashboard/layout.tsx](file://src/app/dashboard/layout.tsx)
@@ -149,15 +160,19 @@ T["next.config.ts"] --> U["Build & runtime config"]
 - Providers: Theme and authentication context providers are composed at the root to be available across all routes.
 - Utilities and libraries: Shared logic for API calls, database access, and common helpers is centralized under src/lib.
 - Configuration: Theme definitions and Next.js build/runtime settings are defined in src/config/theme.ts and next.config.ts respectively.
+- **Enhanced Landing Page**: Modernized visual architecture with improved responsive design and enhanced UI components.
 
 Key responsibilities:
 - Layout composition: Root layout composes providers and global styles; nested layouts (e.g., dashboard) add route-specific chrome.
 - Feature modules: Each feature folder under src/app contains its own page(s) and optional local styles.
 - API routes: File-based server routes under src/app/api implement REST endpoints consumed by client components.
+- **Responsive Design**: Enhanced CSS modules provide adaptive layouts across different screen sizes and devices.
 
 **Section sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/globals.css](file://src/app/globals.css)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/config/theme.ts](file://src/config/theme.ts)
@@ -167,12 +182,13 @@ Key responsibilities:
 - [next.config.ts](file://next.config.ts)
 
 ## Architecture Overview
-The application uses the Next.js App Router for both client-side pages and server-side API routes. Client pages import providers from src/components and consume APIs via src/lib/api.ts. Server routes under src/app/api handle business logic and communicate with the backend service or data layer as needed.
+The application uses the Next.js App Router for both client-side pages and server-side API routes. Client pages import providers from src/components and consume APIs via src/lib/api.ts. Server routes under src/app/api handle business logic and communicate with the backend service or data layer as needed. The landing page now employs a modernized visual architecture with enhanced component composition patterns.
 
 ```mermaid
 graph TB
 subgraph "Client"
 RL["Root Layout<br/>src/app/layout.tsx"]
+LP["Enhanced Landing Page<br/>src/app/page.tsx"]
 CP["Theme Provider<br/>src/components/theme-provider.tsx"]
 AP["Auth Provider<br/>src/components/auth-provider.tsx"]
 Pages["Pages<br/>src/app/*"]
@@ -186,6 +202,8 @@ Backend["Bun Backend<br/>backend/src/index.ts"]
 end
 RL --> CP
 RL --> AP
+RL --> LP
+LP --> LibAPI
 Pages --> LibAPI
 LibAPI --> APIRoutes
 APIRoutes --> Backend
@@ -193,6 +211,8 @@ APIRoutes --> Backend
 
 **Diagram sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/lib/api.ts](file://src/lib/api.ts)
@@ -215,6 +235,7 @@ APIRoutes --> Backend
 - Top-level routes: chat, cli, docs, login, pricing, privacy, signup, terms each expose a page.tsx.
 - Dashboard feature: Contains a nested layout.tsx and multiple subpages (analytics, billing, keys, providers, settings).
 - Not found handling: A dedicated not-found.tsx provides a custom fallback for unmatched routes.
+- **Enhanced Landing Page**: Major overhaul with modernized visual architecture, improved responsive design, and enhanced UI components.
 
 ```mermaid
 flowchart TD
@@ -268,6 +289,7 @@ NotFound --> End
 - Root layout composes providers (theme and auth) and imports global styles.
 - Global styles are applied once at the root to ensure consistent theming and typography across the app.
 - Providers wrap children to make context available to all pages and components.
+- **Enhanced Styling**: The landing page utilizes advanced CSS modules with responsive design patterns and modern visual architecture.
 
 ```mermaid
 sequenceDiagram
@@ -276,26 +298,60 @@ participant Next as "Next.js Server"
 participant Root as "Root Layout<br/>src/app/layout.tsx"
 participant Theme as "Theme Provider<br/>src/components/theme-provider.tsx"
 participant Auth as "Auth Provider<br/>src/components/auth-provider.tsx"
-participant Page as "Page Component"
+participant Landing as "Enhanced Landing Page<br/>src/app/page.tsx"
+participant Styles as "CSS Modules<br/>src/app/page.module.css"
 Browser->>Next : Request "/"
 Next->>Root : Resolve root layout
 Root->>Theme : Wrap with ThemeProvider
 Root->>Auth : Wrap with AuthProvider
-Root->>Page : Render requested page
-Page-->>Browser : HTML + JS
+Root->>Landing : Render enhanced landing page
+Landing->>Styles : Apply responsive CSS modules
+Landing-->>Browser : Modern UI with enhanced components
 ```
 
 **Diagram sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/globals.css](file://src/app/globals.css)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 
 **Section sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 - [src/app/globals.css](file://src/app/globals.css)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
+
+### Enhanced Landing Page Architecture
+**Updated** The landing page has undergone a major overhaul featuring enhanced UI components, improved responsive design, and modernized visual architecture.
+
+Key architectural improvements:
+- **Component Composition**: Enhanced modular structure with reusable UI components
+- **Responsive Design**: Advanced CSS modules providing adaptive layouts across devices
+- **Visual Architecture**: Modernized design patterns with improved user experience
+- **Performance Optimization**: Optimized rendering and asset loading strategies
+
+```mermaid
+graph LR
+LP["Enhanced Landing Page<br/>src/app/page.tsx"] --> UI["Enhanced UI Components"]
+LP --> CSS["Advanced CSS Modules<br/>src/app/page.module.css"]
+LP --> Responsive["Responsive Design Patterns"]
+LP --> Performance["Optimized Rendering"]
+UI --> Theme["Theme Integration"]
+CSS --> Variables["CSS Custom Properties"]
+Responsive --> Breakpoints["Mobile-First Approach"]
+```
+
+**Diagram sources**
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
+
+**Section sources**
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 
 ### API Integration and Data Flow
 - Client code uses src/lib/api.ts to call server routes under src/app/api.
@@ -367,6 +423,7 @@ Typical concerns covered by these files:
 - Shared UI components live under src/components, including primitives and feature shells.
 - Theme configuration is centralized in src/config/theme.ts.
 - Cross-cutting utilities are grouped under src/lib (API client, DB access, helpers).
+- **Enhanced Landing Page**: Demonstrates modern modular architecture with improved component composition.
 
 ```mermaid
 graph LR
@@ -374,18 +431,23 @@ subgraph "Features"
 D["Dashboard<br/>src/app/dashboard/*"]
 C["Chat<br/>src/app/chat/*"]
 CLI["CLI<br/>src/app/cli/*"]
+LP["Enhanced Landing Page<br/>src/app/page.tsx"]
 end
 subgraph "Shared"
 UI["UI Components<br/>src/components/*"]
 CFG["Theme Config<br/>src/config/theme.ts"]
 LIB["Utilities<br/>src/lib/*"]
+CSS["CSS Modules<br/>src/app/*.module.css"]
 end
 D --> UI
 C --> UI
 CLI --> UI
+LP --> UI
+LP --> CSS
 D --> LIB
 C --> LIB
 CLI --> LIB
+LP --> LIB
 UI --> CFG
 ```
 
@@ -394,6 +456,8 @@ UI --> CFG
 - [src/app/dashboard/page.tsx](file://src/app/dashboard/page.tsx)
 - [src/app/chat/page.tsx](file://src/app/chat/page.tsx)
 - [src/app/cli/page.tsx](file://src/app/cli/page.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/config/theme.ts](file://src/config/theme.ts)
@@ -406,6 +470,8 @@ UI --> CFG
 - [src/app/dashboard/page.tsx](file://src/app/dashboard/page.tsx)
 - [src/app/chat/page.tsx](file://src/app/chat/page.tsx)
 - [src/app/cli/page.tsx](file://src/app/cli/page.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/config/theme.ts](file://src/config/theme.ts)
@@ -420,6 +486,8 @@ The following diagram shows key dependencies among core modules and their roles 
 graph TB
 Root["Root Layout<br/>src/app/layout.tsx"] --> ThemeProv["Theme Provider<br/>src/components/theme-provider.tsx"]
 Root --> AuthProv["Auth Provider<br/>src/components/auth-provider.tsx"]
+Root --> Landing["Enhanced Landing Page<br/>src/app/page.tsx"]
+Landing --> LandingCSS["Landing CSS Modules<br/>src/app/page.module.css"]
 Pages["Pages<br/>src/app/*"] --> LibAPI["API Client<br/>src/lib/api.ts"]
 LibAPI --> APIRoutes["API Routes<br/>src/app/api/**/route.ts"]
 APIRoutes --> Backend["Backend Service<br/>backend/src/index.ts"]
@@ -429,6 +497,8 @@ Pages --> ThemeCfg["Theme Config<br/>src/config/theme.ts"]
 
 **Diagram sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/lib/api.ts](file://src/lib/api.ts)
@@ -449,6 +519,8 @@ Pages --> ThemeCfg["Theme Config<br/>src/config/theme.ts"]
 
 **Section sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/lib/api.ts](file://src/lib/api.ts)
@@ -473,6 +545,7 @@ Pages --> ThemeCfg["Theme Config<br/>src/config/theme.ts"]
 - Cache frequently accessed data in server routes or use Next.js caching strategies.
 - Minimize global CSS footprint and leverage component-scoped styles when appropriate.
 - Stream responses for long-running operations via streaming API routes.
+- **Enhanced Landing Page**: Optimized rendering with modern CSS modules and efficient component composition patterns.
 
 [No sources needed since this section provides general guidance]
 
@@ -482,9 +555,12 @@ Common issues and checks:
 - API route errors: Verify that server routes return proper HTTP status codes and JSON payloads.
 - Environment variables: Confirm that required variables are present in the runtime environment and accessible to server routes.
 - Build failures: Review next.config.ts and tsconfig.json for misconfiguration and validate dependency versions in package.json.
+- **Landing Page Issues**: Check CSS module imports and responsive design breakpoints if the enhanced landing page displays incorrectly.
 
 **Section sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
+- [src/app/page.tsx](file://src/app/page.tsx)
+- [src/app/page.module.css](file://src/app/page.module.css)
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/app/api/auth/login/route.ts](file://src/app/api/auth/login/route.ts)
@@ -495,6 +571,6 @@ Common issues and checks:
 - [package.json](file://package.json)
 
 ## Conclusion
-The application leverages the Next.js App Router to organize features, compose layouts, and manage global configuration. Providers and global styles are centralized at the root, while feature modules remain cohesive and self-contained. API routes provide a clear integration point between the frontend and backend services. With thoughtful use of server components, caching, and streaming, the app can scale efficiently while maintaining a clean and modular architecture.
+The application leverages the Next.js App Router to organize features, compose layouts, and manage global configuration. Providers and global styles are centralized at the root, while feature modules remain cohesive and self-contained. The enhanced landing page demonstrates modern UI architecture with improved responsive design and component composition patterns. API routes provide a clear integration point between the frontend and backend services. With thoughtful use of server components, caching, streaming, and modern CSS modules, the app can scale efficiently while maintaining a clean and modular architecture.
 
 [No sources needed since this section summarizes without analyzing specific files]

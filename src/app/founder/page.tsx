@@ -3,7 +3,6 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, Mail, Globe, Code, Rocket, Heart, Award } from 'lucide-react';
 import { PixelatedCanvas } from '../../components/ui/pixelated-canvas';
-import profileImage from '../../../assets/profilehasan.png';
 
 export default function FounderPage() {
   return (
@@ -70,7 +69,7 @@ export default function FounderPage() {
               boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 40px rgba(204,0,0,0.08)',
             }}>
               <PixelatedCanvas
-                src={profileImage.src}
+                src="/profilehasan.png"
                 width={600}
                 height={600}
                 cellSize={2}

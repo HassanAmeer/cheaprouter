@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
 import styles from './page.module.css';
 import ModelsTable from '../components/ModelsTable';
+import StackSection from '../components/StackSection';
 import HeroTerminal from '../components/HeroTerminal';
 import { TextRoll } from '../components/core/text-roll';
 import { TextLoop } from '../components/core/text-loop';
@@ -321,7 +322,7 @@ export default function Home() {
         {/* ═══════════════ MODELS TABLE ═══════════════ */}
         <section id="models" className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><Layers size={14} /> Model Catalog</div>
+
             <h2 className={styles.sectionTitle}>Every model. One endpoint.</h2>
             <p className={styles.sectionSubtitle}>
               Transparent per-token pricing with no hidden fees. Bring your own key for free routing, or use ours.
@@ -330,51 +331,23 @@ export default function Home() {
           <ModelsTable />
         </section>
 
-        {/* ═══════════════ HOW IT WORKS ═══════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><Rocket size={14} /> Quick Start</div>
-            <h2 className={styles.sectionTitle}>Up and running in 2 minutes</h2>
-            <p className={styles.sectionSubtitle}>
-              No credit card required. No SDK to learn. No architecture changes.
-            </p>
+        {/* ═══════════════ WORKS WITH YOUR STACK ═══════════════ */}
+        <section className={styles.section} style={{ paddingTop: '28px', paddingBottom: '72px' }}>
+          <div style={{ border: '1px solid var(--color-border)', borderRadius: '24px', padding: '48px 32px', background: 'var(--color-card-bg)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className={styles.sectionHeader} style={{ marginBottom: '36px' }}>
+              <p className={`${styles.sectionSubtitle} ${styles.shimmerSubtitle}`} style={{ fontSize: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Connect with APIs
+              </p>
+            </div>
+            <StackSection />
           </div>
-          <div className={styles.stepsGrid}>
-            {[
-              { num: '01', title: 'Create your account', desc: 'Sign up in seconds and get your unified API key instantly. Free tier included — no credit card needed.', icon: <Users size={22} /> },
-              { num: '02', title: 'Point your code at us', desc: 'Replace one line: change the baseURL in your existing OpenAI SDK. Same streaming, same function calling, zero refactoring.', icon: <Code size={22} /> },
-              { num: '03', title: 'Scale across models', desc: 'Switch between GPT-4o, Claude, Gemini, or DeepSeek by changing one parameter. Route traffic globally without switching providers.', icon: <Rocket size={22} /> },
-            ].map((s, i) => (
-              <div key={i} className={styles.stepCard}>
-                <div className={styles.stepTop}>
-                  <span className={styles.stepNum}>{s.num}</span>
-                  <div className={styles.stepIconWrap}>{s.icon}</div>
-                </div>
-                <h3 className={styles.stepTitle}>{s.title}</h3>
-                <p className={styles.stepDesc}>{s.desc}</p>
-                {i < 2 && <div className={styles.stepArrow}>→</div>}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ═══════════════ BRANCH FEATURES ═══════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><GitBranch size={14} /> Platform</div>
-            <h2 className={styles.sectionTitle}>One core engine, four products</h2>
-            <p className={styles.sectionSubtitle}>
-              Everything you need — CLI, Chat Playground, API Gateway, and Dashboard — all powered by a single core.
-            </p>
-          </div>
-          <BranchFeatures />
         </section>
 
         {/* ═══════════════ DROP-IN REPLACEMENT ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.apiSplit}>
             <div className={styles.apiText}>
-              <div className={styles.sectionBadge}><Code size={14} /> OpenAI Compatible</div>
+
               <h2 className={styles.apiTitle}>Change one line.<br />Access every model.</h2>
               <p className={styles.apiDesc}>
                 No new SDK. No new patterns. CheapModels speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.
@@ -423,72 +396,159 @@ const response = await client.chat.completions.create({
           </div>
         </section>
 
+        {/* ═══════════════ BRANCH FEATURES ═══════════════ */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+
+            <h2 className={styles.sectionTitle}>One core engine, four products</h2>
+            <p className={styles.sectionSubtitle}>
+              Everything you need — CLI, Chat Playground, API Gateway, and Dashboard — all powered by a single core.
+            </p>
+          </div>
+          <BranchFeatures />
+        </section>
+
+        {/* ═══════════════ PRICING ═══════════════ */}
+        <section id="pricing" className={styles.section}>
+          <div className={styles.sectionHeader}>
+
+            <h2 className={styles.sectionTitle}>Simple, honest pricing</h2>
+            <p className={styles.sectionSubtitle}>
+              No surprise bills. No hidden token markups. Start free, pay as you grow.
+            </p>
+          </div>
+          <div className={styles.pricingGrid}>
+            {[
+              { name: 'Free', price: '$0', period: '', desc: 'For experimenting and personal projects', features: ['Basic & open-source models', 'Unlimited BYOK routing', 'Community support', 'Dashboard & analytics', '100 requests/day'], cta: 'Start Free', featured: false },
+              { name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers and side projects', features: ['All basic + mid-tier models', '500K tokens included', 'Priority email support', 'Higher rate limits', 'Custom API keys'], cta: 'Get Started', featured: false },
+              { name: 'Pro', price: '$15', period: '/mo', desc: 'For teams and production apps', features: ['All premium models included', '1M tokens included', 'GPT-4o, Claude 3.5, Grok', 'Highest rate limits', 'Dedicated support', 'Team collaboration'], cta: 'Upgrade to Pro', featured: true },
+            ].map((plan, i) => (
+              <div key={i} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
+                {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
+                <div className={styles.priceCardInner}>
+                  <h3 className={styles.planName}>{plan.name}</h3>
+                  <p className={styles.planDesc}>{plan.desc}</p>
+                  <div className={styles.planPrice}>{plan.price}<span>{plan.period}</span></div>
+                  <ul className={styles.planFeatures}>
+                    {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
+                  </ul>
+                  <Link href="/signup" prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><RefreshCw size={14} /> The Difference</div>
-            <h2 className={styles.sectionTitle}>Stop managing providers. Start building.</h2>
+
+            <h2 className={styles.sectionTitle}>Stop managing providers.<br /><span className={styles.gradientText}>Start building.</span></h2>
             <p className={styles.sectionSubtitle}>
               See what changes when you unify your AI infrastructure.
             </p>
           </div>
-          <div className={styles.vsGrid}>
-            <div className={styles.vsCardBefore}>
-              <div className={styles.vsLabel}><X size={16} /> Without CheapModels</div>
-              <ul className={styles.vsList}>
-                <li><X size={15} /> Separate API key for each provider</li>
-                <li><X size={15} /> Different SDKs and response formats</li>
-                <li><X size={15} /> Manual retry and fallback logic</li>
-                <li><X size={15} /> Scattered usage data across dashboards</li>
-                <li><X size={15} /> Vendor lock-in on every integration</li>
-                <li><X size={15} /> Multiple billing accounts to manage</li>
-              </ul>
-            </div>
-            <div className={styles.vsCardAfter}>
-              <div className={styles.vsLabelGood}><CircleCheck size={16} /> With CheapModels</div>
-              <ul className={styles.vsList}>
-                <li><Check size={15} /> One key for every AI provider</li>
-                <li><Check size={15} /> Same OpenAI SDK, same interface</li>
-                <li><Check size={15} /> Built-in retry and smart fallbacks</li>
-                <li><Check size={15} /> Unified real-time analytics</li>
-                <li><Check size={15} /> Switch models with one parameter</li>
-                <li><Check size={15} /> Single consolidated bill</li>
-              </ul>
-            </div>
-          </div>
-        </section>
 
-        {/* ═══════════════ SDK SUPPORT ═══════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><Plug size={14} /> Integrations</div>
-            <h2 className={styles.sectionTitle}>Works with your stack</h2>
-            <p className={styles.sectionSubtitle}>
-              Any language, any framework. If it speaks OpenAI, it speaks CheapModels.
-            </p>
+          <div className={styles.vsWrap}>
+            {/* LEFT — Before */}
+            <div className={styles.vsPanelBefore}>
+              <div className={styles.vsPanelHeader}>
+                <div className={styles.vsHeaderIcon} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <X size={18} color="#ef4444" />
+                </div>
+                <div>
+                  <div className={styles.vsHeaderLabel} style={{ color: '#ef4444' }}>Without CheapModels</div>
+                  <div className={styles.vsHeaderSub}>The painful way</div>
+                </div>
+              </div>
+              <ul className={styles.vsNewList}>
+                {[
+                  { text: 'Separate API key for each provider', detail: 'OpenAI, Anthropic, Google, Meta…' },
+                  { text: 'Different SDKs and response formats', detail: 'Rewrite code for every model switch' },
+                  { text: 'Manual retry and fallback logic', detail: 'Hours of engineering per provider' },
+                  { text: 'Scattered usage data across dashboards', detail: 'No unified cost visibility' },
+                  { text: 'Vendor lock-in on every integration', detail: 'Switching costs you weeks' },
+                  { text: 'Multiple billing accounts to manage', detail: 'Finance team nightmare' },
+                ].map((item, i) => (
+                  <li key={i} className={styles.vsNewItemBad}>
+                    <div className={styles.vsNewItemIcon} style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.20)' }}>
+                      <X size={13} color="#ef4444" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div className={styles.vsNewItemText}>{item.text}</div>
+                      <div className={styles.vsNewItemDetail}>{item.detail}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* CENTER DIVIDER */}
+            <div className={styles.vsDivider}>
+              <div className={styles.vsDividerLine} />
+              <div className={styles.vsDividerBadge}>
+                <div className={styles.vsDividerPulse} />
+                <span>VS</span>
+              </div>
+              <div className={styles.vsDividerLine} />
+            </div>
+
+            {/* RIGHT — After */}
+            <div className={styles.vsPanelAfter}>
+              <div className={styles.vsPanelHeader}>
+                <div className={styles.vsHeaderIcon} style={{ background: 'rgba(204,0,0,0.12)', border: '1px solid rgba(204,0,0,0.30)' }}>
+                  <CircleCheck size={18} color="var(--color-primary)" />
+                </div>
+                <div>
+                  <div className={styles.vsHeaderLabel} style={{ color: 'var(--color-primary)' }}>With CheapModels</div>
+                  <div className={styles.vsHeaderSub}>The smart way</div>
+                </div>
+              </div>
+              <ul className={styles.vsNewList}>
+                {[
+                  { text: 'One key for every AI provider', detail: 'All models, one credential' },
+                  { text: 'Same OpenAI SDK, same interface', detail: 'Change one line, zero refactoring' },
+                  { text: 'Built-in retry and smart fallbacks', detail: 'Automatic zero-downtime routing' },
+                  { text: 'Unified real-time analytics', detail: 'Cost, latency & tokens in one view' },
+                  { text: 'Switch models with one parameter', detail: 'GPT → Claude → Gemini instantly' },
+                  { text: 'Single consolidated bill', detail: 'One invoice, full transparency' },
+                ].map((item, i) => (
+                  <li key={i} className={styles.vsNewItemGood}>
+                    <div className={styles.vsNewItemIcon} style={{ background: 'rgba(204,0,0,0.10)', border: '1px solid rgba(204,0,0,0.25)' }}>
+                      <Check size={13} color="var(--color-primary)" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div className={styles.vsNewItemText}>{item.text}</div>
+                      <div className={styles.vsNewItemDetail}>{item.detail}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <div className={styles.sdkGrid}>
+
+          {/* BOTTOM STATS BAR */}
+          <div className={styles.vsStatsBar}>
             {[
-              { name: 'Node.js', icon: 'https://cdn.simpleicons.org/node.js/339933', cmd: 'npm install openai' },
-              { name: 'Python', icon: 'https://cdn.simpleicons.org/python/3776AB', cmd: 'pip install openai' },
-              { name: 'Go', icon: 'https://cdn.simpleicons.org/go/00ADD8', cmd: 'go get github.com/sashabaranov/go-openai' },
-              { name: 'PHP', icon: 'https://cdn.simpleicons.org/php/777BB4', cmd: 'composer require openai-php/client' },
-              { name: 'Ruby', icon: 'https://cdn.simpleicons.org/ruby/CC342D', cmd: 'gem install ruby-openai' },
-              { name: 'Rust', icon: 'https://cdn.simpleicons.org/rust/000000', cmd: 'cargo add async-openai' },
-            ].map((sdk, i) => (
-              <div key={i} className={styles.sdkCard}>
-                <img src={sdk.icon} width="32" height="32" alt={sdk.name} style={{ borderRadius: 4 }} />
-                <div className={styles.sdkName}>{sdk.name}</div>
-                <code className={styles.sdkCmd}>{sdk.cmd}</code>
+              { value: '70%', label: 'Cost reduction', icon: <DollarSign size={16} /> },
+              { value: '1 line', label: 'Code change needed', icon: <Code size={16} /> },
+              { value: '<100ms', label: 'Time to first token', icon: <Zap size={16} /> },
+              { value: '10+ models', label: 'Accessible instantly', icon: <Layers size={16} /> },
+            ].map((stat, i) => (
+              <div key={i} className={styles.vsStatItem}>
+                <div className={styles.vsStatIcon}>{stat.icon}</div>
+                <div className={styles.vsStatValue}>{stat.value}</div>
+                <div className={styles.vsStatLabel}>{stat.label}</div>
               </div>
             ))}
           </div>
         </section>
 
+
+
         {/* ═══════════════ FEATURES GRID ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><Sparkles size={14} /> Features</div>
+
             <h2 className={styles.sectionTitle}>Built for production</h2>
             <p className={styles.sectionSubtitle}>
               Everything you need to ship AI features — from prototype to planet-scale.
@@ -517,71 +577,11 @@ const response = await client.chat.completions.create({
           </div>
         </section>
 
-        {/* ═══════════════ PRICING ═══════════════ */}
-        <section id="pricing" className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><DollarSign size={14} /> Pricing</div>
-            <h2 className={styles.sectionTitle}>Simple, honest pricing</h2>
-            <p className={styles.sectionSubtitle}>
-              No surprise bills. No hidden token markups. Start free, pay as you grow.
-            </p>
-          </div>
-          <div className={styles.pricingGrid}>
-            {[
-              { name: 'Free', price: '$0', period: '', desc: 'For experimenting and personal projects', features: ['Basic & open-source models', 'Unlimited BYOK routing', 'Community support', 'Dashboard & analytics', '100 requests/day'], cta: 'Start Free', featured: false },
-              { name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers and side projects', features: ['All basic + mid-tier models', '500K tokens included', 'Priority email support', 'Higher rate limits', 'Custom API keys'], cta: 'Get Started', featured: false },
-              { name: 'Pro', price: '$15', period: '/mo', desc: 'For teams and production apps', features: ['All premium models included', '1M tokens included', 'GPT-4o, Claude 3.5, Grok', 'Highest rate limits', 'Dedicated support', 'Team collaboration'], cta: 'Upgrade to Pro', featured: true },
-            ].map((plan, i) => (
-              <div key={i} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
-                {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
-                <div className={styles.priceCardInner}>
-                  <h3 className={styles.planName}>{plan.name}</h3>
-                  <p className={styles.planDesc}>{plan.desc}</p>
-                  <div className={styles.planPrice}>{plan.price}<span>{plan.period}</span></div>
-                  <ul className={styles.planFeatures}>
-                    {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
-                  </ul>
-                  <Link href="/signup" prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ═══════════════ TESTIMONIALS ═══════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><Star size={14} /> Testimonials</div>
-            <h2 className={styles.sectionTitle}>Loved by builders everywhere</h2>
-            <p className={styles.sectionSubtitle}>
-              From solo developers to enterprise teams — here&apos;s what they say.
-            </p>
-          </div>
-          <div className={styles.testimonialGrid}>
-            {[
-              { text: 'We replaced 4 separate API integrations with CheapModels in a single afternoon. The unified key and OpenAI-compatible format meant zero refactoring for our team.', name: 'Syed Ali', role: 'Full Stack Developer @ NexaLabs', initials: 'SA', gradient: 'linear-gradient(135deg, #cc0000, #ff6b6b)' },
-              { text: 'The BYOK feature alone pays for itself. I manage all my client keys from one dashboard and the real-time analytics give me visibility I never had before.', name: 'Maria Khan', role: 'Founder @ DevStudio', initials: 'MK', gradient: 'linear-gradient(135deg, #4285F4, #60a5fa)' },
-              { text: 'We migrated 12 microservices in one day. Streaming works identically to the native OpenAI SDK, latency is under 100ms, and we cut our AI costs by 40%.', name: 'James Okafor', role: 'Lead AI Engineer @ ScaleOps', initials: 'JO', gradient: 'linear-gradient(135deg, #F59E0B, #fbbf24)' },
-            ].map((t, i) => (
-              <div key={i} className={styles.testimonialCard}>
-                <div className={styles.stars}>{[...Array(5)].map((_, j) => <Star key={j} size={14} fill="#F59E0B" stroke="none" />)}</div>
-                <blockquote className={styles.testimonialText}>&ldquo;{t.text}&rdquo;</blockquote>
-                <div className={styles.testimonialAuthor}>
-                  <div className={styles.testimonialAvatar} style={{ background: t.gradient }}>{t.initials}</div>
-                  <div>
-                    <div className={styles.testimonialName}>{t.name}</div>
-                    <div className={styles.testimonialRole}>{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* ═══════════════ FAQ ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}><BookOpen size={14} /> FAQ</div>
+
             <h2 className={styles.sectionTitle}>Common questions</h2>
             <p className={styles.sectionSubtitle}>
               Can&apos;t find what you&apos;re looking for? Reach out to our support team.
@@ -601,22 +601,57 @@ const response = await client.chat.completions.create({
         </section>
 
         {/* ═══════════════ CTA ═══════════════ */}
-        <section id="contact" className={styles.section}>
+        <section id="contact" className={styles.section} style={{ paddingTop: '60px', paddingBottom: '80px' }}>
           <div className={styles.ctaBlock}>
+            {/* Glows */}
             <div className={styles.ctaGlow1} />
             <div className={styles.ctaGlow2} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <h2 className={styles.ctaTitle}>Ready to simplify your AI stack?</h2>
+            <div className={styles.ctaGlow3} />
+
+            {/* Grid overlay */}
+            <div className={styles.ctaGrid} />
+
+            <div className={styles.ctaInner}>
+              {/* Trust pill */}
+              <div className={styles.ctaTrustPill}>
+                <span className={styles.ctaTrustDot} />
+                <span>Trusted by <strong>10,000+</strong> developers worldwide</span>
+              </div>
+
+              {/* Headline */}
+              <h2 className={styles.ctaTitle}>
+                Ready to simplify<br />
+                <span className={styles.ctaTitleAccent}>your AI stack?</span>
+              </h2>
+
               <p className={styles.ctaDesc}>
-                Join 10,000+ developers who replaced a dozen API integrations with one line of code. Free tier available — no credit card required.
+                Replace a dozen API integrations with one line of code.<br />
+                Free tier available — no credit card required.
               </p>
+
+              {/* Buttons */}
               <div className={styles.ctaActions}>
-                <Link href="/signup" prefetch={false} className="btn-primary" style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Link href="/signup" prefetch={false} className={styles.ctaBtnPrimary}>
                   Get Started Free <ArrowRight size={18} />
                 </Link>
-                <Link href="/docs" prefetch={false} style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Link href="/docs" prefetch={false} className={styles.ctaBtnOutline}>
                   View Documentation
                 </Link>
+              </div>
+
+              {/* Stats row */}
+              <div className={styles.ctaStats}>
+                {[
+                  { value: '10,000+', label: 'Developers' },
+                  { value: '15+', label: 'AI Models' },
+                  { value: '<100ms', label: 'First Token' },
+                  { value: 'SOC 2', label: 'Compliant' },
+                ].map((s, i) => (
+                  <div key={i} className={styles.ctaStatItem}>
+                    <div className={styles.ctaStatValue}>{s.value}</div>
+                    <div className={styles.ctaStatLabel}>{s.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
