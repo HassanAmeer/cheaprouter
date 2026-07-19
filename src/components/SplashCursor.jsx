@@ -7,19 +7,19 @@ function SplashCursor({
   SIM_RESOLUTION = 128,
   DYE_RESOLUTION = 800,
   CAPTURE_RESOLUTION = 200,
-  DENSITY_DISSIPATION = 1.5,
+  DENSITY_DISSIPATION = 3.5,
   VELOCITY_DISSIPATION = 2,
   PRESSURE = 0.1,
   PRESSURE_ITERATIONS = 20,
   CURL = 3,
-  SPLAT_RADIUS = 0.2,
+  SPLAT_RADIUS = 0.007,
   SPLAT_FORCE = 3000,
   SHADING = true,
   COLOR_UPDATE_SPEED = 5,
   BACK_COLOR = { r: 0.3, g: 0, b: 0 },
   TRANSPARENT = true,
-  RAINBOW_MODE = true,
-  COLOR = '#d82a2ac1'
+  RAINBOW_MODE = false,
+  COLOR = '#CC0000'
 }) {
   const canvasRef = useRef(null);
   const animationFrameId = useRef(null);
@@ -310,12 +310,12 @@ function SplashCursor({
               vec3 l = vec3(0.0, 0.0, 1.0);
 
               float diffuse = clamp(dot(n, l) + 0.7, 0.7, 1.0);
-              c *= diffuse;
+              c *= mix(vec3(1.0), vec3(diffuse), 0.2);
           #endif
 
           float a = max(c.r, max(c.g, c.b));
-          float alpha = smoothstep(0.0, 0.3, a); // Boost alpha for darker dye to make it look black
-          gl_FragColor = vec4(c, alpha * 0.3);
+          float alpha = clamp(a * 1.5, 0.0, 1.0);
+          gl_FragColor = vec4(c, alpha);
       }
     `;
 
@@ -844,7 +844,7 @@ function SplashCursor({
     function correctRadius(radius) {
       let aspectRatio = canvas.width / canvas.height;
       if (aspectRatio > 1) radius *= aspectRatio;
-      return radius;
+      return radius / 4.0;
     }
 
     function updatePointerDownData(pointer, id, posX, posY) {
@@ -898,7 +898,11 @@ function SplashCursor({
 
     function generateColor() {
       if (!config.RAINBOW_MODE) {
-        return hexToRGB(config.COLOR);
+        let c = hexToRGB(config.COLOR);
+        c.r *= 0.2;
+        c.g *= 0.2;
+        c.b *= 0.2;
+        return c;
       }
       let c = HSVtoRGB(Math.random(), 1.0, 1.0);
       c.r *= 0.15;

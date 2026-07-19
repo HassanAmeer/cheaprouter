@@ -9,10 +9,10 @@ export function PixelatedCanvasDemo() {
         <h2 className="text-3xl font-bold mb-8 text-white">Interactive Team Member</h2>
         <PixelatedCanvas
           src={profileImage.src}
-          width={400}
-          height={500}
-          cellSize={3}
-          dotScale={0.9}
+          width={600}
+          height={600}
+          cellSize={2}
+          dotScale={1}
           shape="square"
           backgroundColor="#000000"
           dropoutStrength={0.4}
