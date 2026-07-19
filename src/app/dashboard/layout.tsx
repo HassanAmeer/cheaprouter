@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './dashboard.module.css';
-import { BarChart3, Key, Plug, Settings, Box } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,7 +10,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={20} /> },
     { name: 'API Keys', path: '/dashboard/keys', icon: <Key size={20} /> },
-    { name: 'Models', path: '/dashboard/models', icon: <Box size={20} /> },
     { name: 'Providers (BYOK)', path: '/dashboard/providers', icon: <Plug size={20} /> },
     { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> },
   ];
