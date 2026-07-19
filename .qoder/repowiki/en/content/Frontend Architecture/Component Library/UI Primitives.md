@@ -6,6 +6,10 @@
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme-toggle.tsx](file://src/components/theme-toggle.tsx)
 - [theme.ts](file://src/config/theme.ts)
@@ -13,54 +17,74 @@
 - [globals.css](file://src/app/globals.css)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated to reflect new foundational building blocks and styling utilities
+- Added documentation for additional UI primitive components (charts, pixelated canvas, toast)
+- Enhanced coverage of reusable interface elements for consistent design patterns
+- Expanded component architecture analysis to include new primitive types
+- Updated dependency relationships and integration patterns
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
 5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
-10. [Appendices](#appendices)
+6. [New Primitive Components](#new-primitive-components)
+7. [Dependency Analysis](#dependency-analysis)
+8. [Performance Considerations](#performance-considerations)
+9. [Troubleshooting Guide](#troubleshooting-guide)
+10. [Conclusion](#conclusion)
+11. [Appendices](#appendices)
 
 ## Introduction
-This document describes the core UI primitive components built with Shadcn/ui and how they are organized, styled, themed, and extended within the project. It focuses on:
+This document describes the core UI primitive components built with Shadcn/ui and how they are organized, styled, themed, and extended within the project. The system provides foundational building blocks, styling utilities, and reusable interface elements designed for consistent design patterns across the application. It focuses on:
 - Base component architecture and prop interfaces
 - Styling patterns and customization options
 - How primitives compose higher-level components
-- Examples for buttons, form inputs, typography, and layout primitives
+- Examples for buttons, form inputs, typography, layout primitives, charts, and interactive elements
 - Accessibility features, responsive behavior, and theme integration
 - Guidelines for extending primitives and maintaining consistency
 
 ## Project Structure
-The UI primitives live under src/components/ui and are composed into feature-specific components elsewhere in src/components. The configuration for Shadcn/ui is defined at the repository root.
+The UI primitives live under src/components/ui and are composed into feature-specific components elsewhere in src/components. The configuration for Shadcn/ui is defined at the repository root. The system includes both foundational primitives and specialized components for common use cases.
 
 ```mermaid
 graph TB
-subgraph "UI Primitives"
-P["primitives.tsx"]
-PCSS["primitives.module.css"]
-SB["space-button.tsx"]
-SBCSS["space-button.module.css"]
+subgraph "UI Primitives Layer"
+P["primitives.tsx<br/>Base Components"]
+PCSS["primitives.module.css<br/>Shared Styles"]
+SB["space-button.tsx<br/>Button Variant"]
+SBCSS["space-button.module.css<br/>Button Styles"]
+CH["charts.tsx<br/>Data Visualization"]
+PC["pixelated-canvas.tsx<br/>Canvas Component"]
+TST["toast.tsx<br/>Notification System"]
+TCSS["toast.module.css<br/>Toast Styles"]
 end
-subgraph "Theme"
-TP["theme-provider.tsx"]
-TT["theme-toggle.tsx"]
-TH["theme.ts"]
+subgraph "Theme System"
+TP["theme-provider.tsx<br/>Theme Context"]
+TT["theme-toggle.tsx<br/>Theme Switcher"]
+TH["theme.ts<br/>Design Tokens"]
 end
-subgraph "App Shell"
-G["globals.css"]
-CJSON["components.json"]
+subgraph "Application Foundation"
+G["globals.css<br/>Global Styles"]
+CJSON["components.json<br/>Shadcn Config"]
 end
 SB --> P
 SB --> SBCSS
+CH --> P
+PC --> P
+TST --> P
+TST --> TCSS
 TP --> TH
 TT --> TP
 P --> PCSS
 P --> G
 SB --> G
+CH --> G
+PC --> G
+TST --> G
 ```
 
 **Diagram sources**
@@ -68,6 +92,10 @@ SB --> G
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme-toggle.tsx](file://src/components/theme-toggle.tsx)
 - [theme.ts](file://src/config/theme.ts)
@@ -79,6 +107,10 @@ SB --> G
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme-toggle.tsx](file://src/components/theme-toggle.tsx)
 - [theme.ts](file://src/config/theme.ts)
@@ -86,30 +118,43 @@ SB --> G
 - [components.json](file://components.json)
 
 ## Core Components
-- Primitive base layer: Provides foundational elements (e.g., button, input, typography, layout containers) with consistent props and styling hooks.
-- Styled variants: CSS modules encapsulate variant styles (size, color, shape) to keep logic and presentation separated.
-- Theme integration: A provider supplies theme tokens and state; a toggle exposes user-driven switching.
-- Higher-level composition: Feature components build on primitives to deliver domain-specific UX.
+The UI primitive system provides a comprehensive foundation for building consistent user interfaces:
+
+### Foundational Building Blocks
+- **Primitive base layer**: Provides foundational elements (button, input, typography, layout containers) with consistent props and styling hooks
+- **Styled variants**: CSS modules encapsulate variant styles (size, color, shape) to keep logic and presentation separated
+- **Theme integration**: A provider supplies theme tokens and state; a toggle exposes user-driven switching
+- **Higher-level composition**: Feature components build on primitives to deliver domain-specific UX
+
+### Specialized Interface Elements
+- **Data visualization**: Chart components for displaying data in various formats
+- **Interactive canvas**: Pixelated canvas component for custom visualizations and animations
+- **Notification system**: Toast component for user feedback and alerts
 
 Key responsibilities:
-- Consistent prop contracts across primitives
+- Consistent prop contracts across all primitives
 - Accessible defaults and keyboard navigation
 - Responsive design via CSS utilities and media queries
 - Themed colors, spacing, and typography tokens
+- Reusable patterns for common UI interactions
 
 **Section sources**
 - [primitives.tsx](file://src/components/ui/primitives.tsx)
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme.ts](file://src/config/theme.ts)
 - [globals.css](file://src/app/globals.css)
 
 ## Architecture Overview
-The primitives follow a layered approach:
-- Tokens and global styles define the visual system.
-- Primitives implement accessible, composable building blocks.
-- Variants and themes are applied through CSS modules and context.
-- Higher-level components compose primitives to implement business features.
+The primitives follow a layered approach with enhanced capabilities for modern web applications:
+- Tokens and global styles define the visual system
+- Primitives implement accessible, composable building blocks
+- Specialized components extend primitives for specific use cases
+- Variants and themes are applied through CSS modules and context
+- Higher-level components compose primitives to implement business features
 
 ```mermaid
 graph TB
@@ -119,14 +164,22 @@ Cfg["Shadcn Config<br/>components.json"]
 Prov["Theme Provider<br/>theme-provider.tsx"]
 Prim["Primitives Layer<br/>primitives.tsx + CSS"]
 Btn["Button Variant<br/>space-button.tsx + CSS"]
+Chart["Chart Component<br/>charts.tsx"]
+Canvas["Canvas Component<br/>pixelated-canvas.tsx"]
+Toast["Toast System<br/>toast.tsx + CSS"]
 App["Feature Pages/Components"]
 T --> Prov
 G --> Prim
 Cfg --> Prim
 Prov --> Prim
 Prim --> Btn
+Prim --> Chart
+Prim --> Canvas
+Prim --> Toast
 Btn --> App
-Prim --> App
+Chart --> App
+Canvas --> App
+Toast --> App
 ```
 
 **Diagram sources**
@@ -138,11 +191,15 @@ Prim --> App
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 
 ## Detailed Component Analysis
 
 ### Button Primitives
-- Purpose: Provide a consistent, accessible button surface with multiple variants (primary, secondary, ghost, danger), sizes, and states.
+- Purpose: Provide a consistent, accessible button surface with multiple variants (primary, secondary, ghost, danger), sizes, and states
 - Prop interface highlights:
   - variant: string enum controlling style set
   - size: string enum controlling dimensions and typography scale
@@ -198,7 +255,7 @@ SpaceButton --|> Button : "extends"
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
 
 ### Form Input Primitives
-- Purpose: Provide accessible text inputs, textareas, selects, and checkboxes with consistent validation feedback and theming.
+- Purpose: Provide accessible text inputs, textareas, selects, and checkboxes with consistent validation feedback and theming
 - Prop interface highlights:
   - type: string for input kind
   - value / defaultValue: controlled or uncontrolled value
@@ -244,7 +301,7 @@ Ready --> End(["User Interaction"])
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 
 ### Typography Primitives
-- Purpose: Provide consistent headings, paragraphs, captions, and emphasis with clear hierarchy and readability.
+- Purpose: Provide consistent headings, paragraphs, captions, and emphasis with clear hierarchy and readability
 - Prop interface highlights:
   - as: tag name override
   - variant: heading level or semantic role
@@ -278,7 +335,7 @@ class Text {
 - [primitives.tsx](file://src/components/ui/primitives.tsx)
 
 ### Layout Primitives
-- Purpose: Provide containers, grids, stacks, and dividers to structure content consistently.
+- Purpose: Provide containers, grids, stacks, and dividers to structure content consistently
 - Prop interface highlights:
   - container: boolean to constrain width
   - gap: spacing token
@@ -312,10 +369,77 @@ class Container {
 **Section sources**
 - [primitives.tsx](file://src/components/ui/primitives.tsx)
 
+## New Primitive Components
+
+### Data Visualization Components
+The chart component provides flexible data visualization capabilities built on top of the primitive foundation.
+
+- Purpose: Display data in various chart formats with consistent styling and theming
+- Key features:
+  - Multiple chart types (bar, line, pie, etc.)
+  - Responsive sizing and adaptive layouts
+  - Theme-aware colors and styling
+  - Interactive tooltips and legends
+  - Accessible data representation
+- Integration: Built using primitive components for consistent styling and behavior
+
+**Section sources**
+- [charts.tsx](file://src/components/ui/charts.tsx)
+
+### Interactive Canvas Component
+The pixelated canvas component offers advanced rendering capabilities for custom visualizations and animations.
+
+- Purpose: Provide a canvas-based component for complex visualizations and interactive graphics
+- Key features:
+  - Pixel-perfect rendering control
+  - Animation support with requestAnimationFrame
+  - Event handling for mouse and touch interactions
+  - Theme-integrated color schemes
+  - Performance-optimized drawing operations
+- Use cases: Custom data visualizations, games, creative interfaces, and complex interactive elements
+
+**Section sources**
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+
+### Notification System
+The toast component delivers non-intrusive user feedback and notifications throughout the application.
+
+- Purpose: Provide a notification system for user feedback, alerts, and status messages
+- Key features:
+  - Multiple toast types (success, error, warning, info)
+  - Auto-dismiss functionality with configurable timing
+  - Position management (top-right, bottom-left, etc.)
+  - Stack management for multiple simultaneous toasts
+  - Smooth animations and transitions
+  - Accessible announcements for screen readers
+- Styling: Uses dedicated CSS module for toast-specific styles while maintaining theme consistency
+
+```mermaid
+sequenceDiagram
+participant User as "User Action"
+participant Toast as "Toast System"
+participant Provider as "Toast Provider"
+participant UI as "Toast UI"
+User->>Toast : Trigger notification
+Toast->>Provider : Add toast to queue
+Provider->>UI : Render toast component
+UI-->>User : Display notification
+Note over UI : Auto-dismiss after timeout
+UI->>Provider : Remove toast when dismissed
+```
+
+**Diagram sources**
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
+
+**Section sources**
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
+
 ### Theme Integration
-- Theme provider: Supplies theme tokens and current mode to the component tree.
-- Toggle: Switches between light/dark modes and persists preference.
-- Tokens: Centralized definitions for colors, spacing, radius, and typography.
+- Theme provider: Supplies theme tokens and current mode to the component tree
+- Toggle: Switches between light/dark modes and persists preference
+- Tokens: Centralized definitions for colors, spacing, radius, and typography
 
 ```mermaid
 sequenceDiagram
@@ -341,11 +465,14 @@ App-->>User : Updated visuals
 - [globals.css](file://src/app/globals.css)
 
 ## Dependency Analysis
+The expanded primitive system maintains clean dependency relationships while supporting more complex functionality:
+
 - Primitives depend on:
   - Global CSS for base resets and tokens
   - Shadcn/ui configuration for class names and conventions
   - Theme provider for dynamic tokens
 - Buttons extend primitives and add variant-specific CSS modules
+- Specialized components (charts, canvas, toast) build on primitives for consistent behavior
 - Feature components depend on primitives and theme context
 
 ```mermaid
@@ -355,7 +482,11 @@ C["components.json"] --> P
 TH["theme.ts"] --> TP["theme-provider.tsx"]
 TP --> P
 P --> SB["space-button.tsx"]
+P --> CH["charts.tsx"]
+P --> PC["pixelated-canvas.tsx"]
+P --> TST["toast.tsx"]
 SB --> SBCSS["space-button.module.css"]
+TST --> TCSS["toast.module.css"]
 ```
 
 **Diagram sources**
@@ -366,6 +497,10 @@ SB --> SBCSS["space-button.module.css"]
 - [primitives.tsx](file://src/components/ui/primitives.tsx)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 
 **Section sources**
 - [components.json](file://components.json)
@@ -375,27 +510,43 @@ SB --> SBCSS["space-button.module.css"]
 - [primitives.tsx](file://src/components/ui/primitives.tsx)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [charts.tsx](file://src/components/ui/charts.tsx)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
 
 ## Performance Considerations
-- Prefer CSS modules for variant styles to avoid runtime branching where possible.
-- Use React.memo for heavy primitives if they receive frequent re-renders.
-- Keep prop interfaces minimal to reduce unnecessary re-renders.
-- Leverage theme tokens instead of inline styles for better caching and reduced churn.
-- Avoid deep nesting in layout primitives; prefer flat structures with gap and alignment props.
+The expanded primitive system maintains performance best practices:
+- Prefer CSS modules for variant styles to avoid runtime branching where possible
+- Use React.memo for heavy primitives if they receive frequent re-renders
+- Keep prop interfaces minimal to reduce unnecessary re-renders
+- Leverage theme tokens instead of inline styles for better caching and reduced churn
+- Avoid deep nesting in layout primitives; prefer flat structures with gap and alignment props
+- Optimize canvas operations with requestAnimationFrame and proper cleanup
+- Implement efficient toast queuing and disposal mechanisms
+- Use lazy loading for heavy components like charts when appropriate
 
 ## Troubleshooting Guide
-Common issues and resolutions:
+Common issues and resolutions for the expanded primitive system:
 - Theme not applying:
-  - Ensure the theme provider wraps the application tree.
-  - Verify tokens exist in the theme definition and are consumed by primitives.
+  - Ensure the theme provider wraps the application tree
+  - Verify tokens exist in the theme definition and are consumed by primitives
 - Variant styles not taking effect:
-  - Confirm the correct variant prop is passed and that the corresponding CSS module rule exists.
-  - Check for conflicting className overrides.
+  - Confirm the correct variant prop is passed and that the corresponding CSS module rule exists
+  - Check for conflicting className overrides
 - Accessibility regressions:
-  - Validate aria attributes and label associations for inputs.
-  - Ensure focus indicators remain visible in both light and dark themes.
+  - Validate aria attributes and label associations for inputs
+  - Ensure focus indicators remain visible in both light and dark themes
+  - Test toast announcements with screen readers
+- Canvas performance issues:
+  - Check for memory leaks in animation loops
+  - Optimize drawing operations and use proper cleanup
+- Toast positioning conflicts:
+  - Review z-index values and positioning strategies
+  - Ensure proper stacking context management
 - Responsive misbehavior:
-  - Inspect breakpoint usage in CSS modules and ensure tokens are applied consistently.
+  - Inspect breakpoint usage in CSS modules and ensure tokens are applied consistently
+  - Test chart responsiveness across different screen sizes
 
 **Section sources**
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
@@ -404,17 +555,34 @@ Common issues and resolutions:
 - [primitives.module.css](file://src/components/ui/primitives.module.css)
 - [space-button.tsx](file://src/components/ui/space-button.tsx)
 - [space-button.module.css](file://src/components/ui/space-button.module.css)
+- [toast.tsx](file://src/components/ui/toast.tsx)
+- [toast.module.css](file://src/components/ui/toast.module.css)
+- [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
 
 ## Conclusion
-The primitives layer establishes a consistent, accessible, and themeable foundation for the UI. By composing these building blocks, higher-level components achieve uniformity, maintainability, and scalability. Adhering to the documented prop contracts, styling patterns, and accessibility guidelines ensures a cohesive experience across the application.
+The expanded primitives layer establishes a comprehensive, consistent, accessible, and themeable foundation for the UI. By providing both foundational building blocks and specialized interface elements, the system enables uniformity, maintainability, and scalability across the application. The addition of chart components, interactive canvas capabilities, and notification systems extends the primitive ecosystem to handle complex UI requirements while maintaining design consistency. Adhering to the documented prop contracts, styling patterns, and accessibility guidelines ensures a cohesive experience across all components and use cases.
 
 ## Appendices
 
 ### Extending Primitives: Best Practices
-- Create new variants by adding entries to the variant prop and corresponding CSS module rules.
-- Introduce new tokens in the theme file and consume them in primitives.
-- Keep prop interfaces focused; derive complex behaviors from composition rather than prop explosion.
-- Maintain backward compatibility by deprecating props gradually and providing migration notes.
-- Test variants across themes and screen sizes to ensure consistent behavior.
+- Create new variants by adding entries to the variant prop and corresponding CSS module rules
+- Introduce new tokens in the theme file and consume them in primitives
+- Keep prop interfaces focused; derive complex behaviors from composition rather than prop explosion
+- Maintain backward compatibility by deprecating props gradually and providing migration notes
+- Test variants across themes and screen sizes to ensure consistent behavior
+- For specialized components, ensure they properly extend primitive foundations
+- Implement proper cleanup and resource management for interactive components
+- Follow established patterns for accessibility and internationalization
+
+### Adding New Primitive Components
+When creating new primitive components:
+- Start with a clear purpose and well-defined prop interface
+- Extend existing primitives when possible for consistency
+- Create dedicated CSS modules for component-specific styling
+- Ensure proper accessibility implementation from the start
+- Include comprehensive TypeScript interfaces
+- Document usage patterns and examples
+- Test across themes, screen sizes, and assistive technologies
+- Consider performance implications and optimization opportunities
 
 [No sources needed since this section provides general guidance]

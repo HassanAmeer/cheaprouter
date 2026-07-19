@@ -35,7 +35,7 @@ export function SpaceButton({ children, href, onClick, className, style, variant
   );
 
   if (href) {
-    return <Link href={href} style={{ textDecoration: 'none', display: 'block', width: '100%' }}>{content}</Link>;
+    return <Link href={href} prefetch={false} style={{ textDecoration: 'none', display: 'block', width: '100%' }}>{content}</Link>;
   }
 
   return content;

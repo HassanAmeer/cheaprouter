@@ -16,6 +16,17 @@
 - [src/app/api/models/route.ts](file://src/app/api/models/route.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated Chat Completions API section to reflect v1 OpenAI compatibility layer implementation
+- Enhanced Streaming API documentation with comprehensive streaming endpoints and real-time capabilities
+- Expanded Model Management API with provider-specific model discovery and pricing information
+- Updated Provider Configuration API with enhanced rate limiting and health monitoring features
+- Added comprehensive Analytics API documentation with usage statistics and performance metrics
+- Improved Authentication Overview with multi-tier authentication support
+- Enhanced Error Handling section with standardized error response formats
+- Updated Rate Limiting policies with tier-based limits and headers
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Authentication Overview](#authentication-overview)
@@ -37,7 +48,7 @@
 
 This document provides comprehensive API documentation for the backend route handlers in the CheapModels application. The API follows RESTful conventions and supports both standard JSON responses and streaming responses for real-time chat completions. The system includes authentication, key management, provider configuration, analytics collection, and model management capabilities.
 
-The API is built using Next.js App Router with TypeScript support and provides a unified interface for managing AI model interactions through multiple providers.
+The API is built using Next.js App Router with TypeScript support and provides a unified interface for managing AI model interactions through multiple providers. The comprehensive API layer expansion includes streaming endpoints, model management, provider configurations, analytics collection, and v1 OpenAI compatibility layer.
 
 ## Authentication Overview
 
@@ -72,7 +83,7 @@ Auth-->>Client : {profile}
 
 ## Chat Completions API
 
-The Chat Completions API provides OpenAI-compatible endpoints for generating text completions using various AI models.
+The Chat Completions API provides OpenAI-compatible endpoints for generating text completions using various AI models. This endpoint implements the v1 OpenAI compatibility layer for seamless integration with existing OpenAI clients.
 
 ### Endpoint: `/api/v1/chat/completions`
 
@@ -157,7 +168,7 @@ data: [DONE]
 
 ## Streaming API
 
-The dedicated streaming endpoint provides enhanced streaming capabilities for real-time applications.
+The dedicated streaming endpoint provides enhanced streaming capabilities for real-time applications with WebSocket-like connections and advanced streaming protocols.
 
 ### Endpoint: `/api/stream`
 
@@ -195,9 +206,13 @@ The endpoint uses WebSocket-like streaming with JSON chunks:
 
 #### Supported Stream Types
 
-- **Chat Streaming**: Real-time conversation responses
-- **Completion Streaming**: Text generation with progress updates
-- **Embedding Streaming**: Vector embeddings with intermediate results
+- **Chat Streaming**: Real-time conversation responses with context preservation
+- **Completion Streaming**: Text generation with progress updates and partial results
+- **Embedding Streaming**: Vector embeddings with intermediate calculation results
+
+#### Connection Management
+
+The streaming endpoint supports automatic reconnection, heartbeat signals, and connection state management for robust real-time communication.
 
 **Section sources**
 - [src/app/api/stream/route.ts](file://src/app/api/stream/route.ts)
@@ -288,7 +303,7 @@ The endpoint uses WebSocket-like streaming with JSON chunks:
 
 ## Key Management API
 
-The Key Management API allows users to create, manage, and monitor API keys for programmatic access.
+The Key Management API allows users to create, manage, and monitor API keys for programmatic access with comprehensive security controls.
 
 ### Create API Key
 
@@ -432,7 +447,7 @@ The Key Management API allows users to create, manage, and monitor API keys for 
 
 ## Provider Configuration API
 
-The Provider Configuration API manages AI model providers and their settings.
+The Provider Configuration API manages AI model providers and their settings with comprehensive health monitoring and rate limiting capabilities.
 
 ### Create Provider
 
@@ -583,7 +598,7 @@ The Provider Configuration API manages AI model providers and their settings.
 
 ## Analytics API
 
-The Analytics API provides usage statistics and performance metrics.
+The Analytics API provides comprehensive usage statistics and performance metrics for monitoring and optimization.
 
 ### Get Usage Analytics
 
@@ -765,7 +780,7 @@ The Analytics API provides usage statistics and performance metrics.
 
 ## Error Handling
 
-The API uses consistent error response formats across all endpoints:
+The API uses consistent error response formats across all endpoints with detailed debugging information:
 
 ### Standard Error Response
 
@@ -831,7 +846,7 @@ The API uses consistent error response formats across all endpoints:
 
 ## Rate Limiting
 
-The API implements rate limiting to ensure fair usage and prevent abuse:
+The API implements sophisticated rate limiting to ensure fair usage and prevent abuse with tier-based policies:
 
 ### Rate Limit Tiers
 

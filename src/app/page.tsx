@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Zap, MessageCircle, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Activity, Rocket, X, CircleCheck, Sparkles, DollarSign, Gauge, Workflow, Plug, Eye } from 'lucide-react';
+import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
 import styles from './page.module.css';
 import ModelsTable from '../components/ModelsTable';
 import HeroTerminal from '../components/HeroTerminal';
@@ -133,22 +133,186 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ═══════════════ SOCIAL PROOF STATS ═══════════════ */}
+      {/* ═══════════════ PRODUCT CARDS ═══════════════ */}
       <div className="container">
-        <div className={styles.statsBar}>
-          {[
-            { value: '10,000+', label: 'Active Developers', icon: <Users size={20} /> },
-            { value: '50M+', label: 'API Calls / Month', icon: <Activity size={20} /> },
-            { value: '99.9%', label: 'Uptime SLA', icon: <Gauge size={20} /> },
-            { value: '<100ms', label: 'Average Latency', icon: <Clock size={20} /> },
-            { value: '15+', label: 'AI Models', icon: <Cpu size={20} /> },
-          ].map((s, i) => (
-            <div key={i} className={styles.statItem}>
-              <div className={styles.statIcon}>{s.icon}</div>
-              <div className={styles.statValue}>{s.value}</div>
-              <div className={styles.statLabel}>{s.label}</div>
+        <div className={styles.installGrid}>
+          {/* Card 1: Try Chat */}
+          <div className={styles.installCard}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><MessageSquare size={20} /></div>
+              <h3 className={styles.installTitle}>Try Chat</h3>
+              <p className={styles.installDesc}>Compare GPT-4o, Claude 3.5 & more in a real-time playground.</p>
             </div>
-          ))}
+            <div className={styles.installPreview}>
+              <div className={styles.miniChat}>
+                <div className={styles.miniChatHeader}>
+                  <div className={styles.miniDots}><span/><span/><span/></div>
+                  <div className={styles.miniUrl}>cheapmodels.io/chat</div>
+                </div>
+                <div className={styles.miniChatBody}>
+                  <div className={styles.chatBubbleUser}>Which model is fastest?</div>
+                  <div className={styles.chatBubbleAi}>Comparing 15+ models...</div>
+                </div>
+                <div className={styles.miniChatInput}>
+                  <div className={styles.miniInputField} />
+                  <div className={styles.miniSendBtn} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Free Unlimited Coding */}
+          <div className={styles.installCard}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Terminal size={20} /></div>
+              <h3 className={styles.installTitle}>Free Unlimited Coding</h3>
+              <p className={styles.installDesc}>Code with AI in your terminal. No usage limits, no credit card.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniTerminal}>
+                <div className={styles.miniTermHeader}>
+                  <div className={styles.miniDots}><span className={styles.tRed}/><span className={styles.tYellow}/><span className={styles.tGreen}/></div>
+                  <span className={styles.miniTermTitle}>~ terminal</span>
+                </div>
+                <div className={styles.miniTermBody}>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap-cli install</div>
+                  <div className={styles.termRowOk}>✔ Installed successfully</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap ask "fix this bug"</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Connect by API */}
+          <div className={styles.installCard}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Code size={20} /></div>
+              <h3 className={styles.installTitle}>Connect by API</h3>
+              <p className={styles.installDesc}>Drop-in OpenAI replacement. Change one line of code.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniCode}>
+                <div className={styles.miniCodeHeader}>
+                  <span className={styles.miniTab}>app.ts</span>
+                  <span className={styles.miniTabDim}>config.json</span>
+                </div>
+                <div className={styles.miniCodeBody}>
+                  <div><span className={styles.kw}>const</span> ai = <span className={styles.kw}>new</span> OpenAI({'{'}</div>
+                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheapmodels.io&quot;</span>,</div>
+                  <div>&nbsp;&nbsp;apiKey: <span className={styles.str}>&quot;cm_***&quot;</span></div>
+                  <div>{'}'});</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Earn All AI */}
+          <div className={styles.installCard}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Zap size={20} /></div>
+              <h3 className={styles.installTitle}>Earn All AI</h3>
+              <p className={styles.installDesc}>BYOK — bring your own keys, earn tokens on every request.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniDash}>
+                <div className={styles.miniDashNav}>
+                  <div className={styles.miniDashLogo} />
+                  <div className={styles.miniDashAvatar} />
+                </div>
+                <div className={styles.miniDashBody}>
+                  <div className={styles.miniDashSide}>
+                    <div className={styles.dashMenuItem} />
+                    <div className={styles.dashMenuItem} />
+                    <div className={styles.dashMenuItem} />
+                  </div>
+                  <div className={styles.miniDashContent}>
+                    <div className={styles.miniDashStats}>
+                      <div className={styles.miniStatCard}><div className={styles.miniStatBar} /></div>
+                      <div className={styles.miniStatCard}><div className={styles.miniStatBar} /></div>
+                    </div>
+                    <div className={styles.miniDashChart}>
+                      <div className={styles.miniChartLine} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: CheapCode IDE - Coming Soon */}
+          <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Code size={20} /></div>
+              <div className={styles.soonClockIcon}><Clock size={16} /></div>
+              <h3 className={styles.installTitle}>CheapCode IDE</h3>
+              <p className={styles.installDesc}>AI-powered code editor with inline completions and refactoring.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniCode}>
+                <div className={styles.miniCodeHeader}>
+                  <span className={styles.miniTab}>main.py</span>
+                  <span className={styles.miniTabDim}>utils.py</span>
+                </div>
+                <div className={styles.miniCodeBody}>
+                  <div><span className={styles.kw}>def</span> <span className={styles.fn}>optimize</span>(data):</div>
+                  <div>&nbsp;&nbsp;<span className={styles.cm}># AI suggestion...</span></div>
+                  <div>&nbsp;&nbsp;<span className={styles.kw}>return</span> result</div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.soonBadge}>Coming Soon</div>
+          </div>
+
+          {/* Card 6: CheapAgent - Coming Soon */}
+          <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Workflow size={20} /></div>
+              <div className={styles.soonClockIcon}><Clock size={16} /></div>
+              <h3 className={styles.installTitle}>CheapAgent</h3>
+              <p className={styles.installDesc}>Autonomous AI agent that plans, executes, and iterates on tasks.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniTerminal}>
+                <div className={styles.miniTermHeader}>
+                  <div className={styles.miniDots}><span className={styles.tRed}/><span className={styles.tYellow}/><span className={styles.tGreen}/></div>
+                  <span className={styles.miniTermTitle}>agent</span>
+                </div>
+                <div className={styles.miniTermBody}>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>→</span> Analyzing task...</div>
+                  <div className={styles.termRowOk}>✔ Plan generated</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>→</span> Executing step 1/3</div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.soonBadge}>Coming Soon</div>
+          </div>
+
+          {/* Card 7: Cheap Browser Extension - Coming Soon */}
+          <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.installCardHeader}>
+              <div className={styles.installIcon}><Globe size={20} /></div>
+              <div className={styles.soonClockIcon}><Clock size={16} /></div>
+              <h3 className={styles.installTitle}>Cheap Extension</h3>
+              <p className={styles.installDesc}>Browser extension for AI summaries, translations & quick answers.</p>
+            </div>
+            <div className={styles.installPreview}>
+              <div className={styles.miniChat}>
+                <div className={styles.miniChatHeader}>
+                  <div className={styles.miniDots}><span/><span/><span/></div>
+                  <div className={styles.miniUrl}>chrome.cheapmodels.io</div>
+                </div>
+                <div className={styles.miniChatBody}>
+                  <div className={styles.chatBubbleUser}>Summarize this page</div>
+                  <div className={styles.chatBubbleAi}>Key points: 3 articles...</div>
+                </div>
+                <div className={styles.miniChatInput}>
+                  <div className={styles.miniInputField} />
+                  <div className={styles.miniSendBtn} />
+                </div>
+              </div>
+            </div>
+            <div className={styles.soonBadge}>Coming Soon</div>
+          </div>
         </div>
       </div>
 
@@ -226,7 +390,7 @@ export default function Home() {
                   <li key={item}><div className={styles.checkIcon}><Check size={14} /></div>{item}</li>
                 ))}
               </ul>
-              <Link href="/docs" className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Link href="/docs" prefetch={false} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 Read the API Docs <ArrowRight size={16} />
               </Link>
             </div>
@@ -377,7 +541,7 @@ const response = await client.chat.completions.create({
                   <ul className={styles.planFeatures}>
                     {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
                   </ul>
-                  <Link href="/signup" className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
+                  <Link href="/signup" prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
                 </div>
               </div>
             ))}
@@ -447,10 +611,10 @@ const response = await client.chat.completions.create({
                 Join 10,000+ developers who replaced a dozen API integrations with one line of code. Free tier available — no credit card required.
               </p>
               <div className={styles.ctaActions}>
-                <Link href="/signup" className="btn-primary" style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Link href="/signup" prefetch={false} className="btn-primary" style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   Get Started Free <ArrowRight size={18} />
                 </Link>
-                <Link href="/docs" style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Link href="/docs" prefetch={false} style={{ padding: '16px 40px', fontSize: '16px', fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   View Documentation
                 </Link>
               </div>
@@ -485,7 +649,7 @@ const response = await client.chat.completions.create({
                 <h4 className={styles.footerColTitle}>{col.title}</h4>
                 <div className={styles.footerLinks}>
                   {col.links.map(([label, href]) => (
-                    <Link key={label} href={href}>{label}</Link>
+                    <Link key={label} href={href} prefetch={false}>{label}</Link>
                   ))}
                 </div>
               </div>
@@ -497,6 +661,20 @@ const response = await client.chat.completions.create({
               <span className={styles.statusBadge}><span className={styles.statusDot} /> All Systems Operational</span>
               <span>v2.4.1</span>
             </div>
+          </div>
+
+          {/* Big outlined text + Back to top */}
+          <div className={styles.footerHero}>
+            <div className={styles.footerBigText} aria-hidden="true">CHEAP</div>
+            <button
+              className={styles.backToTop}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              <span>Back to top</span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 11V3M7 3L3 7M7 3L11 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       </footer>

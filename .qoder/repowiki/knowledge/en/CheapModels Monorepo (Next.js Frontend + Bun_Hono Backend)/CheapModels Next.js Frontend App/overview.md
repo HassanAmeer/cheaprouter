@@ -1,0 +1,1 @@
+Next.js App Router frontend that composes auth/theme/toast providers, renders public marketing and protected dashboard pages, and calls a centralized typed API client against the backend.

@@ -12,28 +12,40 @@
 - [pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
 - [theme-provider.tsx](file://src/components/theme-provider.tsx)
 - [theme-toggle.tsx](file://src/components/theme-toggle.tsx)
+- [auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [config/theme.ts](file://src/config/theme.ts)
 - [components.json](file://components.json)
 - [app/globals.css](file://src/app/globals.css)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Added authentication context and provider components to the component library
+- Enhanced theme switching capabilities with dedicated toggle component
+- Expanded UI primitives with additional form elements and interactive components
+- Integrated charting components for data visualization
+- Implemented comprehensive toast notification system with positioning and types
+- Updated component registration system for better discoverability
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
 3. [Core Components](#core-components)
-4. [Architecture Overview](#architecture-overview)
-5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
-10. [Appendices](#appendices)
+4. [Authentication Context](#authentication-context)
+5. [Theme System](#theme-system)
+6. [Architecture Overview](#architecture-overview)
+7. [Detailed Component Analysis](#detailed-component-analysis)
+8. [Dependency Analysis](#dependency-analysis)
+9. [Performance Considerations](#performance-considerations)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+11. [Conclusion](#conclusion)
+12. [Appendices](#appendices)
 
 ## Introduction
-This document describes the UI component library built with Shadcn/ui and Tailwind CSS. It focuses on primitive components, their props, styling patterns, customization options, composition approach, theme integration, accessibility features, and usage examples for buttons, forms, notifications, and other reusable elements. It also explains how to register new components into the library and maintain consistency across the application.
+This document describes the expanded UI component library built with Shadcn/ui and Tailwind CSS. The library now includes primitive components, authentication context, theme switching capabilities, charting components, and a comprehensive toast notification system. It focuses on primitive components, their props, styling patterns, customization options, composition approach, theme integration, accessibility features, and usage examples for buttons, forms, notifications, charts, and other reusable elements. It also explains how to register new components into the library and maintain consistency across the application.
 
 ## Project Structure
-The UI library is organized under src/components/ui for primitives and shared UI building blocks, with theme configuration centralized in src/config/theme.ts and global styles in src/app/globals.css. The Shadcn/ui configuration lives in components.json.
+The UI library is organized under src/components/ui for primitives and shared UI building blocks, with theme configuration centralized in src/config/theme.ts and global styles in src/app/globals.css. Authentication context is provided through src/components/auth-provider.tsx, and theme switching through src/components/theme-toggle.tsx. The Shadcn/ui configuration lives in components.json.
 
 ```mermaid
 graph TB
@@ -47,6 +59,9 @@ space_button_css["space-button.module.css"]
 charts["charts.tsx"]
 pixelated_canvas["pixelated-canvas.tsx"]
 end
+subgraph "Authentication"
+auth_provider["auth-provider.tsx"]
+end
 subgraph "Theme"
 theme_provider["theme-provider.tsx"]
 theme_toggle["theme-toggle.tsx"]
@@ -59,6 +74,7 @@ end
 primitives --> primitives_css
 toast --> toast_css
 space_button --> space_button_css
+auth_provider --> theme_provider
 theme_provider --> theme_config
 theme_toggle --> theme_provider
 globals --> theme_config
@@ -74,6 +90,7 @@ shadcn_cfg --> primitives
 - [space-button.module.css:1-200](file://src/components/ui/space-button.module.css#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [theme-toggle.tsx:1-200](file://src/components/theme-toggle.tsx#L1-L200)
 - [config/theme.ts:1-200](file://src/config/theme.ts#L1-L200)
@@ -89,6 +106,7 @@ shadcn_cfg --> primitives
 - [space-button.module.css:1-200](file://src/components/ui/space-button.module.css#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [theme-toggle.tsx:1-200](file://src/components/theme-toggle.tsx#L1-L200)
 - [config/theme.ts:1-200](file://src/config/theme.ts#L1-L200)
@@ -143,24 +161,72 @@ This section documents the primitive components that form the foundation of the 
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
 
+## Authentication Context
+The authentication context provides user state management and authentication methods throughout the application. It integrates seamlessly with the theme system and UI components.
+
+- AuthProvider
+  - Props: children, initialUser, authConfig
+  - State: currentUser, isAuthenticated, isLoading, error
+  - Methods: login, logout, register, updateUser
+  - Integration: Works with theme provider and toast notifications
+  - Security: Handles token storage, session management, and error handling
+
+- Usage Patterns
+  - Wrap application root with AuthProvider
+  - Access auth state via useContext(AuthContext)
+  - Use authentication hooks for common operations
+  - Integrate with protected routes and conditional rendering
+
+**Section sources**
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
+
+## Theme System
+The theme system provides comprehensive theming capabilities with light/dark mode support, custom color palettes, and dynamic theme switching.
+
+- ThemeProvider
+  - Props: children, defaultTheme, themeStorageKey
+  - State: currentTheme, themes, isDarkMode
+  - Methods: setTheme, toggleTheme, addCustomTheme
+  - Storage: Local storage persistence and system preference detection
+
+- ThemeToggle
+  - Props: showIcon, iconPosition, className
+  - Features: Animated transitions, keyboard navigation, screen reader support
+  - Integration: Works with all themed components automatically
+
+- Theme Configuration
+  - Color palettes: Primary, secondary, accent, neutral colors
+  - Typography: Font families, sizes, weights, line heights
+  - Spacing: Consistent spacing scale
+  - Breakpoints: Mobile-first responsive design tokens
+
+**Section sources**
+- [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+- [theme-toggle.tsx:1-200](file://src/components/theme-toggle.tsx#L1-L200)
+- [config/theme.ts:1-200](file://src/config/theme.ts#L1-L200)
+
 ## Architecture Overview
-The UI library integrates with Shadcn/ui and Tailwind CSS through a theme provider and global styles. Components are composed from primitives and styled using CSS variables exposed by the theme. The registration system centralizes component metadata and paths for discovery and import.
+The UI library integrates with Shadcn/ui and Tailwind CSS through a theme provider and global styles. Components are composed from primitives and styled using CSS variables exposed by the theme. The registration system centralizes component metadata and paths for discovery and import. Authentication context provides user state management across the application.
 
 ```mermaid
 sequenceDiagram
 participant App as "Application"
+participant Auth as "AuthProvider"
 participant Provider as "ThemeProvider"
 participant Root as "globals.css"
 participant Config as "components.json"
 participant Comp as "UI Component"
+App->>Auth : Initialize auth context
 App->>Provider : Mount with theme config
 Provider->>Root : Apply CSS variables and base styles
 App->>Config : Read component registry
 App->>Comp : Import and render component
 Comp-->>App : Rendered UI with theme tokens
+Auth-->>Comp : Provide auth state
 ```
 
 **Diagram sources**
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [app/globals.css:1-200](file://src/app/globals.css#L1-L200)
 - [components.json:1-200](file://components.json#L1-L200)
@@ -314,21 +380,52 @@ PixelatedCanvas --> ThemeProvider : "uses palette"
 **Section sources**
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
 
+### Authentication Provider
+The authentication provider manages user state, authentication methods, and session persistence throughout the application.
+
+```mermaid
+classDiagram
+class AuthProvider {
++currentUser
++isAuthenticated
++isLoading
++error
++login()
++logout()
++register()
++updateUser()
+}
+class ThemeProvider {
++setTheme()
++toggleTheme()
+}
+AuthProvider --> ThemeProvider : "integrates with"
+```
+
+**Diagram sources**
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
+- [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+
+**Section sources**
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
+
 ### Conceptual Overview
-The following conceptual diagram shows how pages consume the UI library through the theme provider and global styles.
+The following conceptual diagram shows how pages consume the UI library through the theme provider, authentication context, and global styles.
 
 ```mermaid
 graph TB
 Page["Page Component"] --> UI["UI Components"]
 UI --> Theme["ThemeProvider"]
+UI --> Auth["AuthProvider"]
 Theme --> Globals["Global Styles"]
+Auth --> UI
 UI --> Registry["Component Registry"]
 ```
 
 [No sources needed since this diagram shows conceptual workflow, not actual code structure]
 
 ## Dependency Analysis
-The UI library depends on Shadcn/ui primitives and Tailwind CSS utilities. The theme provider injects CSS variables consumed by components. The component registry in components.json maps logical names to file paths for consistent imports.
+The UI library depends on Shadcn/ui primitives and Tailwind CSS utilities. The theme provider injects CSS variables consumed by components. The authentication provider manages user state and integrates with the theme system. The component registry in components.json maps logical names to file paths for consistent imports.
 
 ```mermaid
 graph TB
@@ -339,6 +436,8 @@ Theme --> Toast["toast.tsx"]
 Theme --> SpaceButton["space-button.tsx"]
 Theme --> Charts["charts.tsx"]
 Theme --> PixelatedCanvas["pixelated-canvas.tsx"]
+Auth["auth-provider.tsx"] --> Theme
+Auth --> UI["All UI Components"]
 Registry["components.json"] --> Primitives
 Registry --> Toast
 Registry --> SpaceButton
@@ -352,12 +451,14 @@ Registry --> PixelatedCanvas
 - [space-button.tsx:1-200](file://src/components/ui/space-button.tsx#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
 - [components.json:1-200](file://components.json#L1-L200)
 
 **Section sources**
 - [components.json:1-200](file://components.json#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [primitives.tsx:1-200](file://src/components/ui/primitives.tsx#L1-L200)
 
 ## Performance Considerations
@@ -366,8 +467,8 @@ Registry --> PixelatedCanvas
 - Minimize DOM mutations in canvas rendering by batching updates and using requestAnimationFrame.
 - Keep CSS modules scoped and avoid large global overrides; leverage Tailwind utilities for performance.
 - Debounce user interactions (e.g., pixel click handlers) to reduce overhead.
-
-[No sources needed since this section provides general guidance]
+- Implement authentication state caching to prevent unnecessary re-authentication.
+- Use React.memo for frequently used UI components to optimize rendering performance.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -376,18 +477,19 @@ Common issues and resolutions:
 - Button not responding: Confirm onClick handler is passed and disabled state is not set unintentionally.
 - Chart colors incorrect: Check theme palette configuration and ensure tokens match expected keys.
 - Canvas not interactive: Validate focus management and keyboard event bindings.
+- Authentication state lost: Check local storage permissions and session persistence configuration.
+- Theme toggle not working: Verify theme provider is properly wrapped around the application.
 
 **Section sources**
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [toast.tsx:1-200](file://src/components/ui/toast.tsx#L1-L200)
 - [space-button.tsx:1-200](file://src/components/ui/space-button.tsx#L1-L200)
 - [charts.tsx:1-200](file://src/components/ui/charts.tsx#L1-L200)
 - [pixelated-canvas.tsx:1-200](file://src/components/ui/pixelated-canvas.tsx#L1-L200)
 
 ## Conclusion
-The UI component library provides a cohesive set of primitives and higher-level components styled with Tailwind CSS and integrated with Shadcn/ui. Through a centralized theme provider and global styles, components remain customizable and accessible. The registration system simplifies discovery and import, while composition patterns encourage reuse and consistency.
-
-[No sources needed since this section summarizes without analyzing specific files]
+The expanded UI component library provides a cohesive set of primitives, authentication context, theme switching capabilities, charting components, and toast notifications styled with Tailwind CSS and integrated with Shadcn/ui. Through centralized providers for theming and authentication, components remain customizable, accessible, and state-aware. The registration system simplifies discovery and import, while composition patterns encourage reuse and consistency across the application.
 
 ## Appendices
 
@@ -419,7 +521,17 @@ The UI component library provides a cohesive set of primitives and higher-level 
   - Interaction: handle pixel clicks and toggle colors via colorMap.
   - Animation: toggle animate flag for dynamic effects.
 
-[No sources needed since this section provides general guidance]
+- Authentication
+  - Setup: wrap application with AuthProvider at the root level.
+  - State access: use useContext(AuthContext) to access user state.
+  - Protected routes: implement route guards based on authentication state.
+  - User actions: use provided methods for login, logout, and user updates.
+
+- Theme Switching
+  - Toggle component: use ThemeToggle for user-initiated theme changes.
+  - Programmatic control: access theme methods through ThemeProvider context.
+  - Custom themes: extend theme configuration with custom color palettes.
+  - Persistence: themes automatically persist to local storage.
 
 ### Component Registration System
 To add a new component to the library:
@@ -428,8 +540,11 @@ To add a new component to the library:
 - Ensure it consumes theme tokens via the theme provider.
 - Add global styles if necessary and keep CSS modules scoped.
 - Export the component for consumption by pages and feature modules.
+- If the component requires authentication context, integrate with AuthProvider.
+- Test the component with both light and dark themes for consistency.
 
 **Section sources**
 - [components.json:1-200](file://components.json#L1-L200)
 - [theme-provider.tsx:1-200](file://src/components/theme-provider.tsx#L1-L200)
+- [auth-provider.tsx:1-200](file://src/components/auth-provider.tsx#L1-L200)
 - [app/globals.css:1-200](file://src/app/globals.css#L1-L200)

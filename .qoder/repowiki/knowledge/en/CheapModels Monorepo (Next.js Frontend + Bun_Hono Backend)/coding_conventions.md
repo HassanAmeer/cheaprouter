@@ -1,0 +1,2 @@
+- Each child directory owns its own `package.json` and dependency graph — nothing is hoisted to the root.
+- Cross-service contracts are expressed as runtime HTTP calls through a typed API client, not shared TypeScript packages.

@@ -1,1 +1,0 @@
-Bun-hosted Hono HTTP server exposing REST endpoints for authentication, API keys, provider management, chat conversations, usage analytics, and a models catalog backed by SQLite.

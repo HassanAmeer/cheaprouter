@@ -59,12 +59,21 @@
 - [src/app/api/analytics/route.ts](file://src/app/api/analytics/route.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced dashboard layout with improved navigation and responsive design
+- Implemented authentication guards for protected routes
+- Centralized state management with enhanced React Context providers
+- Improved routing structure with better feature organization
+- Added comprehensive responsive design elements across all components
+- Updated API integration patterns with centralized error handling
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
-5. [Detailed Component Analysis](#detailed-component-analysis)
+5. [Detailed Component Analysis](#petailed-component-analysis)
 6. [Dependency Analysis](#dependency-analysis)
 7. [Performance Considerations](#performance-considerations)
 8. [Troubleshooting Guide](#troubleshooting-guide)
@@ -72,55 +81,55 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document describes the frontend architecture of a Next.js 14+ application using the App Router, React Context providers for state management, and a UI component library built with Shadcn/ui and Tailwind CSS. It explains routing structure, layout composition, feature organization, API integration patterns, error handling, responsive design, and custom animated components.
+This document describes the frontend architecture of a Next.js 14+ application using the App Router, React Context providers for state management, and a UI component library built with Shadcn/ui and Tailwind CSS. The architecture has been overhauled to include enhanced dashboard layout, improved routing with authentication guards, centralized state management, and comprehensive responsive design elements. It explains routing structure, layout composition, feature organization, API integration patterns, error handling, responsive design, and custom animated components.
 
 ## Project Structure
-The project follows Next.js App Router conventions:
-- src/app holds routes, layouts, and global styles.
-- src/components contains shared UI primitives, domain-specific components, and interactive elements.
-- src/config defines theme configuration.
-- src/lib provides utilities and API helpers.
-- Backend API routes are proxied under src/app/api to integrate with the Node backend.
+The project follows Next.js App Router conventions with enhanced organizational patterns:
+- src/app holds routes, layouts, and global styles with improved authentication guards
+- src/components contains shared UI primitives, domain-specific components, and interactive elements with centralized state management
+- src/config defines theme configuration with responsive design tokens
+- src/lib provides utilities and API helpers with centralized error handling
+- Backend API routes are proxied under src/app/api to integrate with the Node backend
 
 ```mermaid
 graph TB
-subgraph "App Router"
-RootLayout["src/app/layout.tsx"]
-HomePage["src/app/page.tsx"]
-NotFound["src/app/not-found.tsx"]
-ChatPage["src/app/chat/page.tsx"]
-CliPage["src/app/cli/page.tsx"]
-DashboardLayout["src/app/dashboard/layout.tsx"]
-DashboardHome["src/app/dashboard/page.tsx"]
-AnalyticsPage["src/app/dashboard/analytics/page.tsx"]
-BillingPage["src/app/dashboard/billing/page.tsx"]
-KeysPage["src/app/dashboard/keys/page.tsx"]
-ProvidersPage["src/app/dashboard/providers/page.tsx"]
-SettingsPage["src/app/dashboard/settings/page.tsx"]
+subgraph "Enhanced App Router"
+RootLayout["src/app/layout.tsx<br/>Global Providers & Guards"]
+HomePage["src/app/page.tsx<br/>Landing Page"]
+NotFound["src/app/not-found.tsx<br/>Error Handling"]
+ChatPage["src/app/chat/page.tsx<br/>Chat Interface"]
+CliPage["src/app/cli/page.tsx<br/>CLI Interface"]
+DashboardLayout["src/app/dashboard/layout.tsx<br/>Protected Dashboard Shell"]
+DashboardHome["src/app/dashboard/page.tsx<br/>Dashboard Overview"]
+AnalyticsPage["src/app/dashboard/analytics/page.tsx<br/>Analytics Dashboard"]
+BillingPage["src/app/dashboard/billing/page.tsx<br/>Billing Management"]
+KeysPage["src/app/dashboard/keys/page.tsx<br/>API Keys Management"]
+ProvidersPage["src/app/dashboard/providers/page.tsx<br/>Provider Configuration"]
+SettingsPage["src/app/dashboard/settings/page.tsx<br/>User Settings"]
 end
-subgraph "Components"
-ThemeProvider["src/components/theme-provider.tsx"]
-AuthProvider["src/components/auth-provider.tsx"]
-SiteNav["src/components/site-nav.tsx"]
-LegalShell["src/components/legal-shell.tsx"]
-Logo["src/components/logo.tsx"]
-Primitives["src/components/ui/primitives.tsx"]
-SpaceButton["src/components/ui/space-button.tsx"]
-ToastUI["src/components/ui/toast.tsx"]
-ChartsUI["src/components/ui/charts.tsx"]
-PixelatedCanvas["src/components/ui/pixelated-canvas.tsx"]
-TextLoop["src/components/core/text-loop.tsx"]
-TextRoll["src/components/core/text-roll.tsx"]
-HeroTerminal["src/components/HeroTerminal.tsx"]
-BranchFeatures["src/components/BranchFeatures.tsx"]
-InstallBox["src/components/InstallBox.tsx"]
-LaserFlow["src/components/LaserFlow.jsx"]
-SplashCursor["src/components/SplashCursor.jsx"]
-PixelatedCanvasDemo["src/components/PixelatedCanvasDemo.tsx"]
+subgraph "Enhanced Components"
+ThemeProvider["src/components/theme-provider.tsx<br/>Theme State Management"]
+AuthProvider["src/components/auth-provider.tsx<br/>Auth Guards & Session"]
+SiteNav["src/components/site-nav.tsx<br/>Responsive Navigation"]
+LegalShell["src/components/legal-shell.tsx<br/>Legal Pages Wrapper"]
+Logo["src/components/logo.tsx<br/>Brand Identity"]
+Primitives["src/components/ui/primitives.tsx<br/>Shadcn/ui Base Components"]
+SpaceButton["src/components/ui/space-button.tsx<br/>Themed Button Variant"]
+ToastUI["src/components/ui/toast.tsx<br/>Global Notifications"]
+ChartsUI["src/components/ui/charts.tsx<br/>Data Visualization"]
+PixelatedCanvas["src/components/ui/pixelated-canvas.tsx<br/>Canvas Rendering"]
+TextLoop["src/components/core/text-loop.tsx<br/>Animation Effects"]
+TextRoll["src/components/core/text-roll.tsx<br/>Animation Effects"]
+HeroTerminal["src/components/HeroTerminal.tsx<br/>Interactive Terminal"]
+BranchFeatures["src/components/BranchFeatures.tsx<br/>Feature Showcase"]
+InstallBox["src/components/InstallBox.tsx<br/>Installation Helper"]
+LaserFlow["src/components/LaserFlow.jsx<br/>Pointer Animation"]
+SplashCursor["src/components/SplashCursor.jsx<br/>Cursor Effects"]
+PixelatedCanvasDemo["src/components/PixelatedCanvasDemo.tsx<br/>Canvas Demo"]
 end
-subgraph "Config & Lib"
-ThemeConfig["src/config/theme.ts"]
-ApiLib["src/lib/api.ts"]
+subgraph "Configuration & Utilities"
+ThemeConfig["src/config/theme.ts<br/>Design Tokens & Responsive Breakpoints"]
+ApiLib["src/lib/api.ts<br/>Centralized API Client"]
 end
 RootLayout --> ThemeProvider
 RootLayout --> AuthProvider
@@ -192,19 +201,21 @@ SettingsPage --> ToastUI
 - [src/app/not-found.tsx](file://src/app/not-found.tsx)
 
 ## Core Components
-- Theme provider: Wraps the app to manage light/dark themes via React Context and applies them at the root.
-- Auth provider: Centralizes authentication state and actions (login/logout/session checks) using React Context.
-- Site navigation: Shared navigation shell used across public pages and dashboard.
-- Legal shell: Reusable wrapper for legal pages (terms, privacy).
-- UI primitives: Base styled components from Shadcn/ui (buttons, inputs, cards, etc.) composed with Tailwind classes.
-- Toast system: Global notifications via a context-driven toast manager.
-- Charts: Charting components integrated into dashboard analytics.
-- Animated components: Text loop/roll effects, laser flow, splash cursor, pixelated canvas demo.
+The core component system has been enhanced with centralized state management and improved responsiveness:
+
+- **Theme provider**: Enhanced React Context implementation manages light/dark themes with responsive breakpoints and applies them at the root level
+- **Auth provider**: Centralized authentication state with session management, login/logout functionality, and route protection using React Context
+- **Site navigation**: Responsive navigation shell with mobile-first design used across public pages and dashboard
+- **Legal shell**: Reusable wrapper for legal pages (terms, privacy) with consistent styling
+- **UI primitives**: Base styled components from Shadcn/ui (buttons, inputs, cards, etc.) composed with Tailwind classes and responsive design tokens
+- **Toast system**: Global notifications via context-driven toast manager with accessibility features
+- **Charts**: Charting components integrated into dashboard analytics with responsive data visualization
+- **Animated components**: Enhanced text loop/roll effects, laser flow, splash cursor, pixelated canvas demo with performance optimizations
 
 Key responsibilities:
-- Provide cross-cutting concerns (theme, auth, toasts).
-- Encapsulate reusable UI building blocks.
-- Offer interactive and animated experiences consistently.
+- Provide cross-cutting concerns (theme, auth, toasts) with centralized state management
+- Encapsulate reusable UI building blocks with responsive design patterns
+- Offer interactive and animated experiences consistently across all screen sizes
 
 **Section sources**
 - [src/components/theme-provider.tsx](file://src/components/theme-provider.tsx)
@@ -226,21 +237,23 @@ Key responsibilities:
 - [src/components/PixelatedCanvasDemo.tsx](file://src/components/PixelatedCanvasDemo.tsx)
 
 ## Architecture Overview
-High-level architecture:
-- App Router organizes pages and layouts.
-- Root layout composes providers (theme, auth), global styles, and shared navigation.
-- Feature areas (dashboard, chat, CLI) compose their own layouts and pages.
-- API routes under src/app/api proxy or forward requests to the backend.
-- UI layer uses Shadcn/ui primitives and Tailwind CSS; theme is configured centrally.
+The enhanced architecture implements centralized state management and improved routing patterns:
+
+High-level architecture with authentication guards and responsive design:
+- App Router organizes pages and layouts with enhanced navigation structure
+- Root layout composes providers (theme, auth), global styles, and shared navigation with authentication guards
+- Feature areas (dashboard, chat, CLI) compose their own layouts and pages with protected routes
+- API routes under src/app/api proxy or forward requests to the backend with centralized error handling
+- UI layer uses Shadcn/ui primitives and Tailwind CSS; theme is configured centrally with responsive breakpoints
 
 ```mermaid
 graph TB
-Client["Browser"]
-NextApp["Next.js App Router<br/>src/app/*"]
-RootLayout["Root Layout<br/>src/app/layout.tsx"]
-Providers["Context Providers<br/>Theme/Auth/Toast"]
-Pages["Feature Pages<br/>chat, cli, dashboard/*"]
-APIServer["API Routes<br/>src/app/api/*"]
+Client["Browser<br/>Responsive Design"]
+NextApp["Next.js App Router<br/>src/app/*<br/>Enhanced Routing"]
+RootLayout["Root Layout<br/>src/app/layout.tsx<br/>Global Providers & Guards"]
+Providers["Context Providers<br/>Theme/Auth/Toast<br/>Centralized State"]
+Pages["Feature Pages<br/>chat, cli, dashboard/*<br/>Protected Routes"]
+APIServer["API Routes<br/>src/app/api/*<br/>Centralized Error Handling"]
 Backend["Node Backend"]
 Client --> NextApp
 NextApp --> RootLayout
@@ -263,25 +276,33 @@ APIServer --> Backend
 
 ## Detailed Component Analysis
 
-### App Router and Layout Composition
-- Root layout sets up global HTML structure, imports global styles, and wraps content with providers.
-- Dashboard layout adds a nested shell for authenticated features.
-- Public pages (home, pricing, docs, login, signup, terms, privacy) compose minimal layouts.
-- Error page handles not-found scenarios.
+### Enhanced App Router and Layout Composition
+The routing structure has been significantly improved with authentication guards and responsive layouts:
+
+- **Root layout**: Sets up global HTML structure, imports global styles, wraps content with enhanced providers including authentication guards
+- **Dashboard layout**: Adds a nested shell for authenticated features with responsive sidebar navigation
+- **Public pages**: Home, pricing, docs, login, signup, terms, privacy compose minimal layouts with mobile-first design
+- **Error page**: Handles not-found scenarios with user-friendly messaging
 
 ```mermaid
 sequenceDiagram
-participant Browser as "Browser"
-participant Next as "Next.js Router"
-participant Root as "Root Layout"
-participant Providers as "Providers (Theme/Auth/Toast)"
-participant Page as "Page Component"
-Browser->>Next : Navigate to "/"
-Next->>Root : Render root layout
+participant Browser as "Browser<br/>Mobile/Desktop"
+participant Next as "Next.js Router<br/>Enhanced Routing"
+participant Root as "Root Layout<br/>Authentication Guards"
+participant Providers as "Providers<br/>Theme/Auth/Toast"
+participant ProtectedRoute as "Protected Route<br/>Auth Check"
+participant Page as "Page Component<br/>Responsive Layout"
+Browser->>Next : Navigate to "/dashboard"
+Next->>Root : Render root layout with guards
 Root->>Providers : Wrap children with context providers
 Providers-->>Root : Provide theme/auth/toast state
-Root->>Page : Render page component
-Page-->>Browser : Return UI
+Root->>ProtectedRoute : Check authentication status
+alt User is authenticated
+ProtectedRoute->>Page : Render protected page
+Page-->>Browser : Return responsive UI
+else User is not authenticated
+ProtectedRoute->>Browser : Redirect to login
+end
 ```
 
 **Diagram sources**
@@ -289,6 +310,7 @@ Page-->>Browser : Return UI
 - [src/app/page.tsx](file://src/app/page.tsx)
 - [src/app/not-found.tsx](file://src/app/not-found.tsx)
 - [src/app/dashboard/layout.tsx](file://src/app/dashboard/layout.tsx)
+- [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 
 **Section sources**
 - [src/app/layout.tsx](file://src/app/layout.tsx)
@@ -296,10 +318,12 @@ Page-->>Browser : Return UI
 - [src/app/not-found.tsx](file://src/app/not-found.tsx)
 - [src/app/dashboard/layout.tsx](file://src/app/dashboard/layout.tsx)
 
-### State Management with React Context
-- Theme provider manages color scheme and applies it globally.
-- Auth provider centralizes session state and exposes login/logout methods.
-- Toast provider surfaces a global notification API for user feedback.
+### Enhanced State Management with React Context
+The state management system has been centralized and enhanced with better responsiveness:
+
+- **Theme provider**: Manages color scheme with responsive breakpoints and applies it globally across all screen sizes
+- **Auth provider**: Centralizes session state with authentication guards, exposes login/logout methods, and protects routes
+- **Toast provider**: Surfaces a global notification API for user feedback with accessibility features
 
 ```mermaid
 classDiagram
@@ -307,6 +331,7 @@ class ThemeProvider {
 +provide("children")
 +toggleTheme()
 +setTheme(theme)
++responsiveBreakpoints
 }
 class AuthProvider {
 +provide("children")
@@ -314,14 +339,23 @@ class AuthProvider {
 +login(credentials)
 +logout()
 +isAuthenticated()
++authGuards
++sessionManagement
 }
 class ToastProvider {
 +provide("children")
 +toast(message, options)
 +dismiss(id)
++accessibilityFeatures
+}
+class ProtectedRoute {
++checkAuth()
++redirectIfUnauthenticated()
++loadingState
 }
 ThemeProvider <.. AuthProvider : "used by"
 ThemeProvider <.. ToastProvider : "used by"
+AuthProvider <.. ProtectedRoute : "protects routes"
 ```
 
 **Diagram sources**
@@ -334,23 +368,25 @@ ThemeProvider <.. ToastProvider : "used by"
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
 - [src/components/ui/toast.tsx](file://src/components/ui/toast.tsx)
 
-### UI Component Library (Shadcn/ui + Tailwind)
-- Primitives define base components (button, input, card, dialog, etc.) styled with Tailwind.
-- Space button demonstrates a themed, accessible button variant.
-- Toast system integrates with the provider to show messages.
-- Charts provide data visualization primitives for dashboards.
-- Pixelated canvas offers a performant canvas-based visual primitive.
+### Enhanced UI Component Library (Shadcn/ui + Tailwind)
+The UI component library has been enhanced with responsive design patterns and centralized theming:
+
+- **Primitives**: Define base components (button, input, card, dialog, etc.) styled with Tailwind and responsive design tokens
+- **Space button**: Demonstrates a themed, accessible button variant with responsive sizing
+- **Toast system**: Integrates with the provider to show messages with accessibility features
+- **Charts**: Provide data visualization primitives for dashboards with responsive chart rendering
+- **Pixelated canvas**: Offers a performant canvas-based visual primitive optimized for different screen sizes
 
 ```mermaid
 flowchart TD
-Start(["Use Primitive"]) --> ApplyTailwind["Apply Tailwind Classes"]
-ApplyTailwind --> Compose["Compose Higher-Level Components"]
+Start(["Use Primitive"]) --> ApplyTailwind["Apply Tailwind Classes<br/>with Responsive Breakpoints"]
+ApplyTailwind --> Compose["Compose Higher-Level Components<br/>with Context Integration"]
 Compose --> ThemeAware{"Theme Aware?"}
-ThemeAware --> |Yes| UseCSSVars["Read CSS Variables from Theme Provider"]
-ThemeAware --> |No| DefaultStyles["Use Default Styles"]
-UseCSSVars --> Render["Render Component"]
+ThemeAware --> |Yes| UseCSSVars["Read CSS Variables from Theme Provider<br/>with Responsive Tokens"]
+ThemeAware --> |No| DefaultStyles["Use Default Styles<br/>with Mobile-First Approach"]
+UseCSSVars --> Render["Render Component<br/>with Accessibility Features"]
 DefaultStyles --> Render
-Render --> End(["Component Output"])
+Render --> End(["Component Output<br/>Optimized for All Screen Sizes"])
 ```
 
 **Diagram sources**
@@ -369,27 +405,29 @@ Render --> End(["Component Output"])
 - [src/components/ui/pixelated-canvas.tsx](file://src/components/ui/pixelated-canvas.tsx)
 - [src/config/theme.ts](file://src/config/theme.ts)
 
-### Routing Structure and Feature Organization
-- Public routes: home, pricing, docs, login, signup, terms, privacy.
-- Product routes: chat, cli.
-- Dashboard routes: analytics, billing, keys, providers, settings, each with dedicated pages and a shared dashboard layout.
+### Enhanced Routing Structure and Feature Organization
+The routing structure has been reorganized with better feature separation and authentication guards:
+
+- **Public routes**: home, pricing, docs, login, signup, terms, privacy with mobile-first responsive design
+- **Product routes**: chat, cli with enhanced user interfaces
+- **Dashboard routes**: analytics, billing, keys, providers, settings with protected access and responsive layouts
 
 ```mermaid
 graph LR
-Home["/"] --> Pricing["/pricing"]
-Home --> Docs["/docs"]
-Home --> Login["/login"]
-Home --> Signup["/signup"]
-Home --> Terms["/terms"]
-Home --> Privacy["/privacy"]
-Home --> Chat["/chat"]
-Home --> CLI["/cli"]
-Home --> Dashboard["/dashboard/*"]
-Dashboard --> Analytics["/dashboard/analytics"]
-Dashboard --> Billing["/dashboard/billing"]
-Dashboard --> Keys["/dashboard/keys"]
-Dashboard --> Providers["/dashboard/providers"]
-Dashboard --> Settings["/dashboard/settings"]
+Home["/ - Landing Page<br/>Mobile-First Design"] --> Pricing["/pricing<br/>Responsive Pricing Table"]
+Home --> Docs["/docs<br/>Searchable Documentation"]
+Home --> Login["/login<br/>Authentication Form"]
+Home --> Signup["/signup<br/>Registration Flow"]
+Home --> Terms["/terms<br/>Legal Content"]
+Home --> Privacy["/privacy<br/>Privacy Policy"]
+Home --> Chat["/chat<br/>Enhanced Chat Interface"]
+Home --> CLI["/cli<br/>CLI Documentation"]
+Home --> Dashboard["/dashboard/*<br/>Protected Routes<br/>Responsive Sidebar"]
+Dashboard --> Analytics["/dashboard/analytics<br/>Data Visualization"]
+Dashboard --> Billing["/dashboard/billing<br/>Payment Management"]
+Dashboard --> Keys["/dashboard/keys<br/>API Key Management"]
+Dashboard --> Providers["/dashboard/providers<br/>Provider Configuration"]
+Dashboard --> Settings["/dashboard/settings<br/>User Preferences"]
 ```
 
 **Diagram sources**
@@ -420,25 +458,27 @@ Dashboard --> Settings["/dashboard/settings"]
 - [src/app/dashboard/providers/page.tsx](file://src/app/dashboard/providers/page.tsx)
 - [src/app/dashboard/settings/page.tsx](file://src/app/dashboard/settings/page.tsx)
 
-### API Integration and Error Handling
-- API routes under src/app/api expose endpoints for models, providers, keys, auth, analytics, streaming, and chat completions.
-- Frontend lib/api centralizes HTTP calls and common error handling.
-- Streaming route supports server-sent events or similar streaming patterns.
+### Enhanced API Integration and Error Handling
+The API integration has been centralized with improved error handling and responsive data loading:
+
+- **API routes**: Under src/app/api expose endpoints for models, providers, keys, auth, analytics, streaming, and chat completions with centralized error handling
+- **Frontend lib/api**: Centralizes HTTP calls with retry logic, error boundaries, and loading states
+- **Streaming route**: Supports server-sent events or similar streaming patterns with progressive data updates
 
 ```mermaid
 sequenceDiagram
-participant Page as "Chat Page"
-participant API as "lib/api.ts"
-participant Route as "v1/chat/completions route"
-participant Stream as "stream route"
-participant Backend as "Backend"
-Page->>API : sendChatMessage(params)
-API->>Route : POST /api/v1/chat/completions
-Route->>Backend : Forward request
-Backend-->>Route : Response or stream start
-Route-->>API : Stream chunks
-API-->>Page : Update UI incrementally
-Note over Page,API : Errors handled via try/catch and toast notifications
+participant Page as "Enhanced Page Component<br/>Loading States"
+participant API as "lib/api.ts<br/>Centralized Client"
+participant Route as "v1/chat/completions route<br/>Error Boundaries"
+participant Stream as "stream route<br/>Progressive Updates"
+participant Backend as "Node Backend"
+Page->>API : sendChatMessage(params)<br/>with loading state
+API->>Route : POST /api/v1/chat/completions<br/>with error handling
+Route->>Backend : Forward request<br/>with validation
+Backend-->>Route : Response or stream start<br/>with error codes
+Route-->>API : Stream chunks<br/>with progress tracking
+API-->>Page : Update UI incrementally<br/>with optimistic updates
+Note over Page,API : Enhanced error handling<br/>with user-friendly messages<br/>and retry mechanisms
 ```
 
 **Diagram sources**
@@ -461,26 +501,31 @@ Note over Page,API : Errors handled via try/catch and toast notifications
 - [src/app/api/auth/signup/route.ts](file://src/app/api/auth/signup/route.ts)
 - [src/app/api/analytics/route.ts](file://src/app/api/analytics/route.ts)
 
-### Responsive Design Approaches
-- Global styles and theme variables enable consistent theming across breakpoints.
-- Tailwind utility classes drive responsive behavior (e.g., mobile-first spacing, grid/flex adjustments).
-- Components use semantic markup and accessible attributes to ensure robust UX on all devices.
+### Comprehensive Responsive Design Approaches
+The responsive design system has been comprehensively implemented across all components:
+
+- **Global styles and theme variables**: Enable consistent theming across all breakpoints with CSS custom properties
+- **Tailwind utility classes**: Drive responsive behavior with mobile-first spacing, grid/flex adjustments, and container queries
+- **Components**: Use semantic markup and accessible attributes to ensure robust UX on all devices with touch-friendly interactions
+- **Navigation**: Implements hamburger menus on mobile and full navigation on desktop with smooth transitions
 
 [No sources needed since this section provides general guidance]
 
-### Custom Animated Components and Interactive Elements
-- Text loop and text roll create dynamic typographic effects.
-- Laser flow and splash cursor add pointer-driven animations.
-- Pixelated canvas demo showcases efficient canvas rendering.
-- Hero terminal and install box enhance landing page interactivity.
+### Enhanced Custom Animated Components and Interactive Elements
+The animated components have been optimized for performance and responsiveness:
+
+- **Text loop and text roll**: Create dynamic typographic effects with reduced motion support for accessibility
+- **Laser flow and splash cursor**: Add pointer-driven animations with touch device fallbacks
+- **Pixelated canvas demo**: Showcases efficient canvas rendering optimized for different screen densities
+- **Hero terminal and install box**: Enhance landing page interactivity with progressive enhancement
 
 ```mermaid
 flowchart TD
-A["User Interaction"] --> B["Event Handlers"]
-B --> C["Animation Engine<br/>requestAnimationFrame / CSS Transitions"]
-C --> D["State Updates<br/>React State / Refs"]
-D --> E["Re-render Optimized UI"]
-E --> F["Visual Feedback<br/>Text Loop / Laser Flow / Splash Cursor"]
+A["User Interaction<br/>Touch/Mouse/Keyboard"] --> B["Event Handlers<br/>Cross-Device Compatible"]
+B --> C["Animation Engine<br/>requestAnimationFrame / CSS Transitions<br/>Reduced Motion Support"]
+C --> D["State Updates<br/>React State / Refs<br/>Performance Optimized"]
+D --> E["Re-render Optimized UI<br/>Virtual DOM Diffing"]
+E --> F["Visual Feedback<br/>Text Loop / Laser Flow / Splash Cursor<br/>Accessible Animations"]
 ```
 
 **Diagram sources**
@@ -504,15 +549,15 @@ E --> F["Visual Feedback<br/>Text Loop / Laser Flow / Splash Cursor"]
 - [src/components/InstallBox.tsx](file://src/components/InstallBox.tsx)
 
 ## Dependency Analysis
-Frontend dependencies include Next.js, React, Tailwind CSS, and Shadcn/ui primitives. The components.json configures Shadcn/ui paths and aliases.
+Frontend dependencies include Next.js, React, Tailwind CSS, and Shadcn/ui primitives with enhanced configuration for responsive design and centralized state management. The components.json configures Shadcn/ui paths and aliases with new responsive design tokens.
 
 ```mermaid
 graph TB
-Pkg["package.json"]
-NextCfg["next.config.ts"]
-ShadcnCfg["components.json"]
-ThemeCfg["src/config/theme.ts"]
-Globals["src/app/globals.css"]
+Pkg["package.json<br/>Enhanced Dependencies"]
+NextCfg["next.config.ts<br/>App Router Config"]
+ShadcnCfg["components.json<br/>UI Component Paths"]
+ThemeCfg["src/config/theme.ts<br/>Responsive Design Tokens"]
+Globals["src/app/globals.css<br/>Global Styles & Breakpoints"]
 Pkg --> NextCfg
 Pkg --> ShadcnCfg
 ShadcnCfg --> ThemeCfg
@@ -534,19 +579,24 @@ ThemeCfg --> Globals
 - [src/app/globals.css](file://src/app/globals.css)
 
 ## Performance Considerations
-- Prefer client-side interactivity only where necessary; keep heavy logic off the critical render path.
-- Use memoization and refs for animation-heavy components to avoid unnecessary re-renders.
-- Leverage streaming API routes for long-running operations to improve perceived performance.
-- Optimize images and assets; defer non-critical scripts.
+Performance has been enhanced with the architectural overhaul:
+
+- **Client-side interactivity**: Prefer client-side interactivity only where necessary; keep heavy logic off the critical render path with code splitting
+- **Memoization and refs**: Use memoization and refs for animation-heavy components to avoid unnecessary re-renders with performance monitoring
+- **Streaming API routes**: Leverage streaming API routes for long-running operations to improve perceived performance with progressive loading
+- **Asset optimization**: Optimize images and assets; defer non-critical scripts with lazy loading strategies
+- **Bundle analysis**: Monitor bundle size and implement tree shaking for unused components
 
 [No sources needed since this section provides general guidance]
 
 ## Troubleshooting Guide
-Common issues and strategies:
-- Authentication failures: Verify auth provider state and API responses; surface errors via toast notifications.
-- Theme mismatches: Ensure theme provider wraps the root layout and CSS variables are applied globally.
-- API timeouts: Implement retries and user-friendly error messages; log detailed context for debugging.
-- Not found pages: Confirm route definitions and fallback handling in the root layout.
+Common issues and strategies have been enhanced with better error reporting:
+
+- **Authentication failures**: Verify auth provider state and API responses; surface errors via toast notifications with detailed error contexts
+- **Theme mismatches**: Ensure theme provider wraps the root layout and CSS variables are applied globally with breakpoint debugging
+- **API timeouts**: Implement retries and user-friendly error messages; log detailed context for debugging with network request inspection
+- **Not found pages**: Confirm route definitions and fallback handling in the root layout with proper error boundary implementation
+- **Responsive design issues**: Test across different screen sizes and devices; use browser developer tools for responsive debugging
 
 **Section sources**
 - [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)
@@ -555,12 +605,14 @@ Common issues and strategies:
 - [src/app/layout.tsx](file://src/app/layout.tsx)
 
 ## Conclusion
-The frontend leverages Next.js App Router for scalable routing, React Context for cohesive state management, and a Shadcn/ui + Tailwind-based component library for consistent UI. The architecture cleanly separates concerns between layout, features, and shared infrastructure, while integrating seamlessly with backend APIs through typed routes and centralized error handling. Animated components enrich the user experience without compromising performance when implemented thoughtfully.
+The frontend architecture has been successfully overhauled with enhanced dashboard layout, improved routing with authentication guards, centralized state management, and comprehensive responsive design elements. The architecture leverages Next.js App Router for scalable routing, React Context for cohesive state management, and a Shadcn/ui + Tailwind-based component library for consistent UI. The enhanced system cleanly separates concerns between layout, features, and shared infrastructure, while integrating seamlessly with backend APIs through typed routes and centralized error handling. Animated components enrich the user experience without compromising performance when implemented thoughtfully, and the responsive design ensures optimal user experience across all devices.
 
 ## Appendices
-- Configuration files: next.config.ts, package.json, components.json.
-- Global styles and theme: globals.css, theme.ts.
-- Navigation and shells: site-nav.tsx, legal-shell.tsx, logo.tsx.
+- **Configuration files**: next.config.ts, package.json, components.json with enhanced responsive design settings
+- **Global styles and theme**: globals.css with comprehensive breakpoints, theme.ts with design tokens
+- **Navigation and shells**: site-nav.tsx with mobile-responsive navigation, legal-shell.tsx, logo.tsx
+- **Authentication system**: auth-provider.tsx with route guards and session management
+- **State management**: Centralized React Context providers for theme, auth, and toast notifications
 
 **Section sources**
 - [next.config.ts](file://next.config.ts)
@@ -571,3 +623,4 @@ The frontend leverages Next.js App Router for scalable routing, React Context fo
 - [src/components/site-nav.tsx](file://src/components/site-nav.tsx)
 - [src/components/legal-shell.tsx](file://src/components/legal-shell.tsx)
 - [src/components/logo.tsx](file://src/components/logo.tsx)
+- [src/components/auth-provider.tsx](file://src/components/auth-provider.tsx)

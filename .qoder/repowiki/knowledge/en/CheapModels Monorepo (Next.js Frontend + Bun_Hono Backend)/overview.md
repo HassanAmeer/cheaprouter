@@ -1,0 +1,1 @@
+Co-locates a Next.js frontend and a separate Bun/Hono API backend in one git repository, with the root package.json orchestrating only the frontend lifecycle.

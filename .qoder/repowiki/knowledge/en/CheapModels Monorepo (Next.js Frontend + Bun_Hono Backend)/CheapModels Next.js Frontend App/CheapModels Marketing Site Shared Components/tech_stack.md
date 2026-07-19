@@ -1,0 +1,1 @@
+Next.js client components (`'use client'`); `motion/react` for the announcement cube; `framer-motion` `useInView` for scroll-triggered reveals; `lucide-react` icons throughout; `three` (`RawShaderMaterial`) for `LaserFlow`; raw WebGL2 shaders (advection/diffusion Navier-Stokes) for `SplashCursor`.

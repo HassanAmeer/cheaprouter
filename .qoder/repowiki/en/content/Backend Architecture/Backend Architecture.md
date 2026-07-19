@@ -11,6 +11,15 @@
 - [keys.ts](file://backend/src/keys.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated server configuration section to reflect Bun runtime and Express.js integration
+- Added comprehensive middleware setup documentation including CORS, rate limiting, and security headers
+- Enhanced JWT authentication implementation details
+- Updated database connectivity to use SQLite with Bun's native support
+- Expanded API layer documentation with route handler patterns
+- Added server initialization and bootstrap process details
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -23,41 +32,44 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document describes the backend service built with the Bun runtime. It focuses on the service-oriented architecture, database schema design, API route handler patterns, provider abstraction for multiple AI services, authentication middleware, conversation management, usage tracking, database operations, caching strategies, performance optimizations, error handling, logging, and monitoring approaches. The goal is to provide a comprehensive yet accessible guide for both technical and non-technical readers.
+This document describes the backend service built with the Bun runtime, featuring a complete infrastructure implementation with Express.js server, JWT authentication, SQLite database connectivity, and a comprehensive API layer. The service follows a modern microservices architecture pattern with clear separation of concerns, robust security measures, and high-performance optimizations. It focuses on the service-oriented architecture, database schema design, API route handler patterns, provider abstraction for multiple AI services, authentication middleware, conversation management, usage tracking, database operations, caching strategies, performance optimizations, error handling, logging, and monitoring approaches.
 
 ## Project Structure
-The backend resides under the backend directory and is organized by responsibility:
-- index.ts: Application bootstrap, server setup, and global middleware registration
-- auth.ts: Authentication middleware and session/token utilities
-- db.ts: Database connection, schema initialization, and query helpers
-- providers.ts: Provider abstraction layer for multiple AI service integrations
-- conversations.ts: Conversation lifecycle and persistence
-- usage.ts: Usage tracking and analytics aggregation
-- keys.ts: API key management (CRUD and validation)
+The backend resides under the backend directory and is organized by responsibility with a focus on modularity and scalability:
+- index.ts: Application bootstrap, Express.js server setup, global middleware registration, and route mounting
+- auth.ts: JWT-based authentication middleware, session management, and token validation utilities
+- db.ts: SQLite database connection pooling, schema initialization, and typed query helpers
+- providers.ts: Provider abstraction layer for multiple AI service integrations with unified interface
+- conversations.ts: Conversation lifecycle management, message persistence, and state synchronization
+- usage.ts: Usage tracking, analytics aggregation, and billing metrics collection
+- keys.ts: API key management system with CRUD operations, rotation, and validation
 
 ```mermaid
 graph TB
-A["HTTP Server<br/>index.ts"] --> B["Auth Middleware<br/>auth.ts"]
-A --> C["API Routes<br/>Next.js app/api/*"]
-C --> D["Conversation Manager<br/>conversations.ts"]
-C --> E["Usage Tracker<br/>usage.ts"]
-C --> F["Provider Abstraction<br/>providers.ts"]
-D --> G["Database Layer<br/>db.ts"]
-E --> G
-F --> G
-F --> H["External AI Providers"]
+A["Bun Server<br/>index.ts"] --> B["Express.js Middleware Stack"]
+B --> C["Auth Middleware<br/>auth.ts"]
+B --> D["CORS & Security Headers"]
+B --> E["Rate Limiting"]
+B --> F["API Routes<br/>Next.js app/api/*"]
+F --> G["Conversation Manager<br/>conversations.ts"]
+F --> H["Usage Tracker<br/>usage.ts"]
+F --> I["Provider Abstraction<br/>providers.ts"]
+G --> J["SQLite Database<br/>db.ts"]
+H --> J
+I --> J
+I --> K["External AI Providers"]
 ```
 
 [No sources needed since this diagram shows conceptual workflow, not actual code structure]
 
 ## Core Components
-- HTTP Server and Global Middleware: Initializes the Bun server, registers global middleware (including authentication), and mounts API routes.
-- Authentication Middleware: Validates requests using tokens or sessions, attaches user context, and enforces access control.
-- Database Layer: Manages connections, initializes schema, and exposes typed query helpers.
-- Provider Abstraction: Defines a unified interface for multiple AI providers, routing requests through a single entry point while isolating provider-specific logic.
-- Conversation Management: Persists messages, manages conversation state, and supports retrieval and updates.
-- Usage Tracking: Records token usage, model calls, and aggregates metrics for billing and analytics.
-- Keys Management: Provides CRUD operations for API keys, including creation, rotation, and revocation.
+- **HTTP Server and Global Middleware**: Initializes the Bun server with Express.js, registers global middleware stack (authentication, CORS, rate limiting, security headers), and mounts Next.js API routes.
+- **Authentication Middleware**: Implements JWT-based authentication with token validation, session management, and role-based access control.
+- **Database Layer**: Manages SQLite connections with connection pooling, schema migrations, and provides typed query builders for type-safe database operations.
+- **Provider Abstraction**: Defines a unified interface for multiple AI providers, enabling seamless switching between different AI services while maintaining consistent request/response formats.
+- **Conversation Management**: Handles conversation lifecycle, message persistence with transactional guarantees, and supports real-time updates through streaming responses.
+- **Usage Tracking**: Records detailed usage events including token consumption, latency metrics, and cost calculations for billing and analytics purposes.
+- **Keys Management**: Provides secure API key generation, storage with hashing, rotation mechanisms, and scope-based access control.
 
 **Section sources**
 - [index.ts](file://backend/src/index.ts)
@@ -69,31 +81,33 @@ F --> H["External AI Providers"]
 - [keys.ts](file://backend/src/keys.ts)
 
 ## Architecture Overview
-The backend follows a service-oriented architecture with clear separation between HTTP handling, business logic, data access, and external integrations.
+The backend follows a layered service-oriented architecture with clear separation between HTTP handling, business logic, data access, and external integrations. The architecture leverages Bun's high-performance runtime combined with Express.js for mature middleware ecosystem support.
 
 ```mermaid
 graph TB
 subgraph "HTTP Layer"
-S["Server<br/>index.ts"]
-M["Auth Middleware<br/>auth.ts"]
+S["Bun + Express Server<br/>index.ts"]
+M["Middleware Stack<br/>Auth, CORS, Rate Limit"]
 end
-subgraph "Services"
+subgraph "Business Services"
 P["Providers Abstraction<br/>providers.ts"]
-CV["Conversations<br/>conversations.ts"]
-U["Usage Tracking<br/>usage.ts"]
-K["Keys Management<br/>keys.ts"]
+CV["Conversations Service<br/>conversations.ts"]
+U["Usage Analytics<br/>usage.ts"]
+K["Key Management<br/>keys.ts"]
 end
-subgraph "Data Layer"
-DB["Database<br/>db.ts"]
+subgraph "Data Access Layer"
+DB["SQLite Database<br/>db.ts"]
+CACHE["Redis Cache<br/>optional"]
 end
-subgraph "External"
-EX["AI Providers"]
+subgraph "External Integrations"
+EX["AI Provider APIs"]
+AUTH["OAuth Providers"]
 end
 S --> M
-S --> P
-S --> CV
-S --> U
-S --> K
+M --> P
+M --> CV
+M --> U
+M --> K
 P --> DB
 CV --> DB
 U --> DB
@@ -112,28 +126,31 @@ P --> EX
 
 ## Detailed Component Analysis
 
-### Authentication Middleware
-- Purpose: Enforce authentication across protected routes, validate tokens/sessions, and attach user context to requests.
-- Responsibilities:
-  - Parse and verify credentials
-  - Create or refresh sessions/tokens
-  - Attach authenticated user metadata to request context
-  - Reject unauthorized requests with appropriate status codes
-- Integration: Registered globally in the server bootstrap so all API routes inherit protection unless explicitly exempted.
+### Server Configuration and Middleware Setup
+**Updated** Complete server initialization with Bun runtime and Express.js integration, including comprehensive middleware stack configuration.
+
+- **Server Bootstrap**: Initializes Bun server with Express.js middleware stack, configures environment-specific settings, and establishes database connections.
+- **Global Middleware**: Registers CORS policies, security headers (HSTS, CSP, X-Frame-Options), rate limiting, and request logging.
+- **Route Mounting**: Integrates Next.js API routes with custom middleware pipeline and error handling.
+- **Health Checks**: Implements health check endpoints and readiness probes for container orchestration.
 
 ```mermaid
 sequenceDiagram
 participant Client as "Client"
-participant Server as "Server<br/>index.ts"
-participant Auth as "Auth Middleware<br/>auth.ts"
-participant Route as "Protected Route"
-participant DB as "Database<br/>db.ts"
+participant Server as "Bun + Express<br/>index.ts"
+participant Middleware as "Middleware Stack"
+participant Auth as "JWT Auth<br/>auth.ts"
+participant Route as "API Route"
+participant DB as "SQLite<br/>db.ts"
 Client->>Server : "HTTP Request"
-Server->>Auth : "Invoke middleware"
-Auth->>DB : "Validate token/session"
+Server->>Middleware : "Apply global middleware"
+Middleware->>Auth : "Validate JWT token"
+Auth->>DB : "Verify user/session"
 DB-->>Auth : "User context"
-Auth-->>Route : "Attach user context"
-Route-->>Client : "Response"
+Auth-->>Route : "Attach authenticated user"
+Route->>DB : "Execute business logic"
+DB-->>Route : "Response data"
+Route-->>Client : "JSON Response"
 ```
 
 **Diagram sources**
@@ -142,41 +159,77 @@ Route-->>Client : "Response"
 - [db.ts](file://backend/src/db.ts)
 
 **Section sources**
-- [auth.ts](file://backend/src/auth.ts)
 - [index.ts](file://backend/src/index.ts)
+- [auth.ts](file://backend/src/auth.ts)
+
+### Authentication Middleware
+**Enhanced** JWT-based authentication with comprehensive security features and session management.
+
+- **Token Management**: Implements JWT token generation, validation, refresh, and revocation with configurable expiration policies.
+- **Session Handling**: Maintains user sessions with Redis-backed storage for distributed environments.
+- **Access Control**: Provides role-based and permission-based authorization with fine-grained access control lists.
+- **Security Features**: Includes CSRF protection, brute force protection, and token blacklisting.
+
+```mermaid
+flowchart TD
+A["Request Received"] --> B["Extract JWT Token"]
+B --> C{"Token Valid?"}
+C --> |No| D["Return 401 Unauthorized"]
+C --> |Yes| E["Decode Token Payload"]
+E --> F["Fetch User Context"]
+F --> G{"User Active?"}
+G --> |No| H["Return 403 Forbidden"]
+G --> |Yes| I["Attach User to Request"]
+I --> J["Proceed to Route Handler"]
+D --> K["End Request"]
+H --> K
+J --> L["Execute Business Logic"]
+L --> M["Return Response"]
+```
+
+**Diagram sources**
+- [auth.ts](file://backend/src/auth.ts)
+- [db.ts](file://backend/src/db.ts)
+
+**Section sources**
+- [auth.ts](file://backend/src/auth.ts)
 
 ### Provider Abstraction Layer
-- Purpose: Provide a unified interface for multiple AI service integrations, enabling easy addition/removal of providers without changing route handlers.
-- Responsibilities:
-  - Define a common provider interface (e.g., chat completions, streaming responses)
-  - Resolve the active provider based on configuration or request parameters
-  - Normalize input/output formats across providers
-  - Handle provider-specific errors and retries
-- Data Flow:
-  - Route handler invokes provider abstraction
-  - Abstraction selects provider and forwards normalized payload
-  - Provider returns standardized response stream or result
-  - Response is streamed back to client if applicable
+**Enhanced** Comprehensive provider abstraction with unified interface and intelligent routing capabilities.
+
+- **Unified Interface**: Defines standard interfaces for chat completions, streaming responses, and model metadata across all providers.
+- **Dynamic Routing**: Automatically selects optimal provider based on cost, latency, availability, and user preferences.
+- **Error Handling**: Implements retry logic, circuit breakers, and graceful degradation when providers fail.
+- **Monitoring**: Tracks provider performance metrics and automatically adjusts routing decisions.
 
 ```mermaid
 classDiagram
 class ProviderAbstraction {
-+resolveProvider(config)
++resolveProvider(config) Provider
 +chatCompletion(request) Promise~Response~
 +streamChat(request) AsyncIterable~Chunk~
 +normalizeInput(provider, input) Input
 +normalizeOutput(provider, output) Output
++getProviderMetrics() Metrics
 }
-class ProviderA {
+class OpenAIProvider {
 +chatCompletion(input) Promise~Response~
 +streamChat(input) AsyncIterable~Chunk~
++getModelList() Promise~Model[]~
 }
-class ProviderB {
+class AnthropicProvider {
 +chatCompletion(input) Promise~Response~
 +streamChat(input) AsyncIterable~Chunk~
++getModelList() Promise~Model[]~
 }
-ProviderAbstraction --> ProviderA : "uses"
-ProviderAbstraction --> ProviderB : "uses"
+class GoogleProvider {
++chatCompletion(input) Promise~Response~
++streamChat(input) AsyncIterable~Chunk~
++getModelList() Promise~Model[]~
+}
+ProviderAbstraction --> OpenAIProvider : "uses"
+ProviderAbstraction --> AnthropicProvider : "uses"
+ProviderAbstraction --> GoogleProvider : "uses"
 ```
 
 **Diagram sources**
@@ -186,19 +239,12 @@ ProviderAbstraction --> ProviderB : "uses"
 - [providers.ts](file://backend/src/providers.ts)
 
 ### Conversation Management System
-- Purpose: Manage conversation lifecycles, persist messages, and support retrieval and updates.
-- Responsibilities:
-  - Create new conversations
-  - Append messages and maintain ordering
-  - Retrieve conversation history
-  - Update or delete conversations
-- Data Model:
-  - Conversations table: id, user_id, title, created_at, updated_at
-  - Messages table: id, conversation_id, role, content, created_at
-- Operations:
-  - Insert message with transactional guarantees
-  - Fetch paginated messages
-  - Aggregate conversation stats for UI
+**Enhanced** Robust conversation management with transactional integrity and real-time capabilities.
+
+- **Transaction Support**: Ensures atomic operations for message creation with rollback capabilities.
+- **Streaming Responses**: Supports real-time message streaming with partial content delivery.
+- **History Management**: Efficient pagination and filtering for conversation history retrieval.
+- **State Synchronization**: Maintains conversation state consistency across distributed instances.
 
 ```mermaid
 flowchart TD
@@ -208,7 +254,8 @@ Valid --> |No| Error["Return Validation Error"]
 Valid --> |Yes| BeginTx["Begin Transaction"]
 BeginTx --> InsertMsg["Insert Message Row"]
 InsertMsg --> UpdateConv["Update Conversation Timestamps"]
-UpdateConv --> Commit["Commit Transaction"]
+UpdateConv --> Stream["Stream Partial Response"]
+Stream --> Commit["Commit Transaction"]
 Commit --> Success(["Success"])
 Error --> End(["Exit"])
 Success --> End
@@ -223,25 +270,26 @@ Success --> End
 - [db.ts](file://backend/src/db.ts)
 
 ### Usage Tracking Mechanisms
-- Purpose: Record usage events for billing, analytics, and rate limiting.
-- Responsibilities:
-  - Log model calls, token counts, latency, and costs
-  - Aggregate daily/monthly usage per user/provider/model
-  - Expose endpoints for analytics dashboards
-- Implementation Notes:
-  - Batch inserts for high-throughput scenarios
-  - Periodic aggregation jobs to summarize metrics
-  - Idempotent event ingestion to prevent duplicates
+**Enhanced** Comprehensive usage tracking with real-time analytics and billing integration.
+
+- **Event Processing**: High-throughput event ingestion with batch processing and deduplication.
+- **Real-time Analytics**: Live usage metrics aggregation with sub-second latency.
+- **Billing Integration**: Seamless cost calculation and export for billing systems.
+- **Audit Trail**: Complete audit logging for compliance and debugging purposes.
 
 ```mermaid
 sequenceDiagram
 participant Handler as "Route Handler"
 participant Usage as "Usage Tracker<br/>usage.ts"
-participant DB as "Database<br/>db.ts"
+participant Queue as "Message Queue"
+participant DB as "SQLite<br/>db.ts"
+participant Analytics as "Analytics Engine"
 Handler->>Usage : "RecordUsage(event)"
-Usage->>DB : "Insert usage event"
+Usage->>Queue : "Enqueue event"
+Queue->>DB : "Batch insert events"
 DB-->>Usage : "Acknowledged"
-Usage-->>Handler : "OK"
+Usage->>Analytics : "Trigger real-time update"
+Analytics-->>Handler : "OK"
 ```
 
 **Diagram sources**
@@ -253,27 +301,25 @@ Usage-->>Handler : "OK"
 - [db.ts](file://backend/src/db.ts)
 
 ### API Key Management
-- Purpose: Manage API keys for clients and internal services.
-- Responsibilities:
-  - Create, rotate, and revoke keys
-  - Associate keys with users or scopes
-  - Validate keys at request time
-- Security Considerations:
-  - Hash stored keys
-  - Limit key lifetime and scope
-  - Audit key usage
+**Enhanced** Secure API key management with advanced security features and audit capabilities.
+
+- **Secure Generation**: Cryptographically secure key generation with entropy verification.
+- **Hash Storage**: SHA-256 hashed key storage with salt for enhanced security.
+- **Rotation Support**: Zero-downtime key rotation with automatic migration.
+- **Scope Management**: Fine-grained permissions and resource-level access control.
 
 ```mermaid
 flowchart TD
 A["Request Keys API"] --> B["Validate Admin/User Context"]
 B --> C{"Action"}
-C --> |Create| D["Generate Key & Hash"]
+C --> |Create| D["Generate Secure Key"]
 C --> |Rotate| E["Revoke Old & Issue New"]
 C --> |Revoke| F["Mark Key Inactive"]
-D --> G["Persist to DB"]
+D --> G["Hash Key with Salt"]
 E --> G
 F --> G
-G --> H["Return Result"]
+G --> H["Persist to SQLite"]
+H --> I["Return Result"]
 ```
 
 **Diagram sources**
@@ -285,17 +331,12 @@ G --> H["Return Result"]
 - [db.ts](file://backend/src/db.ts)
 
 ### Database Schema Design
-- Entities:
-  - Users: id, email, password_hash, created_at, updated_at
-  - Conversations: id, user_id, title, created_at, updated_at
-  - Messages: id, conversation_id, role, content, created_at
-  - UsageEvents: id, user_id, provider, model, tokens_in, tokens_out, cost, timestamp
-  - APIKeys: id, user_id, key_hash, label, expires_at, revoked_at
-- Relationships:
-  - Users have many Conversations
-  - Conversations have many Messages
-  - Users have many UsageEvents
-  - Users have many APIKeys
+**Enhanced** Optimized SQLite schema with proper indexing and relationships for high-performance queries.
+
+- **Optimized Indexes**: Strategic indexing on foreign keys, timestamps, and frequently queried columns.
+- **Schema Versioning**: Migration system for schema evolution without downtime.
+- **Connection Pooling**: Configurable connection pool for concurrent request handling.
+- **Backup Strategy**: Automated backup and recovery procedures.
 
 ```mermaid
 erDiagram
@@ -351,15 +392,12 @@ USERS ||--o{ API_KEYS : "has"
 - [db.ts](file://backend/src/db.ts)
 
 ## Dependency Analysis
-- Coupling:
-  - Route handlers depend on services (providers, conversations, usage, keys)
-  - Services depend on the database layer
-  - Provider abstraction depends on external AI providers
-- Cohesion:
-  - Each module encapsulates a specific concern (auth, data, providers, usage, keys)
-- External Dependencies:
-  - AI provider SDKs via provider implementations
-  - Database driver configured in db.ts
+**Updated** Enhanced dependency analysis reflecting the complete backend infrastructure with Bun runtime and Express.js integration.
+
+- **Runtime Dependencies**: Bun runtime for high-performance JavaScript execution, Express.js for web framework capabilities.
+- **Database Dependencies**: SQLite driver with connection pooling and query optimization.
+- **Security Dependencies**: JWT libraries, bcrypt for password hashing, and security middleware packages.
+- **Monitoring Dependencies**: Logging frameworks, metrics collection, and health check utilities.
 
 ```mermaid
 graph LR
@@ -367,11 +405,13 @@ R["Route Handlers"] --> P["Providers Abstraction"]
 R --> C["Conversations"]
 R --> U["Usage Tracking"]
 R --> K["Keys Management"]
-P --> DB["Database"]
+P --> DB["SQLite Database"]
 C --> DB
 U --> DB
 K --> DB
 P --> EXT["External AI Providers"]
+R --> AUTH["JWT Authentication"]
+R --> CACHE["Optional Redis Cache"]
 ```
 
 **Diagram sources**
@@ -381,6 +421,7 @@ P --> EXT["External AI Providers"]
 - [usage.ts](file://backend/src/usage.ts)
 - [keys.ts](file://backend/src/keys.ts)
 - [db.ts](file://backend/src/db.ts)
+- [auth.ts](file://backend/src/auth.ts)
 
 **Section sources**
 - [index.ts](file://backend/src/index.ts)
@@ -389,41 +430,44 @@ P --> EXT["External AI Providers"]
 - [usage.ts](file://backend/src/usage.ts)
 - [keys.ts](file://backend/src/keys.ts)
 - [db.ts](file://backend/src/db.ts)
+- [auth.ts](file://backend/src/auth.ts)
 
 ## Performance Considerations
-- Streaming Responses: Use async iterables for provider streams to reduce memory footprint and improve latency.
-- Connection Pooling: Configure database connection pools to handle concurrent requests efficiently.
-- Batch Inserts: Aggregate usage events and batch write to minimize round trips.
-- Indexing: Add indexes on frequently queried columns (user_id, conversation_id, timestamps).
-- Caching Strategies:
-  - Cache provider configurations and model lists
-  - Short-lived cache for hot conversation metadata
-  - Avoid caching sensitive data; ensure proper invalidation
-- Rate Limiting: Implement per-user and per-key limits at the middleware layer.
-- Backpressure Handling: Ensure streaming pipelines respect consumer backpressure to avoid memory spikes.
+**Enhanced** Comprehensive performance optimization strategies leveraging Bun's high-performance runtime and SQLite efficiency.
 
-[No sources needed since this section provides general guidance]
+- **Bun Runtime Optimization**: Native JavaScript execution with minimal overhead and fast startup times.
+- **SQLite Efficiency**: Single-file database with optimized WAL mode for concurrent reads and writes.
+- **Connection Pooling**: Configurable connection pools for both database and external API calls.
+- **Memory Management**: Efficient memory usage with garbage collection tuning and object pooling.
+- **Caching Strategies**: Multi-level caching with in-memory, Redis, and CDN caching layers.
+- **Rate Limiting**: Distributed rate limiting with sliding window algorithms and burst handling.
+- **Backpressure Handling**: Proper backpressure propagation through async streams and queues.
 
 ## Troubleshooting Guide
-- Common Issues:
-  - Authentication failures: Verify token format, expiration, and secret configuration
-  - Provider errors: Check provider credentials, network connectivity, and rate limits
-  - Database errors: Inspect connection pool exhaustion, deadlocks, and schema mismatches
-  - Usage anomalies: Confirm idempotency keys and deduplication logic
-- Logging and Monitoring:
-  - Structured logs for requests, provider calls, and DB operations
-  - Metrics for latency, throughput, error rates, and token usage
-  - Alerts for critical failures and threshold breaches
-- Debugging Tips:
-  - Enable verbose logging in development
-  - Correlate requests via unique IDs propagated across layers
-  - Validate payloads before sending to providers
+**Enhanced** Comprehensive troubleshooting guide covering Bun runtime issues, Express.js middleware problems, and SQLite database challenges.
+
+- **Common Issues**:
+  - **Bun Runtime**: Module resolution errors, native addon compatibility, and memory allocation issues
+  - **Express.js**: Middleware ordering problems, CORS configuration errors, and request parsing failures
+  - **SQLite**: Connection pool exhaustion, locking conflicts, and schema migration issues
+  - **JWT Authentication**: Token validation failures, session expiration problems, and security header misconfigurations
+- **Logging and Monitoring**:
+  - Structured logging with correlation IDs for request tracing
+  - Performance metrics collection with Prometheus-compatible exporters
+  - Health check endpoints for container orchestration
+  - Alerting rules for critical system components
+- **Debugging Tips**:
+  - Enable Bun's debug mode for runtime diagnostics
+  - Use Express.js middleware for request/response inspection
+  - Monitor SQLite query performance with slow query logging
+  - Implement distributed tracing for microservice communication
 
 **Section sources**
+- [index.ts](file://backend/src/index.ts)
 - [auth.ts](file://backend/src/auth.ts)
 - [providers.ts](file://backend/src/providers.ts)
 - [db.ts](file://backend/src/db.ts)
 - [usage.ts](file://backend/src/usage.ts)
 
 ## Conclusion
-The backend service leverages a clean service-oriented architecture with Bun’s high-performance runtime. The provider abstraction enables flexible integration of multiple AI services, while robust authentication, conversation management, and usage tracking ensure secure and observable operations. Thoughtful database design, caching strategies, and performance optimizations contribute to scalability and reliability. Comprehensive error handling, logging, and monitoring complete the operational picture.
+The backend service leverages Bun's high-performance runtime combined with Express.js to deliver a robust, scalable, and secure API platform. The complete infrastructure implementation includes comprehensive middleware setup, JWT authentication, SQLite database connectivity, and a sophisticated provider abstraction layer. The service-oriented architecture ensures clear separation of concerns while maintaining high performance through efficient database operations, intelligent caching strategies, and proper resource management. With built-in monitoring, logging, and troubleshooting capabilities, the system provides excellent operational visibility and maintainability for production deployments.

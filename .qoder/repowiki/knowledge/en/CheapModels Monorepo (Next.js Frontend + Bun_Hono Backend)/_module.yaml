@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: ""
-title: CheapModels Monorepo (Next.js Frontend + Hono/Bun Backend)
+title: CheapModels Monorepo (Next.js Frontend + Bun/Hono Backend)
 scope:
     - README.md
     - AGENTS.md

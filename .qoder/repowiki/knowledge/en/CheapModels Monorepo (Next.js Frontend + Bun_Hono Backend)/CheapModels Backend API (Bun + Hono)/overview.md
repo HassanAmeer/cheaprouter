@@ -1,0 +1,1 @@
+Single-process Bun HTTP server exposing REST and SSE endpoints for user auth, API keys, BYOK provider registry, chat conversations, usage analytics, and a models catalog backed by SQLite.

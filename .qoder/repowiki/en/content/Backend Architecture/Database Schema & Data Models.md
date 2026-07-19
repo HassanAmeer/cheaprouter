@@ -11,6 +11,13 @@
 - [index.ts](file://backend/src/index.ts)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated to reflect new database schema implementation with conversations tracking, usage monitoring, and structured data models for user interactions and API key management
+- Enhanced entity relationship documentation based on actual code implementation
+- Added comprehensive field definitions and constraints for all core entities
+- Updated architecture diagrams to reflect current module dependencies
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -25,6 +32,8 @@
 
 ## Introduction
 This document provides comprehensive data model documentation for the backend database schema, focusing on entities such as users, API keys, conversations, usage metrics, and provider configurations. It details entity relationships, field definitions, primary and foreign keys, constraints, validation rules, indexing strategies, migration patterns, backup procedures, performance optimization techniques, and security considerations for sensitive information like API keys and user data.
+
+The schema has been updated to support conversations tracking, usage monitoring, and structured data models for user interactions and API key management.
 
 ## Project Structure
 The backend is implemented in TypeScript under the backend/src directory. The core database-related modules are:
@@ -444,8 +453,6 @@ Providers --> DB
 - Monitoring:
   - Track slow queries and adjust indexes accordingly
 
-[No sources needed since this section provides general guidance]
-
 ## Troubleshooting Guide
 Common issues and resolutions:
 - Authentication Failures:
@@ -480,8 +487,6 @@ Operational checks:
 ## Conclusion
 The backend data model centers around users, API keys, conversations, usage metrics, and provider configurations. Strong referential integrity, careful indexing, and robust security practices ensure reliable and secure operation. Adhering to the recommended validation rules, migration patterns, and performance optimizations will help maintain scalability and data quality over time.
 
-[No sources needed since this section summarizes without analyzing specific files]
-
 ## Appendices
 
 ### Migration Patterns
@@ -490,15 +495,11 @@ The backend data model centers around users, API keys, conversations, usage metr
 - Backward-compatible schema changes with dual-write strategies for zero-downtime deployments
 - Rollback plans for each migration
 
-[No sources needed since this section provides general guidance]
-
 ### Backup Procedures
 - Regular full backups and incremental WAL-based backups
 - Encrypted backups stored offsite
 - Periodic restore drills to validate recovery processes
 - Retention policies aligned with compliance requirements
-
-[No sources needed since this section provides general guidance]
 
 ### Security Measures and Privacy Considerations
 - Hash passwords using strong algorithms (e.g., bcrypt)
@@ -508,5 +509,3 @@ The backend data model centers around users, API keys, conversations, usage metr
 - Enforce input validation and parameterized queries to prevent injection
 - Implement row-level security where supported
 - Comply with privacy regulations for user data retention and deletion
-
-[No sources needed since this section provides general guidance]

@@ -1,0 +1,3 @@
+- All HTTP requests go through `lib/api.ts` — neither pages nor server routes call `fetch` directly.
+- Global client state (theme, toasts, user session) is provided once in the root `app/layout.tsx` rather than per-page.
+- Server routes live under `app/api/<resource>/route.ts` mirroring REST resource names and are invoked only via the typed client wrapper.

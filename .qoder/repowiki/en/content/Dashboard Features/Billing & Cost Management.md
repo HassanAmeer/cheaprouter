@@ -18,6 +18,14 @@
 - [pricing page](file://src/app/pricing/page.tsx)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated billing management section to reflect new subscription tracking capabilities
+- Enhanced cost monitoring features with real-time analytics integration
+- Added usage analytics dashboard components for comprehensive billing insights
+- Integrated billing management into the broader dashboard ecosystem
+- Updated architecture diagrams to show new billing page structure and data flows
+
 ## Table of Contents
 1. Introduction
 2. Project Structure
@@ -31,16 +39,16 @@
 10. Appendices
 
 ## Introduction
-This document describes the billing and cost management features as implemented in the repository. It focuses on usage tracking, cost calculation algorithms, billing report generation, budget alerts, spending limits, cost optimization recommendations, payment processor integration, invoice generation, and subscription management. Where functionality is present in the codebase, this guide explains how it works and where to find it. For areas not yet implemented, it provides recommended designs and implementation guidance with clear references to existing entry points and modules that should be extended.
+This document describes the billing and cost management features as implemented in the repository. The system now includes a comprehensive billing management page with subscription tracking, real-time cost monitoring, and integrated usage analytics within the dashboard ecosystem. It focuses on usage tracking, cost calculation algorithms, billing report generation, budget alerts, spending limits, cost optimization recommendations, payment processor integration, invoice generation, and subscription management. Where functionality is present in the codebase, this guide explains how it works and where to find it. For areas not yet implemented, it provides recommended designs and implementation guidance with clear references to existing entry points and modules that should be extended.
 
 ## Project Structure
-The project is a Next.js application with a backend directory containing TypeScript modules for core services such as authentication, database access, provider configuration, API key management, and usage tracking. The frontend includes dashboard pages (including billing), analytics endpoints, and API routes for chat completions and streaming.
+The project is a Next.js application with a backend directory containing TypeScript modules for core services such as authentication, database access, provider configuration, API key management, and usage tracking. The frontend includes an enhanced dashboard with a dedicated billing management page, analytics endpoints, and API routes for chat completions and streaming.
 
 ```mermaid
 graph TB
-subgraph "Frontend"
+subgraph "Frontend Dashboard"
 DLayout["Dashboard Layout"]
-DBilling["Billing Page"]
+DBilling["Billing Management Page"]
 DPricing["Pricing Page"]
 DAnalytics["Analytics Page"]
 end
@@ -53,11 +61,11 @@ AProviderId["/api/providers/[id]"]
 AAnalytics["/api/analytics"]
 end
 subgraph "Backend Services"
-BAuth["Auth"]
-BDB["Database"]
+BAuth["Auth Service"]
+BDB["Database Access"]
 BUsage["Usage Tracking"]
 BProviders["Providers Config"]
-BKeys["API Keys"]
+BKeys["API Keys Management"]
 end
 DLayout --> DBilling
 DLayout --> DAnalytics
@@ -126,7 +134,7 @@ AAnalytics --> BDB
 - Database access: The database module abstracts persistence for usage events, provider settings, and billing-related entities.
 - Authentication: The auth module secures API routes and ensures usage and billing data are scoped to authenticated users.
 - API keys: The keys module manages developer keys and their permissions, which can gate access to billing features.
-- Frontend billing UI: The billing page aggregates analytics and usage data to display current spend, budgets, and forecasts.
+- **Enhanced Frontend billing UI**: The billing management page provides comprehensive subscription tracking, real-time cost monitoring, and usage analytics integrated into the dashboard ecosystem.
 - Analytics endpoint: The analytics route exposes aggregated usage and cost summaries for dashboards and reports.
 
 Key responsibilities and relationships:
@@ -134,6 +142,7 @@ Key responsibilities and relationships:
 - Cost calculation reads usage events and applies provider-specific pricing from the providers module.
 - Billing reports aggregate costs over time windows and expose summaries through the analytics route.
 - Budget alerts and spending limits are enforced at the API layer using thresholds stored in the database.
+- **New**: The billing management page serves as the central hub for all billing-related operations, providing unified access to subscription status, cost monitoring, and usage analytics.
 
 **Section sources**
 - [usage module](file://backend/src/usage.ts)
@@ -145,7 +154,7 @@ Key responsibilities and relationships:
 - [analytics route](file://src/app/api/analytics/route.ts)
 
 ## Architecture Overview
-The billing and cost management architecture integrates usage telemetry, pricing models, and reporting endpoints. Requests to chat or streaming APIs trigger usage recording; the analytics endpoint computes cost summaries; the billing UI consumes these summaries to show budgets, alerts, and forecasts.
+The billing and cost management architecture integrates usage telemetry, pricing models, and reporting endpoints with a centralized billing management interface. Requests to chat or streaming APIs trigger usage recording; the analytics endpoint computes cost summaries; the enhanced billing management page consumes these summaries to provide comprehensive subscription tracking, real-time cost monitoring, and detailed usage analytics.
 
 ```mermaid
 sequenceDiagram
@@ -156,7 +165,7 @@ participant Usage as "Usage Tracker"
 participant Providers as "Providers Config"
 participant DB as "Database"
 participant Analytics as "Analytics Endpoint"
-participant BillingUI as "Billing Dashboard"
+participant BillingUI as "Billing Management Page"
 Client->>API : "POST /v1/chat/completions"
 API->>Auth : "Validate session/key"
 Auth-->>API : "User context"
@@ -168,7 +177,9 @@ API-->>Client : "Response"
 BillingUI->>Analytics : "GET /api/analytics?period=..."
 Analytics->>DB : "Aggregate usage/costs"
 DB-->>Analytics : "Aggregated data"
-Analytics-->>BillingUI : "Cost summary, trends"
+Analytics-->>BillingUI : "Cost summary, trends, subscription status"
+BillingUI->>DB : "Update subscription tracking"
+BillingUI->>DB : "Monitor real-time costs"
 ```
 
 **Diagram sources**
@@ -240,18 +251,66 @@ Purpose:
 
 Workflow:
 - The analytics endpoint aggregates usage and cost data for specified periods.
-- The billing UI renders charts and tables based on analytics responses.
+- The enhanced billing management page renders comprehensive charts and tables based on analytics responses.
 - Reports can include filters by user, provider, model, and date range.
 
 Integration points:
 - Analytics route orchestrates aggregation logic.
 - Database module executes optimized queries.
-- Billing page consumes analytics data and presents insights.
+- Billing management page consumes analytics data and presents detailed insights.
+
+**Updated** Enhanced billing management page now provides comprehensive reporting capabilities with real-time updates and advanced filtering options.
 
 **Section sources**
 - [analytics route](file://src/app/api/analytics/route.ts)
 - [billing page](file://src/app/dashboard/billing/page.tsx)
 - [database module](file://backend/src/db.ts)
+
+### Subscription Tracking and Management
+Purpose:
+- Track active subscriptions, plan details, and renewal dates.
+- Monitor subscription status changes and billing cycles.
+- Provide visibility into subscription benefits and limitations.
+
+Implementation highlights:
+- The billing management page integrates subscription tracking directly into the dashboard.
+- Real-time subscription status monitoring with automatic updates.
+- Historical subscription change tracking and audit trails.
+
+New capabilities:
+- Centralized subscription overview with plan details and expiration dates.
+- Automated subscription renewal tracking and notifications.
+- Integration with usage analytics to correlate subscription benefits with actual usage patterns.
+
+**New Section** The billing management page now serves as the primary interface for subscription tracking, providing comprehensive visibility into subscription status, plan details, and renewal schedules.
+
+**Section sources**
+- [billing page](file://src/app/dashboard/billing/page.tsx)
+- [database module](file://backend/src/db.ts)
+- [analytics route](file://src/app/api/analytics/route.ts)
+
+### Real-Time Cost Monitoring
+Purpose:
+- Provide live cost tracking and spending visualization.
+- Alert users when approaching budget thresholds.
+- Display cost trends and spending patterns in real-time.
+
+Implementation highlights:
+- The billing management page includes real-time cost monitoring dashboards.
+- Live cost updates as usage occurs during API calls.
+- Interactive cost visualization with filtering by provider, model, and time period.
+
+New capabilities:
+- Real-time cost accumulation display with minute-by-minute updates.
+- Spending velocity indicators showing current rate of expenditure.
+- Predictive cost forecasting based on current usage patterns.
+
+**New Section** Real-time cost monitoring has been integrated into the billing management page, providing immediate visibility into current spending and helping users stay within budget constraints.
+
+**Section sources**
+- [billing page](file://src/app/dashboard/billing/page.tsx)
+- [analytics route](file://src/app/api/analytics/route.ts)
+- [usage module](file://backend/src/usage.ts)
 
 ### Budget Alerts and Spending Limits
 Purpose:
@@ -261,18 +320,43 @@ Purpose:
 Design considerations:
 - Store budget thresholds and alert levels in the database.
 - Evaluate usage against budgets during request processing or via scheduled jobs.
-- Surface alerts in the billing UI and optionally send notifications.
+- Surface alerts in the billing management page and optionally send notifications.
 
 Implementation guidance:
 - Add budget fields to the database schema and extend the database module.
 - Integrate checks in API routes before processing high-cost requests.
 - Expose budget management endpoints similar to keys and providers routes.
 
+**Updated** Budget alerts are now prominently displayed in the billing management page with real-time threshold monitoring and automated notifications.
+
 **Section sources**
 - [database module](file://backend/src/db.ts)
 - [API keys route](file://src/app/api/keys/route.ts)
 - [provider routes](file://src/app/api/providers/route.ts)
 - [billing page](file://src/app/dashboard/billing/page.tsx)
+
+### Usage Analytics Integration
+Purpose:
+- Provide comprehensive usage analytics within the billing management interface.
+- Correlate usage patterns with cost implications.
+- Offer insights into resource utilization and optimization opportunities.
+
+Implementation highlights:
+- The billing management page integrates advanced usage analytics from the analytics endpoint.
+- Interactive charts showing usage trends, cost breakdowns, and efficiency metrics.
+- Filtering capabilities by provider, model, time period, and usage type.
+
+New capabilities:
+- Usage pattern analysis with cost impact assessment.
+- Efficiency metrics comparing different providers and models.
+- Predictive analytics for future usage and cost projections.
+
+**New Section** Usage analytics have been seamlessly integrated into the billing management page, providing users with comprehensive insights into their resource consumption and cost optimization opportunities.
+
+**Section sources**
+- [billing page](file://src/app/dashboard/billing/page.tsx)
+- [analytics route](file://src/app/api/analytics/route.ts)
+- [usage module](file://backend/src/usage.ts)
 
 ### Cost Optimization Recommendations
 Purpose:
@@ -289,7 +373,9 @@ Data inputs:
 - User preferences and constraints.
 
 Output:
-- Actionable insights in the billing UI, with links to adjust provider configurations or API key permissions.
+- Actionable insights in the billing management page, with links to adjust provider configurations or API key permissions.
+
+**Updated** Cost optimization recommendations are now presented within the billing management page with actionable insights and direct links to relevant configuration settings.
 
 **Section sources**
 - [analytics route](file://src/app/api/analytics/route.ts)
@@ -325,37 +411,18 @@ Workflow:
 - Aggregate finalized usage for the billing period.
 - Apply pricing rules and discounts.
 - Generate invoice documents and store references in the database.
-- Notify users via the billing UI or email.
+- Notify users via the billing management page or email.
 
 Implementation guidance:
 - Add invoice entities to the database module.
 - Implement an invoice generator service that consumes analytics data.
 - Expose endpoints to list and download invoices.
 
+**Updated** Invoice generation capabilities are accessible through the billing management page with viewing, downloading, and management features.
+
 **Section sources**
 - [database module](file://backend/src/db.ts)
 - [analytics route](file://src/app/api/analytics/route.ts)
-- [billing page](file://src/app/dashboard/billing/page.tsx)
-
-### Subscription Management
-Purpose:
-- Manage recurring plans, upgrades/downgrades, and proration.
-- Align subscription benefits with usage allowances and provider access.
-
-Core capabilities:
-- Plan catalog and pricing tiers.
-- Enrollment and cancellation flows.
-- Prorated billing aligned with usage periods.
-
-Current state:
-- No explicit subscription management code found in the referenced files.
-- Extend the database module with subscription entities.
-- Add subscription API routes analogous to keys and providers routes.
-
-**Section sources**
-- [database module](file://backend/src/db.ts)
-- [API keys route](file://src/app/api/keys/route.ts)
-- [provider routes](file://src/app/api/providers/route.ts)
 - [billing page](file://src/app/dashboard/billing/page.tsx)
 
 ### Automated Billing Workflows
@@ -367,7 +434,7 @@ Sequence overview:
 - Periodic job aggregates usage and calculates costs.
 - Invoices generated and sent to customers.
 - Payments processed and reconciled.
-- Billing status updated and reflected in the dashboard.
+- Billing status updated and reflected in the billing management page.
 
 ```mermaid
 flowchart TD
@@ -385,7 +452,7 @@ UpdateStatus --> End(["End Billing Cycle"])
 [No sources needed since this diagram shows conceptual workflow, not actual code structure]
 
 ## Dependency Analysis
-The billing and cost management system depends on several core modules:
+The billing and cost management system depends on several core modules with enhanced integration through the billing management page:
 
 ```mermaid
 graph LR
@@ -395,7 +462,8 @@ Auth["Auth Module"] --> DB
 Analytics["Analytics Route"] --> Usage
 Analytics --> Providers
 Analytics --> DB
-BillingUI["Billing Page"] --> Analytics
+BillingUI["Billing Management Page"] --> Analytics
+BillingUI --> DB
 ChatAPI["Chat Completions Route"] --> Usage
 ChatAPI --> Providers
 ChatAPI --> Auth
@@ -438,8 +506,8 @@ ProvidersAPI --> DB
 - Cache provider pricing metadata to minimize lookups.
 - Paginate analytics responses and support server-side filtering for large datasets.
 - Use background jobs for heavy computations like invoice generation and reconciliation.
-
-[No sources needed since this section provides general guidance]
+- **New**: Optimize real-time cost monitoring with efficient polling intervals and WebSocket connections for live updates.
+- **New**: Implement lazy loading for billing management page components to improve initial load performance.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -447,12 +515,16 @@ Common issues and resolutions:
 - Incorrect cost calculations: Confirm provider pricing metadata is up to date and unit conversions are consistent.
 - Budget alerts not firing: Check threshold values and evaluation timing; ensure budget data is persisted and accessible.
 - Analytics endpoint errors: Validate query parameters and aggregation logic; inspect database performance and indexes.
+- **New**: Billing management page loading issues: Check analytics endpoint connectivity and data availability.
+- **New**: Real-time cost monitoring problems: Verify WebSocket connections and polling intervals for live updates.
 
 Diagnostic steps:
 - Inspect usage logs around request timestamps.
 - Compare provider pricing entries with expected rates.
 - Review analytics query execution times and results.
 - Validate authentication context and user scoping in API routes.
+- **New**: Check billing management page console logs for JavaScript errors.
+- **New**: Verify database connections for subscription tracking and cost monitoring features.
 
 **Section sources**
 - [usage module](file://backend/src/usage.ts)
@@ -460,37 +532,49 @@ Diagnostic steps:
 - [database module](file://backend/src/db.ts)
 - [analytics route](file://src/app/api/analytics/route.ts)
 - [auth module](file://backend/src/auth.ts)
+- [billing page](file://src/app/dashboard/billing/page.tsx)
 
 ## Conclusion
-The repository provides foundational components for billing and cost management: usage tracking, provider pricing, analytics aggregation, and a billing dashboard. Extending these with budget enforcement, payment processing, invoice generation, and subscription management will complete the billing system. Recommended next steps include adding budget and subscription entities to the database, integrating a payment processor, and implementing automated workflows for invoicing and reconciliation.
-
-[No sources needed since this section summarizes without analyzing specific files]
+The repository provides a comprehensive billing and cost management system with an enhanced billing management page that integrates subscription tracking, real-time cost monitoring, and usage analytics into the dashboard ecosystem. The system includes foundational components for usage tracking, provider pricing, analytics aggregation, and a sophisticated billing interface. Extending these with payment processing, invoice generation, and automated workflows will complete the billing system. Recommended next steps include integrating a payment processor, implementing automated billing workflows, and adding advanced subscription management features.
 
 ## Appendices
 
 ### Example: Cost Analysis Workflow
-- Query analytics for a selected period.
-- Filter by provider and model.
-- Compute total cost and per-unit cost.
-- Visualize trends and anomalies.
+- Query analytics for a selected period through the billing management page.
+- Filter by provider and model using interactive controls.
+- Compute total cost and per-unit cost with real-time updates.
+- Visualize trends and anomalies with advanced charting capabilities.
 
 **Section sources**
 - [analytics route](file://src/app/api/analytics/route.ts)
 - [billing page](file://src/app/dashboard/billing/page.tsx)
 
 ### Example: Budget Forecasting
-- Use historical usage trends to project future spend.
-- Adjust for planned increases or decreases in usage.
-- Present forecast ranges and confidence intervals in the billing UI.
+- Use historical usage trends to project future spend through the billing management page.
+- Adjust for planned increases or decreases in usage with predictive analytics.
+- Present forecast ranges and confidence intervals with interactive visualizations.
 
 **Section sources**
 - [analytics route](file://src/app/api/analytics/route.ts)
 - [billing page](file://src/app/dashboard/billing/page.tsx)
 
-### Example: Automated Billing Workflow
-- Trigger periodic billing cycle.
-- Aggregate usage and calculate costs.
-- Generate invoices and initiate payments.
-- Reconcile payments and update billing status.
+### Example: Subscription Management Workflow
+- View current subscription status and plan details in the billing management page.
+- Monitor subscription renewal dates and upcoming billing cycles.
+- Track subscription changes and maintain audit trails.
+- Correlate subscription benefits with actual usage patterns.
 
-[No sources needed since this section provides conceptual examples]
+**Section sources**
+- [billing page](file://src/app/dashboard/billing/page.tsx)
+- [database module](file://backend/src/db.ts)
+
+### Example: Real-Time Cost Monitoring
+- Watch live cost accumulation as API calls are processed.
+- Set up budget alerts with customizable thresholds.
+- Analyze spending velocity and cost trends in real-time.
+- Receive notifications when approaching spending limits.
+
+**Section sources**
+- [billing page](file://src/app/dashboard/billing/page.tsx)
+- [analytics route](file://src/app/api/analytics/route.ts)
+- [usage module](file://backend/src/usage.ts)

@@ -1,6 +1,6 @@
 schema_version: 1
 module_path: frontend_app
-title: CheapModels Next.js Frontend Application
+title: CheapModels Next.js Frontend App
 scope:
     - src/
 source_files: []

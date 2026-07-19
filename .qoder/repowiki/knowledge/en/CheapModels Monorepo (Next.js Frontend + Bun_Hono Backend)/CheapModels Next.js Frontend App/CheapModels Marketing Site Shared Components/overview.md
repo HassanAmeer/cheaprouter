@@ -1,0 +1,1 @@
+Reusable client-side React components powering the CheapModels marketing site — auth/theme providers, navigation shell, legal layout, hero/landing visuals, and WebGL fluid-simulation canvases.

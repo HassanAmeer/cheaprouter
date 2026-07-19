@@ -3,11 +3,11 @@ schema_version: 1
 locale: en-US
 branch: master
 nodes_managed: true
-exported_at: "2026-07-19T07:55:46Z"
+exported_at: "2026-07-19T08:45:09Z"
 modules:
     "":
-        dir_name: CheapModels Monorepo (Next.js Frontend + Hono_Bun Backend)
-        title: CheapModels Monorepo (Next.js Frontend + Hono/Bun Backend)
+        dir_name: CheapModels Monorepo (Next.js Frontend + Bun_Hono Backend)
+        title: CheapModels Monorepo (Next.js Frontend + Bun/Hono Backend)
         scope:
             - README.md
             - AGENTS.md
@@ -29,8 +29,8 @@ modules:
         depends_on: []
         related_to: []
     backend_service:
-        dir_name: CheapModels API Backend (Hono + Bun)
-        title: CheapModels API Backend (Hono + Bun)
+        dir_name: CheapModels Backend API (Bun + Hono)
+        title: CheapModels Backend API (Bun + Hono)
         scope:
             - backend/
         source_files: []
@@ -38,8 +38,8 @@ modules:
         depends_on: []
         related_to: []
     frontend_app:
-        dir_name: CheapModels Next.js Frontend Application
-        title: CheapModels Next.js Frontend Application
+        dir_name: CheapModels Next.js Frontend App
+        title: CheapModels Next.js Frontend App
         scope:
             - src/
         source_files: []
@@ -48,8 +48,8 @@ modules:
         depends_on: []
         related_to: []
     frontend_app/shared_components:
-        dir_name: Shared UI & Shell Components
-        title: Shared UI & Shell Components
+        dir_name: CheapModels Marketing Site Shared Components
+        title: CheapModels Marketing Site Shared Components
         scope:
             - src/components/AnnouncementBar.tsx
             - src/components/BranchFeatures.tsx
