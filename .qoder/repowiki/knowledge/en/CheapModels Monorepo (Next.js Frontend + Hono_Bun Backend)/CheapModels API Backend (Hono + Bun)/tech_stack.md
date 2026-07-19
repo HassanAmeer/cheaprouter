@@ -1,0 +1,1 @@
+Bun runtime with native `bun:sqlite` (WAL journaling), Hono v4 as the HTTP framework, `@hono/zod-validator` for request validation, and a hand-rolled HS256 JWT implementation using Web Crypto `crypto.subtle` instead of a third-party library.

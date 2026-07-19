@@ -1,0 +1,21 @@
+schema_version: 1
+module_path: frontend_app/shared_components
+title: Shared UI & Shell Components
+scope:
+    - src/components/AnnouncementBar.tsx
+    - src/components/BranchFeatures.tsx
+    - src/components/HeroTerminal.tsx
+    - src/components/InstallBox.tsx
+    - src/components/LaserFlow.jsx
+    - src/components/ModelsTable.tsx
+    - src/components/PixelatedCanvasDemo.tsx
+    - src/components/SplashCursor.jsx
+    - src/components/auth-provider.tsx
+    - src/components/legal-shell.tsx
+    - src/components/logo.tsx
+    - src/components/site-nav.tsx
+    - src/components/theme-provider.tsx
+    - src/components/theme-toggle.tsx
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,4 @@
+- All server calls go through the typed `api.*` methods in `src/lib/api.ts`; components never call `/api/*` endpoints directly.
+- Authentication is carried automatically by attaching a `Bearer cm_token` header read from `localStorage` inside the shared request wrapper.
+- Each page or feature folder owns its own scoped CSS module alongside the `.tsx` file rather than using global styles.
+- Cross-cutting concerns (theme, toasts, auth state) are injected at the root layout level via provider composition, not passed down manually.

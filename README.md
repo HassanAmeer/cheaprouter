@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CheapModels
 
-## Getting Started
+Unified API for all premium AI models — one key, every provider. This repo is a monorepo:
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+cheapmodels/
+├── backend/      # Bun + Hono + SQLite REST API
+├── src/          # Next.js 16 frontend (App Router)
+└── public/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Backend** (`/backend`): Bun runtime, [Hono](https://hono.dev) HTTP framework, native
+  `bun:sqlite` database. Exposes a REST API on port `4000` (configurable via `PORT`).
+  - `src/db.ts` — SQLite schema + connection (users, api_keys, providers, usage, conversations, messages)
+  - `src/auth.ts` — password hashing + HMAC-JWT sign/verify
+  - `src/keys.ts`, `src/providers.ts`, `src/usage.ts`, `src/conversations.ts` — data layers
+  - `src/index.ts` — Hono routes (auth, keys, providers, analytics, chat + SSE stream, models)
+- **Frontend** (`/src`): Next.js 16 + React 19 + Tailwind-ish CSS modules. Talks to the
+  backend through `src/lib/api.ts`. Shared/reused pieces live in `src/components/`:
+  - `ui/primitives.tsx` — Button, Input, Select, Badge, Modal
+  - `ui/toast.tsx` + `toast.module.css` — global toast system
+  - `ui/charts.tsx` — SVG Bar / Area / Donut charts (no extra deps)
+  - `theme-provider.tsx`, `theme-toggle.tsx` — dark/light theme
+  - `auth-provider.tsx` — token-based auth context
+  - `site-nav.tsx` — responsive navbar (mobile hamburger)
+  - `logo.tsx` — brand logo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running locally
 
-## Learn More
+### 1. Backend
+```bash
+cd backend
+bun install
+bun run dev        # http://localhost:4000
+```
+First run auto-creates `backend/cheapmodels.db`.
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Frontend
+```bash
+# from repo root
+bun install
+cp .env.local .env.local   # already present: NEXT_PUBLIC_API_URL=http://localhost:4000
+bun run dev        # http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API reference (backend)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/signup` | ❌ | Create account, returns JWT |
+| POST | `/api/auth/login` | ❌ | Login, returns JWT |
+| GET | `/api/me` | ✅ | Current user |
+| GET | `/api/models` | ❌ | Model catalog |
+| GET/POST/DELETE | `/api/keys` `/api/keys/:id` | ✅ | Manage API keys |
+| GET/POST/PUT/DELETE | `/api/providers` `(/:id)` | ✅ | BYOK provider management |
+| GET | `/api/analytics` `/api/summary` | ✅ | Usage analytics |
+| GET/POST | `/api/conversations` | ✅ | Create + list chats |
+| POST | `/api/conversations/:id/messages` | ✅ | Send message |
+| GET | `/api/stream?prompt=&model=` | ✅ | SSE token streaming |
 
-## Deploy on Vercel
+Auth header: `Authorization: Bearer <token>`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Note: chat responses are canned/mocked server-side (`fakeModelReply` in `src/index.ts`).
+> Swap this for a real provider proxy to go live.

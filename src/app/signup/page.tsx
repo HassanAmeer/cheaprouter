@@ -1,16 +1,42 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
+import { Logo } from '@/components/logo';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Button, Input } from '@/components/ui/primitives';
+import { useAuth } from '@/components/auth-provider';
+import { useToast } from '@/components/ui/toast';
 import styles from '../auth.module.css';
 
 export default function Signup() {
+  const router = useRouter();
+  const { signup } = useAuth();
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await signup(email, password, name);
+      router.push('/dashboard');
+    } catch (err: any) {
+      toast(err.message ?? 'Signup failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.splitContainer}>
-      {/* Left Visual Side */}
       <div className={styles.leftSide}>
         <div className={styles.leftContent}>
-          <div style={{ fontSize: '32px', marginBottom: '40px', fontWeight: 800 }}>
-            <span style={{ color: 'var(--color-primary)' }}><Zap size={32} fill="currentColor" /></span> CheapModels
-          </div>
+          <Logo />
           <h1 className={styles.leftTitle}>Start Building with Premium Models Today.</h1>
           <p className={styles.leftSubtitle}>Join thousands of developers using our unified API endpoint to access GPT-4, Claude, and Gemini securely and cheaply.</p>
         </div>
@@ -21,26 +47,17 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* Right Form Side */}
       <div className={styles.rightSide}>
+        <div style={{ position: 'absolute', top: 24, right: 24 }}><ThemeToggle /></div>
         <div className={styles.authCard}>
           <h1 className={styles.title}>Create Account</h1>
           <p className={styles.subtitle}>Get your free $5 welcome credits now</p>
 
-          <form>
-            <div className={styles.formGroup}>
-              <label htmlFor="name">Full Name</label>
-              <input type="text" id="name" placeholder="John Doe" required />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor="email">Email Address</label>
-              <input type="email" id="email" placeholder="name@company.com" required />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor="password">Password</label>
-              <input type="password" id="password" placeholder="••••••••" required />
-            </div>
-            <Link href="/dashboard" className={`btn-primary ${styles.submitBtn}`} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>Create Account</Link>
+          <form onSubmit={submit}>
+            <Input id="name" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input id="email" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="password" label="Password" type="password" placeholder="••••••••" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Button type="submit" fullWidth disabled={loading}>{loading ? 'Creating…' : 'Create Account'}</Button>
           </form>
 
           <div className={styles.authFooter}>

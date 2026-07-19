@@ -1,0 +1,20 @@
+schema_version: 1
+module_path: ""
+title: CheapModels Monorepo (Next.js Frontend + Hono/Bun Backend)
+scope:
+    - README.md
+    - AGENTS.md
+    - CLAUDE.md
+    - DESIGN_GAP_ANALYSIS.md
+    - package.json
+    - package-lock.json
+    - bun.lock
+    - tsconfig.json
+    - next.config.ts
+    - components.json
+    - .gitignore
+    - remaining-features-or-imrovemnets.md
+    - skills-lock.json
+source_files: []
+depends_on: []
+related_to: []

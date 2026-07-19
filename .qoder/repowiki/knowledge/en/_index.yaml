@@ -1,0 +1,71 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+nodes_managed: true
+exported_at: "2026-07-19T07:55:46Z"
+modules:
+    "":
+        dir_name: CheapModels Monorepo (Next.js Frontend + Hono_Bun Backend)
+        title: CheapModels Monorepo (Next.js Frontend + Hono/Bun Backend)
+        scope:
+            - README.md
+            - AGENTS.md
+            - CLAUDE.md
+            - DESIGN_GAP_ANALYSIS.md
+            - package.json
+            - package-lock.json
+            - bun.lock
+            - tsconfig.json
+            - next.config.ts
+            - components.json
+            - .gitignore
+            - remaining-features-or-imrovemnets.md
+            - skills-lock.json
+        source_files: []
+        children:
+            - backend_service
+            - frontend_app
+        depends_on: []
+        related_to: []
+    backend_service:
+        dir_name: CheapModels API Backend (Hono + Bun)
+        title: CheapModels API Backend (Hono + Bun)
+        scope:
+            - backend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    frontend_app:
+        dir_name: CheapModels Next.js Frontend Application
+        title: CheapModels Next.js Frontend Application
+        scope:
+            - src/
+        source_files: []
+        children:
+            - frontend_app/shared_components
+        depends_on: []
+        related_to: []
+    frontend_app/shared_components:
+        dir_name: Shared UI & Shell Components
+        title: Shared UI & Shell Components
+        scope:
+            - src/components/AnnouncementBar.tsx
+            - src/components/BranchFeatures.tsx
+            - src/components/HeroTerminal.tsx
+            - src/components/InstallBox.tsx
+            - src/components/LaserFlow.jsx
+            - src/components/ModelsTable.tsx
+            - src/components/PixelatedCanvasDemo.tsx
+            - src/components/SplashCursor.jsx
+            - src/components/auth-provider.tsx
+            - src/components/legal-shell.tsx
+            - src/components/logo.tsx
+            - src/components/site-nav.tsx
+            - src/components/theme-provider.tsx
+            - src/components/theme-toggle.tsx
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

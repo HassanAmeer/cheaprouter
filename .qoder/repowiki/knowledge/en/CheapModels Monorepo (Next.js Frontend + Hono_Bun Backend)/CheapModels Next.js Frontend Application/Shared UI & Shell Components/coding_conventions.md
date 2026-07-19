@@ -1,0 +1,5 @@
+- Client components opt-in with a `'use client'` directive at the top of every file.
+- Global app state is exposed as a React Context paired with a custom hook (`AuthProvider`/`useAuth`, `ThemeProvider`/`useTheme`).
+- Per-component styling uses a sibling CSS Module imported alongside the component, while layout/layout-level classes come from Tailwind utilities.
+- WebGL-heavy components mount a `<canvas>` inside a `ref` div, set up ResizeObserver + IntersectionObserver + visibilitychange listeners, and dispose all GL resources in the effect cleanup.
+- User-facing strings (announcements, install commands) are kept as local constants/objects rather than fetched at runtime.

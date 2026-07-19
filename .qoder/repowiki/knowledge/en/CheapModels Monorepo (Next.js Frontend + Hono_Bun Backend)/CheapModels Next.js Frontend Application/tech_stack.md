@@ -1,0 +1,1 @@
+Next.js App Router with TypeScript, CSS Modules (`.module.css`) per component, Tailwind-compatible design tokens from `config/theme.ts`, and native browser `fetch` + `ReadableStream` for SSE streaming.

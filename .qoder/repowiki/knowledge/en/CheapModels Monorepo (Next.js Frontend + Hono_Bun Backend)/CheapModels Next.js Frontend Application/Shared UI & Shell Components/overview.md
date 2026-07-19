@@ -1,0 +1,1 @@
+Reusable React components for the CheapModels marketing site — auth/theme providers, navigation shell, hero/landing visuals, and feature showcase widgets.

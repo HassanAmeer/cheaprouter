@@ -1,0 +1,1 @@
+Root workspace that co-locates the Next.js frontend and a separate Bun-hosted Hono API backend, each with its own package.json and dev/build scripts.

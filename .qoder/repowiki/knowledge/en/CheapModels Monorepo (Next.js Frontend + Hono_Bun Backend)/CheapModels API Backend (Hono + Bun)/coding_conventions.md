@@ -1,0 +1,5 @@
+- Route handlers declare input shape with inline Zod schemas passed to `zValidator('json', ...)` and read validated fields from `c.req.valid('json')`.
+- User-scoped access is enforced by reading `c.get('userId')` injected by the `requireAuth` middleware rather than parsing tokens per route.
+- All database queries use parameterized `?` placeholders via `db.query(...).get/run` instead of string interpolation.
+- Primary keys are generated with the shared `genId(prefix)` helper producing `<prefix>_<8hex><random>` identifiers (e.g. `usr_...`, `key_...`).
+- Sensitive secrets (JWT secret, DB path) are sourced from environment variables with safe development-time fallbacks.

@@ -1,0 +1,1 @@
+Next.js 16 + React 19 on the frontend; Bun + Hono on the backend; both use TypeScript with strict mode and the `@/*` path alias for the frontend source tree.

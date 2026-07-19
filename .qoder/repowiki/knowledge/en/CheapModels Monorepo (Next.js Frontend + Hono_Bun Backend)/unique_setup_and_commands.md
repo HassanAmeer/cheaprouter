@@ -1,0 +1,1 @@
+Run the frontend from the repo root with `npm run dev` / `npm run build` / `npm run start`; the backend must be started separately inside the `backend/` directory using its own Bun commands.

@@ -1,0 +1,20 @@
+.header { border-bottom: 1px solid var(--color-border); position: sticky; top: 0; background: var(--color-bg); z-index: 40; backdrop-filter: blur(8px); }
+.logo { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+
+.desktopLinks { display: flex; align-items: center; gap: 24px; font-weight: 500; }
+.desktopLinks a:hover { color: var(--color-primary); }
+.desktopActions { display: flex; align-items: center; gap: 16px; font-weight: 500; }
+.desktopActions a:hover { color: var(--color-primary); }
+
+.burger { display: none; color: var(--color-text-main); padding: 4px; }
+
+.mobileMenu { display: none; flex-direction: column; gap: 4px; padding: 16px 24px 24px; border-top: 1px solid var(--color-border); }
+.mobileMenu a { padding: 12px 0; font-weight: 600; border-bottom: 1px solid var(--color-border); }
+.mobileActions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.mobileTheme { display: flex; justify-content: center; margin-top: 16px; }
+
+@media (max-width: 860px) {
+  .desktopLinks, .desktopActions { display: none; }
+  .burger { display: inline-flex; }
+  .mobileMenu { display: flex; }
+}

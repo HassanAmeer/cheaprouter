@@ -1,0 +1,1 @@
+Run with `bun dev` (watch mode) or `bun start`; seed data via `bun seed` (expects `src/seed.ts`). Database file defaults to `./cheapmodels.db` but can be overridden with `BACKEND_DB`; JWT secret defaults to a dev-only value unless `JWT_SECRET` is set.

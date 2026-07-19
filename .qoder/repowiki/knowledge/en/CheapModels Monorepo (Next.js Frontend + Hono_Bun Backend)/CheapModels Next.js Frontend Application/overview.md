@@ -1,0 +1,1 @@
+Next.js App Router frontend that wires shared providers, UI primitives, and a typed API client to server routes for the CheapModels marketing site and dashboard.
