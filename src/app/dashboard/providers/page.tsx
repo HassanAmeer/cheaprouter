@@ -111,7 +111,7 @@ export default function ProvidersPage() {
         <div>
           <div style={{ marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Our Model Catalog</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>These models are managed by CheapModels. No setup needed — just use our unified API.</p>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>These models are managed by CheapAgents. No setup needed — just use our unified API.</p>
           </div>
           <ProvidersModelsTable />
         </div>

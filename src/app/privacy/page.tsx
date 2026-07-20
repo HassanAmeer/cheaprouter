@@ -6,7 +6,7 @@ export default function PrivacyPage() {
   return (
     <LegalShell title="Privacy Policy" updated="July 1, 2026">
       <p>
-        CheapModels ("we", "us") respects your privacy. This policy explains what data we collect when you use our
+        CheapAgents ("we", "us") respects your privacy. This policy explains what data we collect when you use our
         unified API, dashboard, and related services, and how we use it.
       </p>
 
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
       <h2>4. Your Rights</h2>
       <p>
         You may request export or deletion of your data at any time from the Dashboard settings. For questions,
-        contact privacy@cheapmodels.ai.
+        contact privacy@cheapagents.ai.
       </p>
     </LegalShell>
   );

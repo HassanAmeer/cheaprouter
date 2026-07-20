@@ -18,10 +18,10 @@ import { SiteNav } from '../components/site-nav';
 import { theme } from '../config/theme';
 
 const faqItems = [
-  { q: 'How does CheapModels work?', a: 'CheapModels is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },
+  { q: 'How does CheapAgents work?', a: 'CheapAgents is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },
   { q: 'Is there a free tier?', a: 'Yes! Our free tier includes access to basic models and unlimited BYOK (Bring Your Own Key) routing at zero cost. Upgrade only when you need premium model access or higher token limits.' },
   { q: 'What is BYOK (Bring Your Own Key)?', a: 'BYOK lets you add your own provider API keys to our dashboard. You pay providers directly while using our infrastructure for routing, monitoring, and analytics — completely free, no margins added.' },
-  { q: 'Is it compatible with the OpenAI SDK?', a: '100% drop-in compatible. Change the baseURL to api.cheapmodels.com/v1 and use your CheapModels key. Streaming, function calling, JSON mode, and tool use all work identically.' },
+  { q: 'Is it compatible with the OpenAI SDK?', a: '100% drop-in compatible. Change the baseURL to api.cheapagents.com/v1 and use your CheapAgents key. Streaming, function calling, JSON mode, and tool use all work identically.' },
   { q: 'How secure is the platform?', a: 'Enterprise-grade. SOC 2 compliant infrastructure, AES-256 encrypted key storage, automatic key rotation, zero-knowledge architecture — we never log or store conversation content.' },
   { q: 'What happens when a provider goes down?', a: 'Smart Fallback automatically retries and routes to alternative models you configure. Zero-downtime failover chains ensure your applications stay online even during provider outages.' },
 ];
@@ -57,7 +57,8 @@ export default function Home() {
         { href: '/pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/chat', label: 'Chat' },
-        { href: '/cli', label: 'CLI' },
+        { href: '/cli', label: 'Coding' },
+        { href: '#demand', label: 'Demand' },
       ]} />
 
       <div className="container">
@@ -155,7 +156,7 @@ export default function Home() {
               <div className={styles.miniChat}>
                 <div className={styles.miniChatHeader}>
                   <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>cheapmodels.io/chat</div>
+                  <div className={styles.miniUrl}>cheapagents.io/chat</div>
                 </div>
                 <div className={styles.miniChatBody}>
                   <div className={styles.chatBubbleUser}>Which model is fastest?</div>
@@ -206,7 +207,7 @@ export default function Home() {
                 </div>
                 <div className={styles.miniCodeBody}>
                   <div><span className={styles.kw}>const</span> ai = <span className={styles.kw}>new</span> OpenAI({'{'}</div>
-                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheapmodels.io&quot;</span>,</div>
+                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheapagents.io&quot;</span>,</div>
                   <div>&nbsp;&nbsp;apiKey: <span className={styles.str}>&quot;cm_***&quot;</span></div>
                   <div>{'}'});</div>
                 </div>
@@ -307,7 +308,7 @@ export default function Home() {
               <div className={styles.miniChat}>
                 <div className={styles.miniChatHeader}>
                   <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>chrome.cheapmodels.io</div>
+                  <div className={styles.miniUrl}>chrome.cheapagents.io</div>
                 </div>
                 <div className={styles.miniChatBody}>
                   <div className={styles.chatBubbleUser}>Summarize this page</div>
@@ -357,7 +358,7 @@ export default function Home() {
 
               <h2 className={styles.apiTitle}>Change one line.<br />Access every model.</h2>
               <p className={styles.apiDesc}>
-                No new SDK. No new patterns. CheapModels speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.
+                No new SDK. No new patterns. CheapAgents speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.
               </p>
               <ul className={styles.checkList}>
                 {[
@@ -387,7 +388,7 @@ export default function Home() {
 
 const client = new OpenAI({
   apiKey: "cm-xxxxxxxxxxxx",
-  baseURL: "https://api.cheapmodels.com/v1",
+  baseURL: "https://api.cheapagents.com/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -459,11 +460,11 @@ const response = await client.chat.completions.create({
             {/* LEFT — Before */}
             <div className={styles.vsPanelBefore}>
               <div className={styles.vsPanelHeader}>
-                <div className={styles.vsHeaderIcon} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                  <X size={18} color="#ef4444" />
+                <div className={styles.vsHeaderIconBad}>
+                  <X size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <div className={styles.vsHeaderLabel} style={{ color: '#ef4444' }}>Without CheapModels</div>
+                  <div className={styles.vsHeaderLabelBad}>Without CheapAgents</div>
                   <div className={styles.vsHeaderSub}>The painful way</div>
                 </div>
               </div>
@@ -477,8 +478,8 @@ const response = await client.chat.completions.create({
                   { text: 'Multiple billing accounts to manage', detail: 'Finance team nightmare' },
                 ].map((item, i) => (
                   <li key={i} className={styles.vsNewItemBad}>
-                    <div className={styles.vsNewItemIcon} style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.20)' }}>
-                      <X size={13} color="#ef4444" strokeWidth={2.5} />
+                    <div className={styles.vsNewItemIcon}>
+                      <X size={12} strokeWidth={3} />
                     </div>
                     <div>
                       <div className={styles.vsNewItemText}>{item.text}</div>
@@ -491,22 +492,18 @@ const response = await client.chat.completions.create({
 
             {/* CENTER DIVIDER */}
             <div className={styles.vsDivider}>
-              <div className={styles.vsDividerLine} />
-              <div className={styles.vsDividerBadge}>
-                <div className={styles.vsDividerPulse} />
-                <span>VS</span>
-              </div>
-              <div className={styles.vsDividerLine} />
+              <div className={styles.vsDividerBadge}>VS</div>
             </div>
 
             {/* RIGHT — After */}
             <div className={styles.vsPanelAfter}>
+              <div className={styles.vsPanelGlow} />
               <div className={styles.vsPanelHeader}>
-                <div className={styles.vsHeaderIcon} style={{ background: 'rgba(204,0,0,0.12)', border: '1px solid rgba(204,0,0,0.30)' }}>
-                  <CircleCheck size={18} color="var(--color-primary)" />
+                <div className={styles.vsHeaderIconGood}>
+                  <Check size={20} strokeWidth={3} />
                 </div>
                 <div>
-                  <div className={styles.vsHeaderLabel} style={{ color: 'var(--color-primary)' }}>With CheapModels</div>
+                  <div className={styles.vsHeaderLabelGood}>With CheapAgents</div>
                   <div className={styles.vsHeaderSub}>The smart way</div>
                 </div>
               </div>
@@ -520,8 +517,8 @@ const response = await client.chat.completions.create({
                   { text: 'Single consolidated bill', detail: 'One invoice, full transparency' },
                 ].map((item, i) => (
                   <li key={i} className={styles.vsNewItemGood}>
-                    <div className={styles.vsNewItemIcon} style={{ background: 'rgba(204,0,0,0.10)', border: '1px solid rgba(204,0,0,0.25)' }}>
-                      <Check size={13} color="var(--color-primary)" strokeWidth={2.5} />
+                    <div className={styles.vsNewItemIcon}>
+                      <Check size={12} strokeWidth={3} />
                     </div>
                     <div>
                       <div className={styles.vsNewItemText}>{item.text}</div>
@@ -533,21 +530,6 @@ const response = await client.chat.completions.create({
             </div>
           </div>
 
-          {/* BOTTOM STATS BAR */}
-          <div className={styles.vsStatsBar}>
-            {[
-              { value: '70%', label: 'Cost reduction', icon: <DollarSign size={16} /> },
-              { value: '1 line', label: 'Code change needed', icon: <Code size={16} /> },
-              { value: '<100ms', label: 'Time to first token', icon: <Zap size={16} /> },
-              { value: '10+ models', label: 'Accessible instantly', icon: <Layers size={16} /> },
-            ].map((stat, i) => (
-              <div key={i} className={styles.vsStatItem}>
-                <div className={styles.vsStatIcon}>{stat.icon}</div>
-                <div className={styles.vsStatValue}>{stat.value}</div>
-                <div className={styles.vsStatLabel}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </section>
 
 
@@ -607,7 +589,7 @@ const response = await client.chat.completions.create({
           </div>
         </section>
         {/* ═══════════════ DEMAND SECTION (CLEAN PREMIUM) ═══════════════ */}
-        <section className={styles.section}>
+        <section id="demand" className={styles.section}>
           <div className={styles.demandOuter}>
             <div className={styles.demandBgGlow} />
 
@@ -773,7 +755,7 @@ const response = await client.chat.completions.create({
           <div className={styles.footerGrid}>
             <div className={styles.footerBrand}>
               <div className={styles.logo} style={{ fontSize: '22px', marginBottom: '16px' }}>
-                <span className={styles.logoIcon}><Zap size={22} fill="currentColor" /></span> CheapModels
+                <span className={styles.logoIcon}><Zap size={22} fill="currentColor" /></span> CheapAgents
               </div>
               <p className={styles.footerDesc}>
                 The unified API for every AI model. Build faster, cheaper, and more reliably with one key.
@@ -800,7 +782,7 @@ const response = await client.chat.completions.create({
             ))}
           </div>
           <div className={styles.footerBottom}>
-            <span>© 2026 CheapModels. All rights reserved.</span>
+            <span>© 2026 CheapAgents. All rights reserved.</span>
             <div className={styles.footerRight}>
               <span className={styles.statusBadge}><span className={styles.statusDot} /> All Systems Operational</span>
               <span>v2.4.1</span>

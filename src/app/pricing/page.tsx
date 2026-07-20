@@ -124,7 +124,7 @@ export default function PricingPage() {
 
       <footer className={styles.footer}>
         <div className="container">
-          <span>© 2026 CheapModels. All rights reserved.</span>
+          <span>© 2026 CheapAgents. All rights reserved.</span>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/">Home</Link>
             <Link href="/docs">Docs</Link>

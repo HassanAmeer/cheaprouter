@@ -25,7 +25,7 @@ export function PixelatedCanvasDemo() {
           color: 'var(--color-text-muted)', fontSize: '16px',
           lineHeight: 1.7, marginBottom: '40px', maxWidth: '480px', margin: '0 auto 40px'
         }}>
-          The person behind CheapModels — building the future of unified AI access.
+          The person behind CheapAgents — building the future of unified AI access.
         </p>
         <div style={{ border: '1px solid var(--color-border)', borderRadius: '16px', overflow: 'hidden', display: 'inline-block', maxWidth: '100%' }}>
           <PixelatedCanvas

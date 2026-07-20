@@ -34,7 +34,7 @@ export function LegalShell({ title, updated, children }: { title: string; update
 
       <footer className={styles.footer}>
         <div className="container">
-          <span>© 2026 CheapModels. All rights reserved.</span>
+          <span>© 2026 CheapAgents. All rights reserved.</span>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>

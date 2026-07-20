@@ -6,7 +6,7 @@ export default function TermsPage() {
   return (
     <LegalShell title="Terms of Service" updated="July 1, 2026">
       <p>
-        By accessing or using CheapModels ("the Service"), you agree to be bound by these Terms. If you do not agree,
+        By accessing or using CheapAgents ("the Service"), you agree to be bound by these Terms. If you do not agree,
         do not use the Service.
       </p>
 
@@ -19,7 +19,7 @@ export default function TermsPage() {
 
       <h2>2. API Keys &amp; BYOK</h2>
       <p>
-        You are responsible for safeguarding your CheapModels API keys and any provider keys you connect. We store
+        You are responsible for safeguarding your CheapAgents API keys and any provider keys you connect. We store
         provider keys encrypted and route requests on your behalf.
       </p>
 

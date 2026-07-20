@@ -16,7 +16,7 @@ export default function BranchFeatures() {
           <div className="merge-btn">
             <div className="core-engine-glow" />
             <Cpu className="core-icon" size={24} />
-            <span className="core-label">CheapModels Core Engine</span>
+            <span className="core-label">CheapAgents Core Engine</span>
             <Zap size={14} className="core-zap" />
           </div>
           <svg className="branch-path-svg" viewBox="0 0 1260 200" preserveAspectRatio="none">
@@ -54,7 +54,7 @@ export default function BranchFeatures() {
                 <div className="term-dots">
                   <span className="dot red"></span><span className="dot yellow"></span><span className="dot green"></span>
                 </div>
-                <div className="term-title">user@cheapmodels:~</div>
+                <div className="term-title">user@cheapagents:~</div>
               </div>
               <div className="term-body">
                 <div className="term-line"><span className="prompt">❯</span> <span className="typewriter-cli">cheap-cli "add auth"<span className="cli-cursor">|</span></span></div>
@@ -77,7 +77,7 @@ export default function BranchFeatures() {
             <div className="mini-ui real-chat">
               <div className="chat-browser-header">
                 <div className="browser-dots"><span/><span/><span/></div>
-                <div className="browser-url">chat.cheapmodels.io</div>
+                <div className="browser-url">chat.cheapagents.io</div>
               </div>
               <div className="chat-window">
                 <div className="chat-sidebar">

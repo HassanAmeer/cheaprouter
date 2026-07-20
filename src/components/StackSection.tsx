@@ -212,7 +212,7 @@ export default function StackSection() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <button className={styles.modalClose} onClick={() => setShowMore(false)}>✕</button>
             <h3 className={styles.modalTitle}>All Integrations</h3>
-            <p className={styles.modalSub}>If it speaks OpenAI, it speaks CheapModels.</p>
+            <p className={styles.modalSub}>If it speaks OpenAI, it speaks CheapAgents.</p>
             <div className={styles.modalGrid}>
               {MORE_ITEMS.map(item => (
                 <div key={item} className={styles.modalChip}>{item}</div>

@@ -11,7 +11,7 @@ export default function DocsPage() {
         <nav className={styles.navbar}>
           <Link href="/" className={styles.logo} style={{ color: 'inherit', textDecoration: 'none' }}>
             <span className={styles.logoIcon}><Zap size={28} fill="currentColor" /></span>
-            CheapModels Docs
+            CheapAgents Docs
           </Link>
           <div className={styles.navLinks}>
             <Link href="/">Back to Home</Link>
@@ -42,7 +42,7 @@ export default function DocsPage() {
         <div style={{ flex: 1, backgroundColor: 'var(--color-card-bg)', padding: '48px', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--color-border)' }}>
           <h1 style={{ fontSize: '40px', fontWeight: 800, marginBottom: '16px' }} id="introduction">API Reference</h1>
           <p style={{ fontSize: '18px', color: 'var(--color-text-muted)', marginBottom: '40px', lineHeight: '1.6' }}>
-            The CheapModels API is organized around REST and is 100% compatible with the OpenAI specification. This means you can use official OpenAI SDKs for Python, Node.js, and other languages by simply changing the Base URL and API Key.
+            The CheapAgents API is organized around REST and is 100% compatible with the OpenAI specification. This means you can use official OpenAI SDKs for Python, Node.js, and other languages by simply changing the Base URL and API Key.
           </p>
 
           <hr style={{ border: 'none', borderBottom: '1px solid var(--color-border)', margin: '40px 0' }} />
@@ -51,7 +51,7 @@ export default function DocsPage() {
             <Shield size={28} color="var(--color-primary)" /> Authentication
           </h2>
           <p style={{ fontSize: '16px', color: 'var(--color-text-muted)', marginBottom: '24px', lineHeight: '1.6' }}>
-            Authenticate your API requests using your CheapModels API Key. You can generate and manage API keys in your <Link href="/dashboard" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Dashboard</Link>.
+            Authenticate your API requests using your CheapAgents API Key. You can generate and manage API keys in your <Link href="/dashboard" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Dashboard</Link>.
             Pass your API key in the `Authorization` HTTP header as a Bearer token.
           </p>
           <div className={styles.codeSection} style={{ marginTop: '0', marginBottom: '40px' }}>
@@ -71,7 +71,7 @@ Authorization: Bearer YOUR_API_KEY
           </p>
           <div className={styles.codeSection} style={{ marginTop: '0', marginBottom: '40px', padding: '16px 24px' }}>
             <pre style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
-              <code>https://api.cheapmodels.com/v1</code>
+              <code>https://api.cheapagents.com/v1</code>
             </pre>
           </div>
 
@@ -96,9 +96,9 @@ Authorization: Bearer YOUR_API_KEY
             </div>
             <pre style={{ margin: 0, fontSize: '14px' }}>
               <code>
-<span style={{ color: '#FF7B72' }}>curl</span> https://api.cheapmodels.com/v1/chat/completions \<br/>
+<span style={{ color: '#FF7B72' }}>curl</span> https://api.cheapagents.com/v1/chat/completions \<br/>
 &nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Content-Type: application/json"</span> \<br/>
-&nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer $CHEAPMODELS_API_KEY"</span> \<br/>
+&nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer $CHEAPAGENTS_API_KEY"</span> \<br/>
 &nbsp;&nbsp;-d '&#123;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#A5D6FF' }}>"model"</span>: <span style={{ color: '#A5D6FF' }}>"claude-3-5-sonnet"</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#A5D6FF' }}>"messages"</span>: [<br/>

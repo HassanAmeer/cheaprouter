@@ -18,10 +18,10 @@ const MODELS = [
 ];
 
 const CANNED = [
-  "CheapModels routes your request through a single unified OpenAI-compatible endpoint, so you get the same streaming experience regardless of the underlying provider.",
+  "CheapAgents routes your request through a single unified OpenAI-compatible endpoint, so you get the same streaming experience regardless of the underlying provider.",
   "Great question! Because we normalize every provider to the OpenAI schema, you can swap models by changing just the `model` field — no SDK changes required.",
   "Here's a quick comparison: Claude 3.5 Sonnet tends to excel at long-context reasoning, while GPT-4o is faster for general tasks. Gemini 1.5 Pro offers the largest context window.",
-  "I can help you scaffold that. Just let me know the framework and I'll generate a drop-in route that points at https://api.cheapmodels.ai/v1.",
+  "I can help you scaffold that. Just let me know the framework and I'll generate a drop-in route that points at https://api.cheapagents.ai/v1.",
 ];
 
 type Msg = { role: 'user' | 'assistant'; content: string };
@@ -110,7 +110,7 @@ export default function ChatPlayground() {
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <Link href="/" className={styles.logo}>
-          <span style={{ color: 'var(--color-primary)' }}><Zap size={20} fill="currentColor" /></span> CheapModels
+          <span style={{ color: 'var(--color-primary)' }}><Zap size={20} fill="currentColor" /></span> CheapAgents
         </Link>
         <button className={styles.newChat} onClick={newChat}>
           <Plus size={16} /> New chat

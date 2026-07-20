@@ -9,9 +9,9 @@ export default function InstallBox() {
   const [copied, setCopied] = useState(false);
 
   const commands: Record<string, string> = {
-    Windows: 'iwr -useb https://cheapmodels.ai/install.ps1 | iex',
-    Mac: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
-    Linux: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
+    Windows: 'iwr -useb https://cheapagents.ai/install.ps1 | iex',
+    Mac: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
+    Linux: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
     npm: 'npm install -g cheap-cli'
   };
 

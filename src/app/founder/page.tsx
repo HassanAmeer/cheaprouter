@@ -48,7 +48,7 @@ export default function FounderPage() {
             color: 'var(--color-text-muted)', fontSize: '18px',
             maxWidth: '560px', margin: '0 auto', lineHeight: 1.7
           }}>
-            The visionary behind CheapModels — on a mission to democratize AI access for every developer on the planet.
+            The visionary behind CheapAgents — on a mission to democratize AI access for every developer on the planet.
           </p>
         </div>
 
@@ -110,10 +110,10 @@ export default function FounderPage() {
             }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>About</h2>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', lineHeight: 1.8, marginBottom: '16px' }}>
-                Hasan is the founder and creator of CheapModels — a unified AI API gateway that gives developers one key to access every major AI model in the world.
+                Hasan is the founder and creator of CheapAgents — a unified AI API gateway that gives developers one key to access every major AI model in the world.
               </p>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', lineHeight: 1.8, marginBottom: '16px' }}>
-                Driven by the belief that AI should be accessible, affordable, and simple to integrate, Hasan built CheapModels from scratch to eliminate the complexity of managing multiple AI provider APIs.
+                Driven by the belief that AI should be accessible, affordable, and simple to integrate, Hasan built CheapAgents from scratch to eliminate the complexity of managing multiple AI provider APIs.
               </p>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', lineHeight: 1.8 }}>
                 With a background in full-stack engineering and a passion for developer tools, Hasan designed every aspect of the platform — from the OpenAI-compatible API layer to the real-time analytics dashboard.
@@ -131,7 +131,7 @@ export default function FounderPage() {
                 <Rocket size={20} color="var(--color-primary)" /> Vision
               </h2>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', lineHeight: 1.8 }}>
-                &ldquo;Every developer deserves access to the best AI models without drowning in complexity, cost, or vendor lock-in. CheapModels exists to make that future a reality — one API key, infinite possibilities.&rdquo;
+                &ldquo;Every developer deserves access to the best AI models without drowning in complexity, cost, or vendor lock-in. CheapAgents exists to make that future a reality — one API key, infinite possibilities.&rdquo;
               </p>
             </div>
 

@@ -13,9 +13,9 @@ export default function HeroTerminal() {
   const [copied, setCopied] = useState(false);
 
   const commands: Record<string, string> = {
-    Windows: 'iwr -useb https://cheapmodels.ai/install.ps1 | iex',
-    Mac: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
-    Linux: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
+    Windows: 'iwr -useb https://cheapagents.ai/install.ps1 | iex',
+    Mac: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
+    Linux: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
     npm: 'npm install -g cheap-cli'
   };
 
@@ -103,7 +103,7 @@ export default function HeroTerminal() {
                 <span className={styles.prompt}>~/project$</span> <span style={{ color: '#fff' }}>cheap-cli init --framework=nextjs</span>
               </div>
               <div className={styles.cliOutput} style={{ animation: 'none', opacity: 1, marginBottom: '12px' }}>
-                <div className={styles.cliSuccess}>✔ Initialized cheapmodels.json</div>
+                <div className={styles.cliSuccess}>✔ Initialized cheapagents.json</div>
               </div>
               <div className={styles.cliLine}>
                 <span className={styles.prompt}>~/project$</span> <span className={styles.typingCmd}>cheap-cli route update --model=claude-3-5</span>
@@ -115,7 +115,7 @@ export default function HeroTerminal() {
                   <div style={{ color: '#888', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px' }}>src/api/openai.ts</div>
                   <div className={styles.diffMinus}><span>-</span> <span>&nbsp;&nbsp;baseURL: 'https://api.openai.com/v1',</span></div>
                   <div className={styles.diffMinus}><span>-</span> <span>&nbsp;&nbsp;model: 'gpt-4o',</span></div>
-                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: 'https://api.cheapmodels.ai/v1',</span></div>
+                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: 'https://api.cheapagents.ai/v1',</span></div>
                   <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;model: 'claude-3-5-sonnet',</span></div>
                 </div>
                 <div className={styles.cliSuccess}>✔ Routing updated seamlessly! 🚀</div>
@@ -151,8 +151,8 @@ export default function HeroTerminal() {
               <div><span className={styles.keyword}>import</span> {'{'} OpenAI {'}'} <span className={styles.keyword}>from</span> <span className={styles.string}>'openai'</span>;</div>
               <br />
               <div><span className={styles.keyword}>const</span> openai = <span className={styles.keyword}>new</span> <span className={styles.function}>OpenAI</span>({'{'}</div>
-              <div style={{ paddingLeft: '20px' }}>baseURL: <span className={styles.string}>'https://api.cheapmodels.ai/v1'</span>, <span className={styles.comment}>// Drop-in Replacement</span></div>
-              <div style={{ paddingLeft: '20px' }}>apiKey: process.env.CHEAPMODELS_API_KEY,</div>
+              <div style={{ paddingLeft: '20px' }}>baseURL: <span className={styles.string}>'https://api.cheapagents.ai/v1'</span>, <span className={styles.comment}>// Drop-in Replacement</span></div>
+              <div style={{ paddingLeft: '20px' }}>apiKey: process.env.CHEAPAGENTS_API_KEY,</div>
               <div>{'}'});</div>
               <br />
               <div className={styles.typingApiCmd}>
@@ -180,7 +180,7 @@ export default function HeroTerminal() {
           <div className={styles.cardHeader} style={{ padding: '0', background: 'transparent' }}>
             <div className={styles.browserHeader}>
               <div className={styles.browserDots}><span/><span/><span/></div>
-              <div className={styles.browserUrl}>chat.cheapmodels.io</div>
+              <div className={styles.browserUrl}>chat.cheapagents.io</div>
             </div>
           </div>
           <div className={styles.cardBody} style={{ background: '#ffffff', color: '#333', padding: '0' }}>

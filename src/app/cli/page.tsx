@@ -9,9 +9,9 @@ import { useToast } from '@/components/ui/toast';
 import styles from './cli.module.css';
 
 const COMMANDS: Record<string, string> = {
-  Windows: 'iwr -useb https://cheapmodels.ai/install.ps1 | iex',
-  Mac: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
-  Linux: 'curl -fsSL https://cheapmodels.ai/install.sh | bash',
+  Windows: 'iwr -useb https://cheapagents.ai/install.ps1 | iex',
+  Mac: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
+  Linux: 'curl -fsSL https://cheapagents.ai/install.sh | bash',
   npm: 'npm install -g cheap-cli',
 };
 
@@ -79,7 +79,7 @@ export default function CliPage() {
       <section className="container">
         <div className={styles.grid}>
           {[
-            { icon: <Rocket size={28} />, title: 'Drop-in Routing', desc: 'Rewrite any OpenAI base URL to CheapModels with a single command. Zero code changes.' },
+            { icon: <Rocket size={28} />, title: 'Drop-in Routing', desc: 'Rewrite any OpenAI base URL to CheapAgents with a single command. Zero code changes.' },
             { icon: <Boxes size={28} />, title: 'Model Comparison', desc: 'Benchmark GPT-4o vs Claude side-by-side directly from your terminal.' },
             { icon: <Shield size={28} />, title: 'BYOK Secure Proxy', desc: 'Run a local proxy that injects your keys safely — never expose them in client code.' },
             { icon: <Zap size={28} />, title: 'Zero-latency Streams', desc: 'True SSE piping for a native typing experience in your own apps.' },
@@ -113,7 +113,7 @@ export default function CliPage() {
 
       <footer className={styles.footer}>
         <div className="container">
-          <span>© 2026 CheapModels. Built for developers.</span>
+          <span>© 2026 CheapAgents. Built for developers.</span>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/">Home</Link>
             <Link href="/docs">Docs</Link>

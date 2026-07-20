@@ -17,9 +17,9 @@ export function SiteNav({ links, cta = true }: { links: NavLink[]; cta?: boolean
 
   return (
     <header className={styles.header}>
-      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0' }}>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
         <Link href="/" className={styles.logo}>
-          <span style={{ color: 'var(--color-primary)' }}><Zap size={22} fill="currentColor" /></span> CheapModels
+          <span style={{ color: 'var(--color-primary)' }}><Zap size={22} fill="currentColor" /></span> CheapAgents
         </Link>
 
         <nav className={styles.desktopLinks}>
@@ -33,7 +33,7 @@ export function SiteNav({ links, cta = true }: { links: NavLink[]; cta?: boolean
           {cta && (
             <>
               <Link href="/login" style={{ fontWeight: 600 }}>Log In</Link>
-              <Link href="/signup" className="btn-primary" style={{ padding: '10px 18px' }}>Get Started</Link>
+              <Link href="/signup" className="btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }}>Get Started</Link>
             </>
           )}
         </div>

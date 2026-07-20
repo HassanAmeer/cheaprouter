@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: {
-    default: "CheapModels | One API Key, All AI Models",
-    template: "%s | CheapModels",
+    default: "CheapAgents | One API Key, All AI Models",
+    template: "%s | CheapAgents",
   },
   description: "Access premium AI models like GPT-4, Gemini, and Claude with a single API key at unbeatable prices.",
 };
