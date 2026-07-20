@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 import styles from '../admin.module.css';
-import { Search, MoreVertical, Edit2, Ban, Mail } from 'lucide-react';
+import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const MOCK_USERS = [
   { id: 'usr_1a9b', name: 'John Doe', email: 'john@example.com', plan: 'Free', calls: 1450, status: 'Active' },
@@ -9,15 +10,24 @@ const MOCK_USERS = [
   { id: 'usr_9z1l', name: 'Bob Johnson', email: 'bob@agency.com', plan: 'Free', calls: 0, status: 'Inactive' },
   { id: 'usr_7q4w', name: 'Eve Hacker', email: 'eve@shadow.net', plan: 'Free', calls: 4000, status: 'Suspended' },
   { id: 'usr_5p2m', name: 'Michael Tech', email: 'mike@tech.co', plan: 'Pro', calls: 120500, status: 'Active' },
+  { id: 'usr_3v8n', name: 'Sarah Connor', email: 'sarah@skynet.com', plan: 'Pro', calls: 999999, status: 'Active' },
+  { id: 'usr_8m1x', name: 'Tony Stark', email: 'tony@stark.com', plan: 'Pro', calls: 543210, status: 'Active' },
 ];
+
+const ITEMS_PER_PAGE = 5;
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredUsers = MOCK_USERS.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div>
@@ -29,7 +39,7 @@ export default function UsersPage() {
             type="text" 
             placeholder="Search users..." 
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             style={{ 
               background: 'var(--color-card-bg)', 
               border: '1px solid var(--color-border)', 
@@ -56,7 +66,7 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
+            {paginatedUsers.map((user) => (
               <tr key={user.id}>
                 <td style={{ fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{user.id}</td>
                 <td>
@@ -76,14 +86,14 @@ export default function UsersPage() {
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button className={styles.actionBtn} title="Email User"><Mail size={14} /></button>
-                    <button className={styles.actionBtn} title="Edit User"><Edit2 size={14} /></button>
-                    <button className={styles.actionBtn} title="Suspend"><Ban size={14} /></button>
+                    <Link href={`/admin/users/${user.id}`}>
+                      <button className={styles.actionBtn} title="View Details"><Eye size={14} /></button>
+                    </Link>
                   </div>
                 </td>
               </tr>
             ))}
-            {filteredUsers.length === 0 && (
+            {paginatedUsers.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
                   No users found matching "{searchTerm}"
@@ -92,6 +102,26 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        
+        {totalPages > 1 && (
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className={styles.actionBtn} 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              ><ChevronLeft size={16} /></button>
+              <button 
+                className={styles.actionBtn} 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              ><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

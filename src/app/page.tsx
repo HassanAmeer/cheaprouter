@@ -16,19 +16,12 @@ import SplashCursor from '../components/SplashCursor';
 import AnnouncementBar from '../components/AnnouncementBar';
 import { SiteNav } from '../components/site-nav';
 import { theme } from '../config/theme';
-
-const faqItems = [
-  { q: 'How does CheapAgents work?', a: 'CheapAgents is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },
-  { q: 'Is there a free tier?', a: 'Yes! Our free tier includes access to basic models and unlimited BYOK (Bring Your Own Key) routing at zero cost. Upgrade only when you need premium model access or higher token limits.' },
-  { q: 'What is BYOK (Bring Your Own Key)?', a: 'BYOK lets you add your own provider API keys to our dashboard. You pay providers directly while using our infrastructure for routing, monitoring, and analytics — completely free, no margins added.' },
-  { q: 'Is it compatible with the OpenAI SDK?', a: '100% drop-in compatible. Change the baseURL to api.cheapagents.com/v1 and use your CheapAgents key. Streaming, function calling, JSON mode, and tool use all work identically.' },
-  { q: 'How secure is the platform?', a: 'Enterprise-grade. SOC 2 compliant infrastructure, AES-256 encrypted key storage, automatic key rotation, zero-knowledge architecture — we never log or store conversation content.' },
-  { q: 'What happens when a provider goes down?', a: 'Smart Fallback automatically retries and routes to alternative models you configure. Zero-downtime failover chains ensure your applications stay online even during provider outages.' },
-];
+import { useSiteSettings } from '@/components/settings-provider';
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showDemandToast, setShowDemandToast] = useState(false);
+  const { settings } = useSiteSettings();
 
   const handleDemandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,23 +79,23 @@ export default function Home() {
             </div>
 
             <h1 className={styles.heroTitle}>
-              One API for{' '}
+              {settings.heroHeading}{' '}
               <br />
               <TextLoop style={{ display: 'inline-block' }} interval={3.5} variants={{ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20, position: 'absolute' } }} transition={{ duration: 0.3 }}>
-                <TextRoll className={styles.gradientText}>Every AI Model</TextRoll>
-                <TextRoll className={styles.gradientText}>Half the Cost</TextRoll>
-                <TextRoll className={styles.gradientText}>Zero Lock-in</TextRoll>
+                {settings.heroAnimatedTexts.map((text, idx) => (
+                  <TextRoll key={idx} className={styles.gradientText}>{text}</TextRoll>
+                ))}
               </TextLoop>
             </h1>
 
             <p className={styles.heroSubtitle}>
-              A single, OpenAI-compatible API key to access <strong>GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Llama 3, DeepSeek, Grok</strong> and 10+ more models. Drop-in replacement — change one line of code.
+              <span dangerouslySetInnerHTML={{ __html: settings.heroSubtitle }} />
             </p>
 
             <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '60px', alignItems: 'center' }}>
               <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton href="/docs">Try free AI models</SpaceButton>
-                <div className="hint-content">Access 100+ premium AI models (GPT-4o, Claude 3.5) with our free tier or BYOK.</div>
+                <SpaceButton href="/docs">{settings.primaryBtnText}</SpaceButton>
+                <div className="hint-content">{settings.primaryBtnTooltip}</div>
               </div>
               <div className="hint" data-position="1" style={{ flex: '1' }}>
                 <SpaceButton variant="outline" href="/chat">Try chat</SpaceButton>
@@ -130,13 +123,12 @@ export default function Home() {
         <div className={styles.marqueeContent}>
           {[...Array(2)].map((_, index) => (
             <React.Fragment key={index}>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/openai/10A37F" width="24" height="24" alt="" /> OpenAI</span>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/anthropic/D97757" width="24" height="24" alt="" /> Anthropic</span>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/google/4285F4" width="24" height="24" alt="" /> Google</span>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/meta/0668E1" width="24" height="24" alt="" /> Meta</span>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/x/000000" width="24" height="24" alt="" /> X.AI</span>
-              <span className={styles.providerLogo}><img src="https://logo.clearbit.com/deepseek.com" width="24" height="24" alt="" style={{ borderRadius: '4px' }} /> DeepSeek</span>
-              <span className={styles.providerLogo}><img src="https://cdn.simpleicons.org/huggingface/FFD21E" width="24" height="24" alt="" /> HuggingFace</span>
+              {settings.marqueeProviders.map((mq) => (
+                <span key={mq.id} className={styles.providerLogo}>
+                  {mq.iconUrl && <img src={mq.iconUrl} width="24" height="24" alt="" style={{ borderRadius: '4px' }} />}
+                  {mq.name}
+                </span>
+              ))}
             </React.Fragment>
           ))}
         </div>
@@ -577,8 +569,8 @@ const response = await client.chat.completions.create({
             </p>
           </div>
           <div className={styles.faqList}>
-            {faqItems.map((item, i) => (
-              <div key={i} className={`${styles.faqItem} ${openFaq === i ? styles.faqOpen : ''}`} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+            {settings.faqs.map((item, i) => (
+              <div key={item.id} className={`${styles.faqItem} ${openFaq === i ? styles.faqOpen : ''}`} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                 <button className={styles.faqQuestion}>
                   <span>{item.q}</span>
                   {openFaq === i ? <Minus size={18} /> : <Plus size={18} />}
@@ -602,33 +594,29 @@ const response = await client.chat.completions.create({
                 </div>
                 
                 <h2 className={styles.demandTitle}>
-                  You demand it.<br />
-                  <span className={styles.demandTitleAccent}>We ship it.</span>
+                  {settings.demandSection.title}
                 </h2>
                 
                 <p className={styles.demandDesc}>
-                  Our roadmap is entirely driven by you. Tell us what you need, and we'll prioritize it in our next sprint.
+                  {settings.demandSection.subtitle}
                 </p>
 
                 {/* Timeline Feature List */}
                 <div className={styles.demandTimeline}>
                   <div className={styles.demandTimelineLabel}>Feature Roadmap</div>
                   <div className={styles.demandTimelineList}>
-                    {[
-                      { label: 'Free AI models & unlimited access', tag: 'Live', type: 'live' },
-                      { label: 'Free coding via cheap-cli', tag: 'Live', type: 'live' },
-                      { label: 'Web Browser Agent', tag: 'Coming Soon', type: 'soon' },
-                      { label: 'CheapCode IDE', tag: 'Coming Soon', type: 'soon' },
-                    ].map((item, i) => (
-                      <div key={i} className={styles.demandTimelineItem}>
+                    {settings.demandSection.items.map((item, i) => (
+                      <div key={item.id} className={styles.demandTimelineItem}>
                         <div className={styles.demandTimelineTrack}>
-                          <div className={`${styles.demandTimelineDot} ${styles[`demandDot_${item.type}`]}`} />
-                          {i < 3 && <div className={styles.demandTimelineLine} />}
+                          <div className={`${styles.demandTimelineDot} ${styles[`demandDot_${item.badgeColor}`]}`} />
+                          {i < settings.demandSection.items.length - 1 && <div className={styles.demandTimelineLine} />}
                         </div>
                         <div className={styles.demandTimelineContent}>
                           <div className={styles.demandTimelineRow}>
-                            <span className={styles.demandTimelineText}>{item.label}</span>
-                            <span className={`${styles.demandTimelineTag} ${styles[`demandTag_${item.type}`]}`}>{item.tag}</span>
+                            <span className={styles.demandTimelineText}>{item.text}</span>
+                            <span className={`${styles.demandTimelineTag} ${styles[`demandTag_${item.badgeColor}`]}`}>
+                              {item.badgeText}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -755,15 +743,20 @@ const response = await client.chat.completions.create({
           <div className={styles.footerGrid}>
             <div className={styles.footerBrand}>
               <div className={styles.logo} style={{ fontSize: '22px', marginBottom: '16px' }}>
-                <span className={styles.logoIcon}><Zap size={22} fill="currentColor" /></span> CheapAgents
+                <span className={styles.logoIcon}>
+                  {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" style={{ height: 22 }} /> : <Zap size={22} fill="currentColor" />}
+                </span> 
+                {settings.brandName}
               </div>
               <p className={styles.footerDesc}>
                 The unified API for every AI model. Build faster, cheaper, and more reliably with one key.
               </p>
               <div className={styles.socialLinks}>
-                <a href="#" className={styles.socialIcon}><img src="https://cdn.simpleicons.org/github/8b949e" width="18" height="18" alt="GitHub" /></a>
-                <a href="#" className={styles.socialIcon}><img src="https://cdn.simpleicons.org/twitter/8b949e" width="18" height="18" alt="Twitter" /></a>
-                <a href="#" className={styles.socialIcon}><img src="https://cdn.simpleicons.org/discord/8b949e" width="18" height="18" alt="Discord" /></a>
+                {settings.footer.socialLinks.map(link => (
+                  <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={styles.socialIcon} title={link.platform}>
+                    <img src={`https://cdn.simpleicons.org/${link.platform.toLowerCase()}/8b949e`} width="18" height="18" alt={link.platform} onError={(e) => { e.currentTarget.src = "https://cdn.simpleicons.org/internetarchive/8b949e" }} />
+                  </a>
+                ))}
               </div>
             </div>
             {[
@@ -782,7 +775,7 @@ const response = await client.chat.completions.create({
             ))}
           </div>
           <div className={styles.footerBottom}>
-            <span>© 2026 CheapAgents. All rights reserved.</span>
+            <span>{settings.footer.copyrightText}</span>
             <div className={styles.footerRight}>
               <span className={styles.statusBadge}><span className={styles.statusDot} /> All Systems Operational</span>
               <span>v2.4.1</span>

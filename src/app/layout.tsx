@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/components/auth-provider";
 
+import { SettingsProvider } from "@/components/settings-provider";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
@@ -25,7 +27,9 @@ export default function RootLayout({
       <body className={inter.variable}>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <SettingsProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </SettingsProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Zap, Menu, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/primitives';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './site-nav.module.css';
 
 interface NavLink {
@@ -14,12 +15,16 @@ interface NavLink {
 
 export function SiteNav({ links, cta = true }: { links: NavLink[]; cta?: boolean }) {
   const [open, setOpen] = useState(false);
+  const { settings } = useSiteSettings();
 
   return (
     <header className={styles.header}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
         <Link href="/" className={styles.logo}>
-          <span style={{ color: 'var(--color-primary)' }}><Zap size={22} fill="currentColor" /></span> CheapAgents
+          <span style={{ color: 'var(--color-primary)' }}>
+            {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" style={{ height: 22 }} /> : <Zap size={22} fill="currentColor" />}
+          </span> 
+          {settings.brandName}
         </Link>
 
         <nav className={styles.desktopLinks}>

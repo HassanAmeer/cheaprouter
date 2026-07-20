@@ -1410,15 +1410,30 @@
   flex-shrink: 0;
   border: 2px solid;
 }
-.demandDot_live {
+.demandDot_green {
   background: var(--color-success);
   border-color: var(--color-success);
   box-shadow: 0 0 8px var(--color-success-soft);
 }
-.demandDot_soon {
+.demandDot_red {
+  background: #DC2626;
+  border-color: #DC2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.2);
+}
+.demandDot_blue {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary-soft);
+}
+.demandDot_gray {
   background: transparent;
   border-color: var(--color-text-muted);
   opacity: 0.5;
+}
+.demandDot_purple {
+  background: #a855f7;
+  border-color: #a855f7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
 }
 .demandTimelineLine {
   width: 1px;
@@ -1454,15 +1469,30 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-.demandTag_live {
+.demandTag_green {
   background: var(--color-success-soft);
   color: var(--color-success);
   border: 1px solid var(--color-success-soft);
 }
-.demandTag_soon {
+.demandTag_red {
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.1);
+}
+.demandTag_blue {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-soft);
+}
+.demandTag_gray {
   background: var(--color-bg-muted);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
+}
+.demandTag_purple {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.1);
 }
 
 /* RIGHT SIDE (FORM CARD) */
