@@ -1,14 +1,49 @@
 import { NextResponse } from 'next/server';
-
-const MODELS = [
-  { id: 'gpt-4o', provider: 'OpenAI', name: 'GPT-4o', context: '128k', input: '$5.00', output: '$15.00' },
-  { id: 'gpt-4o-mini', provider: 'OpenAI', name: 'GPT-4o Mini', context: '128k', input: '$0.15', output: '$0.60' },
-  { id: 'claude-3-5-sonnet', provider: 'Anthropic', name: 'Claude 3.5 Sonnet', context: '200k', input: '$3.00', output: '$15.00' },
-  { id: 'claude-3-haiku', provider: 'Anthropic', name: 'Claude 3 Haiku', context: '200k', input: '$0.25', output: '$1.25' },
-  { id: 'gemini-1.5-pro', provider: 'Google', name: 'Gemini 1.5 Pro', context: '2M', input: '$3.50', output: '$10.50' },
-  { id: 'gemini-1.5-flash', provider: 'Google', name: 'Gemini 1.5 Flash', context: '1M', input: '$0.075', output: '$0.30' },
-];
+import { db } from '@/lib/db';
 
 export async function GET() {
-  return NextResponse.json({ models: MODELS });
+  try {
+    const activeProviders = db.listAdminProviders().filter(p => p.status);
+    
+    // Dynamically compile active models
+    const models = activeProviders.flatMap(provider => 
+      provider.models.map(m => {
+        // Dynamic mock metadata based on provider name
+        let context = '128k';
+        let input = '$1.50';
+        let output = '$5.00';
+        
+        if (provider.name.toLowerCase().includes('google')) {
+          context = '1M';
+          input = '$0.075';
+          output = '$0.30';
+        } else if (provider.name.toLowerCase().includes('openai')) {
+          context = '128k';
+          input = '$2.50';
+          output = '$10.00';
+        } else if (provider.name.toLowerCase().includes('anthropic')) {
+          context = '200k';
+          input = '$3.00';
+          output = '$15.00';
+        } else if (provider.name.toLowerCase().includes('deepseek')) {
+          context = '64k';
+          input = '$0.14';
+          output = '$0.28';
+        }
+
+        return {
+          id: m.id,
+          provider: provider.name,
+          name: m.name,
+          context,
+          input,
+          output
+        };
+      })
+    );
+
+    return NextResponse.json({ models });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch active models' }, { status: 500 });
+  }
 }

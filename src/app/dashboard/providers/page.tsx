@@ -32,9 +32,66 @@ export default function ProvidersPage() {
   const [search, setSearch] = useState('');
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availableProviders, setAvailableProviders] = useState<{ id: string; name: string; key: string; icon: string; color: string; desc: string }[]>([]);
 
   useEffect(() => {
+    // List user's connected providers
     api.listProviders().then((r) => setProviders(r.providers)).catch((e) => toast(e.message, 'error')).finally(() => setLoading(false));
+
+    // Load active admin providers
+    fetch('/api/admin/providers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.providers) {
+          const list = data.providers
+            .filter((p: any) => p.status)
+            .map((p: any) => {
+              const nameLower = p.name.toLowerCase();
+              let key = 'custom';
+              let icon = 'https://logo.clearbit.com/openai.com'; 
+              let color = '#8b5cf6';
+              let desc = `Custom upstream provider: ${p.baseUrl || 'Default Route'}`;
+
+              if (nameLower.includes('openai')) {
+                key = 'openai';
+                icon = 'https://cdn.simpleicons.org/openai/10A37F';
+                color = '#10A37F';
+                desc = 'GPT-4o, GPT-4 Turbo, o1';
+              } else if (nameLower.includes('anthropic')) {
+                key = 'anthropic';
+                icon = 'https://cdn.simpleicons.org/anthropic/D97757';
+                color = '#D97757';
+                desc = 'Claude 3.5 Sonnet, Opus, Haiku';
+              } else if (nameLower.includes('google') || nameLower.includes('gemini')) {
+                key = 'google';
+                icon = 'https://cdn.simpleicons.org/google/4285F4';
+                color = '#4285F4';
+                desc = 'Gemini 1.5 Pro, Flash';
+              } else if (nameLower.includes('deepseek')) {
+                key = 'deepseek';
+                icon = 'https://logo.clearbit.com/deepseek.com';
+                color = '#1A53E8';
+                desc = 'DeepSeek Chat, Coder V2';
+              } else if (nameLower.includes('meta') || nameLower.includes('llama')) {
+                key = 'meta';
+                icon = 'https://cdn.simpleicons.org/meta/0668E1';
+                color = '#0668E1';
+                desc = 'Llama 3.1 405B, 70B, 8B';
+              }
+
+              return {
+                id: p.id,
+                name: p.name,
+                key,
+                icon,
+                color,
+                desc,
+              };
+            });
+          setAvailableProviders(list);
+        }
+      })
+      .catch(err => console.error(err));
   }, []);
 
   const connect = async () => {
@@ -44,7 +101,7 @@ export default function ProvidersPage() {
     }
     try {
       const r = await api.createProvider(selected, keyValue.trim());
-      const meta = PROVIDER_META[selected];
+      const meta = availableProviders.find(p => p.key === selected) || { name: 'Custom AI', icon: '', color: '#8b5cf6' };
       setProviders((prev) => [
         { id: 'tmp_' + Date.now(), name: meta.name, icon: meta.icon, color: meta.color, masked: `••••••••••••${keyValue.trim().slice(-4)}`, status: 'active', added: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
         ...prev.filter((p) => p.name !== meta.name),
@@ -138,7 +195,7 @@ export default function ProvidersPage() {
                   fontSize: '15px', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontFamily: 'inherit'
                 }}>
                   <option value="">Select a provider…</option>
-                  {Object.entries(PROVIDER_META).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
+                  {availableProviders.map((p) => <option key={p.id} value={p.key}>{p.name}</option>)}
                 </select>
               </div>
               <div style={{ flex: 2, minWidth: '300px' }}>
@@ -153,7 +210,7 @@ export default function ProvidersPage() {
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <input
-                    type="password" placeholder={selected ? `Enter your ${PROVIDER_META[selected]?.name ?? ''} API key` : 'sk-...'}
+                    type="password" placeholder={selected ? `Enter your ${availableProviders.find(p => p.key === selected)?.name ?? ''} API key` : 'sk-...'}
                     value={keyValue} onChange={(e) => setKeyValue(e.target.value)}
                     style={{ flex: 1, padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '15px', background: 'var(--color-input-bg)', color: 'var(--color-text-main)' }}
                   />
@@ -198,7 +255,7 @@ export default function ProvidersPage() {
                       <img src={p.icon} width="28" height="28" alt={p.name} style={{ borderRadius: 4 }} />
                       <div>
                         <h4 style={{ fontSize: '15px', fontWeight: 700, color: p.color }}>{p.name}</h4>
-                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }}>{PROVIDER_META[selected]?.desc ?? ''}</p>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }}>{availableProviders.find(ap => ap.name.toLowerCase() === p.name.toLowerCase())?.desc ?? 'Custom Connected Key'}</p>
                       </div>
                     </div>
                     <Badge tone={p.status === 'active' ? 'success' : 'warning'}>

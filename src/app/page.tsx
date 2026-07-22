@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
 import styles from './page.module.css';
@@ -21,7 +21,12 @@ import { useSiteSettings } from '@/components/settings-provider';
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showDemandToast, setShowDemandToast] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { settings } = useSiteSettings();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDemandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +63,7 @@ export default function Home() {
 
         {/* ═══════════════ HERO ═══════════════ */}
         <div className={styles.heroBackground}>
-          {[...Array(30)].map((_, i) => (
+          {mounted && [...Array(30)].map((_, i) => (
             <div key={i} className={styles.particle} style={{ left: `${Math.random() * 100}%`, width: `${Math.random() * 3 + 1}px`, height: `${Math.random() * 3 + 1}px`, animationDuration: `${Math.random() * 8 + 4}s`, animationDelay: `${Math.random() * 5}s` }} />
           ))}
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, opacity: 0.7 }}>
@@ -71,17 +76,16 @@ export default function Home() {
 
         <section className={styles.hero} style={{ position: 'relative', zIndex: 2 }}>
           <div className={styles.heroContent}>
-            {/* Trust Pill */}
-            <div className={styles.heroTrustPill}>
-              <span className={styles.trustDot} />
-              <span>Trusted by <strong>10,000+</strong> developers worldwide</span>
-              <ArrowRight size={14} />
-            </div>
+
 
             <h1 className={styles.heroTitle}>
-              {settings.heroHeading}{' '}
-              <br />
-              <TextLoop style={{ display: 'inline-block' }} interval={3.5} variants={{ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20, position: 'absolute' } }} transition={{ duration: 0.3 }}>
+              {settings.heroHeading && (
+                <>
+                  {settings.heroHeading}
+                  <br />
+                </>
+              )}
+              <TextLoop style={{ display: 'inline-block' }} interval={3.5} transition={{ duration: 0.3 }}>
                 {settings.heroAnimatedTexts.map((text, idx) => (
                   <TextRoll key={idx} className={styles.gradientText}>{text}</TextRoll>
                 ))}
@@ -691,11 +695,7 @@ const response = await client.chat.completions.create({
             <div className={styles.ctaGrid} />
 
             <div className={styles.ctaInner}>
-              {/* Trust pill */}
-              <div className={styles.ctaTrustPill}>
-                <span className={styles.ctaTrustDot} />
-                <span>Trusted by <strong>10,000+</strong> developers worldwide</span>
-              </div>
+
 
               {/* Headline */}
               <h2 className={styles.ctaTitle}>

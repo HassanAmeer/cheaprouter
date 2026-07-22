@@ -22,9 +22,9 @@ export interface SiteSettings {
 
 const defaultSettings: SiteSettings = {
   brandName: 'CheapAgents',
-  heroHeading: 'One API Key for Every',
+  heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
-  heroAnimatedTexts: ['AI Model', 'Provider', 'LLM', 'Inference'],
+  heroAnimatedTexts: ['Free Coding', 'Free Chat', 'Cheap API', 'Cheap Agents'],
   primaryBtnText: 'Get Started',
   primaryBtnTooltip: 'Create your free account today',
   faviconUrl: '/favicon.ico',

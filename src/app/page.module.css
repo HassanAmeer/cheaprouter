@@ -17,17 +17,17 @@
   max-width: 1440px;
   margin: 0 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 60px;
   text-align: left;
 }
 @media (max-width: 968px) {
   .hero { flex-direction: column; text-align: center; padding: 100px 0 80px; gap: 40px; }
-  .heroContent { max-width: 100% !important; flex: none !important; }
+  .heroContent { max-width: 100% !important; flex: none !important; margin-top: 0 !important; }
   .heroVisual { max-width: 100% !important; flex: none !important; }
 }
 
-.heroContent { flex: 0 0 38%; max-width: 38%; }
+.heroContent { flex: 0 0 38%; max-width: 38%; margin-top: 40px; }
 .heroVisual { flex: 0 0 60%; max-width: 60%; display: flex; justify-content: center; overflow: visible; }
 
 .heroBackground {
