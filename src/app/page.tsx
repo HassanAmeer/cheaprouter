@@ -64,7 +64,7 @@ export default function Home() {
       <div className="container">
 
         {/* ═══════════════ HERO ═══════════════ */}
-        <div className={styles.heroBackground}>
+        <div className={styles.heroBackground} style={{ display: 'none' }}>
           {mounted && [...Array(30)].map((_, i) => (
             <div key={i} className={styles.particle} style={{ left: `${Math.random() * 100}%`, width: `${Math.random() * 3 + 1}px`, height: `${Math.random() * 3 + 1}px`, animationDuration: `${Math.random() * 8 + 4}s`, animationDelay: `${Math.random() * 5}s` }} />
           ))}
@@ -102,20 +102,9 @@ export default function Home() {
               <InstallBox />
             </div>
 
-            <div className="item-hints" style={{ display: 'flex', width: '100%', maxWidth: '580px', gap: '16px', paddingTop: '28px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
-                <SpaceButton href="/cli" style={{ width: '100%', textAlign: 'center' }}>Free Coding</SpaceButton>
-                <div className="hint-content">Code with AI in your terminal using cheap-cli with zero limits.</div>
-              </div>
-              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
-                <SpaceButton variant="outline" href="/chat" style={{ width: '100%', textAlign: 'center' }}>Free API</SpaceButton>
-                <div className="hint-content">Access top-tier AI model APIs with free tier tokens and zero friction.</div>
-              </div>
-              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
-                <SpaceButton variant="outline" href="/docs" style={{ width: '100%', textAlign: 'center' }}>API Document</SpaceButton>
-                <div className="hint-content">Explore full API specifications, SDK guides, and integration docs.</div>
-              </div>
-            </div>
+            <h3 className={styles.heroPromoTitle}>
+              Buy Just for <span className={styles.heroPromoHighlight}>$2 USD / month</span>
+            </h3>
           </div>
 
           <div className={styles.heroVisual}>
@@ -145,6 +134,17 @@ export default function Home() {
         <div className={styles.installGrid}>
           {/* Card 1: Try Chat */}
           <div className={styles.installCard}>
+            <div className={styles.cardStarsBg}>
+              <div className={`${styles.cardStar} ${styles.cardStar1}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar2}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar3}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar4}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar5}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar6}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
+            </div>
             <div className={styles.liveBadge}>
               <span className={styles.liveDot} /> LIVE
             </div>
@@ -173,6 +173,17 @@ export default function Home() {
 
           {/* Card 2: Free Unlimited Coding */}
           <div className={styles.installCard}>
+            <div className={styles.cardStarsBg}>
+              <div className={`${styles.cardStar} ${styles.cardStar1}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar2}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar3}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar4}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar5}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar6}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
+            </div>
             <div className={styles.liveBadge}>
               <span className={styles.liveDot} /> LIVE
             </div>
@@ -198,6 +209,17 @@ export default function Home() {
 
           {/* Card 3: Connect by API */}
           <div className={styles.installCard}>
+            <div className={styles.cardStarsBg}>
+              <div className={`${styles.cardStar} ${styles.cardStar1}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar2}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar3}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar4}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar5}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar6}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
+            </div>
             <div className={styles.liveBadge}>
               <span className={styles.liveDot} /> LIVE
             </div>
@@ -224,6 +246,17 @@ export default function Home() {
 
           {/* Card 4: Earn All AI */}
           <div className={styles.installCard}>
+            <div className={styles.cardStarsBg}>
+              <div className={`${styles.cardStar} ${styles.cardStar1}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar2}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar3}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar4}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar5}`} />
+              <div className={`${styles.cardStar} ${styles.cardStar6}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
+              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
+            </div>
             <div className={styles.liveBadge}>
               <span className={styles.liveDot} /> LIVE
             </div>
@@ -279,7 +312,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className={styles.soonBadge}>Coming Soon</div>
+            <div className={styles.soonTextShimmer}>Coming Soon</div>
           </div>
 
           {/* Card 6: CheapAgent - Coming Soon */}
@@ -303,7 +336,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className={styles.soonBadge}>Coming Soon</div>
+            <div className={styles.soonTextShimmer}>Coming Soon</div>
           </div>
 
           {/* Card 7: Cheap Browser Extension - Coming Soon */}
@@ -330,7 +363,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className={styles.soonBadge}>Coming Soon</div>
+            <div className={styles.soonTextShimmer}>Coming Soon</div>
           </div>
         </div>
       </div>
@@ -596,10 +629,16 @@ const response = await client.chat.completions.create({
               
               {/* LEFT SIDE: Copy & Stats */}
               <div className={styles.demandLeft}>
-                <div className={styles.demandEyebrow}>
-                  <Sparkles size={14} /> Driven by community
-                </div>
                 
+                {/* Item-hints tooltip layout aligned to the left edge */}
+                <div className="item-hints" style={{ display: 'block', margin: '10px 0 20px 0', pointerEvents: 'none' }}>
+                  <div className="hint" data-position="1" style={{ justifyContent: 'flex-start' }}>
+                    <div className="hint-content" style={{ opacity: 1, visibility: 'visible', position: 'relative', top: 0, left: '0px', width: 'auto', maxWidth: '320px', padding: '0 0 38px 0', fontSize: '15px', fontWeight: 600, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={15} style={{ color: 'var(--color-primary)' }} /> Driven by community
+                    </div>
+                  </div>
+                </div>
+
                 <h2 className={styles.demandTitle}>
                   {settings.demandSection.title}
                 </h2>

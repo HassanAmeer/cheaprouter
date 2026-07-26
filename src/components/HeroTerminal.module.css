@@ -1,6 +1,6 @@
-/* ─── DUAL SLIDES HERO LAYOUT (Left & Right background slides) ─── */
+/* ─── STEPPED MECHANICAL CAROUSEL (Left Emerge -> Left -> Mid -> Right -> Right Tuck) ─── */
 
-.dualSlidesContainer {
+.stepperContainer {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -9,31 +9,106 @@
   z-index: 1;
 }
 
-.slideWrapper {
+.slideCard {
   position: absolute;
   width: 450px;
   height: 520px;
-  opacity: 0.88;
-  transition: transform 0.6s ease, opacity 0.6s ease;
-  pointer-events: none;
+  top: 25px;
+  left: 50%;
+  /* Smooth mechanical step animation curve */
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease, filter 0.6s ease, z-index 0.3s ease;
+  pointer-events: auto;
 }
 
-/* LEFT SLIDE: Coding & CLI */
-.slideLeft {
-  left: -40px;
-  top: 25px;
-  transform: perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.96);
+/* POSITION 1: LEFT SIDE (Resting position further to the left edge) */
+.posLeft {
+  transform: translate3d(calc(-50% - 550px), 0, 0) perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.95);
+  opacity: 0.92;
+  z-index: 3;
   -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
-  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 28%, black 75%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
 }
 
-/* RIGHT SLIDE: Chat Playground */
-.slideRight {
-  right: -40px;
-  top: 25px;
-  transform: perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.96);
+/* POSITION 2: MID / CENTER BACKGROUND (Moves from Left into Mid under central hero content) */
+.posMid {
+  transform: translate3d(-50%, 15px, -180px) perspective(1200px) scale(0.88);
+  opacity: 0.22;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+/* POSITION 3: RIGHT SIDE (Resting position further to the right edge) */
+.posRight {
+  transform: translate3d(calc(-50% + 550px), 0, 0) perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.95);
+  opacity: 0.92;
+  z-index: 3;
   -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
-  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 28%, black 75%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
+}
+
+/* 3D QUEUE LOOP TRANSITIONS: RIGHT HIDES INTO RIGHT WALL -> ENTERS FROM LEFT WALL TO LEFT */
+.animRightToLeft {
+  animation: exitRightEnterLeft 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animLeftToRight {
+  animation: exitLeftEnterRight 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes exitRightEnterLeft {
+  0% {
+    transform: translate3d(calc(-50% + 550px), 0, 0) perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.95);
+    opacity: 0.92;
+    filter: blur(0px);
+  }
+  38% {
+    transform: translate3d(calc(-50% + 850px), 0, -120px) perspective(1200px) rotateY(-32deg) rotateX(2deg) scale(0.75);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  39% {
+    transform: translate3d(calc(-50% - 850px), 0, -120px) perspective(1200px) rotateY(32deg) rotateX(2deg) scale(0.75);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  100% {
+    transform: translate3d(calc(-50% - 550px), 0, 0) perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.95);
+    opacity: 0.92;
+    filter: blur(0px);
+  }
+}
+
+@keyframes exitLeftEnterRight {
+  0% {
+    transform: translate3d(calc(-50% - 550px), 0, 0) perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.95);
+    opacity: 0.92;
+    filter: blur(0px);
+  }
+  38% {
+    transform: translate3d(calc(-50% - 850px), 0, -120px) perspective(1200px) rotateY(32deg) rotateX(2deg) scale(0.75);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  39% {
+    transform: translate3d(calc(-50% + 850px), 0, -120px) perspective(1200px) rotateY(-32deg) rotateX(2deg) scale(0.75);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  100% {
+    transform: translate3d(calc(-50% + 550px), 0, 0) perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.95);
+    opacity: 0.92;
+    filter: blur(0px);
+  }
+}
+
+@media (max-width: 1440px) {
+  .posLeft {
+    transform: translate3d(calc(-50% - 480px), 0, 0) perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.92);
+  }
+  .posRight {
+    transform: translate3d(calc(-50% + 480px), 0, 0) perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.92);
+  }
 }
 
 /* ─── BASE CARD ─── */
@@ -146,11 +221,75 @@
   50% { opacity: 0; }
 }
 
+.cliEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cliLine {
+  display: flex;
+  gap: 8px;
+}
+
+.cliOutput {
+  opacity: 1;
+}
+
 .cliSuccess {
   color: #4ade80;
   margin-top: 4px;
 }
 [data-theme="light"] .cliSuccess { color: #16a34a !important; }
+
+.cliDiffBlock {
+  background: #18181b;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 6px 0;
+  border-left: 3px solid #3f3f46;
+  font-size: 11.5px;
+}
+[data-theme="light"] .cliDiffBlock {
+  background: #f8fafc !important;
+  border-left-color: #cbd5e1 !important;
+}
+
+.diffFilename {
+  color: #a1a1aa;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+}
+[data-theme="light"] .diffFilename {
+  color: #64748b !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.diffMinus {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 2px 5px;
+  display: flex;
+  gap: 8px;
+  border-radius: 4px;
+}
+[data-theme="light"] .diffMinus {
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+.diffPlus {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 2px 5px;
+  display: flex;
+  gap: 8px;
+  border-radius: 4px;
+}
+[data-theme="light"] .diffPlus {
+  color: #16a34a !important;
+  background: rgba(22, 163, 74, 0.08) !important;
+}
 
 /* ─── VS CODE EDITOR ─── */
 .vscodeSidebar {
@@ -416,9 +555,70 @@
   justify-content: center;
 }
 
+/* ─── STEPPER CONTROLS ─── */
+.stepperControls {
+  position: absolute;
+  bottom: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 20;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+[data-theme="light"] .stepperControls {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.stepperBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.stepperBtn:hover {
+  color: var(--color-primary);
+  background: rgba(204, 0, 0, 0.1);
+}
+
+.stepperDots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepperDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stepperDotActive {
+  width: 20px;
+  border-radius: 100px;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
 /* Hide on mobile screens */
 @media (max-width: 1024px) {
-  .dualSlidesContainer {
+  .stepperContainer {
     display: none !important;
   }
 }

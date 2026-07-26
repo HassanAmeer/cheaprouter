@@ -111,9 +111,10 @@
   animation: fallingStar4 14s 5s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
 }
 
-/* OUTLINE VARIANT SUPPORT (HERO SECTION & DEFAULT SPACE BUTTON OUTLINE) */
+/* ════ OUTLINE VARIANT (Free API & API Document buttons) ════ */
 .btnContainerOutline .spaceBtn {
   background: transparent;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   transition: all 0.4s ease;
 }
 
@@ -122,17 +123,19 @@
   transition: color 0.4s ease;
 }
 
-/* On hover: fill the outline button same as primary */
+/* On hover: fill the outline button EXACTLY like the 1st button (Free Coding) with red starry background */
 .btnContainerOutline:hover .spaceBtn {
-  background: linear-gradient(80deg, black, red);
+  background: #03001e !important;
+  background: linear-gradient(80deg, black, red) !important;
 }
 
 .btnContainerOutline:hover .spaceBtn span {
-  color: white;
+  color: white !important;
 }
 
 .btnContainerOutline:hover .spaceBtn::before {
   opacity: 0;
+  display: none;
 }
 
 /* Stars visible on hover for outline buttons */
@@ -168,6 +171,7 @@
 
 .btnContainerOutline:hover .shootingStar {
   display: block;
+  opacity: 1;
 }
 
 /* NAV OUTLINE VARIANT SUPPORT (For Header Navbar Buttons) */
@@ -185,12 +189,12 @@
 }
 
 .btnContainerNavOutline:hover .spaceBtn {
-  background: linear-gradient(80deg, black, red);
+  background: linear-gradient(80deg, black, red) !important;
   border-color: transparent !important;
 }
 
 .btnContainerNavOutline:hover .spaceBtn span {
-  color: white;
+  color: white !important;
 }
 
 .btnContainerNavOutline .spaceBtn::before {
@@ -214,6 +218,7 @@
 
 .btnContainerNavOutline:hover .shootingStar {
   display: block;
+  opacity: 1;
 }
 
 /* GHOST / BORDERLESS VARIANT (Simple, no border styled) */
@@ -233,13 +238,13 @@
 }
 
 .btnContainerGhost:hover .spaceBtn {
-  background: linear-gradient(80deg, black, red);
+  background: linear-gradient(80deg, black, red) !important;
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   border-radius: 0;
 }
 
 .btnContainerGhost:hover .spaceBtn span {
-  color: white;
+  color: white !important;
 }
 
 .btnContainerGhost .star {
@@ -259,6 +264,7 @@
 
 .btnContainerGhost:hover .shootingStar {
   display: block;
+  opacity: 1;
 }
 
 @keyframes blink {
