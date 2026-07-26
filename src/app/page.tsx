@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
+import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, ArrowUpRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
 import styles from './page.module.css';
 import ModelsTable from '../components/ModelsTable';
 import StackSection from '../components/StackSection';
@@ -17,8 +17,6 @@ import AnnouncementBar from '../components/AnnouncementBar';
 import { SiteNav } from '../components/site-nav';
 import { theme } from '../config/theme';
 import { useSiteSettings } from '@/components/settings-provider';
-
-import StickyScrollNav from '../components/StickyScrollNav';
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -38,8 +36,8 @@ export default function Home() {
 
   return (
     <main>
-      <StickyScrollNav />
       {/* WhatsApp Floating Button */}
+
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
         <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" className="tooltip">
           <div className="tooltip__content"><MessageCircle size={32} /></div>
@@ -64,16 +62,10 @@ export default function Home() {
       <div className="container">
 
         {/* ═══════════════ HERO ═══════════════ */}
-        <div className={styles.heroBackground} style={{ display: 'none' }}>
+        <div className={styles.heroBackground}>
           {mounted && [...Array(30)].map((_, i) => (
             <div key={i} className={styles.particle} style={{ left: `${Math.random() * 100}%`, width: `${Math.random() * 3 + 1}px`, height: `${Math.random() * 3 + 1}px`, animationDuration: `${Math.random() * 8 + 4}s`, animationDelay: `${Math.random() * 5}s` }} />
           ))}
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, opacity: 0.7 }}>
-            <LaserFlow className="" style={{}} dpr={1} color={theme.colors.primary} wispDensity={2} flowSpeed={0.6} verticalSizing={5} horizontalSizing={1.4} fogIntensity={1} fogScale={0.2} wispSpeed={14} wispIntensity={15} flowStrength={0.4} decay={2.9} horizontalBeamOffset={0.3} verticalBeamOffset={-0.5} />
-          </div>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}>
-            <SplashCursor key="splash" SIM_RESOLUTION={128} DYE_RESOLUTION={1440} DENSITY_DISSIPATION={3.5} VELOCITY_DISSIPATION={2} PRESSURE={0.1} CURL={3} SPLAT_RADIUS={0.25} SPLAT_FORCE={2500} COLOR_UPDATE_SPEED={10} RAINBOW_MODE={false} COLOR={theme.colors.primary} BACK_COLOR={{ r: 0, g: 0, b: 0 }} />
-          </div>
         </div>
 
         <section className={styles.hero} style={{ position: 'relative', zIndex: 2 }}>
@@ -145,8 +137,13 @@ export default function Home() {
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
             </div>
-            <div className={styles.liveBadge}>
-              <span className={styles.liveDot} /> LIVE
+            <div className={styles.cardTopRow}>
+              <div className={styles.liveTextOnly}>
+                <span className={styles.liveDot} /> LIVE
+              </div>
+              <Link href="/chat" className={styles.openOutlineBtn}>
+                Open <ArrowUpRight size={13} />
+              </Link>
             </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><MessageSquare size={20} /></div>
@@ -184,8 +181,13 @@ export default function Home() {
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
             </div>
-            <div className={styles.liveBadge}>
-              <span className={styles.liveDot} /> LIVE
+            <div className={styles.cardTopRow}>
+              <div className={styles.liveTextOnly}>
+                <span className={styles.liveDot} /> LIVE
+              </div>
+              <Link href="/cli" className={styles.openOutlineBtn}>
+                Open <ArrowUpRight size={13} />
+              </Link>
             </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Terminal size={20} /></div>
@@ -220,8 +222,13 @@ export default function Home() {
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
             </div>
-            <div className={styles.liveBadge}>
-              <span className={styles.liveDot} /> LIVE
+            <div className={styles.cardTopRow}>
+              <div className={styles.liveTextOnly}>
+                <span className={styles.liveDot} /> LIVE
+              </div>
+              <Link href="/docs" className={styles.openOutlineBtn}>
+                Open <ArrowUpRight size={13} />
+              </Link>
             </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Code size={20} /></div>
@@ -257,8 +264,13 @@ export default function Home() {
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
               <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
             </div>
-            <div className={styles.liveBadge}>
-              <span className={styles.liveDot} /> LIVE
+            <div className={styles.cardTopRow}>
+              <div className={styles.liveTextOnly}>
+                <span className={styles.liveDot} /> LIVE
+              </div>
+              <Link href="/dashboard" className={styles.openOutlineBtn}>
+                Open <ArrowUpRight size={13} />
+              </Link>
             </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Zap size={20} /></div>

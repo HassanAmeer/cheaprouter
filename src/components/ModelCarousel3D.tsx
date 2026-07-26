@@ -276,17 +276,7 @@ export default function ModelCarousel3D() {
         </button>
       </div>
 
-      {/* Pagination Dots */}
-      <div className={styles.dotsRow}>
-        {MODELS.map((_, idx) => (
-          <button
-            key={idx}
-            className={`${styles.dot} ${idx === activeIndex ? styles.dotActive : ''}`}
-            onClick={() => setActiveIndex(idx)}
-            aria-label={`Go to slide ${idx + 1}`}
-          />
-        ))}
-      </div>
+
     </section>
   );
 }
