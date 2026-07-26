@@ -146,8 +146,10 @@ export default function Home() {
               </Link>
             </div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><MessageSquare size={20} /></div>
-              <h3 className={styles.installTitle}>Try Chat</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><MessageSquare size={20} /></div>
+                <h3 className={styles.installTitle}>Try Chat</h3>
+              </div>
               <p className={styles.installDesc}>Compare GPT-4o, Claude 3.5 & more in a real-time playground.</p>
             </div>
             <div className={styles.installPreview}>
@@ -190,8 +192,10 @@ export default function Home() {
               </Link>
             </div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Terminal size={20} /></div>
-              <h3 className={styles.installTitle}>Free Unlimited Coding</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Terminal size={20} /></div>
+                <h3 className={styles.installTitle}>Free Unlimited Coding</h3>
+              </div>
               <p className={styles.installDesc}>Code with AI in your terminal. No usage limits, no credit card.</p>
             </div>
             <div className={styles.installPreview}>
@@ -231,8 +235,10 @@ export default function Home() {
               </Link>
             </div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Code size={20} /></div>
-              <h3 className={styles.installTitle}>Connect by API</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Code size={20} /></div>
+                <h3 className={styles.installTitle}>Connect by API</h3>
+              </div>
               <p className={styles.installDesc}>Drop-in OpenAI replacement. Change one line of code.</p>
             </div>
             <div className={styles.installPreview}>
@@ -273,8 +279,10 @@ export default function Home() {
               </Link>
             </div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Zap size={20} /></div>
-              <h3 className={styles.installTitle}>Earn All AI</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Zap size={20} /></div>
+                <h3 className={styles.installTitle}>Earn All AI</h3>
+              </div>
               <p className={styles.installDesc}>BYOK — bring your own keys, earn tokens on every request.</p>
             </div>
             <div className={styles.installPreview}>
@@ -305,10 +313,12 @@ export default function Home() {
 
           {/* Card 5: CheapCode IDE - Coming Soon */}
           <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.soonClockIcon}><Clock size={16} /></div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Code size={20} /></div>
-              <div className={styles.soonClockIcon}><Clock size={16} /></div>
-              <h3 className={styles.installTitle}>CheapCode IDE</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Code size={20} /></div>
+                <h3 className={styles.installTitle}>CheapCode IDE</h3>
+              </div>
               <p className={styles.installDesc}>AI-powered code editor with inline completions and refactoring.</p>
             </div>
             <div className={styles.installPreview}>
@@ -329,10 +339,12 @@ export default function Home() {
 
           {/* Card 6: CheapAgent - Coming Soon */}
           <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.soonClockIcon}><Clock size={16} /></div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Workflow size={20} /></div>
-              <div className={styles.soonClockIcon}><Clock size={16} /></div>
-              <h3 className={styles.installTitle}>CheapAgent</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Workflow size={20} /></div>
+                <h3 className={styles.installTitle}>CheapAgent</h3>
+              </div>
               <p className={styles.installDesc}>Autonomous AI agent that plans, executes, and iterates on tasks.</p>
             </div>
             <div className={styles.installPreview}>
@@ -353,10 +365,12 @@ export default function Home() {
 
           {/* Card 7: Cheap Browser Extension - Coming Soon */}
           <div className={`${styles.installCard} ${styles.installCardSoon}`}>
+            <div className={styles.soonClockIcon}><Clock size={16} /></div>
             <div className={styles.installCardHeader}>
-              <div className={styles.installIcon}><Globe size={20} /></div>
-              <div className={styles.soonClockIcon}><Clock size={16} /></div>
-              <h3 className={styles.installTitle}>Cheap Extension</h3>
+              <div className={styles.installTitleRow}>
+                <div className={styles.installIcon}><Globe size={20} /></div>
+                <h3 className={styles.installTitle}>Cheap Extension</h3>
+              </div>
               <p className={styles.installDesc}>Browser extension for AI summaries, translations & quick answers.</p>
             </div>
             <div className={styles.installPreview}>
@@ -751,40 +765,12 @@ const response = await client.chat.completions.create({
             <div className={styles.ctaInner}>
 
 
-              {/* Headline */}
-              <h2 className={styles.ctaTitle}>
-                Ready to simplify<br />
-                <span className={styles.ctaTitleAccent}>your AI stack?</span>
-              </h2>
-
-              <p className={styles.ctaDesc}>
-                Replace a dozen API integrations with one line of code.<br />
-                Free tier available — no credit card required.
-              </p>
-
-              {/* Buttons */}
-              <div className={styles.ctaActions}>
-                <Link href="/signup" prefetch={false} className={styles.ctaBtnPrimary}>
-                  Get Started Free <ArrowRight size={18} />
-                </Link>
-                <Link href="/docs" prefetch={false} className={styles.ctaBtnOutline}>
-                  View Documentation
-                </Link>
-              </div>
-
-              {/* Stats row */}
-              <div className={styles.ctaStats}>
-                {[
-                  { value: '10,000+', label: 'Developers' },
-                  { value: '15+', label: 'AI Models' },
-                  { value: '<100ms', label: 'First Token' },
-                  { value: 'SOC 2', label: 'Compliant' },
-                ].map((s, i) => (
-                  <div key={i} className={styles.ctaStatItem}>
-                    <div className={styles.ctaStatValue}>{s.value}</div>
-                    <div className={styles.ctaStatLabel}>{s.label}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '20px auto' }}>
+                <SpaceButton href="/signup" style={{ maxWidth: '440px', width: '100%' }}>
+                  <span style={{ fontSize: '26px', fontWeight: 900, letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '14px', width: '100%', padding: '12px 10px' }}>
+                    Get Started <ArrowRight size={28} strokeWidth={2.5} />
+                  </span>
+                </SpaceButton>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Paperclip, ArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Paperclip, ArrowUp } from 'lucide-react';
 import styles from './HeroTerminal.module.css';
 
 export default function HeroTerminal() {
@@ -191,42 +191,7 @@ export default function HeroTerminal() {
         </div>
       </div>
 
-      {/* Stepper Controls */}
-      <div className={styles.stepperControls}>
-        <button
-          type="button"
-          className={styles.stepperBtn}
-          onClick={() => handleManualStep('prev')}
-          aria-label="Previous Slide"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <div className={styles.stepperDots}>
-          {[0, 1, 2].map((idx) => (
-            <span
-              key={idx}
-              className={`${styles.stepperDot} ${step === idx ? styles.stepperDotActive : ''}`}
-              onClick={() => {
-                setIsPaused(true);
-                if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
-                if (idx !== step) {
-                  setDirection(idx > step || (step === 2 && idx === 0) ? 'next' : 'prev');
-                  setStep(idx);
-                }
-                pauseTimeoutRef.current = setTimeout(() => setIsPaused(false), 6000);
-              }}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          className={styles.stepperBtn}
-          onClick={() => handleManualStep('next')}
-          aria-label="Next Slide"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
+
 
     </div>
   );
