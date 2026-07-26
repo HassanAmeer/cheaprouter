@@ -18,6 +18,8 @@ import { SiteNav } from '../components/site-nav';
 import { theme } from '../config/theme';
 import { useSiteSettings } from '@/components/settings-provider';
 
+import StickyScrollNav from '../components/StickyScrollNav';
+
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showDemandToast, setShowDemandToast] = useState(false);
@@ -36,6 +38,7 @@ export default function Home() {
 
   return (
     <main>
+      <StickyScrollNav />
       {/* WhatsApp Floating Button */}
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
         <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" className="tooltip">
@@ -95,23 +98,23 @@ export default function Home() {
               <span dangerouslySetInnerHTML={{ __html: settings.heroSubtitle }} />
             </p>
 
-            <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '60px', alignItems: 'center' }}>
-              <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton href="/cli">Free Coding</SpaceButton>
-                <div className="hint-content">Code with AI in your terminal using cheap-cli with zero limits.</div>
-              </div>
-              <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton variant="outline" href="/chat">Free API</SpaceButton>
-                <div className="hint-content">Access top-tier AI model APIs with free tier tokens and zero friction.</div>
-              </div>
-              <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton variant="outline" href="/docs">API Document</SpaceButton>
-                <div className="hint-content">Explore full API specifications, SDK guides, and integration docs.</div>
-              </div>
+            <div>
+              <InstallBox />
             </div>
 
-            <div style={{ marginTop: '40px' }}>
-              <InstallBox />
+            <div className="item-hints" style={{ display: 'flex', width: '100%', maxWidth: '580px', gap: '16px', paddingTop: '28px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
+                <SpaceButton href="/cli" style={{ width: '100%', textAlign: 'center' }}>Free Coding</SpaceButton>
+                <div className="hint-content">Code with AI in your terminal using cheap-cli with zero limits.</div>
+              </div>
+              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
+                <SpaceButton variant="outline" href="/chat" style={{ width: '100%', textAlign: 'center' }}>Free API</SpaceButton>
+                <div className="hint-content">Access top-tier AI model APIs with free tier tokens and zero friction.</div>
+              </div>
+              <div className="hint" data-position="1" style={{ flex: '1 1 auto', minWidth: '140px' }}>
+                <SpaceButton variant="outline" href="/docs" style={{ width: '100%', textAlign: 'center' }}>API Document</SpaceButton>
+                <div className="hint-content">Explore full API specifications, SDK guides, and integration docs.</div>
+              </div>
             </div>
           </div>
 
@@ -347,7 +350,7 @@ export default function Home() {
         </section>
 
         {/* ═══════════════ WORKS WITH YOUR STACK ═══════════════ */}
-        <section className={styles.section} style={{ paddingTop: '28px', paddingBottom: '72px' }}>
+        <section id="integrations" className={styles.section} style={{ paddingTop: '28px', paddingBottom: '72px' }}>
           <div style={{ border: '1px solid var(--color-border)', borderRadius: '24px', padding: '48px 32px', background: 'var(--color-card-bg)', boxShadow: 'var(--shadow-sm)' }}>
             <div className={styles.sectionHeader} style={{ marginBottom: '36px' }}>
               <p className={`${styles.sectionSubtitle} ${styles.shimmerSubtitle}`} style={{ fontSize: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>

@@ -1,294 +1,109 @@
-.terminalWrapper {
-  width: 100%;
-  max-width: 800px;
-  position: relative;
-  z-index: 10;
-  margin: 0 auto;
-  perspective: 1500px;
-  height: 750px; /* Increased height */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: 20px;
-}
+/* ─── DUAL SLIDES HERO LAYOUT (Left & Right background slides) ─── */
 
-.cardsContainer {
-  position: relative;
-  width: 680px;
-  height: 580px; /* Increased height */
-  transform-style: preserve-3d;
-}
-
-.card3D {
+.dualSlidesContainer {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.slideWrapper {
+  position: absolute;
+  width: 450px;
+  height: 520px;
+  opacity: 0.88;
+  transition: transform 0.6s ease, opacity 0.6s ease;
+  pointer-events: none;
+}
+
+/* LEFT SLIDE: Coding & CLI */
+.slideLeft {
+  left: -40px;
+  top: 25px;
+  transform: perspective(1200px) rotateY(14deg) rotateX(2deg) scale(0.96);
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 28%, black 75%);
+}
+
+/* RIGHT SLIDE: Chat Playground */
+.slideRight {
+  right: -40px;
+  top: 25px;
+  transform: perspective(1200px) rotateY(-14deg) rotateX(2deg) scale(0.96);
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.5) 28%, black 75%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 28%, black 75%);
+}
+
+/* ─── BASE CARD ─── */
+.card3D {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform-origin: center right;
+  /* Default Dark Mode */
+  background: #09090b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* Light Theme Card Container Override */
+[data-theme="light"] .card3D {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12) !important;
 }
 
 .cardHeader {
   display: flex;
   align-items: flex-start;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 12px;
 }
-
-.headerIcon {
-  color: var(--color-text-main);
-  background: rgba(255, 255, 255, 0.1);
-  padding: 6px;
-  border-radius: 6px;
-}
-
-.headerText {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.headerTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text-main);
-  font-family: sans-serif;
-}
-
-.headerSubtitle {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-  font-family: sans-serif;
+[data-theme="light"] .cardHeader {
+  border-bottom-color: #e2e8f0;
 }
 
 .cardBody {
   padding: 16px;
   flex: 1;
-  background: #050505;
-  color: #ccc;
   font-size: 13px;
   font-family: monospace;
   line-height: 1.6;
   overflow: hidden;
+  background: #09090b;
+  color: #e4e4e7;
 }
 
-/* Specific content styling */
-.cliText span { color: var(--color-primary); font-weight: bold; }
-.comment { color: #6a9955; }
-.keyword { color: #c586c0; }
-.string { color: #ce9178; }
-.function { color: #dcdcaa; }
-
-.chatMessage {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  font-family: sans-serif;
-}
-.chatAvatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: white;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-.chatAvatar.bot {
-  background: #333;
-}
-.chatBubble {
-  background: rgba(255,255,255,0.05);
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.05);
-  font-size: 14px;
-  color: #ddd;
+[data-theme="light"] .cardBody {
+  background: #ffffff !important;
+  color: #1e293b !important;
 }
 
-.scrollControls {
-  position: absolute;
-  right: -48px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  z-index: 20;
-}
-
-.scrollBtn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-  border-radius: 50%;
-}
-
-.scrollBtn:hover {
-  color: var(--color-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.scrollBtn:disabled {
-  color: rgba(255, 255, 255, 0.05);
-  cursor: not-allowed;
-  background: transparent;
-}
-
-/* ========================================================= */
-/* MOCKUP UI STYLES FOR CARDS */
-/* ========================================================= */
-
-.prompt { color: #a5d6ff; font-weight: bold; }
-.cursorBlink {
-  animation: blink 1s step-end infinite;
-  color: #fff;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
-/* CLI Editor */
-.cliEditor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.cliLine {
-  display: flex;
-  gap: 8px;
-}
-.typingCmd {
-  overflow: hidden;
-  white-space: nowrap;
-  animation: typing 2s steps(40, end);
-}
-@keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
-}
-.cliOutput {
-  opacity: 0;
-  animation: fadeIn 0.5s ease forwards 2.5s;
-}
-@keyframes fadeIn {
-  to { opacity: 1; }
-}
-.cliSuccess {
-  color: #27c93f;
-  margin-bottom: 8px;
-}
-.cliDiffBlock {
-  background: rgba(0,0,0,0.3);
-  border-radius: 4px;
-  padding: 8px;
-  margin: 8px 0;
-  border-left: 2px solid #555;
-  font-size: 12px;
-}
-.diffMinus {
-  color: #ff5f56;
-  background: rgba(255, 95, 86, 0.1);
-  padding: 2px 4px;
-  display: flex;
-  gap: 12px;
-}
-.diffPlus {
-  color: #27c93f;
-  background: rgba(39, 201, 63, 0.1);
-  padding: 2px 4px;
-  display: flex;
-  gap: 12px;
-}
-
-/* API Terminal */
-.apiTerminalUi {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.typingApiCmd {
-  overflow: hidden;
-  white-space: nowrap;
-  animation: typingApi 2s steps(40, end);
-}
-@keyframes typingApi {
-  from { width: 0 }
-  to { width: 100% }
-}
-.apiLineIndented {
-  padding-left: 24px;
-  color: #d1d5db;
-  opacity: 0;
-  animation: fadeIn 0.1s ease forwards;
-}
-.apiLineIndented:nth-child(2) { animation-delay: 2.1s; }
-.apiLineIndented:nth-child(3) { animation-delay: 2.2s; }
-.apiLineIndented:nth-child(4) { animation-delay: 2.3s; }
-
-.apiResponse {
-  opacity: 0;
-  animation: fadeIn 0.5s ease forwards 3s;
-}
-.apiConnecting {
-  color: #ffbd2e;
-  margin-bottom: 8px;
-}
-.apiStreaming {
-  color: #e5e7eb;
-  padding-left: 12px;
-  border-left: 2px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-.apiStreaming::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0; height: 100%;
-  background: #050505;
-  animation: slideDownFade 3s ease forwards 3.5s;
-}
-@keyframes slideDownFade {
-  to { height: 0; }
-}
-
-/* Webchat Browser */
+/* ─── BROWSER HEADER ─── */
 .browserHeader {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: #f1f5f9;
-  border-bottom: 1px solid #e2e8f0;
+  background: #18181b;
+  border-bottom: 1px solid #27272a;
   border-radius: 12px 12px 0 0;
   width: 100%;
 }
+[data-theme="light"] .browserHeader {
+  background: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
 .browserDots {
   display: flex;
   gap: 6px;
-  width: 60px;
+  width: 50px;
 }
 .browserDots span {
   width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1;
@@ -300,97 +115,297 @@
 .browserUrl {
   flex: 1;
   text-align: center;
-  background: #fff;
+  background: #09090b;
   border-radius: 6px;
   padding: 4px 0;
   font-size: 11px;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  margin-right: 60px;
+  color: #a1a1aa;
+  border: 1px solid #27272a;
+  margin-right: 50px;
 }
+[data-theme="light"] .browserUrl {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* ─── CLI & TERMINAL ─── */
+.prompt { color: #38bdf8; font-weight: bold; }
+[data-theme="light"] .prompt { color: #0284c7 !important; }
+
+.cliCmd { color: #f4f4f5; }
+[data-theme="light"] .cliCmd { color: #0f172a !important; }
+
+.cursorBlink {
+  animation: blink 1s step-end infinite;
+  color: #f4f4f5;
+}
+[data-theme="light"] .cursorBlink { color: #0f172a !important; }
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.cliSuccess {
+  color: #4ade80;
+  margin-top: 4px;
+}
+[data-theme="light"] .cliSuccess { color: #16a34a !important; }
+
+/* ─── VS CODE EDITOR ─── */
+.vscodeSidebar {
+  width: 120px;
+  background: #18181b;
+  border-right: 1px solid #27272a;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+[data-theme="light"] .vscodeSidebar {
+  background: #f1f5f9 !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+.vscodeSidebarTitle {
+  font-size: 10px;
+  color: #71717a;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding-left: 6px;
+  letter-spacing: 0.5px;
+}
+[data-theme="light"] .vscodeSidebarTitle { color: #64748b !important; }
+
+.vscodeFile {
+  font-size: 11.5px;
+  color: #a1a1aa;
+  padding: 3px 6px;
+  cursor: default;
+  border-radius: 4px;
+}
+[data-theme="light"] .vscodeFile { color: #475569 !important; }
+
+.vscodeFileActive {
+  font-size: 11.5px;
+  color: #f4f4f5;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 6px;
+  cursor: default;
+  border-radius: 4px;
+}
+[data-theme="light"] .vscodeFileActive {
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+
+.vscodeMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #09090b;
+}
+[data-theme="light"] .vscodeMain { background: #ffffff !important; }
+
+.vscodeTabs {
+  display: flex;
+  margin-left: 12px;
+  height: 100%;
+}
+.vscodeTab {
+  padding: 6px 14px;
+  color: #71717a;
+  font-size: 11px;
+  font-family: sans-serif;
+}
+[data-theme="light"] .vscodeTab { color: #64748b !important; }
+
+.vscodeTabActive {
+  padding: 6px 14px;
+  color: #f4f4f5;
+  font-size: 11px;
+  font-family: sans-serif;
+  background: #09090b;
+  border-top: 2px solid var(--color-primary);
+}
+[data-theme="light"] .vscodeTabActive {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-top-color: var(--color-primary) !important;
+}
+
+.vscodeCode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e4e4e7;
+}
+[data-theme="light"] .vscodeCode { color: #1e293b !important; }
+
+/* Syntax highlighting */
+.keyword { color: #c084fc; font-weight: 500; }
+[data-theme="light"] .keyword { color: #7c3aed !important; font-weight: 600; }
+
+.string { color: #fde047; }
+[data-theme="light"] .string { color: #b45309 !important; }
+
+.function { color: #60a5fa; }
+[data-theme="light"] .function { color: #2563eb !important; }
+
+.vscodeTerminalPanel {
+  height: 60px;
+  border-top: 1px solid #27272a;
+  background: #18181b;
+  display: flex;
+  flex-direction: column;
+}
+[data-theme="light"] .vscodeTerminalPanel {
+  background: #f8fafc !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+.vscodeTerminalHeader {
+  font-size: 10px;
+  color: #a1a1aa;
+  padding: 3px 10px;
+  border-bottom: 1px solid #27272a;
+  letter-spacing: 0.5px;
+}
+[data-theme="light"] .vscodeTerminalHeader {
+  color: #475569 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.vscodeTerminalOutput {
+  padding: 6px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11.5px;
+}
+
+.terminalCmd { color: #38bdf8; margin-bottom: 2px; }
+[data-theme="light"] .terminalCmd { color: #0284c7 !important; }
+
+/* ─── WEB CHAT ─── */
 .webChatUi {
   display: flex;
   height: 100%;
+  background: #09090b;
 }
+[data-theme="light"] .webChatUi { background: #ffffff !important; }
+
 .webChatSidebar {
-  width: 60px;
-  border-right: 1px solid #e2e8f0;
-  padding: 12px;
+  width: 50px;
+  border-right: 1px solid #27272a;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #f8fafc;
+  background: #18181b;
 }
+[data-theme="light"] .webChatSidebar {
+  background: #f8fafc !important;
+  border-right-color: #e2e8f0 !important;
+}
+
 .webChatHistItem {
   height: 8px;
-  background: #e2e8f0;
+  background: #27272a;
   border-radius: 4px;
 }
+[data-theme="light"] .webChatHistItem { background: #cbd5e1 !important; }
+
 .webChatMain {
   flex: 1;
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
+  background: #09090b;
 }
+[data-theme="light"] .webChatMain { background: #ffffff !important; }
+
 .webChatMsgWrapper {
   display: flex;
   width: 100%;
 }
+
 .webChatMsgUser {
-  background: #f1f5f9;
+  background: #27272a;
+  color: #f4f4f5;
   padding: 8px 12px;
   border-radius: 12px 12px 0 12px;
-  font-size: 12px;
+  font-size: 11.5px;
   margin-left: auto;
-  max-width: 80%;
+  max-width: 82%;
 }
+[data-theme="light"] .webChatMsgUser {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
 .webChatMsgAi {
-  background: rgba(204, 0, 0, 0.05);
-  border: 1px solid rgba(204, 0, 0, 0.1);
+  background: rgba(204, 0, 0, 0.12);
+  border: 1px solid rgba(204, 0, 0, 0.25);
+  color: #f4f4f5;
   padding: 8px 12px;
   border-radius: 12px 12px 12px 0;
-  font-size: 12px;
+  font-size: 11.5px;
   margin-right: auto;
   max-width: 85%;
-  color: #333;
 }
+[data-theme="light"] .webChatMsgAi {
+  background: rgba(204, 0, 0, 0.05) !important;
+  border: 1px solid rgba(204, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+}
+
 .typingChat {
   display: inline-block;
   overflow: hidden;
   white-space: normal;
-  clip-path: inset(0 100% 0 0);
-  animation: revealChat 3s steps(40, end) forwards 1s;
 }
-@keyframes revealChat {
-  to { clip-path: inset(0 0 0 0); }
-}
+
 .webChatInputArea {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
   display: flex;
   gap: 8px;
   align-items: center;
 }
+
 .webChatInputBox {
   flex: 1;
   height: 32px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #27272a;
   border-radius: 16px;
-  background: #fff;
+  background: #18181b;
   display: flex;
   align-items: center;
   padding: 0 12px;
 }
+[data-theme="light"] .webChatInputBox {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+.inputPlaceholder { color: #71717a; font-size: 11.5px; }
+[data-theme="light"] .inputPlaceholder { color: #64748b !important; }
+
 .webChatAttachBtn {
-  color: #94a3b8;
+  color: #71717a;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+[data-theme="light"] .webChatAttachBtn { color: #64748b !important; }
+
 .webChatSendBtn {
   width: 28px;
   height: 28px;
@@ -401,88 +416,9 @@
   justify-content: center;
 }
 
-/* VS Code Editor UI */
-.vscodeSidebar {
-  width: 140px;
-  background: #181818;
-  border-right: 1px solid #333;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.vscodeSidebarTitle {
-  font-size: 10px;
-  color: #858585;
-  font-weight: 700;
-  margin-bottom: 8px;
-  padding-left: 8px;
-  letter-spacing: 0.5px;
-}
-.vscodeFile {
-  font-size: 12px;
-  color: #858585;
-  padding: 4px 8px;
-  cursor: default;
-}
-.vscodeFileActive {
-  font-size: 12px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 8px;
-  cursor: default;
-}
-.vscodeMain {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.vscodeTabs {
-  display: flex;
-  margin-left: 16px;
-  height: 100%;
-}
-.vscodeTab {
-  padding: 6px 16px;
-  color: #858585;
-  font-size: 11px;
-  font-family: sans-serif;
-  cursor: default;
-}
-.vscodeTabActive {
-  padding: 6px 16px;
-  color: #d4d4d4;
-  font-size: 11px;
-  font-family: sans-serif;
-  background: #1e1e1e;
-  border-top: 1px solid var(--color-primary);
-  cursor: default;
-}
-.vscodeCode {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.vscodeTerminalPanel {
-  height: 60px;
-  border-top: 1px solid #333;
-  background: #181818;
-  display: flex;
-  flex-direction: column;
-}
-.vscodeTerminalHeader {
-  font-size: 10px;
-  color: #d4d4d4;
-  padding: 4px 12px;
-  border-bottom: 1px solid #333;
-  letter-spacing: 0.5px;
-}
-.vscodeTerminalOutput {
-  padding: 8px 12px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 12px;
+/* Hide on mobile screens */
+@media (max-width: 1024px) {
+  .dualSlidesContainer {
+    display: none !important;
+  }
 }
