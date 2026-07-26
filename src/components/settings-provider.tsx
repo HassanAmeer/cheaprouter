@@ -1,6 +1,11 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+export interface FooterColumn {
+  title: string;
+  links: { href: string; label: string }[];
+}
+
 export interface SiteSettings {
   brandName: string;
   heroHeading: string;
@@ -10,6 +15,11 @@ export interface SiteSettings {
   primaryBtnTooltip: string;
   faviconUrl: string;
   logoUrl: string;
+  ctaHeading: string;
+  ctaSubtitle: string;
+  footerColumn1?: FooterColumn;
+  footerColumn2?: FooterColumn;
+  footerColumn3?: FooterColumn;
   marqueeProviders: { id: string; name: string; iconBase64?: string; iconUrl?: string }[];
   faqs: { id: string; q: string; a: string }[];
   demandSection: {
@@ -32,6 +42,34 @@ const defaultSettings: SiteSettings = {
   primaryBtnTooltip: 'Create your free account today',
   faviconUrl: '/favicon.ico',
   logoUrl: '',
+  ctaHeading: 'Ready to cut your AI costs?',
+  ctaSubtitle: 'Join thousands of developers saving up to 80% on AI API costs. Get started in seconds with your existing OpenAI SDK.',
+  footerColumn1: {
+    title: 'Product',
+    links: [
+      { href: '/pricing', label: 'Pricing' },
+      { href: '/models', label: 'Models' },
+      { href: '/docs', label: 'Documentation' },
+      { href: '/changelog', label: 'Changelog' },
+    ],
+  },
+  footerColumn2: {
+    title: 'Company',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/blog', label: 'Blog' },
+      { href: '/careers', label: 'Careers' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  footerColumn3: {
+    title: 'Legal',
+    links: [
+      { href: '/privacy', label: 'Privacy Policy' },
+      { href: '/terms', label: 'Terms of Service' },
+      { href: '/security', label: 'Security' },
+    ],
+  },
   marqueeProviders: [
     { id: 'mq_1', name: 'OpenAI', iconUrl: '/logos/openai.svg' },
     { id: 'mq_2', name: 'Anthropic', iconUrl: '/logos/anthropic.svg' },

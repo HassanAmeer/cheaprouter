@@ -190,18 +190,49 @@
 
 .installCard {
   background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid rgba(204, 0, 0, 0.45);
   border-radius: 16px;
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 320px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(204, 0, 0, 0.06);
 }
 .installCard:hover {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 10px 30px rgba(204, 0, 0, 0.25);
   transform: translateY(-4px);
+}
+
+.liveBadge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.4; }
 }
 
 .installCardHeader { margin-bottom: 16px; }
@@ -285,38 +316,84 @@
 [data-theme="dark"] .miniDashChart { background: #1a1d22; border-color: #2a2d33; }
 .miniChartLine { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to bottom, rgba(204,0,0,0.12), transparent); border-top: 2px solid var(--color-primary); clip-path: polygon(0 40%, 20% 55%, 40% 25%, 60% 70%, 80% 15%, 100% 45%, 100% 100%, 0 100%); }
 
-/* ── Coming Soon Cards ── */
+/* ── Coming Soon Cards (Grey + Shimmer Effect) ── */
 .installCardSoon {
-  opacity: 0.5;
-  pointer-events: none;
+  background: rgba(140, 140, 140, 0.04);
+  border: 1.5px dashed rgba(160, 160, 160, 0.35) !important;
+  box-shadow: none !important;
+  opacity: 0.9;
   position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
+.installCardSoon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: cardShimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes cardShimmer {
+  0% { transform: translateX(-100%); }
+  50%, 100% { transform: translateX(100%); }
+}
+
 .installCardSoon:hover {
-  border-color: var(--color-border);
-  box-shadow: none;
-  transform: none;
+  border-color: rgba(180, 180, 180, 0.6) !important;
+  transform: translateY(-2px);
+  background: rgba(140, 140, 140, 0.07);
 }
+
 .soonClockIcon {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 32px; height: 32px;
+  width: 28px; height: 28px;
   border-radius: 8px;
-  background: var(--color-bg-muted);
+  background: rgba(150, 150, 150, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
 }
+
 .soonBadge {
-  text-align: center;
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: rgba(140, 140, 140, 0.12);
+  border: 1px solid rgba(140, 140, 140, 0.25);
   color: var(--color-text-muted);
-  padding: 14px 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   margin-top: auto;
+  align-self: center;
+  position: relative;
+  overflow: hidden;
+}
+.soonBadge::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(-100%);
+  animation: badgeShimmer 2.5s infinite;
+}
+@keyframes badgeShimmer {
+  100% { transform: translateX(100%); }
 }
 
 /* ── Code Syntax Helpers ── */
@@ -493,6 +570,8 @@
   border-top-right-radius: 0;
   filter: drop-shadow(0 20px 40px rgba(204,0,0,0.12));
   animation: floatPanel 6s ease-in-out infinite;
+  clip-path: polygon(0 0, calc(100% - 60px) 0, 100% 60px, 100% 100%, 0 100%);
+  overflow: hidden;
 }
 .vsPanelAfter:hover {
   filter: drop-shadow(0 40px 60px rgba(204,0,0,0.2));
@@ -524,7 +603,8 @@
 .vsPanelGlow {
   position: absolute;
   top: -50%; left: -50%; width: 200%; height: 200%;
-  background: conic-gradient(from 0deg at 50% 50%, transparent 0%, rgba(204,0,0,0.05) 50%, transparent 100%);
+  border-radius: 50%;
+  background: conic-gradient(from 0deg at 50% 50%, transparent 0%, rgba(204,0,0,0.06) 50%, transparent 100%);
   animation: spinGlow 10s linear infinite;
   pointer-events: none;
   opacity: 0.7;

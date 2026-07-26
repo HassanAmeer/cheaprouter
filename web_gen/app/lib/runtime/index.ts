@@ -77,7 +77,7 @@ export let runtime: Promise<RuntimeProvider> = new Promise(() => {
   // No-op for SSR — same pattern as webcontainer singleton
 });
 
-if (!import.meta.env.SSR) {
+if (!(typeof import.meta !== 'undefined' && (import.meta as any)?.env?.SSR)) {
   if (runtimeInstance && runtimeContext.loaded) {
     /*
      * Runtime already booted (HMR reload) — resolve immediately so all

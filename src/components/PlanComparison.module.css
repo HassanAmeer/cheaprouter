@@ -1,0 +1,248 @@
+.planSection {
+  padding: 80px 0;
+  position: relative;
+}
+
+.container {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 44px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(204, 0, 0, 0.08);
+  border: 1px solid rgba(204, 0, 0, 0.2);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.gradientText {
+  background: linear-gradient(135deg, #ff4d4d 0%, #cc0000 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.tableCard {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] .tableCard {
+  background: rgba(18, 22, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 24px 28px;
+  vertical-align: bottom;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.featureHeader {
+  width: 36%;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  background: var(--color-bg-soft);
+}
+
+.freeHeader {
+  width: 32%;
+  background: var(--color-bg-soft);
+}
+
+.paidHeader {
+  width: 32%;
+  background: rgba(204, 0, 0, 0.06);
+  position: relative;
+  border-left: 2px solid var(--color-primary);
+}
+
+.featuredBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: rgba(204, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.planColTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+.planColSub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.planColTitlePaid {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.planColSubPaid {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.table td {
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.featureName {
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.freeCell {
+  color: var(--color-text-muted);
+}
+
+.paidCell {
+  border-left: 2px solid var(--color-primary);
+  background: rgba(204, 0, 0, 0.02);
+}
+
+.cellHighlight {
+  font-weight: 700;
+  color: var(--color-primary) !important;
+}
+
+.cellText {
+  color: var(--color-text-muted);
+}
+
+.cellTextPaid {
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.tableFooter {
+  display: grid;
+  grid-template-columns: 36% 32% 32%;
+  padding: 20px 28px;
+  background: var(--color-bg-soft);
+  border-top: 1px solid var(--color-border);
+  align-items: center;
+}
+
+.footerColFree {
+  grid-column: 2;
+  padding-right: 12px;
+}
+
+.footerColPaid {
+  grid-column: 3;
+  padding-left: 12px;
+}
+
+.btnFree {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.btnFree:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnPaid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(204, 0, 0, 0.25);
+}
+
+.btnPaid:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .tableWrapper {
+    overflow-x: auto;
+  }
+  .tableFooter {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .footerColFree, .footerColPaid {
+    grid-column: 1;
+    padding: 0;
+  }
+}

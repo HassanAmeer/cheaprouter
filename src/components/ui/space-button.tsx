@@ -5,16 +5,22 @@ import styles from './space-button.module.css';
 interface SpaceButtonProps {
   children: React.ReactNode;
   href?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLDivElement>) => void;
   className?: string;
   style?: React.CSSProperties;
-  variant?: 'primary' | 'outline';
+  variant?: 'primary' | 'outline' | 'nav-outline' | 'ghost';
 }
 
 export function SpaceButton({ children, href, onClick, className, style, variant = 'primary' }: SpaceButtonProps) {
-  const containerClass = variant === 'outline' 
-    ? `${styles.btnContainer} ${styles.btnContainerOutline} ${className || ''}`
-    : `${styles.btnContainer} ${className || ''}`;
+  const variantClass = variant === 'outline' 
+    ? styles.btnContainerOutline 
+    : variant === 'nav-outline'
+    ? styles.btnContainerNavOutline
+    : variant === 'ghost'
+    ? styles.btnContainerGhost
+    : '';
+
+  const containerClass = `${styles.btnContainer} ${variantClass} ${className || ''}`;
 
   const content = (
     <div className={containerClass} style={style} onClick={onClick}>

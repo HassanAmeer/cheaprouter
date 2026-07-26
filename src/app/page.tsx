@@ -52,11 +52,10 @@ export default function Home() {
       <SiteNav links={[
         { href: '/', label: 'Home' },
         { href: '#models', label: 'Models' },
-        { href: '/pricing', label: 'Pricing' },
+        { href: '#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/chat', label: 'Chat' },
         { href: '/cli', label: 'Coding' },
-        { href: '#demand', label: 'Demand' },
       ]} />
 
       <div className="container">
@@ -98,16 +97,16 @@ export default function Home() {
 
             <div className="item-hints" style={{ display: 'flex', width: '100%', gap: '12px', paddingBottom: '60px', alignItems: 'center' }}>
               <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton href="/docs">{settings.primaryBtnText}</SpaceButton>
-                <div className="hint-content">{settings.primaryBtnTooltip}</div>
+                <SpaceButton href="/cli">Free Coding</SpaceButton>
+                <div className="hint-content">Code with AI in your terminal using cheap-cli with zero limits.</div>
               </div>
               <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton variant="outline" href="/chat">Try chat</SpaceButton>
-                <div className="hint-content">Test and compare all AI models instantly in our interactive Chat Playground.</div>
+                <SpaceButton variant="outline" href="/chat">Free API</SpaceButton>
+                <div className="hint-content">Access top-tier AI model APIs with free tier tokens and zero friction.</div>
               </div>
               <div className="hint" data-position="1" style={{ flex: '1' }}>
-                <SpaceButton variant="outline" href="/cli">Try cheap CLI</SpaceButton>
-                <div className="hint-content">Install the cheap-cli to route API requests securely from your terminal.</div>
+                <SpaceButton variant="outline" href="/docs">API Document</SpaceButton>
+                <div className="hint-content">Explore full API specifications, SDK guides, and integration docs.</div>
               </div>
             </div>
 
@@ -143,6 +142,9 @@ export default function Home() {
         <div className={styles.installGrid}>
           {/* Card 1: Try Chat */}
           <div className={styles.installCard}>
+            <div className={styles.liveBadge}>
+              <span className={styles.liveDot} /> LIVE
+            </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><MessageSquare size={20} /></div>
               <h3 className={styles.installTitle}>Try Chat</h3>
@@ -168,6 +170,9 @@ export default function Home() {
 
           {/* Card 2: Free Unlimited Coding */}
           <div className={styles.installCard}>
+            <div className={styles.liveBadge}>
+              <span className={styles.liveDot} /> LIVE
+            </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Terminal size={20} /></div>
               <h3 className={styles.installTitle}>Free Unlimited Coding</h3>
@@ -182,7 +187,7 @@ export default function Home() {
                 <div className={styles.miniTermBody}>
                   <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap-cli install</div>
                   <div className={styles.termRowOk}>✔ Installed successfully</div>
-                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap ask "fix this bug"</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap ask &quot;fix this bug&quot;</div>
                 </div>
               </div>
             </div>
@@ -190,6 +195,9 @@ export default function Home() {
 
           {/* Card 3: Connect by API */}
           <div className={styles.installCard}>
+            <div className={styles.liveBadge}>
+              <span className={styles.liveDot} /> LIVE
+            </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Code size={20} /></div>
               <h3 className={styles.installTitle}>Connect by API</h3>
@@ -213,6 +221,9 @@ export default function Home() {
 
           {/* Card 4: Earn All AI */}
           <div className={styles.installCard}>
+            <div className={styles.liveBadge}>
+              <span className={styles.liveDot} /> LIVE
+            </div>
             <div className={styles.installCardHeader}>
               <div className={styles.installIcon}><Zap size={20} /></div>
               <h3 className={styles.installTitle}>Earn All AI</h3>
@@ -400,17 +411,6 @@ const response = await client.chat.completions.create({
           </div>
         </section>
 
-        {/* ═══════════════ BRANCH FEATURES ═══════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>One core engine, four products</h2>
-            <p className={styles.sectionSubtitle}>
-              Everything you need — CLI, Chat Playground, API Gateway, and Dashboard — all powered by a single core.
-            </p>
-          </div>
-          <BranchFeatures />
-        </section>
 
         {/* ═══════════════ PRICING ═══════════════ */}
         <section id="pricing" className={styles.section}>

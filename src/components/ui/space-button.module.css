@@ -64,6 +64,9 @@
   white-space: normal;
   text-align: center;
   line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .star {
@@ -108,7 +111,7 @@
   animation: fallingStar4 14s 5s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
 }
 
-/* OUTLINE VARIANT SUPPORT */
+/* OUTLINE VARIANT SUPPORT (HERO SECTION & DEFAULT SPACE BUTTON OUTLINE) */
 .btnContainerOutline .spaceBtn {
   background: transparent;
   transition: all 0.4s ease;
@@ -164,6 +167,97 @@
 }
 
 .btnContainerOutline:hover .shootingStar {
+  display: block;
+}
+
+/* NAV OUTLINE VARIANT SUPPORT (For Header Navbar Buttons) */
+.btnContainerNavOutline .spaceBtn {
+  background: transparent;
+  clip-path: none;
+  border-radius: 8px;
+  border: 2px solid var(--color-border) !important;
+  transition: all 0.4s ease;
+}
+
+.btnContainerNavOutline .spaceBtn span {
+  color: var(--color-text-main);
+  transition: color 0.4s ease;
+}
+
+.btnContainerNavOutline:hover .spaceBtn {
+  background: linear-gradient(80deg, black, red);
+  border-color: transparent !important;
+}
+
+.btnContainerNavOutline:hover .spaceBtn span {
+  color: white;
+}
+
+.btnContainerNavOutline .spaceBtn::before {
+  display: none;
+}
+
+.btnContainerNavOutline .star {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.btnContainerNavOutline:hover .star {
+  opacity: 1;
+  visibility: visible;
+}
+
+.btnContainerNavOutline .shootingStar {
+  display: none;
+}
+
+.btnContainerNavOutline:hover .shootingStar {
+  display: block;
+}
+
+/* GHOST / BORDERLESS VARIANT (Simple, no border styled) */
+.btnContainerGhost .spaceBtn {
+  background: transparent;
+  border: none;
+  outline: none;
+  clip-path: none;
+  border-radius: 6px;
+  transition: all 0.4s ease;
+}
+
+.btnContainerGhost .spaceBtn span {
+  color: var(--color-text-main);
+  font-weight: 600;
+  transition: color 0.4s ease;
+}
+
+.btnContainerGhost:hover .spaceBtn {
+  background: linear-gradient(80deg, black, red);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  border-radius: 0;
+}
+
+.btnContainerGhost:hover .spaceBtn span {
+  color: white;
+}
+
+.btnContainerGhost .star {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.btnContainerGhost:hover .star {
+  opacity: 1;
+  visibility: visible;
+}
+
+.btnContainerGhost .shootingStar {
+  display: none;
+}
+
+.btnContainerGhost:hover .shootingStar {
   display: block;
 }
 

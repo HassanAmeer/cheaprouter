@@ -1,7 +1,8 @@
 import { useLoaderData, useNavigate, useSearchParams } from 'react-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { atom } from 'nanostores';
-import { type JSONValue, type Message } from 'ai';
+import { type JSONValue } from 'ai';
+import type { Message } from '@ai-sdk/ui-utils';
 import { toast } from 'sonner';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { versionsStore } from '~/lib/stores/versions';
@@ -36,7 +37,7 @@ let autoRebuildScheduled = false;
 
 export type { ChatHistoryItem } from './types';
 
-const persistenceEnabled = !import.meta.env.VITE_DISABLE_PERSISTENCE;
+const persistenceEnabled = !(typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_DISABLE_PERSISTENCE);
 
 export const db = persistenceEnabled ? await openDatabase() : undefined;
 
@@ -52,7 +53,13 @@ export const description = atom<string | undefined>(undefined);
 export const chatMetadata = atom<IChatMetadata | undefined>(undefined);
 export function useChatHistory() {
   const navigate = useNavigate();
-  const { id: mixedId } = useLoaderData<{ id?: string }>();
+  let mixedId: string | undefined = undefined;
+  try {
+    const loaderData = useLoaderData<{ id?: string }>();
+    mixedId = loaderData?.id;
+  } catch {
+    mixedId = undefined;
+  }
   const [searchParams] = useSearchParams();
 
   const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);

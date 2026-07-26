@@ -98,7 +98,7 @@ export default function StackSection() {
     const chipCount = end - start;
     for (let i = 0; i < chipCount; i++) {
       const chipGlobalIdx = start + i;
-      const delay = rowDelay + i * 80; // matches CSS --chip-delay: i * 80ms
+      const delay = rowDelay + i * 40; // matches CSS --chip-delay: i * 40ms
       const t = setTimeout(() => {
         playTick(CHIP_FREQS[chipGlobalIdx] ?? 440);
       }, delay);
@@ -116,7 +116,7 @@ export default function StackSection() {
       const obs = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            const rowDelay = idx * 150;
+            const rowDelay = idx * 80;
             const t = setTimeout(() => {
               setVisible(v => { const next = [...v]; next[idx] = true; return next; });
               scheduleRowSounds(idx, 0);
@@ -127,13 +127,11 @@ export default function StackSection() {
               clearTimeout(timeouts.get(idx)!);
               timeouts.delete(idx);
             }
-            // cancel any pending sounds for this row
-            soundTimeoutsRef.current.forEach(t => clearTimeout(t));
-            soundTimeoutsRef.current = [];
+            // do NOT cancel pending sounds — let them finish even during fast scroll
             setVisible(v => { const next = [...v]; next[idx] = false; return next; });
           }
         },
-        { threshold: 0.1 }
+        { threshold: 0, rootMargin: '0px 0px -30px 0px' }
       );
       obs.observe(el);
       observers.push(obs);
@@ -167,7 +165,7 @@ export default function StackSection() {
                   ].join(' ')}
                   style={{
                     '--chip-index': i,
-                    '--chip-delay': isVisible ? i * 80 : 0,
+                    '--chip-delay': isVisible ? i * 40 : 0,
                   } as React.CSSProperties}
                 >
                   <img

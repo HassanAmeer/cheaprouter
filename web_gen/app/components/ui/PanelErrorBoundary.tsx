@@ -71,7 +71,7 @@ export class PanelErrorBoundary extends Component<PanelErrorBoundaryProps, Panel
             </Button>
           </div>
 
-          {!import.meta.env.PROD && error && (
+          {process.env.NODE_ENV !== 'production' && error && (
             <details className="w-full max-w-md text-left">
               <summary className="cursor-pointer text-xs text-devonz-elements-textTertiary hover:text-devonz-elements-textSecondary transition-colors">
                 Error Details

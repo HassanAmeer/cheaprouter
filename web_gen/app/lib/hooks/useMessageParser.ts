@@ -1,4 +1,4 @@
-import type { Message } from 'ai';
+import type { Message } from '@ai-sdk/ui-utils';
 import { useCallback, useState } from 'react';
 import { EnhancedStreamingMessageParser } from '~/lib/runtime/enhanced-message-parser';
 import { workbenchStore } from '~/lib/stores/workbench';
@@ -212,7 +212,7 @@ export function useMessageParser() {
   const parseMessages = useCallback((messages: Message[], isLoading: boolean) => {
     let reset = false;
 
-    if (import.meta.env.DEV && !isLoading) {
+    if ((typeof import.meta !== 'undefined' && (import.meta as any)?.env?.DEV) && !isLoading) {
       reset = true;
       messageParser.reset();
       resetVersionTracking();
