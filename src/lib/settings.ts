@@ -14,6 +14,19 @@ export interface SiteSettings {
     subtitle: string;
     items: { id: string; text: string; badgeText: string; badgeColor: 'green' | 'red' | 'blue' | 'gray' | 'purple' }[];
   };
+  contactInfo: {
+    supportEmail: string;
+    supportPhone: string;
+    officeAddress: string;
+    discordUrl: string;
+    enableContactForm: boolean;
+  };
+  dashboardSettings: {
+    welcomeMessage: string;
+    defaultMonthlyQuota: string;
+    allowByok: boolean;
+    announcementBanner: string;
+  };
   footer: {
     copyrightText: string;
     socialLinks: { id: string; platform: string; url: string }[];
@@ -52,6 +65,19 @@ const defaultSettings: SiteSettings = {
       { id: 'di_3', text: 'Enterprise bypass', badgeText: 'Open', badgeColor: 'green' },
       { id: 'di_4', text: 'New model support', badgeText: 'Coming Soon', badgeColor: 'gray' },
     ]
+  },
+  contactInfo: {
+    supportEmail: 'support@cheapagents.ai',
+    supportPhone: '+1 (800) 555-0199',
+    officeAddress: '100 Tech Boulevard, Suite 400, San Francisco, CA 94107',
+    discordUrl: 'https://discord.gg/cheapagents',
+    enableContactForm: true,
+  },
+  dashboardSettings: {
+    welcomeMessage: 'Welcome to CheapAgents AI Gateway Dashboard',
+    defaultMonthlyQuota: '$50.00',
+    allowByok: true,
+    announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',
   },
   footer: {
     copyrightText: '© 2026 CheapAgents Inc. All rights reserved.',

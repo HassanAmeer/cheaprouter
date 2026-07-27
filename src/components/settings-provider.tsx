@@ -27,6 +27,19 @@ export interface SiteSettings {
     subtitle: string;
     items: { id: string; text: string; badgeText: string; badgeColor: 'green' | 'red' | 'blue' | 'gray' | 'purple' }[];
   };
+  contactInfo: {
+    supportEmail: string;
+    supportPhone: string;
+    officeAddress: string;
+    discordUrl: string;
+    enableContactForm: boolean;
+  };
+  dashboardSettings: {
+    welcomeMessage: string;
+    defaultMonthlyQuota: string;
+    allowByok: boolean;
+    announcementBanner: string;
+  };
   footer: {
     copyrightText: string;
     socialLinks: { id: string; platform: string; url: string }[];
@@ -94,6 +107,19 @@ const defaultSettings: SiteSettings = {
       { id: 'di_4', text: 'New model support', badgeText: 'Coming Soon', badgeColor: 'gray' },
     ]
   },
+  contactInfo: {
+    supportEmail: 'support@cheapagents.ai',
+    supportPhone: '+1 (800) 555-0199',
+    officeAddress: '100 Tech Boulevard, Suite 400, San Francisco, CA 94107',
+    discordUrl: 'https://discord.gg/cheapagents',
+    enableContactForm: true,
+  },
+  dashboardSettings: {
+    welcomeMessage: 'Welcome to CheapAgents AI Gateway Dashboard',
+    defaultMonthlyQuota: '$50.00',
+    allowByok: true,
+    announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',
+  },
   footer: {
     copyrightText: '© 2026 CheapAgents Inc. All rights reserved.',
     socialLinks: [
@@ -121,17 +147,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/settings');
       if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
-        
-        // Dynamically update document title / favicon if we are on client side
-        if (typeof window !== 'undefined') {
-          document.title = data.brandName + ' | Unified AI Gateway';
-          const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-          (link as any).type = 'image/x-icon';
-          (link as any).rel = 'shortcut icon';
-          (link as any).href = data.faviconUrl || '/favicon.ico';
-          document.getElementsByTagName('head')[0].appendChild(link);
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json().catch(() => null);
+          if (data) {
+            setSettings(data);
+            
+            // Dynamically update document title / favicon if we are on client side
+            if (typeof window !== 'undefined') {
+              document.title = (data.brandName || 'CheapAgents') + ' | Unified AI Gateway';
+              const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+              (link as any).type = 'image/x-icon';
+              (link as any).rel = 'shortcut icon';
+              (link as any).href = data.faviconUrl || '/favicon.ico';
+              document.getElementsByTagName('head')[0].appendChild(link);
+            }
+          }
         }
       }
     } catch (e) {

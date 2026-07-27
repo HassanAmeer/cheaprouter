@@ -1,19 +1,54 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from '../admin.module.css';
-import { Save, Image as ImageIcon, Type, MousePointer2, Settings2, HelpCircle, AlignLeft, LayoutPanelLeft, Plus, X } from 'lucide-react';
+import { 
+  Save, Image as ImageIcon, Type, Settings2, HelpCircle, AlignLeft, LayoutPanelLeft, 
+  Plus, X, Upload, Trash2, Globe, Mail, LayoutDashboard
+} from 'lucide-react';
 import { useSiteSettings, SiteSettings } from '@/components/settings-provider';
 
-export default function SettingsPage() {
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
+
   const { settings, refreshSettings } = useSiteSettings();
   const [formData, setFormData] = useState<SiteSettings>(settings);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'marquee' | 'demand' | 'faq' | 'footer'>('general');
+  
+  const [activeTab, setActiveTab] = useState<'general' | 'landing' | 'contact' | 'dashboard'>('general');
+  const [landingSubTab, setLandingSubTab] = useState<'hero' | 'marquee' | 'demand' | 'faq' | 'footer'>('hero');
+
+  useEffect(() => {
+    if (tabParam) {
+      if (['hero', 'marquee', 'demand', 'faq', 'footer'].includes(tabParam)) {
+        setActiveTab('landing');
+        setLandingSubTab(tabParam as any);
+      } else if (['general', 'landing', 'contact', 'dashboard'].includes(tabParam)) {
+        setActiveTab(tabParam as any);
+      }
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
 
   const handleChange = (field: keyof SiteSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setSaved(false);
+  };
+
+  const handleFileUpload = (field: 'logoUrl' | 'faviconUrl', file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result) {
+        handleChange(field, reader.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -40,11 +75,28 @@ export default function SettingsPage() {
     <button 
       onClick={() => setActiveTab(id)}
       style={{ 
-        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: activeTab === id ? 'var(--color-primary-soft)' : 'transparent',
-        color: activeTab === id ? 'var(--color-primary)' : 'var(--color-text-muted)', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
+        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', 
+        background: activeTab === id ? 'var(--color-primary-soft)' : 'transparent',
+        color: activeTab === id ? 'var(--color-primary)' : 'var(--color-text-muted)', 
+        border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
       }}
     >
       <Icon size={16} /> {label}
+    </button>
+  );
+
+  const SubTabBtn = ({ id, label, icon: Icon }: { id: typeof landingSubTab, label: string, icon: any }) => (
+    <button 
+      onClick={() => setLandingSubTab(id)}
+      style={{ 
+        display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', 
+        background: landingSubTab === id ? 'var(--color-card-bg)' : 'transparent',
+        color: landingSubTab === id ? 'var(--color-primary)' : 'var(--color-text-muted)', 
+        border: landingSubTab === id ? '1px solid var(--color-border)' : '1px solid transparent', 
+        borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
+      }}
+    >
+      <Icon size={14} /> {label}
     </button>
   );
 
@@ -53,219 +105,487 @@ export default function SettingsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Content Management System</h2>
-          <p style={{ color: 'var(--color-text-muted)' }}>Dynamically manage every section of your landing page from here.</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>Dynamically manage every section of your platform, landing page, and dashboard settings.</p>
         </div>
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
           <Save size={16} /> {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', borderBottom: '1px solid var(--color-border)', paddingBottom: '16px', overflowX: 'auto' }}>
-        <TabBtn id="general" label="General & Hero" icon={Settings2} />
-        <TabBtn id="marquee" label="Marquee Providers" icon={ImageIcon} />
-        <TabBtn id="demand" label="Demand Section" icon={AlignLeft} />
-        <TabBtn id="faq" label="FAQs" icon={HelpCircle} />
-        <TabBtn id="footer" label="Footer & Socials" icon={LayoutPanelLeft} />
+      {/* Main Category Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--color-border)', paddingBottom: '16px', overflowX: 'auto' }}>
+        <TabBtn id="general" label="General & Brand" icon={Settings2} />
+        <TabBtn id="landing" label="Landing Page CMS" icon={Globe} />
+        <TabBtn id="contact" label="Contact & Support" icon={Mail} />
+        <TabBtn id="dashboard" label="User Dashboard CMS" icon={LayoutDashboard} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
         
-        {/* ================= GENERAL TAB ================= */}
+        {/* ================= 1. GENERAL & BRAND TAB ================= */}
         {activeTab === 'general' && (
-          <>
-            <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ImageIcon size={18} color="var(--color-primary)" /> Brand Identity
-              </h3>
+          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ImageIcon size={18} color="var(--color-primary)" /> Brand Identity & Logos
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Brand Name</label>
+                <input 
+                  type="text" 
+                  value={formData.brandName || ''} 
+                  onChange={(e) => handleChange('brandName', e.target.value)} 
+                  placeholder="e.g. CheapAgents"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                {/* Website Logo Upload */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Website Main Logo</span>
+                    {formData.logoUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Custom Logo Active</span>}
+                  </label>
+
+                  <div style={{ 
+                    height: '80px', 
+                    background: 'var(--color-card-bg)', 
+                    borderRadius: '8px', 
+                    border: '1px dashed var(--color-border)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    overflow: 'hidden', 
+                    padding: '8px',
+                    position: 'relative'
+                  }}>
+                    {formData.logoUrl ? (
+                      <img src={formData.logoUrl} alt="Website Logo Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ImageIcon size={16} /> No Custom Logo Uploaded
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
+                      <Upload size={14} /> Upload Logo File
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => handleFileUpload('logoUrl', e.target.files?.[0])} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+                    {formData.logoUrl && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleChange('logoUrl', '')} 
+                        title="Remove Logo" 
+                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  <input 
+                    type="text" 
+                    value={formData.logoUrl || ''} 
+                    onChange={(e) => handleChange('logoUrl', e.target.value)} 
+                    placeholder="Or paste Logo URL / Path" 
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                  />
+                </div>
+
+                {/* Favicon Upload */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Favicon Icon</span>
+                    {formData.faviconUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Active</span>}
+                  </label>
+
+                  <div style={{ 
+                    height: '80px', 
+                    background: 'var(--color-card-bg)', 
+                    borderRadius: '8px', 
+                    border: '1px dashed var(--color-border)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    overflow: 'hidden', 
+                    padding: '8px',
+                    gap: '12px'
+                  }}>
+                    {formData.faviconUrl ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-bg-soft)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <img src={formData.faviconUrl} alt="Favicon Preview" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Favicon Preview</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ImageIcon size={16} /> Default (/favicon.ico)
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
+                      <Upload size={14} /> Upload Favicon File
+                      <input 
+                        type="file" 
+                        accept="image/*,image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml" 
+                        onChange={(e) => handleFileUpload('faviconUrl', e.target.files?.[0])} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+                    {formData.faviconUrl && formData.faviconUrl !== '/favicon.ico' && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleChange('faviconUrl', '/favicon.ico')} 
+                        title="Reset to default favicon" 
+                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  <input 
+                    type="text" 
+                    value={formData.faviconUrl || ''} 
+                    onChange={(e) => handleChange('faviconUrl', e.target.value)} 
+                    placeholder="Or paste Favicon URL / Path" 
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ================= 2. LANDING PAGE CMS TAB ================= */}
+        {activeTab === 'landing' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--color-bg-soft)', padding: '6px', borderRadius: '10px', width: 'fit-content' }}>
+              <SubTabBtn id="hero" label="Hero Section" icon={Type} />
+              <SubTabBtn id="marquee" label="Marquee Providers" icon={ImageIcon} />
+              <SubTabBtn id="demand" label="Demand Timeline" icon={AlignLeft} />
+              <SubTabBtn id="faq" label="FAQs List" icon={HelpCircle} />
+              <SubTabBtn id="footer" label="Footer & Socials" icon={LayoutPanelLeft} />
+            </div>
+
+            {/* HERO SUB-TAB */}
+            {landingSubTab === 'hero' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Type size={18} color="var(--color-primary)" /> Hero Section Content
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Main Heading (Static part)</label>
+                    <input type="text" value={formData.heroHeading} onChange={(e) => handleChange('heroHeading', e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Animated Looping Texts (Comma separated)</label>
+                    <input type="text" value={formData.heroAnimatedTexts.join(', ')} onChange={(e) => handleChange('heroAnimatedTexts', e.target.value.split(',').map(s => s.trim()))} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle (Supports HTML like &lt;strong&gt;)</label>
+                    <textarea value={formData.heroSubtitle} onChange={(e) => handleChange('heroSubtitle', e.target.value)} rows={3} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* MARQUEE SUB-TAB */}
+            {landingSubTab === 'marquee' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Provider Marquee List</h3>
+                  <button onClick={() => setFormData({...formData, marqueeProviders: [...formData.marqueeProviders, { id: `mq_${Date.now()}`, name: 'New Provider', iconUrl: '' }]})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add Item
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {formData.marqueeProviders.map((mq, idx) => (
+                    <div key={mq.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
+                      <input type="text" value={mq.name} onChange={(e) => {
+                        const newMq = [...formData.marqueeProviders]; newMq[idx].name = e.target.value; setFormData({...formData, marqueeProviders: newMq});
+                      }} placeholder="Provider Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {mq.iconUrl && <img src={mq.iconUrl} alt="preview" style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'contain' }} />}
+                        <input type="file" accept="image/*" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const newMq = [...formData.marqueeProviders];
+                              newMq[idx].iconUrl = reader.result as string;
+                              setFormData({...formData, marqueeProviders: newMq});
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }} style={{ fontSize: '12px' }} />
+                      </div>
+                      
+                      <button onClick={() => {
+                        setFormData({...formData, marqueeProviders: formData.marqueeProviders.filter(m => m.id !== mq.id)});
+                      }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* DEMAND SUB-TAB */}
+            {landingSubTab === 'demand' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Demand Section Headings</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '32px' }}>
+                  <input type="text" value={formData.demandSection.title} onChange={(e) => setFormData({...formData, demandSection: {...formData.demandSection, title: e.target.value}})} placeholder="Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  <input type="text" value={formData.demandSection.subtitle} onChange={(e) => setFormData({...formData, demandSection: {...formData.demandSection, subtitle: e.target.value}})} placeholder="Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Demand List Items</h3>
+                  <button onClick={() => setFormData({...formData, demandSection: {...formData.demandSection, items: [...formData.demandSection.items, { id: `di_${Date.now()}`, text: 'New Item', badgeText: 'Badge', badgeColor: 'green' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add Item
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {formData.demandSection.items.map((item, idx) => (
+                    <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
+                      <input type="text" value={item.text} onChange={(e) => {
+                        const newItems = [...formData.demandSection.items]; newItems[idx].text = e.target.value; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
+                      }} placeholder="Item Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      
+                      <input type="text" value={item.badgeText} onChange={(e) => {
+                        const newItems = [...formData.demandSection.items]; newItems[idx].badgeText = e.target.value; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
+                      }} placeholder="Badge Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      
+                      <select value={item.badgeColor} onChange={(e) => {
+                        const newItems = [...formData.demandSection.items]; newItems[idx].badgeColor = e.target.value as any; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
+                      }} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
+                        <option value="green">Green</option>
+                        <option value="red">Red</option>
+                        <option value="blue">Blue</option>
+                        <option value="purple">Purple</option>
+                        <option value="gray">Gray</option>
+                      </select>
+
+                      <button onClick={() => {
+                        setFormData({...formData, demandSection: {...formData.demandSection, items: formData.demandSection.items.filter(i => i.id !== item.id)}});
+                      }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* FAQ SUB-TAB */}
+            {landingSubTab === 'faq' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Frequently Asked Questions</h3>
+                  <button onClick={() => setFormData({...formData, faqs: [...formData.faqs, { id: `faq_${Date.now()}`, q: 'New Question?', a: 'Answer here.' }]})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add FAQ
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {formData.faqs.map((faq, idx) => (
+                    <div key={faq.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px', position: 'relative' }}>
+                      <button onClick={() => {
+                        setFormData({...formData, faqs: formData.faqs.filter(f => f.id !== faq.id)});
+                      }} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16}/></button>
+                      
+                      <input type="text" value={faq.q} onChange={(e) => {
+                        const newFaqs = [...formData.faqs]; newFaqs[idx].q = e.target.value; setFormData({...formData, faqs: newFaqs});
+                      }} placeholder="Question" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', width: 'calc(100% - 40px)' }} />
+                      
+                      <textarea value={faq.a} onChange={(e) => {
+                        const newFaqs = [...formData.faqs]; newFaqs[idx].a = e.target.value; setFormData({...formData, faqs: newFaqs});
+                      }} placeholder="Answer" rows={2} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', width: '100%', resize: 'vertical' }} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* FOOTER SUB-TAB */}
+            {landingSubTab === 'footer' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Footer & Socials</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '32px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Copyright Text</label>
+                  <input type="text" value={formData.footer.copyrightText} onChange={(e) => setFormData({...formData, footer: {...formData.footer, copyrightText: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Social Links</h3>
+                  <button onClick={() => setFormData({...formData, footer: {...formData.footer, socialLinks: [...formData.footer.socialLinks, { id: `sl_${Date.now()}`, platform: 'Platform', url: 'https://' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add Link
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {formData.footer.socialLinks.map((link, idx) => (
+                    <div key={link.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
+                      <input type="text" value={link.platform} onChange={(e) => {
+                        const newLinks = [...formData.footer.socialLinks]; newLinks[idx].platform = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
+                      }} placeholder="Platform Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      
+                      <input type="text" value={link.url} onChange={(e) => {
+                        const newLinks = [...formData.footer.socialLinks]; newLinks[idx].url = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
+                      }} placeholder="URL" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      
+                      <button onClick={() => {
+                        setFormData({...formData, footer: {...formData.footer, socialLinks: formData.footer.socialLinks.filter(l => l.id !== link.id)}});
+                      }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ================= 3. CONTACT & SUPPORT TAB ================= */}
+        {activeTab === 'contact' && (
+          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Mail size={18} color="var(--color-primary)" /> Contact & Support Configuration
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Support Email Address</label>
+                <input 
+                  type="email" 
+                  value={formData.contactInfo?.supportEmail || ''} 
+                  onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportPhone: '', officeAddress: '', discordUrl: '', enableContactForm: true }), supportEmail: e.target.value}})} 
+                  placeholder="support@cheapagents.ai"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Support Phone Number</label>
+                <input 
+                  type="text" 
+                  value={formData.contactInfo?.supportPhone || ''} 
+                  onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportEmail: '', officeAddress: '', discordUrl: '', enableContactForm: true }), supportPhone: e.target.value}})} 
+                  placeholder="+1 (800) 555-0199"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Office / Business Address</label>
+                <input 
+                  type="text" 
+                  value={formData.contactInfo?.officeAddress || ''} 
+                  onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportEmail: '', supportPhone: '', discordUrl: '', enableContactForm: true }), officeAddress: e.target.value}})} 
+                  placeholder="100 Tech Boulevard, Suite 400, San Francisco, CA"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Discord / Community Server URL</label>
+                <input 
+                  type="text" 
+                  value={formData.contactInfo?.discordUrl || ''} 
+                  onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportEmail: '', supportPhone: '', officeAddress: '', enableContactForm: true }), discordUrl: e.target.value}})} 
+                  placeholder="https://discord.gg/cheapagents"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '8px' }}>
+                <input 
+                  type="checkbox" 
+                  id="enableContactForm" 
+                  checked={formData.contactInfo?.enableContactForm ?? true} 
+                  onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportEmail: '', supportPhone: '', officeAddress: '', discordUrl: '' }), enableContactForm: e.target.checked}})} 
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                />
+                <label htmlFor="enableContactForm" style={{ fontSize: '14px', color: 'var(--color-text-main)', fontWeight: 600, cursor: 'pointer' }}>
+                  Enable Interactive Contact Form on Website
+                </label>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ================= 4. USER DASHBOARD CMS TAB ================= */}
+        {activeTab === 'dashboard' && (
+          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <LayoutDashboard size={18} color="var(--color-primary)" /> User Dashboard Settings
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Welcome Header Message</label>
+                <input 
+                  type="text" 
+                  value={formData.dashboardSettings?.welcomeMessage || ''} 
+                  onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { defaultMonthlyQuota: '$50.00', allowByok: true, announcementBanner: '' }), welcomeMessage: e.target.value}})} 
+                  placeholder="Welcome to CheapAgents AI Gateway Dashboard"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Global Announcement Bar Banner</label>
+                <input 
+                  type="text" 
+                  value={formData.dashboardSettings?.announcementBanner || ''} 
+                  onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', defaultMonthlyQuota: '$50.00', allowByok: true }), announcementBanner: e.target.value}})} 
+                  placeholder="⚡ New models live!"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                />
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Brand Name</label>
-                  <input type="text" value={formData.brandName} onChange={(e) => handleChange('brandName', e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Default User Monthly Quota Limit</label>
+                  <input 
+                    type="text" 
+                    value={formData.dashboardSettings?.defaultMonthlyQuota || ''} 
+                    onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', allowByok: true, announcementBanner: '' }), defaultMonthlyQuota: e.target.value}})} 
+                    placeholder="$50.00"
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                  />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Favicon URL</label>
-                  <input type="text" value={formData.faviconUrl} onChange={(e) => handleChange('faviconUrl', e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                </div>
-              </div>
-            </section>
-
-            <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Type size={18} color="var(--color-primary)" /> Hero Section Content
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Main Heading (Static part)</label>
-                  <input type="text" value={formData.heroHeading} onChange={(e) => handleChange('heroHeading', e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Animated Looping Texts (Comma separated)</label>
-                  <input type="text" value={formData.heroAnimatedTexts.join(', ')} onChange={(e) => handleChange('heroAnimatedTexts', e.target.value.split(',').map(s => s.trim()))} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle (Supports HTML like &lt;strong&gt;)</label>
-                  <textarea value={formData.heroSubtitle} onChange={(e) => handleChange('heroSubtitle', e.target.value)} rows={3} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '28px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="allowByok" 
+                    checked={formData.dashboardSettings?.allowByok ?? true} 
+                    onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', defaultMonthlyQuota: '$50.00', announcementBanner: '' }), allowByok: e.target.checked}})} 
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="allowByok" style={{ fontSize: '14px', color: 'var(--color-text-main)', fontWeight: 600, cursor: 'pointer' }}>
+                    Allow Bring Your Own Keys (BYOK) Feature
+                  </label>
                 </div>
               </div>
-            </section>
-          </>
-        )}
-
-        {/* ================= MARQUEE TAB ================= */}
-        {activeTab === 'marquee' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Provider Marquee List</h3>
-              <button onClick={() => setFormData({...formData, marqueeProviders: [...formData.marqueeProviders, { id: `mq_${Date.now()}`, name: 'New Provider', iconUrl: '' }]})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                <Plus size={16} /> Add Item
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {formData.marqueeProviders.map((mq, idx) => (
-                <div key={mq.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
-                  <input type="text" value={mq.name} onChange={(e) => {
-                    const newMq = [...formData.marqueeProviders]; newMq[idx].name = e.target.value; setFormData({...formData, marqueeProviders: newMq});
-                  }} placeholder="Provider Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {mq.iconUrl && <img src={mq.iconUrl} alt="preview" style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'contain' }} />}
-                    <input type="file" accept="image/*" onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const newMq = [...formData.marqueeProviders];
-                          newMq[idx].iconUrl = reader.result as string;
-                          setFormData({...formData, marqueeProviders: newMq});
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }} style={{ fontSize: '12px' }} />
-                  </div>
-                  
-                  <button onClick={() => {
-                    setFormData({...formData, marqueeProviders: formData.marqueeProviders.filter(m => m.id !== mq.id)});
-                  }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ================= DEMAND SECTION TAB ================= */}
-        {activeTab === 'demand' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Demand Section Headings</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '32px' }}>
-              <input type="text" value={formData.demandSection.title} onChange={(e) => setFormData({...formData, demandSection: {...formData.demandSection, title: e.target.value}})} placeholder="Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-              <input type="text" value={formData.demandSection.subtitle} onChange={(e) => setFormData({...formData, demandSection: {...formData.demandSection, subtitle: e.target.value}})} placeholder="Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Demand List Items</h3>
-              <button onClick={() => setFormData({...formData, demandSection: {...formData.demandSection, items: [...formData.demandSection.items, { id: `di_${Date.now()}`, text: 'New Item', badgeText: 'Badge', badgeColor: 'green' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                <Plus size={16} /> Add Item
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {formData.demandSection.items.map((item, idx) => (
-                <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
-                  <input type="text" value={item.text} onChange={(e) => {
-                    const newItems = [...formData.demandSection.items]; newItems[idx].text = e.target.value; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
-                  }} placeholder="Item Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  
-                  <input type="text" value={item.badgeText} onChange={(e) => {
-                    const newItems = [...formData.demandSection.items]; newItems[idx].badgeText = e.target.value; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
-                  }} placeholder="Badge Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  
-                  <select value={item.badgeColor} onChange={(e) => {
-                    const newItems = [...formData.demandSection.items]; newItems[idx].badgeColor = e.target.value as any; setFormData({...formData, demandSection: {...formData.demandSection, items: newItems}});
-                  }} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
-                    <option value="green">Green</option>
-                    <option value="red">Red</option>
-                    <option value="blue">Blue</option>
-                    <option value="purple">Purple</option>
-                    <option value="gray">Gray</option>
-                  </select>
-
-                  <button onClick={() => {
-                    setFormData({...formData, demandSection: {...formData.demandSection, items: formData.demandSection.items.filter(i => i.id !== item.id)}});
-                  }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ================= FAQ TAB ================= */}
-        {activeTab === 'faq' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Frequently Asked Questions</h3>
-              <button onClick={() => setFormData({...formData, faqs: [...formData.faqs, { id: `faq_${Date.now()}`, q: 'New Question?', a: 'Answer here.' }]})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                <Plus size={16} /> Add FAQ
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {formData.faqs.map((faq, idx) => (
-                <div key={faq.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px', position: 'relative' }}>
-                  <button onClick={() => {
-                    setFormData({...formData, faqs: formData.faqs.filter(f => f.id !== faq.id)});
-                  }} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16}/></button>
-                  
-                  <input type="text" value={faq.q} onChange={(e) => {
-                    const newFaqs = [...formData.faqs]; newFaqs[idx].q = e.target.value; setFormData({...formData, faqs: newFaqs});
-                  }} placeholder="Question" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', width: 'calc(100% - 40px)' }} />
-                  
-                  <textarea value={faq.a} onChange={(e) => {
-                    const newFaqs = [...formData.faqs]; newFaqs[idx].a = e.target.value; setFormData({...formData, faqs: newFaqs});
-                  }} placeholder="Answer" rows={2} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', width: '100%', resize: 'vertical' }} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ================= FOOTER TAB ================= */}
-        {activeTab === 'footer' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Footer & Socials</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '32px' }}>
-              <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Copyright Text</label>
-              <input type="text" value={formData.footer.copyrightText} onChange={(e) => setFormData({...formData, footer: {...formData.footer, copyrightText: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Social Links</h3>
-              <button onClick={() => setFormData({...formData, footer: {...formData.footer, socialLinks: [...formData.footer.socialLinks, { id: `sl_${Date.now()}`, platform: 'Platform', url: 'https://' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                <Plus size={16} /> Add Link
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {formData.footer.socialLinks.map((link, idx) => (
-                <div key={link.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
-                  <input type="text" value={link.platform} onChange={(e) => {
-                    const newLinks = [...formData.footer.socialLinks]; newLinks[idx].platform = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
-                  }} placeholder="Platform Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  
-                  <input type="text" value={link.url} onChange={(e) => {
-                    const newLinks = [...formData.footer.socialLinks]; newLinks[idx].url = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
-                  }} placeholder="URL" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  
-                  <button onClick={() => {
-                    setFormData({...formData, footer: {...formData.footer, socialLinks: formData.footer.socialLinks.filter(l => l.id !== link.id)}});
-                  }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
-                </div>
-              ))}
             </div>
           </section>
         )}
 
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '24px', color: 'var(--color-text-muted)' }}>Loading Settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

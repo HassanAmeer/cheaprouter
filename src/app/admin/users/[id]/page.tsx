@@ -14,9 +14,16 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     Promise.resolve(params).then(p => {
       fetch(`/api/admin/users/${p.id}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) return null;
+          const ct = res.headers.get('content-type');
+          if (ct && ct.includes('application/json')) {
+            return res.json().catch(() => null);
+          }
+          return null;
+        })
         .then(data => {
-          if (data.user) setUser(data.user);
+          if (data && data.user) setUser(data.user);
         })
         .catch(err => console.error(err))
         .finally(() => setLoading(false));

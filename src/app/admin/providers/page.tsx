@@ -23,9 +23,16 @@ export default function ProvidersPage() {
 
   useEffect(() => {
     fetch('/api/admin/providers')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) return null;
+        const ct = res.headers.get('content-type');
+        if (ct && ct.includes('application/json')) {
+          return res.json().catch(() => null);
+        }
+        return null;
+      })
       .then(data => {
-        if (data.providers) setProviders(data.providers);
+        if (data && data.providers) setProviders(data.providers);
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));

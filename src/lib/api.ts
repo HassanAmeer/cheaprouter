@@ -12,11 +12,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const t = token();
   if (t) headers['Authorization'] = `Bearer ${t}`;
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  
+  const contentType = res.headers.get('content-type') || '';
+  let body: any = {};
+  if (contentType.includes('application/json')) {
+    try {
+      body = await res.json();
+    } catch {
+      body = {};
+    }
+  }
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Request failed (${res.status})`);
   }
-  return res.json();
+  return body as T;
 }
 
 export const api = {
