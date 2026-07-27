@@ -158,10 +158,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 0;
-  margin: 8px 0 6px 0;
-  cursor: pointer;
+  padding: 8px 0;
+  margin: 12px 0 8px 0;
   user-select: none;
+  width: 100%;
 }
 
 .sectionDottedLine {
@@ -169,7 +169,7 @@
   left: 0;
   right: 0;
   top: 50%;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  border-bottom: 1px dashed var(--color-border);
   z-index: 1;
 }
 
@@ -177,7 +177,7 @@
   position: relative;
   z-index: 2;
   background: var(--color-card-bg);
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
@@ -186,16 +186,10 @@
   color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  transition: all 0.2s ease;
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.sectionHeader:hover .sectionTitleBadge {
-  color: var(--color-primary);
-  border-color: var(--color-primary-soft);
-  background: var(--color-bg-soft);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .sectionItems {
