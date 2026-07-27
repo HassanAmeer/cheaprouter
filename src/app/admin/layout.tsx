@@ -25,7 +25,7 @@ function SidebarNavContent() {
       <div className={styles.navSection}>
         <div className={styles.sectionHeader} title="Core Admin Section">
           <div className={styles.sectionDottedLine} />
-          <div className={styles.sectionTitleBadge}>
+          <div className={styles.sectionTitle}>
             <span>Core Admin</span>
           </div>
         </div>
@@ -52,7 +52,7 @@ function SidebarNavContent() {
       <div className={styles.navSection}>
         <div className={styles.sectionHeader} title="Page & CMS Settings Section">
           <div className={styles.sectionDottedLine} />
-          <div className={styles.sectionTitleBadge}>
+          <div className={styles.sectionTitle}>
             <span>Page & CMS Settings</span>
           </div>
         </div>

@@ -158,8 +158,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 0;
-  margin: 12px 0 8px 0;
+  padding: 6px 0;
+  margin: 14px 0 10px 0;
   user-select: none;
   width: 100%;
 }
@@ -173,23 +173,17 @@
   z-index: 1;
 }
 
-.sectionTitleBadge {
+.sectionTitle {
   position: relative;
   z-index: 2;
   background: var(--color-card-bg);
-  padding: 3px 12px;
-  border-radius: 12px;
+  padding: 0 10px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: inline-block;
 }
 
 .sectionItems {
