@@ -94,12 +94,18 @@ export function Badge({
   children,
   tone = 'neutral',
   className,
+  style,
 }: {
   children: React.ReactNode;
   tone?: BadgeTone;
   className?: string;
+  style?: React.CSSProperties;
 }) {
-  return <span className={cn(styles.badge, styles[`badge_${tone}`], className)}>{children}</span>;
+  return (
+    <span className={cn(styles.badge, styles[`badge_${tone}`], className)} style={style}>
+      {children}
+    </span>
+  );
 }
 
 /* ---------- Modal ---------- */

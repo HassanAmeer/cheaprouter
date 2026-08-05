@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi } from 'lucide-react';
+import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Copy, Layers, X } from 'lucide-react';
 import styles from '../dashboard.module.css';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
@@ -33,6 +33,9 @@ export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [availableProviders, setAvailableProviders] = useState<{ id: string; name: string; key: string; icon: string; color: string; desc: string }[]>([]);
+  const [showModelsModal, setShowModelsModal] = useState<Provider | null>(null);
+  const [providerModels, setProviderModels] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   useEffect(() => {
     // List user's connected providers
@@ -124,6 +127,21 @@ export default function ProvidersPage() {
     if (!confirm(`Remove ${name}? You'll need to reconnect to use it again.`)) return;
     setProviders((prev) => prev.filter((p) => p.id !== id));
     try { await api.deleteProvider(id); toast(`${name} removed`, 'warning'); } catch (e: any) { toast(e.message, 'error'); }
+  };
+
+  const loadModels = async (p: Provider) => {
+    setShowModelsModal(p);
+    setLoadingModels(true);
+    setProviderModels([]);
+    try {
+      const res = await api.models();
+      const filtered = res.models.filter((m: any) => m.provider.toLowerCase() === p.name.toLowerCase());
+      setProviderModels(filtered);
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setLoadingModels(false);
+    }
   };
 
   const filtered = providers.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
@@ -221,15 +239,28 @@ export default function ProvidersPage() {
           </div>
 
           {/* Connected Providers */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-              Connected ({filtered.length})
-            </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Plug size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Active Connections
+                  <span style={{ fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '100px', background: 'var(--color-bg-muted)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                    {filtered.length} connected
+                  </span>
+                </h3>
+              </div>
+            </div>
             {providers.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: '100px', border: '1px solid var(--color-border)', background: 'var(--color-card-bg)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'all 0.2s ease' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
+              >
                 <Search size={14} color="var(--color-text-muted)" />
-                <input type="text" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)}
-                  style={{ border: 'none', background: 'transparent', fontSize: '13px', outline: 'none', color: 'var(--color-text-main)', width: 120 }} />
+                <input type="text" placeholder="Search providers…" value={search} onChange={(e) => setSearch(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', fontSize: '13px', outline: 'none', color: 'var(--color-text-main)', width: 140 }} />
               </div>
             )}
           </div>
@@ -247,38 +278,118 @@ export default function ProvidersPage() {
           ) : (
             <div className={styles.statsGrid}>
               {filtered.map((p) => (
-                <div key={p.id} className="card glass-card" style={{ border: `1px solid ${p.status === 'active' ? 'rgba(22,163,74,0.3)' : 'rgba(245,158,11,0.3)'}`, position: 'relative', overflow: 'hidden', padding: '24px' }}>
+                <div key={p.id} className="card glass-card" style={{ border: `1px solid ${p.status === 'active' ? 'rgba(22,163,74,0.3)' : 'rgba(245,158,11,0.3)'}`, position: 'relative', overflow: 'hidden', padding: '24px', background: 'var(--color-card-bg)', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'default' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.2)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.12)'; }}
+                >
                   {/* Status indicator stripe */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '3px', background: p.status === 'active' ? 'var(--color-success)' : 'var(--color-warning)' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <img src={p.icon} width="28" height="28" alt={p.name} style={{ borderRadius: 4 }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: p.status === 'active' ? 'var(--color-success)' : 'var(--color-warning)', opacity: 0.9 }} />
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-border)' }}>
+                        <img src={p.icon} width="24" height="24" alt={p.name} style={{ borderRadius: '4px' }} />
+                      </div>
                       <div>
-                        <h4 style={{ fontSize: '15px', fontWeight: 700, color: p.color }}>{p.name}</h4>
-                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }}>{availableProviders.find(ap => ap.name.toLowerCase() === p.name.toLowerCase())?.desc ?? 'Custom Connected Key'}</p>
+                        <h4 style={{ fontSize: '16px', fontWeight: 700, color: p.color, letterSpacing: '-0.3px' }}>{p.name}</h4>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>{availableProviders.find(ap => ap.name.toLowerCase() === p.name.toLowerCase())?.desc ?? 'Custom Connected Key'}</p>
                       </div>
                     </div>
                     <Badge tone={p.status === 'active' ? 'success' : 'warning'}>
                       {p.status === 'active' && <CheckCircle2 size={11} />} {p.status === 'active' ? 'Active' : 'Paused'}
                     </Badge>
                   </div>
-                  <div style={{ padding: '10px 14px', background: 'var(--color-bg-soft)', borderRadius: 'var(--radius-md)', marginBottom: '16px', fontFamily: 'monospace', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                    {p.masked}
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>Connected {p.added}</p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn-secondary" style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: 'var(--radius-md)' }} onClick={() => toast(`${p.name} connection test OK`, 'success')}>Test</button>
-                    <button className="btn-secondary" style={{ flex: 1, padding: '8px', fontSize: '13px', borderRadius: 'var(--radius-md)', color: p.status === 'active' ? 'var(--color-warning)' : 'var(--color-success)', borderColor: p.status === 'active' ? 'rgba(245,158,11,0.25)' : 'rgba(34,197,94,0.25)' }} onClick={() => toggle(p.id, p.status)}>
-                      {p.status === 'active' ? <><Pause size={13} /> Pause</> : <><Play size={13} /> Resume</>}
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border)', marginBottom: '16px', color: 'var(--color-text-main)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Key size={14} color="var(--color-text-muted)" />
+                      <span style={{ fontFamily: 'monospace', fontSize: '14px', letterSpacing: '1px' }}>{p.masked}</span>
+                    </div>
+                    <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }} title="Copy Key" onClick={() => toast('Key copied to clipboard', 'success')}>
+                      <Copy size={14} />
                     </button>
-                    <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '13px', borderRadius: 'var(--radius-md)', color: 'var(--color-danger)', borderColor: 'rgba(220,38,38,0.2)' }} onClick={() => remove(p.id, p.name)}>
-                      <Trash2 size={14} />
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Connected {p.added}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn-secondary" style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 600, borderRadius: '8px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)', transition: 'all 0.2s' }} 
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-soft)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                      onClick={() => loadModels(p)}>
+                      <Layers size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Models
+                    </button>
+                    <button className="btn-secondary" style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 600, borderRadius: '8px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)', transition: 'all 0.2s' }} 
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-soft)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                      onClick={() => toast(`${p.name} connection test OK`, 'success')}>
+                      Test
+                    </button>
+                    <button className="btn-secondary" style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 600, borderRadius: '8px', background: p.status === 'active' ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)', color: p.status === 'active' ? 'var(--color-warning)' : 'var(--color-success)', border: `1px solid ${p.status === 'active' ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)'}`, transition: 'all 0.2s' }} 
+                      onMouseEnter={e => e.currentTarget.style.background = p.status === 'active' ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = p.status === 'active' ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)'}
+                      onClick={() => toggle(p.id, p.status)}>
+                      {p.status === 'active' ? <><Pause size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Pause</> : <><Play size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Resume</>}
+                    </button>
+                    <button className="btn-secondary" style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.3)', transition: 'all 0.2s' }} 
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                      onClick={() => remove(p.id, p.name)} title="Remove Provider">
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {showModelsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'flex-end', zIndex: 1000 }} onClick={() => setShowModelsModal(null)}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '400px', height: '100%', overflowY: 'auto', padding: '32px 24px', background: 'var(--color-card-bg)', borderLeft: '1px solid var(--color-border)', boxShadow: '-10px 0 40px rgba(0,0,0,0.2)', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src={showModelsModal.icon} width="32" height="32" alt={showModelsModal.name} style={{ borderRadius: 8, background: 'white' }} />
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-main)' }}>{showModelsModal.name} Models</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Available API models</p>
+                </div>
+              </div>
+              <button style={{ background: 'var(--color-bg-soft)', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} 
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-muted)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-soft)'}
+                onClick={() => setShowModelsModal(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            {loadingModels ? (
+              <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <div style={{ width: 20, height: 20, border: '2px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                Loading...
+              </div>
+            ) : providerModels.length === 0 ? (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <Layers size={24} style={{ opacity: 0.5, margin: '0 auto 12px', display: 'block' }} />
+                No models found.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {providerModels.map((m: any) => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', background: 'transparent', borderRadius: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: '14px' }}>{m.name}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'monospace', letterSpacing: '0.5px' }}>{m.id}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

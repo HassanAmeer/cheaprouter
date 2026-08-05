@@ -525,3 +525,12 @@ a, button {
 .input::placeholder {
   color: var(--color-text-muted);
 }
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

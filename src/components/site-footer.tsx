@@ -34,7 +34,7 @@ export function SiteFooter() {
           {[
             { title: 'Product', links: [['Models', '/#models'], ['Pricing', '/#pricing'], ['API Docs', '/docs'], ['Dashboard', '/dashboard'], ['Chat Playground', '/chat']] },
             { title: 'Company', links: [['About', '/docs'], ['Contact Sales', '/#contact'], ['Privacy Policy', '/privacy'], ['Terms of Service', '/terms']] },
-            { title: 'Developers', links: [['Quick Start', '/docs'], ['CLI Tool', '/cli'], ['Analytics', '/dashboard/analytics'], ['Status', '#']] },
+            { title: 'Developers', links: [['Quick Start', '/docs'], ['CLI Tool', '/cli'], ['Status', '#']] },
           ].map((col, i) => (
             <div key={i}>
               <h4 className={styles.footerColTitle}>{col.title}</h4>

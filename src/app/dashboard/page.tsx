@@ -193,7 +193,6 @@ export default function DashboardOverview() {
         <div className="card glass-card">
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Recent Activity</h2>
-            <Link href="/dashboard/analytics" className={styles.sectionLink}>View all</Link>
           </div>
           <div className={styles.activityList}>
             {recentActivity.map((item, i) => (

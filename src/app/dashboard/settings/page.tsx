@@ -5,7 +5,7 @@ import { Button, Input, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/components/auth-provider';
 import styles from '../dashboard.module.css';
-import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle } from 'lucide-react';
+import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -14,181 +14,173 @@ export default function SettingsPage() {
   const [email] = useState(user?.email ?? 'john@company.com');
   const [saving, setSaving] = useState(false);
 
-  // Notification preferences
-  const [notifications, setNotifications] = useState({
-    usageAlerts: true,
-    weeklyDigest: true,
-    productUpdates: false,
-    securityAlerts: true,
-  });
-
   const save = () => {
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
-      toast('Profile changes saved');
+      toast('Profile changes saved', 'success');
     }, 800);
-  };
-
-  const toggleNotif = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
-    toast(`${key.replace(/([A-Z])/g, ' $1')} ${!notifications[key] ? 'enabled' : 'disabled'}`);
   };
 
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div style={{ maxWidth: 840 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 6 }}>Account Settings</h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
-          Manage your account preferences, security, and notification settings.
-        </p>
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: 8, letterSpacing: '-0.5px', background: 'linear-gradient(to right, var(--color-text-main), var(--color-text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Account Settings</h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '15px' }}>
+            Manage your account preferences, security, and billing details.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={() => toast('Logged out successfully', 'success')} style={{ borderRadius: 12, padding: '10px 16px', background: 'var(--color-bg-soft)' }}>
+          <LogOut size={16} style={{ marginRight: 8 }} /> Sign Out
+        </Button>
       </div>
 
       {/* Profile Section */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
-          <User size={18} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Profile Information</h2>
+      <div className="card glass-card" style={{ marginBottom: 32, padding: '40px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+        <div style={{ position: 'absolute', top: -150, right: -150, width: 400, height: 400, background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)', opacity: 0.15, borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -100, left: -50, width: 300, height: 300, background: 'radial-gradient(circle, #ff6b6b 0%, transparent 70%)', opacity: 0.08, borderRadius: '50%', pointerEvents: 'none' }} />
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40, paddingBottom: 24, borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ background: 'var(--color-primary-soft)', padding: 12, borderRadius: 14, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
+            <User size={24} color="var(--color-primary)" />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--color-text-main)' }}>Profile Information</h2>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Update your personal details and public profile.</p>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', marginBottom: 40 }}>
           {/* Avatar */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), #ff6b6b)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 24
-            }}>
-              {initials}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: -4, background: 'linear-gradient(135deg, var(--color-primary), #ff6b6b)', borderRadius: '32px', opacity: 0.5, filter: 'blur(12px)', animation: 'pulse-dot 3s infinite' }} />
+              <div style={{
+                width: 120, height: 120, borderRadius: '28px', background: 'linear-gradient(135deg, var(--color-primary), #ff6b6b)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 40,
+                boxShadow: 'inset 0 4px 10px rgba(255,255,255,0.3), 0 10px 30px rgba(0,0,0,0.2)', position: 'relative', zIndex: 1
+              }}>
+                {initials}
+              </div>
+              <div style={{ position: 'absolute', bottom: -6, right: -6, background: 'var(--color-bg)', borderRadius: '50%', padding: 5, zIndex: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                <div style={{ background: 'var(--color-success)', width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--color-bg)' }} />
+              </div>
             </div>
-            <button style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: 600 }}>Change avatar</button>
+            <button className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px', borderRadius: 24, fontWeight: 600, background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-soft)'; e.currentTarget.style.transform = 'none'; }}
+            >
+              Change Photo
+            </button>
           </div>
 
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, background: 'var(--color-bg-soft)', padding: 24, borderRadius: 20, border: '1px solid var(--color-border)' }}>
               <div>
-                <Input id="name" label="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: 10, letterSpacing: '0.3px', textTransform: 'uppercase', opacity: 0.8 }}>Full Name</label>
+                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} style={{ background: 'var(--color-bg)', borderColor: 'transparent', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }} />
               </div>
               <div>
-                <Input id="email" label="Email Address" value={email} disabled />
-                <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 4 }}>Email cannot be changed</p>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: 10, letterSpacing: '0.3px', textTransform: 'uppercase', opacity: 0.8 }}>Email Address</label>
+                <Input id="email" placeholder="john@example.com" value={email} disabled style={{ background: 'var(--color-bg)', opacity: 0.7 }} />
+                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={12} opacity={0.6} /> Email cannot be changed</p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-              <Badge tone="primary">{(user?.plan ?? 'pro').toUpperCase()} Plan</Badge>
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Member since Jan 2026</span>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24, padding: '20px 24px', background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent)', borderRadius: 20, border: '1px dashed rgba(139, 92, 246, 0.3)' }}>
+              <div style={{ background: 'var(--color-primary)', padding: 10, borderRadius: '50%', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}>
+                <Sparkles size={18} color="#fff" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Active Plan: {(user?.plan ?? 'pro').toUpperCase()}
+                  <Badge tone="success" style={{ padding: '4px 10px', borderRadius: 12, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active</Badge>
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Member since Jan 2026</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button>
-          <Button variant="ghost" onClick={() => { setName(user?.name ?? 'John Doe'); toast('Changes discarded', 'warning'); }}>Discard</Button>
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end', paddingTop: 28, borderTop: '1px solid var(--color-border)' }}>
+          <Button variant="ghost" onClick={() => { setName(user?.name ?? 'John Doe'); toast('Changes discarded', 'warning'); }} style={{ borderRadius: 12, padding: '10px 20px', fontWeight: 600 }}>Discard</Button>
+          <Button onClick={save} disabled={saving} style={{ padding: '10px 28px', borderRadius: 12, fontWeight: 700, boxShadow: '0 4px 14px rgba(139, 92, 246, 0.4)' }}>
+            {saving ? 'Saving…' : <><CheckCircle2 size={18} style={{ marginRight: 8 }} /> Save Changes</>}
+          </Button>
         </div>
       </div>
 
-      {/* Notifications Section */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
-          <Bell size={18} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Notifications</h2>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+        {/* Security Section */}
+        <div className="card glass-card" style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div style={{ background: 'var(--color-primary-soft)', padding: 10, borderRadius: 12 }}>
+              <Shield size={20} color="var(--color-primary)" />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700 }}>Security</h2>
+          </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {([
-            { key: 'usageAlerts' as const, title: 'Usage Alerts', desc: 'Get notified when approaching token limits' },
-            { key: 'weeklyDigest' as const, title: 'Weekly Usage Digest', desc: 'Receive a weekly summary of your API usage' },
-            { key: 'productUpdates' as const, title: 'Product Updates', desc: 'New features, model additions, and improvements' },
-            { key: 'securityAlerts' as const, title: 'Security Alerts', desc: 'Login attempts, API key changes, and suspicious activity' },
-          ]).map((item) => (
-            <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>{item.title}</div>
-                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{item.desc}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ padding: '20px', background: 'var(--color-bg)', borderRadius: 16, border: '1px solid var(--color-border)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--color-primary)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                <KeyRound size={20} color="var(--color-text-muted)" />
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700 }}>Account Password</div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Last changed 30 days ago</div>
+                </div>
               </div>
-              <button
-                onClick={() => toggleNotif(item.key)}
-                style={{
-                  width: 44, height: 24, borderRadius: 12, position: 'relative',
-                  background: notifications[item.key] ? 'var(--color-primary)' : 'var(--color-bg-muted)',
-                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer', flexShrink: 0
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 3, left: notifications[item.key] ? 23 : 3,
-                  width: 18, height: 18, borderRadius: '50%', background: '#fff',
-                  transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                }} />
-              </button>
+              <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => toast('Password reset email sent', 'success')}>Update Password</Button>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Security Section */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
-          <Shield size={18} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Security</h2>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'var(--color-bg-soft)', borderRadius: 'var(--radius-md)' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>Password</div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Last changed 30 days ago</div>
+        {/* Billing Section */}
+        <div className="card glass-card" style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div style={{ background: 'var(--color-primary-soft)', padding: 10, borderRadius: 12 }}>
+              <Globe size={20} color="var(--color-primary)" />
             </div>
-            <Button variant="secondary" size="sm" onClick={() => toast('Password reset email sent', 'success')}>Change Password</Button>
+            <h2 style={{ fontSize: '18px', fontWeight: 700 }}>Billing & Plan</h2>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'var(--color-bg-soft)', borderRadius: 'var(--radius-md)' }}>
+          
+          <div style={{ padding: '20px', background: 'var(--color-bg)', borderRadius: 16, border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>Two-Factor Authentication</div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Add an extra layer of security</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                Pro Developer
+                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-primary)' }}>$15<span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>/mo</span></span>
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 8 }}>Renews on Aug 15, 2026</div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>1M tokens per month included</div>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => toast('2FA setup coming soon', 'info')}>Enable 2FA</Button>
+            <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => toast('Redirecting to billing portal…', 'info')}>Manage Subscription</Button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'var(--color-bg-soft)', borderRadius: 'var(--radius-md)' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>Active Sessions</div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>2 active sessions on this account</div>
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => toast('All other sessions revoked', 'success')}>Revoke All</Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Billing Section */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
-          <Globe size={18} color="var(--color-primary)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Billing & Plan</h2>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: 4 }}>Current Plan: Pro Developer</div>
-            <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>$15.00 / month · Renews on Aug 15, 2026 · 1M tokens/month</div>
-          </div>
-          <Button variant="secondary" onClick={() => toast('Redirecting to billing…', 'info')}>Manage Billing</Button>
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="card" style={{ border: '1px solid rgba(220, 38, 38, 0.25)', background: 'rgba(220,38,38,0.02)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <AlertTriangle size={18} color="var(--color-danger)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-danger)' }}>Danger Zone</h2>
+      <div className="card" style={{ border: '1px solid rgba(239, 68, 68, 0.4)', background: 'linear-gradient(to right, rgba(239,68,68,0.08), transparent)', padding: '32px', borderRadius: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <AlertTriangle size={20} color="var(--color-danger)" />
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-danger)' }}>Danger Zone</h2>
+            </div>
+            <p style={{ color: 'var(--color-text-main)', opacity: 0.8, fontSize: '14px', maxWidth: 500, lineHeight: 1.5 }}>
+              Once you delete your account, all data including API keys, conversations, and usage history will be permanently removed. This action cannot be undone.
+            </p>
+          </div>
+          <Button variant="danger" style={{ padding: '12px 24px', borderRadius: 12, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.4)', flexShrink: 0, transition: 'all 0.2s' }} onClick={() => {
+            if (confirm('Are you absolutely sure you want to delete your account? This cannot be undone.')) {
+              toast('Account deletion requires email confirmation', 'warning');
+            }
+          }}>
+            <Trash2 size={18} style={{ marginRight: 8 }} /> Delete Account
+          </Button>
         </div>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginBottom: 20 }}>
-          Once you delete your account, all data including API keys, conversations, and usage history will be permanently removed. This action cannot be undone.
-        </p>
-        <Button variant="danger" onClick={() => {
-          if (confirm('Are you absolutely sure you want to delete your account? This cannot be undone.')) {
-            toast('Account deletion requires email confirmation', 'warning');
-          }
-        }}>
-          <Trash2 size={16} /> Delete Account
-        </Button>
       </div>
     </div>
   );

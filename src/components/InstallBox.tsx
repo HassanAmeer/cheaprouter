@@ -23,11 +23,10 @@ export default function InstallBox() {
 
   return (
     <div className={styles.installBoxWrapper}>
-      <br />
       <div className={styles.arrowWrapper}>
         <div className={styles.shimmerArrow}></div>
         <p className={styles.shimmerText}>
-          Best free coding editor, install cheap CLI. <i style={{ color: '#10b981' }}>Unlimited Free Coding</i>
+          Best free coding editor, install cheap CLI. <i style={{ color: '#10b981' }}>Unlimited Coding</i>
         </p>
       </div>
       <div className={styles.installBox}>

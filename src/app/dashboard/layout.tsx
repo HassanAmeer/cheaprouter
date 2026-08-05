@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import styles from './dashboard.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,9 +14,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
     { name: 'API Keys', path: '/dashboard/keys', icon: <Key size={18} />, badge: null },
     { name: 'Providers', path: '/dashboard/providers', icon: <Plug size={18} />, badge: 'BYOK' },
-    { name: 'Analytics', path: '/dashboard/analytics', icon: <LineChart size={18} />, badge: null },
     { name: 'Billing', path: '/dashboard/billing', icon: <CreditCard size={18} />, badge: null },
     { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={18} />, badge: null },
+    { divider: true },
+    { name: 'API Docs', path: '/docs', icon: <FileText size={18} />, badge: null },
   ];
 
   const userName = user?.name ?? 'Developer';
@@ -33,14 +34,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
+        <div style={{ padding: '16px 16px 16px' }}>
+          <Link href="/dashboard/quickstart" style={{ 
+            display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
+            background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', 
+            padding: '6px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '13px', textDecoration: 'none',
+            transition: 'all 0.2s'
+          }}>
+            <Rocket size={14} /> Quick Start
+          </Link>
+        </div>
+        <div style={{ height: 1, background: 'var(--color-border)', margin: '0 16px 16px' }} />
+
         <div className={styles.sidebarSection}>Workspace</div>
         <nav className={styles.sidebarNav}>
-          {navItems.map((item) => {
+          {navItems.map((item, idx) => {
+            if (item.divider) {
+              return <div key={`div-${idx}`} style={{ height: 1, background: 'var(--color-border)', margin: '12px 0' }} />;
+            }
             const isActive = pathname === item.path;
             return (
               <Link
                 key={item.name}
-                href={item.path}
+                href={item.path as string}
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
               >
                 <span style={{ opacity: isActive ? 1 : 0.7 }}>{item.icon}</span>
