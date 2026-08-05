@@ -34,17 +34,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        <div style={{ padding: '16px 16px 16px' }}>
-          <Link href="/dashboard/quickstart" style={{ 
-            display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
-            background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', 
-            padding: '6px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '13px', textDecoration: 'none',
-            transition: 'all 0.2s'
-          }}>
-            <Rocket size={14} /> Quick Start
-          </Link>
-        </div>
-        <div style={{ height: 1, background: 'var(--color-border)', margin: '0 16px 16px' }} />
 
         <div className={styles.sidebarSection}>Workspace</div>
         <nav className={styles.sidebarNav}>
@@ -66,6 +55,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+
+        <div style={{ padding: '0 16px 16px' }}>
+          <Link href="/dashboard/quickstart" style={{ 
+            display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
+            background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', 
+            padding: '6px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '13px', textDecoration: 'none',
+            transition: 'all 0.2s'
+          }}>
+            <Rocket size={14} /> Quick Start
+          </Link>
+        </div>
 
         {/* Sidebar footer with user info */}
         <div className={styles.sidebarFooter}>
