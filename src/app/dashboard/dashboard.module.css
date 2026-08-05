@@ -557,36 +557,37 @@
 
 /* ---- Welcome Banner ---- */
 .welcomeBanner {
-  background: linear-gradient(135deg, var(--color-primary), #ff6b6b);
-  border-radius: var(--radius-lg);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   padding: 28px 32px;
   margin-bottom: 28px;
   color: #fff;
   position: relative;
-  overflow: hidden;
+  z-index: 0;
+  /* Cut corners shape */
+  clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px);
 }
 
 .welcomeBanner::before {
   content: '';
   position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 160px;
-  height: 160px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 50%;
+  inset: 0;
+  background: var(--color-primary);
+  opacity: 0.3;
+  z-index: -2;
 }
 
 .welcomeBanner::after {
   content: '';
   position: absolute;
-  bottom: -40px;
-  right: 60px;
-  width: 100px;
-  height: 100px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 50%;
+  inset: 1.5px;
+  background: linear-gradient(135deg, #050508 0%, #1f0003 45%, #5e0008 100%);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  z-index: -1;
 }
+
 
 .welcomeTitle {
   font-size: 20px;

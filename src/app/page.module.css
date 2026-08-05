@@ -520,7 +520,7 @@
   position: absolute;
   background: linear-gradient(80deg, #ffffff, rgba(255, 255, 255, 0));
   border-radius: 50%;
-  transform: rotate(-40deg);
+  transform: rotate(-65deg);
   opacity: 0;
 }
 
@@ -542,42 +542,42 @@
 
 @keyframes cardFallingStar1 {
   0% {
-    top: -20px;
-    left: 90%;
+    top: -50px;
+    left: 80%;
     opacity: 1;
   }
 
   100% {
     top: 120%;
-    left: -30%;
+    left: 40%;
     opacity: 1;
   }
 }
 
 @keyframes cardFallingStar2 {
   0% {
-    top: -20px;
-    left: 60%;
+    top: -50px;
+    left: 50%;
     opacity: 1;
   }
 
   100% {
     top: 120%;
-    left: -50%;
+    left: 10%;
     opacity: 1;
   }
 }
 
 @keyframes cardFallingStar3 {
   0% {
-    top: 10%;
-    left: 110%;
+    top: -50px;
+    left: 20%;
     opacity: 1;
   }
 
   100% {
-    top: 110%;
-    left: 0%;
+    top: 120%;
+    left: -20%;
     opacity: 1;
   }
 }

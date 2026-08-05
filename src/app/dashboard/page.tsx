@@ -6,6 +6,7 @@ import { AreaChart } from '@/components/ui/charts';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
+import pageStyles from '@/app/page.module.css';
 import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown } from 'lucide-react';
 
 export default function DashboardOverview() {
@@ -13,6 +14,7 @@ export default function DashboardOverview() {
   const [summary, setSummary] = useState<any>(null);
   const [usage, setUsage] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [timeFilter, setTimeFilter] = useState('7D');
 
   useEffect(() => {
     api.summary().then(setSummary).catch(() => setSummary({ limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 }));
@@ -33,9 +35,20 @@ export default function DashboardOverview() {
   return (
     <div>
       {/* Welcome Banner */}
-      <div className={styles.welcomeBanner}>
-        <div className={styles.welcomeTitle}>Welcome back, {userName}!</div>
-        <div className={styles.welcomeSubtitle}>
+      <div className={styles.welcomeBanner} style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className={pageStyles.cardStarsBg} style={{ opacity: 0.6, zIndex: 0, pointerEvents: 'none' }}>
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar1}`} />
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar2}`} />
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar3}`} />
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar4}`} />
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar5}`} />
+          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar6}`} />
+          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar1}`} />
+          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar2}`} />
+          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar3}`} />
+        </div>
+        <div className={styles.welcomeTitle} style={{ position: 'relative', zIndex: 1 }}>Welcome back, {userName}!</div>
+        <div className={styles.welcomeSubtitle} style={{ position: 'relative', zIndex: 1 }}>
           You&apos;ve used {s.percent}% of your monthly token limit. {s.remaining.toLocaleString()} tokens remaining.
         </div>
       </div>
@@ -175,9 +188,28 @@ export default function DashboardOverview() {
       {/* Usage Chart + Activity */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
         <div className="card glass-card">
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Usage Over Time</h2>
-            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>This week</span>
+          <div className={styles.sectionHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Usage Over Time</h2>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {['All', '7D', '15D', '1M', '3M'].map(f => (
+                <button 
+                  key={f} 
+                  onClick={() => setTimeFilter(f)}
+                  style={{ 
+                    padding: '4px 10px', 
+                    borderRadius: '6px', 
+                    fontSize: '12px', 
+                    fontWeight: 600,
+                    border: '1px solid ' + (timeFilter === f ? 'var(--color-primary)' : 'var(--color-border)'), 
+                    background: timeFilter === f ? 'var(--color-primary)' : 'transparent', 
+                    color: timeFilter === f ? '#fff' : 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}>
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
           <AreaChart data={usage ?? [
             { label: 'Mon', value: 0 },
