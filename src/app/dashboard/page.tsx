@@ -6,7 +6,7 @@ import { AreaChart } from '@/components/ui/charts';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
-import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock } from 'lucide-react';
+import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown } from 'lucide-react';
 
 export default function DashboardOverview() {
   const { user } = useAuth();
@@ -43,23 +43,23 @@ export default function DashboardOverview() {
       {/* Stat Cards */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
-            <Zap size={20} />
+          <div className={styles.statIcon} style={{ background: 'var(--color-success-soft)', color: 'var(--color-success)' }}>
+            <Crown size={20} />
           </div>
-          <div className={styles.statLabel}>Total Tokens Used</div>
-          <div className={styles.statValue}>{s.used.toLocaleString()}</div>
+          <div className={styles.statLabel}>Plan</div>
+          <div className={styles.statValue} style={{ textTransform: 'capitalize' }}>{user?.plan || 'Free'}</div>
           <span className={`${styles.statChange} ${styles.statChangeUp}`}>
-            <ArrowUpRight size={12} /> 12.5%
+            Active
           </span>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--color-success-soft)', color: 'var(--color-success)' }}>
-            <LineChart size={20} />
+          <div className={styles.statIcon} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+            <Zap size={20} />
           </div>
-          <div className={styles.statLabel}>Remaining Tokens</div>
-          <div className={styles.statValue}>{s.remaining.toLocaleString()}</div>
+          <div className={styles.statLabel}>Usage Tokens</div>
+          <div className={styles.statValue}>{s.used.toLocaleString()}</div>
           <span className={`${styles.statChange} ${styles.statChangeUp}`}>
-            {s.percent < 80 ? 'Healthy' : 'Watch usage'}
+            <ArrowUpRight size={12} /> 12.5%
           </span>
         </div>
         <div className={styles.statCard}>
@@ -84,12 +84,12 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Platform Credits Progress */}
+      {/* Plan Usage Progress */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
         <div className="card glass-card" style={{ flex: 1, minWidth: '320px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '2px' }}>Platform Credits</h3>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '2px' }}>Plan Usage</h3>
               <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Monthly token allocation</p>
             </div>
             <span style={{ fontSize: '13px', fontWeight: 700, color: s.percent > 80 ? 'var(--color-warning)' : 'var(--color-primary)' }}>

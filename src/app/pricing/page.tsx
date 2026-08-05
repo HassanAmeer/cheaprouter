@@ -55,6 +55,7 @@ export default function PricingPage() {
           { href: '/docs', label: 'Docs' },
           { href: '/chat', label: 'Chat' },
           { href: '/cli', label: 'CLI' },
+          { href: '/compare', label: 'Compare' },
         ]}
       />
 

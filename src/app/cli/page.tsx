@@ -41,6 +41,7 @@ export default function CliPage() {
           { href: '/docs', label: 'Docs' },
           { href: '/chat', label: 'Chat' },
           { href: '/dashboard', label: 'Dashboard' },
+          { href: '/compare', label: 'Compare' },
         ]}
       />
 
