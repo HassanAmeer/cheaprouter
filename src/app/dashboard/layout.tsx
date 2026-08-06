@@ -1,16 +1,19 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './dashboard.module.css';
+import pageStyles from '@/app/page.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
+  const [hideAnnouncement2, setHideAnnouncement2] = useState(false);
 
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
@@ -97,21 +100,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <main className={styles.mainContent}>
-        {settings.dashboardSettings.announcementBanner && (
-          <div style={{ 
-            background: 'linear-gradient(90deg, var(--color-primary), #a855f7)', 
-            color: '#fff', 
-            padding: '10px 24px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            gap: '8px', 
-            fontSize: '13px', 
-            fontWeight: 600,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}>
-            <Megaphone size={16} />
-            {settings.dashboardSettings.announcementBanner}
+        {!hideAnnouncement2 && settings.dashboardSettings.announcementBanner && (
+          <div className={`${styles.welcomeBanner} ${styles.announcementBar}`} style={{ position: 'relative', overflow: 'hidden', padding: '0' }}>
+            <div className={pageStyles.cardStarsBg} style={{ opacity: 0.6, zIndex: 0, pointerEvents: 'none' }}>
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar1}`} />
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar2}`} />
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar3}`} />
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar4}`} />
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar5}`} />
+              <div className={`${pageStyles.cardStar} ${pageStyles.cardStar6}`} />
+              <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar1}`} />
+              <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar2}`} />
+              <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar3}`} />
+            </div>
+
+            <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, zIndex: 0, pointerEvents: 'none' }}>
+              <Megaphone size={24} />
+            </div>
+
+            <button 
+              onClick={() => setHideAnnouncement2(true)}
+              style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: '16px', background: 'rgba(128,128,128,0.15)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2, color: 'inherit', transition: 'background 0.2s' }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(128,128,128,0.25)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(128,128,128,0.15)'}
+              title="Dismiss Announcement"
+            >
+              <X size={14} />
+            </button>
+
+            <div style={{ position: 'relative', zIndex: 1, paddingLeft: '50px', paddingRight: '50px', display: 'flex', alignItems: 'center', minHeight: '44px', justifyContent: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600 }}>
+                {settings.dashboardSettings.announcementBanner}
+              </div>
+            </div>
           </div>
         )}
 

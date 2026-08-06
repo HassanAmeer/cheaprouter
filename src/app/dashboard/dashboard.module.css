@@ -596,6 +596,21 @@
   background: linear-gradient(135deg, #ffffff 0%, #fff0f0 45%, #ffcccc 100%);
 }
 
+.announcementBar {
+  margin: 0 !important;
+  clip-path: none !important;
+  background: transparent !important;
+}
+
+.announcementBar::before {
+  background: transparent !important;
+}
+
+.announcementBar::after {
+  clip-path: none !important;
+  inset: 0 !important;
+  background: transparent !important;
+}
 
 .welcomeTitle {
   font-size: 20px;

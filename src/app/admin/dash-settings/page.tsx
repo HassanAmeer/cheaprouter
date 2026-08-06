@@ -52,10 +52,10 @@ export default function DashSettingsPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        {/* Card 1: Welcome Message */}
+        {/* Card 1: Welcome Announcement Bar */}
         <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LayoutDashboard size={18} color="var(--color-primary)" /> Welcome Message Configuration
+            <LayoutDashboard size={18} color="var(--color-primary)" /> Welcome Announcement Bar
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -81,10 +81,10 @@ export default function DashSettingsPage() {
           </div>
         </section>
 
-        {/* Card 2: Announcement Bar */}
+        {/* Card 2: Announcement Bar 2 */}
         <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={18} color="var(--color-primary)" /> Announcement Bar
+            <Zap size={18} color="var(--color-primary)" /> Announcement Bar 2
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Global Announcement Banner Text</label>
