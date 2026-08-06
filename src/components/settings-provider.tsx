@@ -44,6 +44,44 @@ export interface SiteSettings {
     copyrightText: string;
     socialLinks: { id: string; platform: string; url: string }[];
   };
+  featureSplit: {
+    title: string;
+    description: string;
+    checkList: string[];
+    buttonText: string;
+    buttonLink: string;
+    codeSnippet: string;
+  };
+  pricingSection: {
+    title: string;
+    subtitle: string;
+    plans: {
+      id: string;
+      name: string;
+      price: string;
+      period: string;
+      desc: string;
+      features: string[];
+      cta: string;
+      ctaLink: string;
+      featured: boolean;
+    }[];
+  };
+  comparisonSection: {
+    title: string;
+    subtitle: string;
+    beforeLabel: string;
+    beforeSubLabel: string;
+    beforePoints: { id: string; text: string; detail: string }[];
+    afterLabel: string;
+    afterSubLabel: string;
+    afterPoints: { id: string; text: string; detail: string }[];
+  };
+  featuresGrid: {
+    title: string;
+    subtitle: string;
+    features: { id: string; icon: string; title: string; desc: string }[];
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -126,6 +164,68 @@ const defaultSettings: SiteSettings = {
       { id: 'sl_1', platform: 'Twitter', url: 'https://twitter.com' },
       { id: 'sl_2', platform: 'GitHub', url: 'https://github.com' },
       { id: 'sl_3', platform: 'Discord', url: 'https://discord.com' },
+    ]
+  },
+  featureSplit: {
+    title: 'Change one line.<br />Access every model.',
+    description: 'No new SDK. No new patterns. CheapAgents speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.',
+    checkList: [
+      'SSE streaming — first token in <100ms',
+      'Function calling & tool use, out of the box',
+      'JSON mode & structured outputs',
+      'Automatic retry with smart fallback chains',
+      'Per-model rate limiting & usage tracking',
+    ],
+    buttonText: 'Read the API Docs',
+    buttonLink: '/docs',
+    codeSnippet: 'import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: "cm-xxxxxxxxxxxx",\n  baseURL: "https://api.cheapagents.com/v1",\n});\n\nconst response = await client.chat.completions.create({\n  model: "claude-3-5-sonnet",\n  messages: [\n    { role: "user", content: "Hello!" }\n  ],\n  stream: true,\n});'
+  },
+  pricingSection: {
+    title: 'Simple, honest pricing',
+    subtitle: 'No surprise bills. No hidden token markups. Start free, pay as you grow.',
+    plans: [
+      { id: 'p_1', name: 'Free', price: '$0', period: '', desc: 'For experimenting and personal projects', features: ['Basic & open-source models', 'Unlimited BYOK routing', 'Community support', 'Dashboard & analytics', '100 requests/day'], cta: 'Start Free', ctaLink: '/signup', featured: false },
+      { id: 'p_2', name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers and side projects', features: ['All basic + mid-tier models', '500K tokens included', 'Priority email support', 'Higher rate limits', 'Custom API keys'], cta: 'Get Started', ctaLink: '/signup', featured: false },
+      { id: 'p_3', name: 'Pro', price: '$15', period: '/mo', desc: 'For teams and production apps', features: ['All premium models included', '1M tokens included', 'GPT-4o, Claude 3.5, Grok', 'Highest rate limits', 'Dedicated support', 'Team collaboration'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+    ]
+  },
+  comparisonSection: {
+    title: 'Stop managing providers.<br /><span className={styles.gradientText}>Start building.</span>',
+    subtitle: 'See what changes when you unify your AI infrastructure.',
+    beforeLabel: 'Without CheapAgents',
+    beforeSubLabel: 'The painful way',
+    beforePoints: [
+      { id: 'bp_1', text: 'Separate API key for each provider', detail: 'OpenAI, Anthropic, Google, Meta…' },
+      { id: 'bp_2', text: 'Different SDKs and response formats', detail: 'Rewrite code for every model switch' },
+      { id: 'bp_3', text: 'Manual retry and fallback logic', detail: 'Hours of engineering per provider' },
+      { id: 'bp_4', text: 'Scattered usage data across dashboards', detail: 'No unified cost visibility' },
+      { id: 'bp_5', text: 'Vendor lock-in on every integration', detail: 'Switching costs you weeks' },
+      { id: 'bp_6', text: 'Multiple billing accounts to manage', detail: 'Finance team nightmare' },
+    ],
+    afterLabel: 'With CheapAgents',
+    afterSubLabel: 'The smart way',
+    afterPoints: [
+      { id: 'ap_1', text: 'One key for every AI provider', detail: 'All models, one credential' },
+      { id: 'ap_2', text: 'Same OpenAI SDK, same interface', detail: 'Change one line, zero refactoring' },
+      { id: 'ap_3', text: 'Built-in retry and smart fallbacks', detail: 'Automatic zero-downtime routing' },
+      { id: 'ap_4', text: 'Unified real-time analytics', detail: 'Cost, latency & tokens in one view' },
+      { id: 'ap_5', text: 'Switch models with one parameter', detail: 'GPT → Claude → Gemini instantly' },
+      { id: 'ap_6', text: 'Single consolidated bill', detail: 'One invoice, full transparency' },
+    ]
+  },
+  featuresGrid: {
+    title: 'Built for production',
+    subtitle: 'Everything you need to ship AI features — from prototype to planet-scale.',
+    features: [
+      { id: 'fg_1', icon: 'RefreshCw', title: 'Unified API', desc: 'Same OpenAI SDK format. Change one URL, access every model on the market.' },
+      { id: 'fg_2', icon: 'Zap', title: 'Real-time Streaming', desc: 'Native SSE streaming piped directly from provider to your users, <100ms to first token.' },
+      { id: 'fg_3', icon: 'Key', title: 'Bring Your Own Key', desc: 'Add your provider keys for free routing. Zero margins, zero limits on your own keys.' },
+      { id: 'fg_4', icon: 'Shield', title: 'Enterprise Security', desc: 'SOC 2 compliant, AES-256 encrypted key vault, automatic rotation, zero-knowledge architecture.' },
+      { id: 'fg_5', icon: 'Globe', title: 'Global Edge Routing', desc: 'Requests served from the nearest edge node for consistently low latency worldwide.' },
+      { id: 'fg_6', icon: 'Layers', title: 'Smart Fallbacks', desc: 'Automatic failover chains. If one provider is down, traffic routes to your next best model.' },
+      { id: 'fg_7', icon: 'Eye', title: 'Live Analytics', desc: 'Real-time dashboards tracking tokens, cost, latency, and errors per model and per user.' },
+      { id: 'fg_8', icon: 'DollarSign', title: 'Cost Optimization', desc: 'Automatic model suggestions based on cost/performance. Save up to 70% vs direct provider pricing.' },
+      { id: 'fg_9', icon: 'Workflow', title: 'Rate Limiting', desc: 'Fine-grained per-model, per-user rate limits. Set budgets and caps at the API key level.' },
     ]
   }
 };

@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import styles from '../admin.module.css';
 import { 
   Save, Image as ImageIcon, Type, Settings2, HelpCircle, AlignLeft, LayoutPanelLeft, 
-  Plus, X, Upload, Trash2, Globe, Mail, LayoutDashboard
+  Plus, X, Upload, Trash2, Globe, Mail, LayoutDashboard, Code, DollarSign, Grid, SplitSquareHorizontal
 } from 'lucide-react';
 import { useSiteSettings, SiteSettings } from '@/components/settings-provider';
 
@@ -18,11 +18,11 @@ function SettingsContent() {
   const [saved, setSaved] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'general' | 'landing' | 'contact' | 'dashboard'>('general');
-  const [landingSubTab, setLandingSubTab] = useState<'hero' | 'marquee' | 'demand' | 'faq' | 'footer'>('hero');
+  const [landingSubTab, setLandingSubTab] = useState<'hero' | 'marquee' | 'featuresplit' | 'pricing' | 'compare' | 'features' | 'demand' | 'faq' | 'footer'>('hero');
 
   useEffect(() => {
     if (tabParam) {
-      if (['hero', 'marquee', 'demand', 'faq', 'footer'].includes(tabParam)) {
+      if (['hero', 'marquee', 'featuresplit', 'pricing', 'compare', 'features', 'demand', 'faq', 'footer'].includes(tabParam)) {
         setActiveTab('landing');
         setLandingSubTab(tabParam as any);
       } else if (['general', 'landing', 'contact', 'dashboard'].includes(tabParam)) {
@@ -270,12 +270,16 @@ function SettingsContent() {
         {/* ================= 2. LANDING PAGE CMS TAB ================= */}
         {activeTab === 'landing' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', gap: '8px', background: 'var(--color-bg-soft)', padding: '6px', borderRadius: '10px', width: 'fit-content' }}>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--color-bg-soft)', padding: '6px', borderRadius: '10px', width: 'fit-content', flexWrap: 'wrap' }}>
               <SubTabBtn id="hero" label="Hero Section" icon={Type} />
-              <SubTabBtn id="marquee" label="Marquee Providers" icon={ImageIcon} />
-              <SubTabBtn id="demand" label="Demand Timeline" icon={AlignLeft} />
-              <SubTabBtn id="faq" label="FAQs List" icon={HelpCircle} />
-              <SubTabBtn id="footer" label="Footer & Socials" icon={LayoutPanelLeft} />
+              <SubTabBtn id="marquee" label="Marquee" icon={ImageIcon} />
+              <SubTabBtn id="featuresplit" label="API Feature" icon={Code} />
+              <SubTabBtn id="pricing" label="Pricing" icon={DollarSign} />
+              <SubTabBtn id="compare" label="Before / After" icon={SplitSquareHorizontal} />
+              <SubTabBtn id="features" label="Features Grid" icon={Grid} />
+              <SubTabBtn id="demand" label="Demand" icon={AlignLeft} />
+              <SubTabBtn id="faq" label="FAQs" icon={HelpCircle} />
+              <SubTabBtn id="footer" label="Footer" icon={LayoutPanelLeft} />
             </div>
 
             {/* HERO SUB-TAB */}
@@ -337,6 +341,214 @@ function SettingsContent() {
                       <button onClick={() => {
                         setFormData({...formData, marqueeProviders: formData.marqueeProviders.filter(m => m.id !== mq.id)});
                       }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}><X size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* FEATURE SPLIT SUB-TAB */}
+            {landingSubTab === 'featuresplit' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>API Feature Split Section</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title (Supports HTML)</label>
+                    <input type="text" value={formData.featureSplit?.title || ''} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { description: '', checkList: [], buttonText: '', buttonLink: '', codeSnippet: '' }), title: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Description</label>
+                    <textarea value={formData.featureSplit?.description || ''} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { title: '', checkList: [], buttonText: '', buttonLink: '', codeSnippet: '' }), description: e.target.value}})} rows={3} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Checklist Items (Comma separated)</label>
+                    <textarea value={(formData.featureSplit?.checkList || []).join('\n')} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { title: '', description: '', buttonText: '', buttonLink: '', codeSnippet: '' }), checkList: e.target.value.split('\n').filter(Boolean)}})} rows={5} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Button Text & Link</label>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <input type="text" value={formData.featureSplit?.buttonText || ''} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { title: '', description: '', checkList: [], buttonLink: '', codeSnippet: '' }), buttonText: e.target.value}})} placeholder="Button Text" style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      <input type="text" value={formData.featureSplit?.buttonLink || ''} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { title: '', description: '', checkList: [], buttonText: '', codeSnippet: '' }), buttonLink: e.target.value}})} placeholder="Button Link" style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Code Snippet</label>
+                    <textarea value={formData.featureSplit?.codeSnippet || ''} onChange={(e) => setFormData({...formData, featureSplit: {...(formData.featureSplit || { title: '', description: '', checkList: [], buttonText: '', buttonLink: '' }), codeSnippet: e.target.value}})} rows={10} style={{ fontFamily: 'monospace', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* PRICING SUB-TAB */}
+            {landingSubTab === 'pricing' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Pricing Section</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                  <input type="text" value={formData.pricingSection?.title || ''} onChange={(e) => setFormData({...formData, pricingSection: {...(formData.pricingSection || { subtitle: '', plans: [] }), title: e.target.value}})} placeholder="Section Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  <input type="text" value={formData.pricingSection?.subtitle || ''} onChange={(e) => setFormData({...formData, pricingSection: {...(formData.pricingSection || { title: '', plans: [] }), subtitle: e.target.value}})} placeholder="Section Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Pricing Plans</h3>
+                  <button onClick={() => setFormData({...formData, pricingSection: {...(formData.pricingSection || { title: '', subtitle: '' }), plans: [...(formData.pricingSection?.plans || []), { id: `p_${Date.now()}`, name: 'New Plan', price: '$0', period: '/mo', desc: 'Desc', features: ['Feature 1'], cta: 'Buy Now', ctaLink: '#', featured: false }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add Plan
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {(formData.pricingSection?.plans || []).map((plan, idx) => (
+                    <div key={plan.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '24px', borderRadius: '12px', position: 'relative' }}>
+                      <button onClick={() => {
+                        const newPlans = formData.pricingSection.plans.filter(p => p.id !== plan.id);
+                        setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                      }} style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16}/></button>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                        <input type="text" value={plan.name} onChange={(e) => {
+                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].name = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                        }} placeholder="Plan Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                        <input type="text" value={plan.price} onChange={(e) => {
+                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].price = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                        }} placeholder="Price (e.g. $15)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                        <input type="text" value={plan.period} onChange={(e) => {
+                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].period = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                        }} placeholder="Period (e.g. /mo)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                      <input type="text" value={plan.desc} onChange={(e) => {
+                        const newPlans = [...formData.pricingSection.plans]; newPlans[idx].desc = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                      }} placeholder="Description" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      <textarea value={plan.features.join('\n')} onChange={(e) => {
+                        const newPlans = [...formData.pricingSection.plans]; newPlans[idx].features = e.target.value.split('\n').filter(Boolean); setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                      }} placeholder="Features (one per line)" rows={4} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'center' }}>
+                        <input type="text" value={plan.cta} onChange={(e) => {
+                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].cta = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                        }} placeholder="CTA Button Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                        <input type="text" value={plan.ctaLink} onChange={(e) => {
+                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].ctaLink = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                        }} placeholder="CTA Link" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={plan.featured} onChange={(e) => {
+                            const newPlans = [...formData.pricingSection.plans]; newPlans[idx].featured = e.target.checked; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
+                          }} style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }} />
+                          Featured (Highlighted)
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* COMPARE SUB-TAB */}
+            {landingSubTab === 'compare' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Before & After Comparison Section</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                  <input type="text" value={formData.comparisonSection?.title || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...(formData.comparisonSection || { subtitle: '', beforeLabel: '', beforeSubLabel: '', beforePoints: [], afterLabel: '', afterSubLabel: '', afterPoints: [] }), title: e.target.value}})} placeholder="Section Title (Supports HTML)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  <input type="text" value={formData.comparisonSection?.subtitle || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...(formData.comparisonSection || { title: '', beforeLabel: '', beforeSubLabel: '', beforePoints: [], afterLabel: '', afterSubLabel: '', afterPoints: [] }), subtitle: e.target.value}})} placeholder="Section Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                  {/* BEFORE SECTION */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#ef4444' }}>"Before" State (The Painful Way)</h4>
+                    <input type="text" value={formData.comparisonSection?.beforeLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforeLabel: e.target.value}})} placeholder="Label (e.g. Without CheapAgents)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    <input type="text" value={formData.comparisonSection?.beforeSubLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforeSubLabel: e.target.value}})} placeholder="SubLabel (e.g. The painful way)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    
+                    <button onClick={() => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforePoints: [...(formData.comparisonSection?.beforePoints || []), { id: `bp_${Date.now()}`, text: 'New Point', detail: 'Detail' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
+                      <Plus size={14} /> Add Bad Point
+                    </button>
+                    
+                    {(formData.comparisonSection?.beforePoints || []).map((point, idx) => (
+                      <div key={point.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--color-bg-soft)', padding: '12px', borderRadius: '8px', position: 'relative' }}>
+                        <button onClick={() => {
+                          const newPoints = formData.comparisonSection.beforePoints.filter(p => p.id !== point.id);
+                          setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforePoints: newPoints}});
+                        }} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14}/></button>
+                        <input type="text" value={point.text} onChange={(e) => {
+                          const newPoints = [...formData.comparisonSection.beforePoints]; newPoints[idx].text = e.target.value; setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforePoints: newPoints}});
+                        }} placeholder="Main text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', width: 'calc(100% - 24px)' }} />
+                        <input type="text" value={point.detail} onChange={(e) => {
+                          const newPoints = [...formData.comparisonSection.beforePoints]; newPoints[idx].detail = e.target.value; setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforePoints: newPoints}});
+                        }} placeholder="Sub detail" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* AFTER SECTION */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#10b981' }}>"After" State (The Smart Way)</h4>
+                    <input type="text" value={formData.comparisonSection?.afterLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterLabel: e.target.value}})} placeholder="Label (e.g. With CheapAgents)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    <input type="text" value={formData.comparisonSection?.afterSubLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterSubLabel: e.target.value}})} placeholder="SubLabel (e.g. The smart way)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    
+                    <button onClick={() => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterPoints: [...(formData.comparisonSection?.afterPoints || []), { id: `ap_${Date.now()}`, text: 'New Point', detail: 'Detail' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
+                      <Plus size={14} /> Add Good Point
+                    </button>
+                    
+                    {(formData.comparisonSection?.afterPoints || []).map((point, idx) => (
+                      <div key={point.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--color-bg-soft)', padding: '12px', borderRadius: '8px', position: 'relative' }}>
+                        <button onClick={() => {
+                          const newPoints = formData.comparisonSection.afterPoints.filter(p => p.id !== point.id);
+                          setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterPoints: newPoints}});
+                        }} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14}/></button>
+                        <input type="text" value={point.text} onChange={(e) => {
+                          const newPoints = [...formData.comparisonSection.afterPoints]; newPoints[idx].text = e.target.value; setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterPoints: newPoints}});
+                        }} placeholder="Main text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', width: 'calc(100% - 24px)' }} />
+                        <input type="text" value={point.detail} onChange={(e) => {
+                          const newPoints = [...formData.comparisonSection.afterPoints]; newPoints[idx].detail = e.target.value; setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterPoints: newPoints}});
+                        }} placeholder="Sub detail" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* FEATURES GRID SUB-TAB */}
+            {landingSubTab === 'features' && (
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Features Grid Section</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                  <input type="text" value={formData.featuresGrid?.title || ''} onChange={(e) => setFormData({...formData, featuresGrid: {...(formData.featuresGrid || { subtitle: '', features: [] }), title: e.target.value}})} placeholder="Section Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                  <input type="text" value={formData.featuresGrid?.subtitle || ''} onChange={(e) => setFormData({...formData, featuresGrid: {...(formData.featuresGrid || { title: '', features: [] }), subtitle: e.target.value}})} placeholder="Section Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Feature Items</h3>
+                  <button onClick={() => setFormData({...formData, featuresGrid: {...(formData.featuresGrid || { title: '', subtitle: '' }), features: [...(formData.featuresGrid?.features || []), { id: `fg_${Date.now()}`, icon: 'Zap', title: 'New Feature', desc: 'Description' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                    <Plus size={16} /> Add Feature
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                  {(formData.featuresGrid?.features || []).map((feat, idx) => (
+                    <div key={feat.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px', position: 'relative' }}>
+                      <button onClick={() => {
+                        const newFeats = formData.featuresGrid.features.filter(f => f.id !== feat.id);
+                        setFormData({...formData, featuresGrid: {...formData.featuresGrid, features: newFeats}});
+                      }} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14}/></button>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Icon Name (Lucide)</label>
+                        <input type="text" value={feat.icon} onChange={(e) => {
+                          const newFeats = [...formData.featuresGrid.features]; newFeats[idx].icon = e.target.value; setFormData({...formData, featuresGrid: {...formData.featuresGrid, features: newFeats}});
+                        }} placeholder="e.g. Zap, Globe, Key" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', width: 'calc(100% - 24px)' }} />
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Title</label>
+                        <input type="text" value={feat.title} onChange={(e) => {
+                          const newFeats = [...formData.featuresGrid.features]; newFeats[idx].title = e.target.value; setFormData({...formData, featuresGrid: {...formData.featuresGrid, features: newFeats}});
+                        }} placeholder="Feature Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Description</label>
+                        <textarea value={feat.desc} onChange={(e) => {
+                          const newFeats = [...formData.featuresGrid.features]; newFeats[idx].desc = e.target.value; setFormData({...formData, featuresGrid: {...formData.featuresGrid, features: newFeats}});
+                        }} placeholder="Description..." rows={3} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
+                      </div>
                     </div>
                   ))}
                 </div>

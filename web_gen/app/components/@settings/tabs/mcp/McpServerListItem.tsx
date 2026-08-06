@@ -22,8 +22,8 @@ export default function McpServerListItem({ toolName, toolSchema }: McpToolProps
     return null;
   }
 
-  const parameters = (toolSchema.parameters as ToolParameters)?.jsonSchema.properties || {};
-  const requiredParams = (toolSchema.parameters as ToolParameters)?.jsonSchema.required || [];
+  const parameters = ((toolSchema as any).parameters as ToolParameters)?.jsonSchema.properties || {};
+  const requiredParams = ((toolSchema as any).parameters as ToolParameters)?.jsonSchema.required || [];
 
   return (
     <div className="mt-2 ml-4 p-3 rounded-md bg-devonz-elements-background-depth-2 text-xs">
@@ -32,7 +32,7 @@ export default function McpServerListItem({ toolName, toolSchema }: McpToolProps
           {toolName}
         </h3>
 
-        <p className="text-devonz-elements-textSecondary">{toolSchema.description || 'No description available'}</p>
+        <p className="text-devonz-elements-textSecondary">{typeof toolSchema.description === 'string' ? toolSchema.description : 'No description available'}</p>
 
         {Object.keys(parameters).length > 0 && (
           <div className="mt-2.5">

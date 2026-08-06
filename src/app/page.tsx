@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Zap, MessageCircle, MessageSquare, RefreshCw, Key, Check, Terminal, Shield, Globe, Code, Cpu, ArrowRight, ArrowUpRight, Star, Users, Clock, TrendingUp, Lock, Layers, Server, ChevronDown, Plus, Minus, BookOpen, GitBranch, Crown, Rocket, X, CircleCheck, Sparkles, DollarSign, Workflow, Plug, Eye } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import styles from './page.module.css';
 import ModelsTable from '../components/ModelsTable';
 import StackSection from '../components/StackSection';
@@ -159,25 +160,18 @@ export default function Home() {
         <section className={styles.section}>
           <div className={styles.apiSplit}>
             <div className={styles.apiText}>
-
-              <h2 className={styles.apiTitle}>Change one line.<br />Access every model.</h2>
-              <p className={styles.apiDesc}>
-                No new SDK. No new patterns. CheapAgents speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.
-              </p>
+              <h2 className={styles.apiTitle} dangerouslySetInnerHTML={{ __html: settings.featureSplit?.title || '' }} />
+              <p className={styles.apiDesc}>{settings.featureSplit?.description}</p>
               <ul className={styles.checkList}>
-                {[
-                  'SSE streaming — first token in <100ms',
-                  'Function calling & tool use, out of the box',
-                  'JSON mode & structured outputs',
-                  'Automatic retry with smart fallback chains',
-                  'Per-model rate limiting & usage tracking',
-                ].map((item) => (
-                  <li key={item}><div className={styles.checkIcon}><Check size={14} /></div>{item}</li>
+                {(settings.featureSplit?.checkList || []).map((item, idx) => (
+                  <li key={idx}><div className={styles.checkIcon}><Check size={14} /></div>{item}</li>
                 ))}
               </ul>
-              <Link href="/docs" prefetch={false} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                Read the API Docs <ArrowRight size={16} />
-              </Link>
+              {settings.featureSplit?.buttonText && settings.featureSplit?.buttonLink && (
+                <Link href={settings.featureSplit.buttonLink} prefetch={false} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  {settings.featureSplit.buttonText} <ArrowRight size={16} />
+                </Link>
+              )}
             </div>
             <div className={styles.apiCodeWrap}>
               <div className={styles.codeBlock}>
@@ -188,20 +182,7 @@ export default function Home() {
                   <span className={styles.codeFilename}><Terminal size={14} /> app.ts</span>
                 </div>
                 <pre className={styles.codeBody}>
-<code>{`import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: "cm-xxxxxxxxxxxx",
-  baseURL: "https://api.cheapagents.com/v1",
-});
-
-const response = await client.chat.completions.create({
-  model: "claude-3-5-sonnet",
-  messages: [
-    { role: "user", content: "Hello!" }
-  ],
-  stream: true,
-});`}</code>
+<code>{settings.featureSplit?.codeSnippet}</code>
                 </pre>
               </div>
             </div>
@@ -212,19 +193,12 @@ const response = await client.chat.completions.create({
         {/* ═══════════════ PRICING ═══════════════ */}
         <section id="pricing" className={styles.section}>
           <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>Simple, honest pricing</h2>
-            <p className={styles.sectionSubtitle}>
-              No surprise bills. No hidden token markups. Start free, pay as you grow.
-            </p>
+            <h2 className={styles.sectionTitle}>{settings.pricingSection?.title}</h2>
+            <p className={styles.sectionSubtitle}>{settings.pricingSection?.subtitle}</p>
           </div>
           <div className={styles.pricingGrid}>
-            {[
-              { name: 'Free', price: '$0', period: '', desc: 'For experimenting and personal projects', features: ['Basic & open-source models', 'Unlimited BYOK routing', 'Community support', 'Dashboard & analytics', '100 requests/day'], cta: 'Start Free', featured: false },
-              { name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers and side projects', features: ['All basic + mid-tier models', '500K tokens included', 'Priority email support', 'Higher rate limits', 'Custom API keys'], cta: 'Get Started', featured: false },
-              { name: 'Pro', price: '$15', period: '/mo', desc: 'For teams and production apps', features: ['All premium models included', '1M tokens included', 'GPT-4o, Claude 3.5, Grok', 'Highest rate limits', 'Dedicated support', 'Team collaboration'], cta: 'Upgrade to Pro', featured: true },
-            ].map((plan, i) => (
-              <div key={i} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
+            {(settings.pricingSection?.plans || []).map((plan) => (
+              <div key={plan.id} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
                 {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
                 <div className={styles.priceCardInner}>
                   <h3 className={styles.planName}>{plan.name}</h3>
@@ -233,7 +207,7 @@ const response = await client.chat.completions.create({
                   <ul className={styles.planFeatures}>
                     {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
                   </ul>
-                  <Link href="/signup" prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
+                  <Link href={plan.ctaLink || '#'} prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
                 </div>
               </div>
             ))}
@@ -242,11 +216,8 @@ const response = await client.chat.completions.create({
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>Stop managing providers.<br /><span className={styles.gradientText}>Start building.</span></h2>
-            <p className={styles.sectionSubtitle}>
-              See what changes when you unify your AI infrastructure.
-            </p>
+            <h2 className={styles.sectionTitle} dangerouslySetInnerHTML={{ __html: settings.comparisonSection?.title || '' }} />
+            <p className={styles.sectionSubtitle}>{settings.comparisonSection?.subtitle}</p>
           </div>
 
           <div className={styles.vsWrap}>
@@ -257,20 +228,13 @@ const response = await client.chat.completions.create({
                   <X size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <div className={styles.vsHeaderLabelBad}>Without CheapAgents</div>
-                  <div className={styles.vsHeaderSub}>The painful way</div>
+                  <div className={styles.vsHeaderLabelBad}>{settings.comparisonSection?.beforeLabel}</div>
+                  <div className={styles.vsHeaderSub}>{settings.comparisonSection?.beforeSubLabel}</div>
                 </div>
               </div>
               <ul className={styles.vsNewList}>
-                {[
-                  { text: 'Separate API key for each provider', detail: 'OpenAI, Anthropic, Google, Meta…' },
-                  { text: 'Different SDKs and response formats', detail: 'Rewrite code for every model switch' },
-                  { text: 'Manual retry and fallback logic', detail: 'Hours of engineering per provider' },
-                  { text: 'Scattered usage data across dashboards', detail: 'No unified cost visibility' },
-                  { text: 'Vendor lock-in on every integration', detail: 'Switching costs you weeks' },
-                  { text: 'Multiple billing accounts to manage', detail: 'Finance team nightmare' },
-                ].map((item, i) => (
-                  <li key={i} className={styles.vsNewItemBad}>
+                {(settings.comparisonSection?.beforePoints || []).map((item) => (
+                  <li key={item.id} className={styles.vsNewItemBad}>
                     <div className={styles.vsNewItemIcon}>
                       <X size={12} strokeWidth={3} />
                     </div>
@@ -296,20 +260,13 @@ const response = await client.chat.completions.create({
                   <Check size={20} strokeWidth={3} />
                 </div>
                 <div>
-                  <div className={styles.vsHeaderLabelGood}>With CheapAgents</div>
-                  <div className={styles.vsHeaderSub}>The smart way</div>
+                  <div className={styles.vsHeaderLabelGood}>{settings.comparisonSection?.afterLabel}</div>
+                  <div className={styles.vsHeaderSub}>{settings.comparisonSection?.afterSubLabel}</div>
                 </div>
               </div>
               <ul className={styles.vsNewList}>
-                {[
-                  { text: 'One key for every AI provider', detail: 'All models, one credential' },
-                  { text: 'Same OpenAI SDK, same interface', detail: 'Change one line, zero refactoring' },
-                  { text: 'Built-in retry and smart fallbacks', detail: 'Automatic zero-downtime routing' },
-                  { text: 'Unified real-time analytics', detail: 'Cost, latency & tokens in one view' },
-                  { text: 'Switch models with one parameter', detail: 'GPT → Claude → Gemini instantly' },
-                  { text: 'Single consolidated bill', detail: 'One invoice, full transparency' },
-                ].map((item, i) => (
-                  <li key={i} className={styles.vsNewItemGood}>
+                {(settings.comparisonSection?.afterPoints || []).map((item) => (
+                  <li key={item.id} className={styles.vsNewItemGood}>
                     <div className={styles.vsNewItemIcon}>
                       <Check size={12} strokeWidth={3} />
                     </div>
@@ -322,7 +279,6 @@ const response = await client.chat.completions.create({
               </ul>
             </div>
           </div>
-
         </section>
 
 
@@ -330,32 +286,22 @@ const response = await client.chat.completions.create({
         {/* ═══════════════ FEATURES GRID ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>Built for production</h2>
-            <p className={styles.sectionSubtitle}>
-              Everything you need to ship AI features — from prototype to planet-scale.
-            </p>
+            <h2 className={styles.sectionTitle}>{settings.featuresGrid?.title}</h2>
+            <p className={styles.sectionSubtitle}>{settings.featuresGrid?.subtitle}</p>
           </div>
           <div className={styles.featureGrid}>
-            {[
-              { icon: <RefreshCw size={20} />, title: 'Unified API', desc: 'Same OpenAI SDK format. Change one URL, access every model on the market.' },
-              { icon: <Zap size={20} />, title: 'Real-time Streaming', desc: 'Native SSE streaming piped directly from provider to your users, <100ms to first token.' },
-              { icon: <Key size={20} />, title: 'Bring Your Own Key', desc: 'Add your provider keys for free routing. Zero margins, zero limits on your own keys.' },
-              { icon: <Shield size={20} />, title: 'Enterprise Security', desc: 'SOC 2 compliant, AES-256 encrypted key vault, automatic rotation, zero-knowledge architecture.' },
-              { icon: <Globe size={20} />, title: 'Global Edge Routing', desc: 'Requests served from the nearest edge node for consistently low latency worldwide.' },
-              { icon: <Layers size={20} />, title: 'Smart Fallbacks', desc: 'Automatic failover chains. If one provider is down, traffic routes to your next best model.' },
-              { icon: <Eye size={20} />, title: 'Live Analytics', desc: 'Real-time dashboards tracking tokens, cost, latency, and errors per model and per user.' },
-              { icon: <DollarSign size={20} />, title: 'Cost Optimization', desc: 'Automatic model suggestions based on cost/performance. Save up to 70% vs direct provider pricing.' },
-              { icon: <Workflow size={20} />, title: 'Rate Limiting', desc: 'Fine-grained per-model, per-user rate limits. Set budgets and caps at the API key level.' },
-            ].map((f, i) => (
-              <div key={i} className={styles.featureCard}>
-                <div className={styles.featureIconWrap}>{f.icon}</div>
-                <div>
-                  <h3 className={styles.featureTitle}>{f.title}</h3>
-                  <p className={styles.featureDesc}>{f.desc}</p>
+            {(settings.featuresGrid?.features || []).map((f) => {
+              const IconComp = (LucideIcons as any)[f.icon] || Globe;
+              return (
+                <div key={f.id} className={styles.featureCard}>
+                  <div className={styles.featureIconWrap}><IconComp size={20} /></div>
+                  <div>
+                    <h3 className={styles.featureTitle}>{f.title}</h3>
+                    <p className={styles.featureDesc}>{f.desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

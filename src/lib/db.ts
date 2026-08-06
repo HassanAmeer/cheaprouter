@@ -38,8 +38,9 @@ const users: Record<string, User> = {
 let keys: ApiKey[] = [];
 let providers: Provider[] = [];
 
-export type AdminModel = { id: string; name: string };
-export type AdminProvider = { id: string; name: string; status: boolean; key: string; priority: number; models: AdminModel[]; baseUrl?: string };
+export type AdminModel = { id: string; name: string; originalId?: string; reasoning?: boolean; image?: boolean };
+export type AdminProviderHeader = { id: string; key: string; value: string };
+export type AdminProvider = { id: string; name: string; status: boolean; key: string; priority: number; models: AdminModel[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: AdminProviderHeader[]; isCustom?: boolean; apiFormat?: string };
 
 let adminProviders: AdminProvider[] = [
   { id: 'prov_openai', name: 'OpenAI', status: true, key: 'sk-proj-xxxxxx...yyyy', priority: 1, models: [{id: 'm1', name: 'gpt-4o'}, {id: 'm2', name: 'gpt-3.5-turbo'}], baseUrl: 'https://api.openai.com/v1' },
@@ -211,6 +212,27 @@ export const db = {
 
   // Analytics
   getAnalytics: () => {
+    // Generate beautiful 30-day mock trend data
+    const revenueTrend = [];
+    let currentRev = 200;
+    let currentCost = 50;
+    const now = new Date();
+    
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      // add some noise
+      currentRev += (Math.random() - 0.4) * 80;
+      if (currentRev < 100) currentRev = 100;
+      currentCost = currentRev * (0.25 + (Math.random() * 0.1)); 
+      
+      revenueTrend.push({
+        date: dateLabel,
+        revenue: parseFloat(currentRev.toFixed(2)),
+        cost: parseFloat(currentCost.toFixed(2))
+      });
+    }
+
     const sortedModels = Object.entries(analytics.topModels)
       .sort((a, b) => b[1] - a[1])
       .map(([model, tokens]) => ({ model, tokens }));
@@ -224,12 +246,39 @@ export const db = {
       return { label, value: parseFloat(value.toFixed(2)), color };
     });
 
+    const mockTopModels = [
+      { id: 'gpt-4o', name: 'GPT-4o', requests: 124500, revenue: 3450.50, margin: 72 },
+      { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', requests: 98200, revenue: 2100.20, margin: 68 },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', requests: 64100, revenue: 1250.00, margin: 80 },
+      { id: 'cr-deepseek-coder', name: 'CR Deepseek Coder', requests: 45000, revenue: 600.00, margin: 90 },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', requests: 210000, revenue: 950.00, margin: 65 },
+    ];
+
+    const mockTopUsers = [
+      { id: 'usr_3v8n', name: 'Sarah Connor', email: 'sarah@skynet.com', calls: 999999, spend: 1245.50 },
+      { id: 'usr_8m1x', name: 'Tony Stark', email: 'tony@stark.com', calls: 543210, spend: 890.20 },
+      { id: 'usr_4k9p', name: 'Bruce Wayne', email: 'bruce@wayne.com', calls: 231000, spend: 650.00 },
+      { id: 'usr_5p2m', name: 'Michael Tech', email: 'mike@tech.co', calls: 120500, spend: 320.80 },
+      { id: 'usr_2x8c', name: 'Alice Smith', email: 'alice@startup.io', calls: 89200, spend: 210.00 },
+    ];
+
+    const mockCostBreakdown = [
+      { label: 'OpenAI', value: 850.50, color: '#10A37F' },
+      { label: 'Anthropic', value: 450.20, color: '#D97757' },
+      { label: 'Google', value: 200.00, color: '#4285F4' },
+      { label: 'DeepSeek', value: 80.00, color: '#0668E1' },
+    ];
+
     return {
-      totalTokens: analytics.totalTokens,
-      totalCost: parseFloat(analytics.totalCost.toFixed(2)),
+      totalTokens: analytics.totalTokens > 0 ? analytics.totalTokens : 2450000,
+      totalCost: analytics.totalCost > 0 ? parseFloat(analytics.totalCost.toFixed(2)) : 1580.70,
+      totalRevenue: 8350.70, // mock
+      mrr: 12450.00,
       usageOverTime: analytics.usageOverTime,
-      topModels: sortedModels.length > 0 ? sortedModels : [{ model: 'No data yet', tokens: 0 }],
-      costBreakdown: costBreakdown.length > 0 ? costBreakdown : [{ label: 'No data yet', value: 0, color: '#ccc' }],
+      revenueTrend, // The 30 day detailed array
+      topModels: mockTopModels,
+      topUsers: mockTopUsers,
+      costBreakdown: analytics.totalCost > 0 && costBreakdown.length > 0 ? costBreakdown : mockCostBreakdown,
     };
   },
   recordUsage: (model: string, provider: string, tokens: number) => {

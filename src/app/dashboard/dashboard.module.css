@@ -588,6 +588,14 @@
   z-index: -1;
 }
 
+[data-theme="light"] .welcomeBanner {
+  color: var(--color-text-main);
+}
+
+[data-theme="light"] .welcomeBanner::after {
+  background: linear-gradient(135deg, #ffffff 0%, #fff0f0 45%, #ffcccc 100%);
+}
+
 
 .welcomeTitle {
   font-size: 20px;

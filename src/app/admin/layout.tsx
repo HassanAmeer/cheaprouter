@@ -3,7 +3,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  LayoutDashboard, Users, Settings, LogOut, Zap, Server, Activity,
+  LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
   HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail
 } from 'lucide-react';
@@ -42,8 +42,8 @@ function SidebarNavContent() {
           <Link href="/admin/providers" className={`${styles.navItem} ${pathname.startsWith('/admin/providers') ? styles.navItemActive : ''}`}>
             <Server size={17} /> Provider Routing
           </Link>
-          <Link href="/admin/analytics" className={`${styles.navItem} ${pathname.startsWith('/admin/analytics') ? styles.navItemActive : ''}`}>
-            <Activity size={17} /> Analytics & Revenue
+          <Link href="/admin/revenue" className={`${styles.navItem} ${pathname.startsWith('/admin/revenue') ? styles.navItemActive : ''}`}>
+            <DollarSign size={17} /> Revenue
           </Link>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/users')) return 'User Management';
     if (pathname.startsWith('/admin/keys')) return 'Global API Keys';
     if (pathname.startsWith('/admin/providers')) return 'Provider Routing';
-    if (pathname.startsWith('/admin/analytics')) return 'Analytics & Revenue';
+    if (pathname.startsWith('/admin/revenue')) return 'Revenue';
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';
     return 'Admin Panel';
   };
