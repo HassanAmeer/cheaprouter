@@ -121,14 +121,45 @@ export default function DashSettingsPage() {
             <Zap size={18} color="var(--color-primary)" /> BYOK (Bring Your Own Keys)
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <input 
-              type="checkbox" 
-              id="allowByok" 
-              checked={formData.dashboardSettings?.allowByok ?? true} 
-              onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeTitle: '', welcomeSubtitle: '', defaultMonthlyQuota: '$50.00', announcementBanner: '' }), allowByok: e.target.checked}})} 
-              style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-            />
-            <label htmlFor="allowByok" style={{ fontSize: '14px', color: 'var(--color-text-main)', fontWeight: 600, cursor: 'pointer' }}>
+            <button 
+              type="button"
+              role="switch"
+              aria-checked={formData.dashboardSettings?.allowByok ?? true}
+              onClick={() => {
+                const current = formData.dashboardSettings?.allowByok ?? true;
+                setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeTitle: '', welcomeSubtitle: '', defaultMonthlyQuota: '$50.00', announcementBanner: '' }), allowByok: !current}});
+              }}
+              style={{
+                position: 'relative',
+                display: 'inline-flex',
+                alignItems: 'center',
+                width: '44px',
+                height: '24px',
+                borderRadius: '9999px',
+                background: (formData.dashboardSettings?.allowByok ?? true) ? 'var(--color-primary)' : 'var(--color-border)',
+                transition: 'background 0.2s',
+                cursor: 'pointer',
+                border: 'none',
+                padding: '2px'
+              }}
+            >
+              <span 
+                style={{
+                  display: 'inline-block',
+                  width: '20px',
+                  height: '20px',
+                  background: '#fff',
+                  borderRadius: '50%',
+                  transform: (formData.dashboardSettings?.allowByok ?? true) ? 'translateX(20px)' : 'translateX(0)',
+                  transition: 'transform 0.2s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }} 
+              />
+            </button>
+            <label style={{ fontSize: '14px', color: 'var(--color-text-main)', fontWeight: 600, cursor: 'pointer' }} onClick={() => {
+                const current = formData.dashboardSettings?.allowByok ?? true;
+                setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeTitle: '', welcomeSubtitle: '', defaultMonthlyQuota: '$50.00', announcementBanner: '' }), allowByok: !current}});
+              }}>
               Allow Bring Your Own Keys (BYOK) Feature for users
             </label>
           </div>

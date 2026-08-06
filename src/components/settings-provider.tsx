@@ -93,6 +93,12 @@ export interface SiteSettings {
     subtitle: string;
     features: { id: string; icon: string; title: string; desc: string }[];
   };
+  referralSettings?: {
+    isEnabled: boolean;
+    standardBonus: string;
+    creatorBonus: string;
+    alertMessage: string;
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -185,7 +191,7 @@ const defaultSettings: SiteSettings = {
     welcomeTitle: 'Welcome back, {userName}!',
     welcomeSubtitle: "You've used {percent}% of your monthly token limit. {remaining} tokens remaining.",
     defaultMonthlyQuota: '$50.00',
-    allowByok: true,
+    allowByok: false,
     announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',
   },
   footer: {
@@ -257,6 +263,12 @@ const defaultSettings: SiteSettings = {
       { id: 'fg_8', icon: 'DollarSign', title: 'Cost Optimization', desc: 'Automatic model suggestions based on cost/performance. Save up to 70% vs direct provider pricing.' },
       { id: 'fg_9', icon: 'Workflow', title: 'Rate Limiting', desc: 'Fine-grained per-model, per-user rate limits. Set budgets and caps at the API key level.' },
     ]
+  },
+  referralSettings: {
+    isEnabled: true,
+    standardBonus: '$5.00',
+    creatorBonus: '$20.00',
+    alertMessage: 'Attention Content Creators! Make a video about CheapAgents on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
   }
 };
 
@@ -275,7 +287,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('/api/settings', { cache: 'no-store' });
       if (res.ok) {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {

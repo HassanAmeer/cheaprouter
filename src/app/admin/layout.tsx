@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -45,6 +45,12 @@ function SidebarNavContent() {
           <Link href="/admin/revenue" className={`${styles.navItem} ${pathname.startsWith('/admin/revenue') ? styles.navItemActive : ''}`}>
             <DollarSign size={17} /> Revenue
           </Link>
+          <Link href="/admin/content-history" className={`${styles.navItem} ${pathname.startsWith('/admin/content-history') ? styles.navItemActive : ''}`}>
+            <Video size={17} /> Content History
+          </Link>
+          <Link href="/admin/notifications" className={`${styles.navItem} ${pathname.startsWith('/admin/notifications') ? styles.navItemActive : ''}`}>
+            <Bell size={17} /> Notify User
+          </Link>
         </div>
       </div>
 
@@ -62,6 +68,9 @@ function SidebarNavContent() {
           </Link>
           <Link href="/admin/dash-settings" className={`${styles.navItem} ${pathname === '/admin/dash-settings' ? styles.navItemActive : ''}`}>
             <LayoutDashboard size={17} /> Dash Setting
+          </Link>
+          <Link href="/admin/refer-settings" className={`${styles.navItem} ${pathname === '/admin/refer-settings' ? styles.navItemActive : ''}`}>
+            <Gift size={17} /> Refer Settings
           </Link>
         </div>
       </div>

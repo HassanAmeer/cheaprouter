@@ -1,10 +1,11 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Copy, Layers, X } from 'lucide-react';
+import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Copy, Layers, X, Lock } from 'lucide-react';
 import styles from '../dashboard.module.css';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
+import { useSiteSettings } from '@/components/settings-provider';
 
 type Provider = {
   id: string;
@@ -25,6 +26,14 @@ const PROVIDER_META: Record<string, { name: string; icon: string; color: string;
 };
 
 export default function ProvidersPage() {
+  const { settings } = useSiteSettings();
+  
+  // =========================================================================
+  // DO NOT MODIFY THIS BYOK DISABLED LOGIC OR STYLING
+  // This has been specifically configured to allow tab clicking, show a badge,
+  // and blur/disable the inner content while displaying a Feature Moved alert.
+  // =========================================================================
+  const allowByok = settings.dashboardSettings?.allowByok ?? true;
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'sub' | 'own'>('sub');
   const [selected, setSelected] = useState('');
@@ -162,21 +171,34 @@ export default function ProvidersPage() {
           { key: 'own', icon: '🔑', title: 'Use Own API Keys', sub: 'BYOK — pay providers direct' },
         ] as const).map((opt) => {
           const active = activeTab === opt.key;
+          const disabled = opt.key === 'own' && !allowByok;
           return (
             <button key={opt.key} role="tab" aria-selected={active} onClick={() => setActiveTab(opt.key)} style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px',
               borderRadius: 'var(--radius-lg)', border: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
               background: active ? 'var(--color-primary-soft)' : 'var(--color-card-bg)', cursor: 'pointer', textAlign: 'left',
               transition: 'all 0.2s ease', boxShadow: active ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
+              opacity: 1
             }}>
-              <span style={{ flexShrink: 0, width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: active ? 'var(--color-primary)' : 'var(--color-bg-soft)' }}>{opt.icon}</span>
+              <span style={{ flexShrink: 0, width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: active ? 'var(--color-primary)' : 'var(--color-bg-soft)' }}>
+                {opt.icon}
+              </span>
               <span style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: active ? 'var(--color-primary)' : 'var(--color-text-main)' }}>{opt.title}</span>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: active ? 'var(--color-primary)' : 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {opt.title}
+                </span>
                 <span style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>{opt.sub}</span>
               </span>
-              <span style={{ position: 'absolute', top: '14px', right: '14px', width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`, background: active ? 'var(--color-primary)' : 'transparent' }}>
-                {active && <span style={{ position: 'absolute', top: '3px', left: '5px', width: '4px', height: '8px', border: 'solid #fff', borderWidth: '0 2px 2px 0', transform: 'rotate(45deg)' }} />}
-              </span>
+              {!disabled && (
+                <span style={{ position: 'absolute', top: '14px', right: '14px', width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`, background: active ? 'var(--color-primary)' : 'transparent' }}>
+                  {active && <span style={{ position: 'absolute', top: '3px', left: '5px', width: '4px', height: '8px', border: 'solid #fff', borderWidth: '0 2px 2px 0', transform: 'rotate(45deg)' }} />}
+                </span>
+              )}
+              {disabled && (
+                <div style={{ position: 'absolute', bottom: '-1px', right: '-1px', background: 'var(--color-bg-alt)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: '10px', padding: '2px 8px', fontWeight: 600, borderBottomRightRadius: 'var(--radius-lg)', borderTopLeftRadius: '8px' }}>
+                  Disabled
+                </div>
+              )}
             </button>
           );
         })}
@@ -199,8 +221,21 @@ export default function ProvidersPage() {
             <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Connect your own provider keys. You pay them directly — our routing is completely free.</p>
           </div>
 
-          {/* Connect Form */}
-          <div className="card glass-card" style={{ marginBottom: '32px' }}>
+          {!allowByok && (
+            <div className="shimmer-btn" style={{ background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}><Lock size={20} /></div>
+              <div>
+                <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '4px', color: 'var(--color-text-main)' }}>Feature Moved</h4>
+                <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                  This feature has moved to Cheap Code CLI. If you want to enable this option for APIs, please contact the admin.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div style={{ opacity: !allowByok ? 0.4 : 1, pointerEvents: !allowByok ? 'none' : 'auto', userSelect: !allowByok ? 'none' : 'auto', filter: !allowByok ? 'grayscale(100%)' : 'none' }}>
+            {/* Connect Form */}
+            <div className="card glass-card" style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '20px' }}>
               <Wifi size={18} color="var(--color-primary)" />
               <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Connect New Provider</h3>
@@ -344,6 +379,7 @@ export default function ProvidersPage() {
               ))}
             </div>
           )}
+          </div>
         </div>
       )}
 

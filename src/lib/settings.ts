@@ -31,6 +31,12 @@ export interface SiteSettings {
     copyrightText: string;
     socialLinks: { id: string; platform: string; url: string }[];
   };
+  referralSettings?: {
+    isEnabled: boolean;
+    standardBonus: string;
+    creatorBonus: string;
+    alertMessage: string;
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -76,16 +82,22 @@ const defaultSettings: SiteSettings = {
   dashboardSettings: {
     welcomeMessage: 'Welcome to CheapAgents AI Gateway Dashboard',
     defaultMonthlyQuota: '$50.00',
-    allowByok: true,
+    allowByok: false,
     announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',
   },
   footer: {
     copyrightText: '© 2026 CheapAgents Inc. All rights reserved.',
     socialLinks: [
-      { id: 'sl_1', platform: 'Twitter', url: 'https://twitter.com' },
+      { id: 'x', platform: 'Twitter (X)', url: 'https://twitter.com/cheapagents' },
       { id: 'sl_2', platform: 'GitHub', url: 'https://github.com' },
       { id: 'sl_3', platform: 'Discord', url: 'https://discord.com' },
     ]
+  },
+  referralSettings: {
+    isEnabled: true,
+    standardBonus: '$5.00',
+    creatorBonus: '$20.00',
+    alertMessage: 'Attention Content Creators! Make a video about CheapAgents on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
   }
 };
 

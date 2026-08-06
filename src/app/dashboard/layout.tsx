@@ -7,7 +7,7 @@ import pageStyles from '@/app/page.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X, Gift } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,6 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'API Keys', path: '/dashboard/keys', icon: <Key size={18} />, badge: null },
     { name: 'Providers', path: '/dashboard/providers', icon: <Plug size={18} />, badge: 'BYOK' },
     { name: 'Billing', path: '/dashboard/billing', icon: <CreditCard size={18} />, badge: null },
+    { name: 'Refer & Earn', path: '/dashboard/refer', icon: <Gift size={18} />, badge: 'Bonus' },
+    { name: 'Notifications', path: '/dashboard/notifications', icon: <Bell size={18} />, badge: 'New' },
     { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={18} />, badge: null },
     { divider: true },
     { name: 'API Docs', path: '/docs', icon: <FileText size={18} />, badge: null },
@@ -42,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className={styles.sidebarSection}>Workspace</div>
         <nav className={styles.sidebarNav}>
-          {navItems.map((item, idx) => {
+          {navItems.map((item: any, idx) => {
             if (item.divider) {
               return <div key={`div-${idx}`} style={{ height: 1, background: 'var(--color-border)', margin: '12px 0' }} />;
             }
