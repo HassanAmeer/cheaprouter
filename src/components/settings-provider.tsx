@@ -11,12 +11,17 @@ export interface SiteSettings {
   heroHeading: string;
   heroSubtitle: string;
   heroAnimatedTexts: string[];
+  heroPromoText: string;
+  heroPromoHighlight: string;
   primaryBtnText: string;
   primaryBtnTooltip: string;
   faviconUrl: string;
   logoUrl: string;
   ctaHeading: string;
   ctaSubtitle: string;
+  modelsSection: { title: string; subtitle: string };
+  integrationsSection: { title: string };
+  faqSection: { title: string; subtitle: string };
   footerColumn1?: FooterColumn;
   footerColumn2?: FooterColumn;
   footerColumn3?: FooterColumn;
@@ -89,12 +94,25 @@ const defaultSettings: SiteSettings = {
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
   heroAnimatedTexts: ['Free Coding', 'Free Chat', 'Cheap API', 'Cheap Agents'],
+  heroPromoText: 'Buy Just for',
+  heroPromoHighlight: '$2 USD / month',
   primaryBtnText: 'Get Started',
   primaryBtnTooltip: 'Create your free account today',
   faviconUrl: '/favicon.ico',
   logoUrl: '',
   ctaHeading: 'Ready to cut your AI costs?',
   ctaSubtitle: 'Join thousands of developers saving up to 80% on AI API costs. Get started in seconds with your existing OpenAI SDK.',
+  modelsSection: {
+    title: 'Every model. One endpoint.',
+    subtitle: 'Transparent per-token pricing with no hidden fees. Bring your own key for free routing, or use ours.',
+  },
+  integrationsSection: {
+    title: 'Connect with APIs',
+  },
+  faqSection: {
+    title: 'Common questions',
+    subtitle: "Can't find what you're looking for? Reach out to our support team.",
+  },
   footerColumn1: {
     title: 'Product',
     links: [
@@ -190,7 +208,7 @@ const defaultSettings: SiteSettings = {
     ]
   },
   comparisonSection: {
-    title: 'Stop managing providers.<br /><span className={styles.gradientText}>Start building.</span>',
+    title: 'Stop managing providers.<br /><span style="background: linear-gradient(135deg, #7c3aed, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Start building.</span>',
     subtitle: 'See what changes when you unify your AI infrastructure.',
     beforeLabel: 'Without CheapAgents',
     beforeSubLabel: 'The painful way',
@@ -251,7 +269,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (contentType && contentType.includes('application/json')) {
           const data = await res.json().catch(() => null);
           if (data) {
-            setSettings(data);
+            setSettings({
+              ...defaultSettings,
+              ...data,
+            });
             
             // Dynamically update document title / favicon if we are on client side
             if (typeof window !== 'undefined') {

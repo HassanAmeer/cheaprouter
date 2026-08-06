@@ -77,12 +77,7 @@ export default function Home() {
 
 
             <h1 className={styles.heroTitle}>
-              {settings.heroHeading && (
-                <>
-                  {settings.heroHeading}
-                  <br />
-                </>
-              )}
+              {/* heroHeading removed — static heading not needed */}
               <TextLoop style={{ display: 'inline-block' }} interval={3.5} transition={{ duration: 0.3 }}>
                 {settings.heroAnimatedTexts.map((text, idx) => (
                   <TextRoll key={idx} className={styles.gradientText}>{text}</TextRoll>
@@ -99,7 +94,7 @@ export default function Home() {
             </div>
 
             <h3 className={styles.heroPromoTitle}>
-              Buy Just for <span className={styles.heroPromoHighlight}>$2 USD / month</span>
+              {settings.heroPromoText} <span className={styles.heroPromoHighlight}>{settings.heroPromoHighlight}</span>
             </h3>
           </div>
 
@@ -135,11 +130,8 @@ export default function Home() {
         {/* ═══════════════ MODELS TABLE ═══════════════ */}
         <section id="models" className={styles.section}>
           <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>Every model. One endpoint.</h2>
-            <p className={styles.sectionSubtitle}>
-              Transparent per-token pricing with no hidden fees. Bring your own key for free routing, or use ours.
-            </p>
+            <h2 className={styles.sectionTitle}>{settings.modelsSection?.title}</h2>
+            <p className={styles.sectionSubtitle}>{settings.modelsSection?.subtitle}</p>
           </div>
           <ModelsTable />
         </section>
@@ -149,7 +141,7 @@ export default function Home() {
           <div style={{ border: '1px solid var(--color-border)', borderRadius: '24px', padding: '48px 32px', background: 'var(--color-card-bg)', boxShadow: 'var(--shadow-sm)' }}>
             <div className={styles.sectionHeader} style={{ marginBottom: '36px' }}>
               <p className={`${styles.sectionSubtitle} ${styles.shimmerSubtitle}`} style={{ fontSize: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Connect with APIs
+                {settings.integrationsSection?.title}
               </p>
             </div>
             <StackSection />
@@ -309,11 +301,8 @@ export default function Home() {
         {/* ═══════════════ FAQ ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-
-            <h2 className={styles.sectionTitle}>Common questions</h2>
-            <p className={styles.sectionSubtitle}>
-              Can&apos;t find what you&apos;re looking for? Reach out to our support team.
-            </p>
+            <h2 className={styles.sectionTitle}>{settings.faqSection?.title}</h2>
+            <p className={styles.sectionSubtitle}>{settings.faqSection?.subtitle}</p>
           </div>
           <div className={styles.faqList}>
             {settings.faqs.map((item, i) => (
