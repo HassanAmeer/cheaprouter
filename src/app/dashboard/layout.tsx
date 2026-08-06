@@ -4,11 +4,13 @@ import { usePathname } from 'next/navigation';
 import styles from './dashboard.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { settings } = useSiteSettings();
 
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
@@ -95,6 +97,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <main className={styles.mainContent}>
+        {settings.dashboardSettings.announcementBanner && (
+          <div style={{ 
+            background: 'linear-gradient(90deg, var(--color-primary), #a855f7)', 
+            color: '#fff', 
+            padding: '10px 24px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '8px', 
+            fontSize: '13px', 
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            <Megaphone size={16} />
+            {settings.dashboardSettings.announcementBanner}
+          </div>
+        )}
+
         {/* Topbar */}
         <header className={styles.topbar}>
           <div>

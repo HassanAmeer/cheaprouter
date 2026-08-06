@@ -112,162 +112,200 @@ function SettingsContent() {
         </button>
       </div>
 
-      {/* Main Category Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--color-border)', paddingBottom: '16px', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
         <TabBtn id="general" label="General & Brand" icon={Settings2} />
-        <TabBtn id="landing" label="Landing Page CMS" icon={Globe} />
+        <TabBtn id="landing" label="Landing Page" icon={Globe} />
         <TabBtn id="contact" label="Contact & Support" icon={Mail} />
-        <TabBtn id="dashboard" label="User Dashboard CMS" icon={LayoutDashboard} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
         
-        {/* ================= 1. GENERAL & BRAND TAB ================= */}
+        {/* ================= 1. GENERAL & BRAND ================= */}
         {activeTab === 'general' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ImageIcon size={18} color="var(--color-primary)" /> Brand Identity & Logos
-            </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ImageIcon size={18} color="var(--color-primary)" /> Brand Identity & Logos
+              </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Brand Name</label>
-                <input 
-                  type="text" 
-                  value={formData.brandName || ''} 
-                  onChange={(e) => handleChange('brandName', e.target.value)} 
-                  placeholder="e.g. CheapAgents"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                {/* Website Logo Upload */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>Website Main Logo</span>
-                    {formData.logoUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Custom Logo Active</span>}
-                  </label>
-
-                  <div style={{ 
-                    height: '80px', 
-                    background: 'var(--color-card-bg)', 
-                    borderRadius: '8px', 
-                    border: '1px dashed var(--color-border)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    overflow: 'hidden', 
-                    padding: '8px',
-                    position: 'relative'
-                  }}>
-                    {formData.logoUrl ? (
-                      <img src={formData.logoUrl} alt="Website Logo Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                    ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ImageIcon size={16} /> No Custom Logo Uploaded
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
-                      <Upload size={14} /> Upload Logo File
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => handleFileUpload('logoUrl', e.target.files?.[0])} 
-                        style={{ display: 'none' }} 
-                      />
-                    </label>
-                    {formData.logoUrl && (
-                      <button 
-                        type="button" 
-                        onClick={() => handleChange('logoUrl', '')} 
-                        title="Remove Logo" 
-                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Brand Name</label>
                   <input 
                     type="text" 
-                    value={formData.logoUrl || ''} 
-                    onChange={(e) => handleChange('logoUrl', e.target.value)} 
-                    placeholder="Or paste Logo URL / Path" 
-                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                    value={formData.brandName || ''} 
+                    onChange={(e) => handleChange('brandName', e.target.value)} 
+                    placeholder="e.g. CheapAgents"
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                   />
                 </div>
 
-                {/* Favicon Upload */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>Favicon Icon</span>
-                    {formData.faviconUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Active</span>}
-                  </label>
-
-                  <div style={{ 
-                    height: '80px', 
-                    background: 'var(--color-card-bg)', 
-                    borderRadius: '8px', 
-                    border: '1px dashed var(--color-border)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    overflow: 'hidden', 
-                    padding: '8px',
-                    gap: '12px'
-                  }}>
-                    {formData.faviconUrl ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-bg-soft)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <img src={formData.faviconUrl} alt="Favicon Preview" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Favicon Preview</span>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ImageIcon size={16} /> Default (/favicon.ico)
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
-                      <Upload size={14} /> Upload Favicon File
-                      <input 
-                        type="file" 
-                        accept="image/*,image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml" 
-                        onChange={(e) => handleFileUpload('faviconUrl', e.target.files?.[0])} 
-                        style={{ display: 'none' }} 
-                      />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  {/* Website Logo Upload */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Website Main Logo</span>
+                      {formData.logoUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Custom Logo Active</span>}
                     </label>
-                    {formData.faviconUrl && formData.faviconUrl !== '/favicon.ico' && (
-                      <button 
-                        type="button" 
-                        onClick={() => handleChange('faviconUrl', '/favicon.ico')} 
-                        title="Reset to default favicon" 
-                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+
+                    <div style={{ 
+                      height: '80px', 
+                      background: 'var(--color-card-bg)', 
+                      borderRadius: '8px', 
+                      border: '1px dashed var(--color-border)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      overflow: 'hidden', 
+                      padding: '8px',
+                      position: 'relative'
+                    }}>
+                      {formData.logoUrl ? (
+                        <img src={formData.logoUrl} alt="Website Logo Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <ImageIcon size={16} /> No Custom Logo Uploaded
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
+                        <Upload size={14} /> Upload Logo File
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={(e) => handleFileUpload('logoUrl', e.target.files?.[0])} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      {formData.logoUrl && (
+                        <button 
+                          type="button" 
+                          onClick={() => handleChange('logoUrl', '')} 
+                          title="Remove Logo" 
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    <input 
+                      type="text" 
+                      value={formData.logoUrl || ''} 
+                      onChange={(e) => handleChange('logoUrl', e.target.value)} 
+                      placeholder="Or paste Logo URL / Path" 
+                      style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                    />
                   </div>
 
+                  {/* Favicon Upload */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Favicon Icon</span>
+                      {formData.faviconUrl && <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Active</span>}
+                    </label>
+
+                    <div style={{ 
+                      height: '80px', 
+                      background: 'var(--color-card-bg)', 
+                      borderRadius: '8px', 
+                      border: '1px dashed var(--color-border)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      overflow: 'hidden', 
+                      padding: '8px',
+                      gap: '12px'
+                    }}>
+                      {formData.faviconUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-bg-soft)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                          <img src={formData.faviconUrl} alt="Favicon Preview" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Favicon Preview</span>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <ImageIcon size={16} /> Default (/favicon.ico)
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <label className="btn-secondary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}>
+                        <Upload size={14} /> Upload Favicon File
+                        <input 
+                          type="file" 
+                          accept="image/*,image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml" 
+                          onChange={(e) => handleFileUpload('faviconUrl', e.target.files?.[0])} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      {formData.faviconUrl && formData.faviconUrl !== '/favicon.ico' && (
+                        <button 
+                          type="button" 
+                          onClick={() => handleChange('faviconUrl', '/favicon.ico')} 
+                          title="Reset to default favicon" 
+                          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    <input 
+                      type="text" 
+                      value={formData.faviconUrl || ''} 
+                      onChange={(e) => handleChange('faviconUrl', e.target.value)} 
+                      placeholder="Or paste Favicon URL / Path" 
+                      style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={18} color="var(--color-primary)" /> Global SEO Settings
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Meta Title (Browser Tab)</label>
                   <input 
                     type="text" 
-                    value={formData.faviconUrl || ''} 
-                    onChange={(e) => handleChange('faviconUrl', e.target.value)} 
-                    placeholder="Or paste Favicon URL / Path" 
-                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', fontSize: '12px', outline: 'none' }} 
+                    value={formData.seo?.metaTitle || ''} 
+                    onChange={(e) => setFormData({...formData, seo: {...(formData.seo || { metaDescription: '', ogImage: '' }), metaTitle: e.target.value}})} 
+                    placeholder="e.g. CheapAgents - Unified AI Gateway"
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Meta Description (Search Engines)</label>
+                  <textarea 
+                    value={formData.seo?.metaDescription || ''} 
+                    onChange={(e) => setFormData({...formData, seo: {...(formData.seo || { metaTitle: '', ogImage: '' }), metaDescription: e.target.value}})} 
+                    placeholder="A brief summary of your platform for SEO..."
+                    rows={3}
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>OpenGraph (Social Share) Image URL</label>
+                  <input 
+                    type="text" 
+                    value={formData.seo?.ogImage || ''} 
+                    onChange={(e) => setFormData({...formData, seo: {...(formData.seo || { metaTitle: '', metaDescription: '' }), ogImage: e.target.value}})} 
+                    placeholder="https://yourdomain.com/og-image.jpg"
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                   />
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         )}
 
-        {/* ================= 2. LANDING PAGE CMS TAB ================= */}
+        {/* ================= 2. LANDING PAGE CMS ================= */}
         {activeTab === 'landing' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', gap: '8px', background: 'var(--color-bg-soft)', padding: '6px', borderRadius: '10px', width: 'fit-content', flexWrap: 'wrap' }}>
@@ -717,7 +755,7 @@ function SettingsContent() {
           </div>
         )}
 
-        {/* ================= 3. CONTACT & SUPPORT TAB ================= */}
+        {/* ================= 3. CONTACT & SUPPORT ================= */}
         {activeTab === 'contact' && (
           <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -781,62 +819,6 @@ function SettingsContent() {
             </div>
           </section>
         )}
-
-        {/* ================= 4. USER DASHBOARD CMS TAB ================= */}
-        {activeTab === 'dashboard' && (
-          <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <LayoutDashboard size={18} color="var(--color-primary)" /> User Dashboard Settings
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Welcome Header Message</label>
-                <input 
-                  type="text" 
-                  value={formData.dashboardSettings?.welcomeMessage || ''} 
-                  onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { defaultMonthlyQuota: '$50.00', allowByok: true, announcementBanner: '' }), welcomeMessage: e.target.value}})} 
-                  placeholder="Welcome to CheapAgents AI Gateway Dashboard"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Global Announcement Bar Banner</label>
-                <input 
-                  type="text" 
-                  value={formData.dashboardSettings?.announcementBanner || ''} 
-                  onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', defaultMonthlyQuota: '$50.00', allowByok: true }), announcementBanner: e.target.value}})} 
-                  placeholder="⚡ New models live!"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Default User Monthly Quota Limit</label>
-                  <input 
-                    type="text" 
-                    value={formData.dashboardSettings?.defaultMonthlyQuota || ''} 
-                    onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', allowByok: true, announcementBanner: '' }), defaultMonthlyQuota: e.target.value}})} 
-                    placeholder="$50.00"
-                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '28px' }}>
-                  <input 
-                    type="checkbox" 
-                    id="allowByok" 
-                    checked={formData.dashboardSettings?.allowByok ?? true} 
-                    onChange={(e) => setFormData({...formData, dashboardSettings: {...(formData.dashboardSettings || { welcomeMessage: '', defaultMonthlyQuota: '$50.00', announcementBanner: '' }), allowByok: e.target.checked}})} 
-                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="allowByok" style={{ fontSize: '14px', color: 'var(--color-text-main)', fontWeight: 600, cursor: 'pointer' }}>
-                    Allow Bring Your Own Keys (BYOK) Feature
-                  </label>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
       </div>
     </div>
   );

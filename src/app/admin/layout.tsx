@@ -48,26 +48,20 @@ function SidebarNavContent() {
         </div>
       </div>
 
-      {/* ─── SECTION 2: PAGE & CMS SETTINGS ─── */}
+      {/* ─── SECTION 2: SETTINGS ─── */}
       <div className={styles.navSection}>
-        <div className={styles.sectionHeader} title="Page & CMS Settings Section">
+        <div className={styles.sectionHeader} title="Settings Section">
           <div className={styles.sectionDottedLine} />
           <div className={styles.sectionTitle}>
-            <span>Page & CMS Settings</span>
+            <span>Settings</span>
           </div>
         </div>
         <div className={styles.sectionItems}>
-          <Link href="/admin/settings?tab=general" className={`${styles.navItem} ${isTabActive('general') ? styles.navItemActive : ''}`}>
-            <Sparkles size={17} /> General & Brand
+          <Link href="/admin/settings?tab=general" className={`${styles.navItem} ${pathname === '/admin/settings' ? styles.navItemActive : ''}`}>
+            <Sparkles size={17} /> Page Settings
           </Link>
-          <Link href="/admin/settings?tab=landing" className={`${styles.navItem} ${isTabActive('landing') || (pathname === '/admin/settings' && !currentTab) ? styles.navItemActive : ''}`}>
-            <Globe size={17} /> Landing Page CMS
-          </Link>
-          <Link href="/admin/settings?tab=contact" className={`${styles.navItem} ${isTabActive('contact') ? styles.navItemActive : ''}`}>
-            <Mail size={17} /> Contact & Support
-          </Link>
-          <Link href="/admin/settings?tab=dashboard" className={`${styles.navItem} ${isTabActive('dashboard') ? styles.navItemActive : ''}`}>
-            <LayoutPanelLeft size={17} /> User Dashboard CMS
+          <Link href="/admin/dash-settings" className={`${styles.navItem} ${pathname === '/admin/dash-settings' ? styles.navItemActive : ''}`}>
+            <LayoutDashboard size={17} /> Dash Setting
           </Link>
         </div>
       </div>
@@ -105,6 +99,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/providers')) return 'Provider Routing';
     if (pathname.startsWith('/admin/revenue')) return 'Revenue';
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';
+    if (pathname.startsWith('/admin/dash-settings')) return 'User Dashboard Settings';
     return 'Admin Panel';
   };
 

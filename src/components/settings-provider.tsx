@@ -17,6 +17,11 @@ export interface SiteSettings {
   primaryBtnTooltip: string;
   faviconUrl: string;
   logoUrl: string;
+  seo: {
+    metaTitle: string;
+    metaDescription: string;
+    ogImage: string;
+  };
   ctaHeading: string;
   ctaSubtitle: string;
   modelsSection: { title: string; subtitle: string };
@@ -40,7 +45,8 @@ export interface SiteSettings {
     enableContactForm: boolean;
   };
   dashboardSettings: {
-    welcomeMessage: string;
+    welcomeTitle: string;
+    welcomeSubtitle: string;
     defaultMonthlyQuota: string;
     allowByok: boolean;
     announcementBanner: string;
@@ -100,6 +106,11 @@ const defaultSettings: SiteSettings = {
   primaryBtnTooltip: 'Create your free account today',
   faviconUrl: '/favicon.ico',
   logoUrl: '',
+  seo: {
+    metaTitle: 'CheapAgents - Unified AI Gateway',
+    metaDescription: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
+    ogImage: '',
+  },
   ctaHeading: 'Ready to cut your AI costs?',
   ctaSubtitle: 'Join thousands of developers saving up to 80% on AI API costs. Get started in seconds with your existing OpenAI SDK.',
   modelsSection: {
@@ -171,7 +182,8 @@ const defaultSettings: SiteSettings = {
     enableContactForm: true,
   },
   dashboardSettings: {
-    welcomeMessage: 'Welcome to CheapAgents AI Gateway Dashboard',
+    welcomeTitle: 'Welcome back, {userName}!',
+    welcomeSubtitle: "You've used {percent}% of your monthly token limit. {remaining} tokens remaining.",
     defaultMonthlyQuota: '$50.00',
     allowByok: true,
     announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',

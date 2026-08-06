@@ -219,7 +219,7 @@ export default function UsersPage() {
               <th>User ID</th>
               <th>Name / Email</th>
               <th>Registered Date</th>
-              <th>Subscription details</th>
+              <th>Plan</th>
               <th>API Calls</th>
               <th>Banned</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -252,16 +252,41 @@ export default function UsersPage() {
                   {user.joined}
                 </td>
                 <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className={`${styles.badge} ${user.plan === 'Premium' ? styles.badgePro : ''}`} style={{ background: user.plan === 'Free' ? 'var(--color-bg-soft)' : undefined, color: user.plan === 'Free' ? 'var(--color-text-muted)' : undefined }}>
-                        {user.plan}
+                  {(() => {
+                    const dur = user.planDuration || 'Lifetime';
+                    if (user.plan === 'Free') {
+                      return (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                          background: 'rgba(150,150,150,0.12)', color: 'var(--color-text-muted)',
+                          border: '1px solid rgba(150,150,150,0.2)'
+                        }}>
+                          Free
+                        </span>
+                      );
+                    }
+                    // Premium plans
+                    const planMap: Record<string, { label: string; price: string; bg: string; color: string; border: string }> = {
+                      '1 Month':  { label: 'Monthly',  price: '$9/mo',  bg: 'rgba(59,130,246,0.12)',  color: '#60a5fa', border: 'rgba(59,130,246,0.25)' },
+                      '6 Months': { label: '6-Month',  price: '$49',    bg: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: 'rgba(139,92,246,0.25)' },
+                      '1 Year':   { label: 'Yearly',   price: '$89/yr', bg: 'rgba(16,185,129,0.12)', color: '#34d399', border: 'rgba(16,185,129,0.25)' },
+                      'Lifetime': { label: 'Lifetime', price: '$149',   bg: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: 'rgba(245,158,11,0.25)' },
+                    };
+                    const meta = planMap[dur] || { label: dur, price: '', bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' };
+                    return (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                        background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`
+                      }}>
+                        {meta.label}
+                        {meta.price && (
+                          <span style={{ opacity: 0.75, fontWeight: 500 }}>· {meta.price}</span>
+                        )}
                       </span>
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                        ({user.planDuration || 'Lifetime'})
-                      </span>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </td>
                 <td>{user.calls.toLocaleString()}</td>
                 <td>

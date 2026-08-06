@@ -4,17 +4,20 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AreaChart } from '@/components/ui/charts';
 import { useAuth } from '@/components/auth-provider';
+import { useSiteSettings } from '@/components/settings-provider';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 import pageStyles from '@/app/page.module.css';
-import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown } from 'lucide-react';
+import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown, Megaphone, X } from 'lucide-react';
 
 export default function DashboardOverview() {
   const { user } = useAuth();
+  const { settings } = useSiteSettings();
   const [summary, setSummary] = useState<any>(null);
   const [usage, setUsage] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [timeFilter, setTimeFilter] = useState('7D');
+  const [hideWelcome, setHideWelcome] = useState(false);
 
   useEffect(() => {
     api.summary().then(setSummary).catch(() => setSummary({ limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 }));
@@ -35,23 +38,44 @@ export default function DashboardOverview() {
   return (
     <div>
       {/* Welcome Banner */}
-      <div className={styles.welcomeBanner} style={{ position: 'relative', overflow: 'hidden' }}>
-        <div className={pageStyles.cardStarsBg} style={{ opacity: 0.6, zIndex: 0, pointerEvents: 'none' }}>
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar1}`} />
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar2}`} />
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar3}`} />
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar4}`} />
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar5}`} />
-          <div className={`${pageStyles.cardStar} ${pageStyles.cardStar6}`} />
-          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar1}`} />
-          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar2}`} />
-          <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar3}`} />
+      {!hideWelcome && (
+        <div className={styles.welcomeBanner} style={{ position: 'relative', overflow: 'hidden' }}>
+          <div className={pageStyles.cardStarsBg} style={{ opacity: 0.6, zIndex: 0, pointerEvents: 'none' }}>
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar1}`} />
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar2}`} />
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar3}`} />
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar4}`} />
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar5}`} />
+            <div className={`${pageStyles.cardStar} ${pageStyles.cardStar6}`} />
+            <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar1}`} />
+            <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar2}`} />
+            <div className={`${pageStyles.cardShootingStar} ${pageStyles.cardShootingStar3}`} />
+          </div>
+
+          <div style={{ position: 'absolute', right: '80px', top: '50%', transform: 'translateY(-50%)', opacity: 0.15, zIndex: 0, pointerEvents: 'none' }}>
+            <Megaphone size={120} />
+          </div>
+
+          <button 
+            onClick={() => setHideWelcome(true)}
+            style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2, color: '#fff', transition: 'background 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            title="Dismiss Announcement"
+          >
+            <X size={16} />
+          </button>
+
+          <div className={styles.welcomeTitle} style={{ position: 'relative', zIndex: 1 }}>
+            {(settings.dashboardSettings.welcomeTitle || 'Welcome back, {userName}!').replace('{userName}', userName)}
+          </div>
+          <div className={styles.welcomeSubtitle} style={{ position: 'relative', zIndex: 1, maxWidth: '85%' }}>
+            {(settings.dashboardSettings.welcomeSubtitle || "You've used {percent}% of your monthly token limit. {remaining} tokens remaining.")
+              .replace('{percent}', s.percent.toString())
+              .replace('{remaining}', s.remaining.toLocaleString())}
+          </div>
         </div>
-        <div className={styles.welcomeTitle} style={{ position: 'relative', zIndex: 1 }}>Welcome back, {userName}!</div>
-        <div className={styles.welcomeSubtitle} style={{ position: 'relative', zIndex: 1 }}>
-          You&apos;ve used {s.percent}% of your monthly token limit. {s.remaining.toLocaleString()} tokens remaining.
-        </div>
-      </div>
+      )}
 
       {/* Stat Cards */}
       <div className={styles.statsGrid}>
