@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import pageStyles from '@/app/page.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -11,9 +11,29 @@ import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { settings } = useSiteSettings();
   const [hideAnnouncement2, setHideAnnouncement2] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl+K shortcut to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape' && searchFocused) {
+        searchInputRef.current?.blur();
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchFocused]);
 
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
@@ -149,12 +169,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className={styles.topbarActions}>
-            <div className={styles.topbarSearch}>
-              <Search size={14} />
-              <span>Search…</span>
-              <kbd>⌘K</kbd>
+            <div className={`${styles.topbarSearch} ${searchFocused ? styles.topbarSearchFocused : ''}`}>
+              <Search size={14} style={{ flexShrink: 0, opacity: 0.5 }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="Search…"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  flex: 1,
+                  fontSize: '13px',
+                  color: 'var(--color-text)',
+                  minWidth: 0,
+                }}
+              />
+              {!searchFocused && <kbd style={{ flexShrink: 0 }}>⌘K</kbd>}
             </div>
-            <button className={styles.notificationBtn} title="Notifications">
+            <button
+              className={styles.notificationBtn}
+              title="Notifications"
+              onClick={() => router.push('/dashboard/notifications')}
+            >
               <Bell size={18} />
               <span className={styles.notificationDot} />
             </button>

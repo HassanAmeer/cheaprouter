@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -80,6 +80,24 @@ function SidebarNavContent() {
           </Link>
         </div>
       </div>
+
+      {/* ─── DIVIDER ─── */}
+      <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)', opacity: 0.6 }} />
+
+      {/* ─── SECTION 3: DEVELOPER TOOLS ─── */}
+      <div className={styles.navSection}>
+        <div className={styles.sectionHeader} title="Developer Tools">
+          <div className={styles.sectionDottedLine} />
+          <div className={styles.sectionTitle}>
+            <span>Developer</span>
+          </div>
+        </div>
+        <div className={styles.sectionItems}>
+          <Link href="/admin/seeding" className={`${styles.navItem} ${pathname.startsWith('/admin/seeding') ? styles.navItemActive : ''}`}>
+            <Database size={17} /> Database Seeding
+          </Link>
+        </div>
+      </div>
     </nav>
   );
 }
@@ -116,6 +134,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';
     if (pathname.startsWith('/admin/dash-settings')) return 'User Dashboard Settings';
     if (pathname.startsWith('/admin/logs')) return 'System Logs';
+    if (pathname.startsWith('/admin/seeding')) return 'Database Seeding';
     return 'Admin Panel';
   };
 

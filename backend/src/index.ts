@@ -482,7 +482,245 @@ async function fakeModelReply(prompt: string, model = 'gpt-4o') {
   return { model, text, tokens, cost };
 }
 
+// ---- Admin: Database Seeding ----
+import { hashPassword as _hp } from './auth.ts';
+
+app.post('/api/admin/seed', zValidator('json', z.object({ section: z.string() })), async (c) => {
+  const { section } = c.req.valid('json');
+
+  function genSeedId(prefix: string) {
+    return prefix + '_' + crypto.randomUUID().slice(0, 8) + Math.random().toString(36).slice(2, 6);
+  }
+  function daysAgo(n: number) { return new Date(Date.now() - n * 864e5); }
+  function randBetween(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  const MODELS = ['gpt-4o', 'claude-3-5-sonnet', 'gemini-1.5-pro', 'llama-3-70b', 'deepseek-coder-v2'];
+
+  const SEED_USERS = [
+    { name: 'Alice Johnson',   email: 'alice@example.com',   plan: 'Pro',        plan_cli: 'Pro',        plan_api: 'Pro',        plan_chat: 'Pro',        plan_agents: 'Free',       status: 'Active',    days: 90 },
+    { name: 'Bob Williams',    email: 'bob@example.com',     plan: 'Free',       plan_cli: 'Free',       plan_api: 'Free',       plan_chat: 'Free',       plan_agents: 'Free',       status: 'Active',    days: 75 },
+    { name: 'Charlie Brown',   email: 'charlie@example.com', plan: 'Enterprise', plan_cli: 'Enterprise', plan_api: 'Enterprise', plan_chat: 'Pro',        plan_agents: 'Pro',        status: 'Active',    days: 60 },
+    { name: 'Diana Prince',    email: 'diana@example.com',   plan: 'Pro',        plan_cli: 'Pro',        plan_api: 'Free',       plan_chat: 'Pro',        plan_agents: 'Free',       status: 'Active',    days: 55 },
+    { name: 'Ethan Hunt',      email: 'ethan@example.com',   plan: 'Free',       plan_cli: 'Free',       plan_api: 'Free',       plan_chat: 'Free',       plan_agents: 'Free',       status: 'Suspended', days: 45 },
+    { name: 'Fiona Green',     email: 'fiona@example.com',   plan: 'Pro',        plan_cli: 'Free',       plan_api: 'Pro',        plan_chat: 'Pro',        plan_agents: 'Free',       status: 'Active',    days: 40 },
+    { name: 'George Clark',    email: 'george@example.com',  plan: 'Enterprise', plan_cli: 'Enterprise', plan_api: 'Enterprise', plan_chat: 'Enterprise', plan_agents: 'Enterprise', status: 'Active',    days: 30 },
+    { name: 'Hannah White',    email: 'hannah@example.com',  plan: 'Free',       plan_cli: 'Free',       plan_api: 'Free',       plan_chat: 'Free',       plan_agents: 'Free',       status: 'Active',    days: 25 },
+    { name: 'Ivan Drago',      email: 'ivan@example.com',    plan: 'Pro',        plan_cli: 'Pro',        plan_api: 'Pro',        plan_chat: 'Free',       plan_agents: 'Free',       status: 'Active',    days: 15 },
+    { name: 'Julia Roberts',   email: 'julia@example.com',   plan: 'Free',       plan_cli: 'Free',       plan_api: 'Free',       plan_chat: 'Free',       plan_agents: 'Free',       status: 'Active',    days: 5  },
+  ];
+
+  const CONV_TOPICS = [
+    { title: 'How does CheapModels routing work?', q: 'Can you explain how CheapModels routes API requests?', a: 'CheapModels uses a smart routing layer that sends your requests to the cheapest available provider that meets your latency and quality requirements. It normalizes all providers to OpenAI-compatible format.' },
+    { title: 'Compare Claude vs GPT-4o', q: 'What are the key differences between Claude 3.5 Sonnet and GPT-4o?', a: 'Claude 3.5 Sonnet excels at long-context tasks and nuanced writing, while GPT-4o is faster for tool-use. Both are excellent — choose based on your specific use case.' },
+    { title: 'Understanding token costs', q: 'How are token costs calculated in CheapModels?', a: 'Token costs vary by model. GPT-4o costs $5/M input and $15/M output. Claude 3.5 Sonnet is $3/M input. Gemini 1.5 Pro offers a 2M context at $3.50/M input.' },
+    { title: 'Gemini 1.5 Pro context window', q: 'What is the context window of Gemini 1.5 Pro?', a: 'Gemini 1.5 Pro has an impressive 2 million token context window, the largest available. This makes it ideal for analyzing large codebases or long documents.' },
+    { title: 'Using DeepSeek for coding', q: 'Is DeepSeek Coder V2 good for programming tasks?', a: 'Yes! DeepSeek Coder V2 is extremely cost-effective at $0.14/M input tokens. It performs competitively with GPT-4o on many coding benchmarks at a fraction of the cost.' },
+    { title: 'Setting up API key', q: 'How do I set up my OpenAI API key with CheapModels?', a: 'Go to Settings → API Keys, click Add Provider, select OpenAI, and paste your key. CheapModels will mask and store it securely.' },
+    { title: 'Switching models mid-project', q: 'Can I switch models without changing my code?', a: 'Absolutely! CheapModels normalizes all providers to the OpenAI API schema. Just change the model field in your API calls.' },
+    { title: 'Rate limits and failover', q: 'Does CheapModels handle rate limiting automatically?', a: 'Yes, CheapModels implements automatic retry and failover logic. If one provider hits rate limits, it seamlessly switches to an alternative.' },
+    { title: 'Streaming responses', q: 'How do I enable streaming responses?', a: 'Set stream: true in your API request body, just like with the standard OpenAI SDK. CheapModels uses SSE and is fully compatible with the OpenAI streaming protocol.' },
+    { title: 'Monthly usage analytics', q: 'How do I view my monthly token usage?', a: 'Visit the Analytics section in your dashboard. You will see a detailed breakdown by model, day, and cost. The dashboard auto-refreshes to show real-time usage.' },
+  ];
+
+  const GLOBAL_NOTIFS = [
+    { title: '🎉 Welcome to CheapModels!', msg: 'Thank you for joining CheapModels. You now have access to the best AI models at the lowest cost. Explore the dashboard to get started.' },
+    { title: '🚀 New Feature: Provider Routing', msg: 'We have launched smart provider routing! CheapModels now automatically selects the cheapest available provider. No changes needed on your end.' },
+    { title: '⚡ Gemini 1.5 Pro Now Available', msg: "Google's Gemini 1.5 Pro with a 2 million token context window is now available. Try it today at just $3.50 per million input tokens." },
+    { title: '🔧 Scheduled Maintenance', msg: 'We will be performing scheduled maintenance on Aug 15th from 2:00 AM to 4:00 AM UTC. Service may be briefly interrupted.' },
+    { title: '📊 Monthly Usage Report Ready', msg: 'Your detailed usage report for last month is now ready. Visit the Analytics section to view your token usage, costs, and model breakdown.' },
+  ];
+
+  const USER_NOTIFS = [
+    { title: '🔑 API Key Expiring Soon', msg: 'Your API key "Production Key" will expire in 7 days. Please rotate it to avoid service interruption.' },
+    { title: '📈 Usage Spike Detected', msg: 'We noticed an unusual spike in your API usage yesterday. If this was not you, please check and rotate your API keys immediately.' },
+    { title: '💳 Plan Upgrade Available', msg: 'You have been using CheapModels consistently! Upgrade to Pro for priority routing, higher rate limits, and 20% cost savings.' },
+    { title: '✅ Provider Key Verified', msg: 'Your OpenAI API key has been successfully verified and is now active. Requests will be routed through your own key.' },
+    { title: '🛡️ Security Alert: New Login', msg: 'A new login was detected from an unrecognized device. If this was you, no action is needed. Otherwise, change your password immediately.' },
+  ];
+
+  const MODEL_COSTS: Record<string, number> = {
+    'gpt-4o': 0.00001, 'claude-3-5-sonnet': 0.000009, 'gemini-1.5-pro': 0.0000073,
+    'llama-3-70b': 0.000001, 'deepseek-coder-v2': 0.00000021,
+  };
+
+  try {
+    if (section === 'users') {
+      let created = 0;
+      for (const u of SEED_USERS) {
+        const ex = await db`SELECT id FROM users WHERE email = ${u.email}`;
+        if (ex.length > 0) continue;
+        const id = genSeedId('usr');
+        await db`INSERT INTO users (id, name, email, password_hash, plan, plan_cli, plan_api, plan_chat, plan_agents, status, last_login, created_at)
+          VALUES (${id}, ${u.name}, ${u.email}, ${_hp('password123')}, ${u.plan}, ${u.plan_cli}, ${u.plan_api}, ${u.plan_chat}, ${u.plan_agents}, ${u.status}, ${daysAgo(randBetween(0,5)).toISOString()}, ${daysAgo(u.days).toISOString()})`;
+        created++;
+      }
+      return c.json({ ok: true, message: `Created ${created} users (skipped ${SEED_USERS.length - created} existing)` });
+    }
+
+    if (section === 'api_keys') {
+      const users = await db`SELECT id FROM users WHERE email = ANY(${SEED_USERS.map(u => u.email)})`;
+      const keyNames = ['Production Key', 'Development Key', 'Test Environment'];
+      let created = 0;
+      for (const user of users) {
+        const ex = await db`SELECT id FROM api_keys WHERE user_id = ${user.id} LIMIT 1`;
+        if (ex.length > 0) continue;
+        const numKeys = randBetween(1, 2);
+        for (let k = 0; k < numKeys; k++) {
+          const keyId = genSeedId('key');
+          const rawKey = 'cr_' + crypto.randomUUID().replace(/-/g, '').slice(0, 32);
+          await db`INSERT INTO api_keys (id, user_id, name, key_prefix, key_hash, created_at, last_used)
+            VALUES (${keyId}, ${user.id}, ${keyNames[k % keyNames.length]}, ${rawKey.slice(0,8)}, ${_hp(rawKey)}, ${daysAgo(randBetween(1,60)).toISOString()}, ${daysAgo(randBetween(0,5)).toISOString()})`;
+          created++;
+        }
+      }
+      return c.json({ ok: true, message: `Created ${created} API keys` });
+    }
+
+    if (section === 'providers') {
+      const users = await db`SELECT id FROM users WHERE email = ANY(${SEED_USERS.slice(0,5).map(u => u.email)})`;
+      const byok = [{ provider: 'openai', masked: '••••••••••••1234' }, { provider: 'anthropic', masked: '••••••••••••5678' }];
+      let created = 0;
+      for (const user of users) {
+        const ex = await db`SELECT id FROM providers WHERE user_id = ${user.id} LIMIT 1`;
+        if (ex.length > 0) continue;
+        const prov = byok[Math.floor(Math.random() * byok.length)];
+        await db`INSERT INTO providers (id, user_id, provider, masked_key, status)
+          VALUES (${genSeedId('prov')}, ${user.id}, ${prov.provider}, ${prov.masked}, 'active')`;
+        created++;
+      }
+      return c.json({ ok: true, message: `Created ${created} BYOK providers` });
+    }
+
+    if (section === 'conversations') {
+      const users = await db`SELECT id FROM users WHERE email = ANY(${SEED_USERS.map(u => u.email)})`;
+      let convCount = 0, msgCount = 0;
+      for (const user of users) {
+        const ex = await db`SELECT id FROM conversations WHERE user_id = ${user.id} LIMIT 1`;
+        if (ex.length > 0) continue;
+        const numConvs = randBetween(3, 6);
+        for (let c = 0; c < numConvs; c++) {
+          const topic = CONV_TOPICS[c % CONV_TOPICS.length];
+          const convId = genSeedId('conv');
+          const convDate = daysAgo(randBetween(0, 30));
+          await db`INSERT INTO conversations (id, user_id, title, created_at) VALUES (${convId}, ${user.id}, ${topic.title}, ${convDate.toISOString()})`;
+          convCount++;
+          const numPairs = randBetween(2, 4);
+          for (let m = 0; m < numPairs; m++) {
+            const t2 = CONV_TOPICS[(c + m + 1) % CONV_TOPICS.length];
+            const tBase = new Date(convDate.getTime() + m * 60000);
+            await db`INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (${genSeedId('msg')}, ${convId}, 'user', ${m===0?topic.q:t2.q}, ${tBase.toISOString()})`;
+            await db`INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (${genSeedId('msg')}, ${convId}, 'assistant', ${m===0?topic.a:t2.a}, ${new Date(tBase.getTime()+2000).toISOString()})`;
+            msgCount += 2;
+          }
+        }
+      }
+      return c.json({ ok: true, message: `Created ${convCount} conversations and ${msgCount} messages` });
+    }
+
+    if (section === 'usage') {
+      const users = await db`SELECT id FROM users WHERE email = ANY(${SEED_USERS.map(u => u.email)})`;
+      let count = 0;
+      for (const user of users) {
+        const ex = await db`SELECT id FROM usage WHERE user_id = ${user.id} LIMIT 1`;
+        if (ex.length > 0) continue;
+        for (let d = 0; d < 30; d++) {
+          const dayDate = daysAgo(30 - d);
+          const dayStr = dayDate.toISOString().slice(0, 10);
+          const mCount = randBetween(1, 3);
+          for (let m = 0; m < mCount; m++) {
+            const model = pick(MODELS);
+            const tokens = randBetween(500, 8000);
+            const cost = Number((tokens * (MODEL_COSTS[model] ?? 0.000005)).toFixed(6));
+            await db`INSERT INTO usage (id, user_id, model, tokens, cost, day) VALUES (${genSeedId('usg')}, ${user.id}, ${model}, ${tokens}, ${cost}, ${dayStr})`;
+            count++;
+          }
+        }
+      }
+      return c.json({ ok: true, message: `Created ${count} usage records (30 days × 10 users)` });
+    }
+
+    if (section === 'notifications') {
+      let count = 0;
+      const exGlobal = await db`SELECT id FROM notifications WHERE user_id IS NULL LIMIT 1`;
+      if (exGlobal.length === 0) {
+        for (const n of GLOBAL_NOTIFS) {
+          await db`INSERT INTO notifications (id, user_id, title, message, read, created_at)
+            VALUES (${genSeedId('notif')}, NULL, ${n.title}, ${n.msg}, FALSE, ${daysAgo(randBetween(1,30)).toISOString()})`;
+          count++;
+        }
+      }
+      const users = await db`SELECT id FROM users WHERE email = ANY(${SEED_USERS.map(u => u.email)})`;
+      for (const user of users) {
+        const ex = await db`SELECT id FROM notifications WHERE user_id = ${user.id} LIMIT 1`;
+        if (ex.length > 0) continue;
+        const numN = randBetween(2, 3);
+        for (let n = 0; n < numN; n++) {
+          const notif = USER_NOTIFS[n % USER_NOTIFS.length];
+          await db`INSERT INTO notifications (id, user_id, title, message, read, created_at)
+            VALUES (${genSeedId('notif')}, ${user.id}, ${notif.title}, ${notif.msg}, ${Math.random() > 0.4}, ${daysAgo(randBetween(0,14)).toISOString()})`;
+          count++;
+        }
+      }
+      return c.json({ ok: true, message: `Created ${count} notifications` });
+    }
+
+    if (section === 'plans') {
+      const exSettings = await db`SELECT id FROM global_settings WHERE id = 'global'`;
+      const settings = {
+        siteName: 'CheapRouter', siteTagline: 'The Cheapest Way to Access World-Class AI',
+        heroTitle: 'Access World-Class AI at\nUnbeatable Prices',
+        heroSubtitle: 'Route your AI requests through CheapRouter to save up to 90% on API costs with zero code changes.',
+        primaryCTA: 'Start Free Today', secondaryCTA: 'View Pricing', supportEmail: 'support@cheaprouter.ai',
+        pricingPlans: [
+          { name: 'Free',       price: 0,   features: ['1,000 requests/month', 'Access to 5 models', 'Standard routing', 'Community support'] },
+          { name: 'Pro',        price: 29,  features: ['100,000 requests/month', 'All models', 'Priority routing', 'Email support', 'Usage analytics', 'BYOK support'] },
+          { name: 'Enterprise', price: 199, features: ['Unlimited requests', 'All models', 'Dedicated routing', '24/7 support', 'Custom SLA', 'Team management', 'Advanced analytics'] },
+        ],
+      };
+      if (exSettings.length === 0) {
+        await db`INSERT INTO global_settings (id, data) VALUES ('global', ${db.json(settings)})`;
+      }
+      // seed admin providers
+      const exProvs = await db`SELECT id FROM admin_providers LIMIT 1`;
+      let provCount = 0;
+      if (exProvs.length === 0) {
+        const adminProviders = [
+          { id: 'ap_openai', name: 'OpenAI', status: true, key: 'sk-demo', priority: 1, base_url: 'https://api.openai.com/v1', api_format: 'openai', models: ['gpt-4o','gpt-4o-mini'] },
+          { id: 'ap_anthropic', name: 'Anthropic', status: true, key: 'sk-ant-demo', priority: 2, base_url: 'https://api.anthropic.com', api_format: 'anthropic', models: ['claude-3-5-sonnet','claude-3-haiku'] },
+          { id: 'ap_google', name: 'Google', status: true, key: 'AIza-demo', priority: 3, base_url: 'https://generativelanguage.googleapis.com/v1beta', api_format: 'google', models: ['gemini-1.5-pro','gemini-1.5-flash'] },
+          { id: 'ap_meta', name: 'Meta', status: false, key: 'meta-demo', priority: 4, base_url: 'https://api.meta.ai/v1', api_format: 'openai', models: ['llama-3-70b'] },
+          { id: 'ap_deepseek', name: 'DeepSeek', status: true, key: 'sk-ds-demo', priority: 5, base_url: 'https://api.deepseek.com/v1', api_format: 'openai', models: ['deepseek-coder-v2'] },
+        ];
+        for (const p of adminProviders) {
+          await db`INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+            VALUES (${p.id}, ${p.name}, ${p.status}, ${p.key}, ${p.priority}, ${p.base_url}, ${p.api_format}, false, ${db.json(p.models)}, ${db.json([])})`;
+          provCount++;
+        }
+      }
+      return c.json({ ok: true, message: `Seeded plans/settings + ${provCount} admin provider configs` });
+    }
+
+    return c.json({ error: 'Unknown section' }, 400);
+  } catch (e: any) {
+    return c.json({ error: e.message ?? 'Seed error' }, 500);
+  }
+});
+
+app.delete('/api/admin/seed', async (c) => {
+  try {
+    const seedEmails = ['alice@example.com','bob@example.com','charlie@example.com','diana@example.com','ethan@example.com','fiona@example.com','george@example.com','hannah@example.com','ivan@example.com','julia@example.com'];
+    await db`DELETE FROM notifications WHERE user_id IS NULL`;
+    await db`DELETE FROM users WHERE email = ANY(${seedEmails})`;
+    await db`DELETE FROM admin_providers WHERE id LIKE 'ap_%'`;
+    return c.json({ ok: true, message: 'All seeded test data wiped' });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 const port = Number(process.env.PORT ?? 4000);
 console.log(`CheapModels backend listening on http://localhost:${port}`);
 await initDb();
 Bun.serve({ fetch: app.fetch, port });
+

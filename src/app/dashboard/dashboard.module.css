@@ -207,13 +207,19 @@
   background: var(--color-bg-soft);
   color: var(--color-text-muted);
   font-size: 13px;
-  cursor: pointer;
+  cursor: text;
   transition: all var(--transition-fast);
   min-width: 200px;
 }
 
 .topbarSearch:hover {
   border-color: var(--color-primary);
+}
+
+.topbarSearchFocused {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  background: var(--color-bg);
 }
 
 .topbarSearch kbd {
