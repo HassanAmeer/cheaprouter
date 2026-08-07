@@ -81,8 +81,6 @@ function SidebarNavContent() {
         </div>
       </div>
 
-      {/* ─── DIVIDER ─── */}
-      <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)', opacity: 0.6 }} />
 
       {/* ─── SECTION 3: DEVELOPER TOOLS ─── */}
       <div className={styles.navSection}>

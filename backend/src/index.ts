@@ -19,7 +19,8 @@ import { listKeys, createKey, deleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
-import { handleCompletions } from './completions.ts';
+import { handleCompletions, getModelInstance } from './completions.ts';
+import { generateText, streamText } from 'ai';
 import { db, initDb, DB_URL } from './db.ts';
 
 // ---- IN-MEMORY LOGGER ----
@@ -47,11 +48,14 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// Protect all /api routes except auth, models catalog, and admin routes
+// Protect all /api routes except auth, models catalog
 app.use('/api/*', async (c, next) => {
   const p = c.req.path;
-  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p === '/api/models' || p.startsWith('/api/admin')) {
+  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models') {
     return next();
+  }
+  if (p.startsWith('/api/admin')) {
+    return requireAdminAuth(c, next);
   }
   return requireAuth(c, next);
 });
@@ -64,6 +68,14 @@ async function requireAuth(c: any, next: any) {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401);
   c.set('userId', payload.sub);
   c.set('email', payload.email);
+  await next();
+}
+
+async function requireAdminAuth(c: any, next: any) {
+  const header = c.req.header('Authorization') ?? '';
+  const token = header.replace('Bearer ', '');
+  const payload = await verifyToken(token);
+  if (!payload || payload.role !== 'admin') return c.json({ error: 'Unauthorized' }, 401);
   await next();
 }
 
@@ -101,6 +113,18 @@ app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
   
   const token = await signToken({ sub: user.id, email: user.email });
   return c.json({ token, user: { id: user.id, name: user.name, email: user.email, plan: user.plan } });
+});
+
+app.post('/api/auth/admin-login', zValidator('json', z.object({ username: z.string(), password: z.string() })), async (c) => {
+  const { username, password } = c.req.valid('json');
+  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  const adminPass = process.env.ADMIN_PASSWORD || '1234';
+  
+  if (username === adminUser && password === adminPass) {
+    const token = await signToken({ sub: 'admin', email: 'admin@system', role: 'admin' } as any);
+    return c.json({ token, user: { role: 'admin' } });
+  }
+  return c.json({ error: 'Invalid admin credentials' }, 401);
 });
 
 app.get('/api/me', async (c) => {
@@ -320,6 +344,17 @@ app.delete('/api/admin/users/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+app.get('/api/admin/submissions', async (c) => {
+  const submissions = await db`SELECT id, user_id as "userId", user_name as "userName", url, status, created_at as date FROM submissions ORDER BY created_at DESC`;
+  return c.json({ submissions });
+});
+
+app.put('/api/admin/submissions/:id', zValidator('json', z.object({ status: z.enum(['pending', 'approved', 'rejected']) })), async (c) => {
+  const { status } = c.req.valid('json');
+  await db`UPDATE submissions SET status = ${status} WHERE id = ${c.req.param('id')}`;
+  return c.json({ ok: true });
+});
+
 app.post('/api/admin/notifications', zValidator('json', z.object({ title: z.string(), message: z.string(), targetUserIds: z.array(z.string()).optional() })), async (c) => {
   const { title, message, targetUserIds } = c.req.valid('json');
   // targetUserIds can be ['ALL'] or ['user_id_1', 'user_id_2']
@@ -376,10 +411,14 @@ app.post('/api/conversations', zValidator('json', z.object({ title: z.string().o
   const userId = c.get('userId');
   const convId = await createConversation(userId, title ?? message.slice(0, 28));
   await addMessage(convId, 'user', message);
-  const reply = await fakeModelReply(message);
-  await addMessage(convId, 'assistant', reply.text);
-  await recordUsage(userId, reply.model, reply.tokens, reply.cost);
-  return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: reply.text }] }, 201);
+  const aiModel = await getModelInstance(userId, 'gpt-4o');
+  const result = await generateText({ model: aiModel, prompt: message });
+  const replyText = result.text;
+  const tokens = result.usage ? result.usage.totalTokens : 150;
+  
+  await addMessage(convId, 'assistant', replyText);
+  await recordUsage(userId, 'gpt-4o', tokens, tokens * 0.000003);
+  return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: replyText }] }, 201);
 });
 
 app.post('/api/conversations/:id/messages', zValidator('json', z.object({ message: z.string().min(1), model: z.string().optional() })), async (c) => {
@@ -388,10 +427,14 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   const convId = c.req.param('id');
   if (!(await getMessages(convId, userId))) return c.json({ error: 'Not found' }, 404);
   await addMessage(convId, 'user', message);
-  const reply = await fakeModelReply(message, model);
-  await addMessage(convId, 'assistant', reply.text);
-  await recordUsage(userId, reply.model, reply.tokens, reply.cost);
-  return c.json({ message: { role: 'assistant', content: reply.text } });
+  const aiModel = await getModelInstance(userId, model || 'gpt-4o');
+  const result = await generateText({ model: aiModel, prompt: message });
+  const replyText = result.text;
+  const tokens = result.usage ? result.usage.totalTokens : 150;
+  
+  await addMessage(convId, 'assistant', replyText);
+  await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003);
+  return c.json({ message: { role: 'assistant', content: replyText } });
 });
 
 app.post('/api/v1/chat/completions', handleCompletions);
@@ -403,21 +446,35 @@ app.get('/api/stream', async (c) => {
   const url = new URL(c.req.url);
   const prompt = url.searchParams.get('prompt') ?? '';
   const model = url.searchParams.get('model') ?? 'gpt-4o';
-  const reply = await fakeModelReply(prompt, model);
+  try {
+    const aiModel = await getModelInstance(userId, model);
+    const result = await streamText({ model: aiModel, prompt });
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const enc = new TextEncoder();
-      for (const ch of reply.text) {
-        controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk: ch })}\n\n`));
-        await new Promise((r) => setTimeout(r, 12));
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enc = new TextEncoder();
+        for await (const chunk of result.textStream) {
+          controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
+        }
+        controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+        controller.close();
+        
+        // Wait for final usage
+        const usage = await result.usage;
+        const tokens = usage ? usage.totalTokens : 150;
+        await recordUsage(userId, model, tokens, tokens * 0.000003);
+      },
+    });
+    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });
+  } catch (error: any) {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: error.message })}\n\n`));
+        controller.close();
       }
-      controller.enqueue(enc.encode(`data: [DONE]\n\n`));
-      controller.close();
-      await recordUsage(userId, reply.model, reply.tokens, reply.cost);
-    },
-  });
-  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });
+    });
+    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+  }
 });
 
 // ---- Global Settings ----
@@ -467,20 +524,7 @@ app.get('/api/models', async (c) => {
   return c.json({ models });
 });
 
-// ---- Chat playground canned reply ----
-const CANNED = [
-  'CheapModels routes your request through a single unified OpenAI-compatible endpoint, so you get the same streaming experience regardless of the underlying provider.',
-  'Great question! Because we normalize every provider to the OpenAI schema, you can swap models by changing just the `model` field — no SDK changes required.',
-  'Here is a quick comparison: Claude 3.5 Sonnet tends to excel at long-context reasoning, while GPT-4o is faster for general tasks. Gemini 1.5 Pro offers the largest context window.',
-  'I can help you scaffold that. Just let me know the framework and I will generate a drop-in route that points at https://api.cheapmodels.ai/v1.',
-];
 
-async function fakeModelReply(prompt: string, model = 'gpt-4o') {
-  const text = CANNED[Math.floor(Math.random() * CANNED.length)];
-  const tokens = Math.max(1, Math.round(text.length / 4));
-  const cost = Number((tokens * 0.000003).toFixed(4));
-  return { model, text, tokens, cost };
-}
 
 // ---- Admin: Database Seeding ----
 import { hashPassword as _hp } from './auth.ts';
@@ -709,11 +753,15 @@ app.post('/api/admin/seed', zValidator('json', z.object({ section: z.string() })
 
 app.delete('/api/admin/seed', async (c) => {
   try {
-    const seedEmails = ['alice@example.com','bob@example.com','charlie@example.com','diana@example.com','ethan@example.com','fiona@example.com','george@example.com','hannah@example.com','ivan@example.com','julia@example.com'];
+    // True wipe - delete all users and their related data (via CASCADE)
+    await db`DELETE FROM users`;
+    // Clean up any global unattached notifications
     await db`DELETE FROM notifications WHERE user_id IS NULL`;
-    await db`DELETE FROM users WHERE email = ANY(${seedEmails})`;
-    await db`DELETE FROM admin_providers WHERE id LIKE 'ap_%'`;
-    return c.json({ ok: true, message: 'All seeded test data wiped' });
+    // Delete admin providers config
+    await db`DELETE FROM admin_providers`;
+    // Delete global settings (plans)
+    await db`DELETE FROM global_settings WHERE id = 'global'`;
+    return c.json({ ok: true, message: 'All test data and users wiped completely' });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }

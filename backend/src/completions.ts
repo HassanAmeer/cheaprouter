@@ -4,6 +4,28 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
+import { hashPassword } from './auth.ts';
+
+export async function getModelInstance(userId: string, model: string) {
+  let provider = 'OpenAI';
+  if (model.includes('claude')) provider = 'Anthropic';
+  if (model.includes('gemini')) provider = 'Google';
+
+  const userProviders = await db`SELECT masked_key FROM providers WHERE user_id = ${userId} AND provider = ${provider} AND status = 'active'`;
+  let apiKey = userProviders.length > 0 ? userProviders[0].masked_key : null;
+  
+  if (!apiKey) {
+    if (provider === 'OpenAI') apiKey = process.env.OPENAI_API_KEY;
+    if (provider === 'Anthropic') apiKey = process.env.ANTHROPIC_API_KEY;
+    if (provider === 'Google') apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  }
+  
+  if (!apiKey) throw new Error(`No API key found for provider ${provider}`);
+
+  if (provider === 'OpenAI') return createOpenAI({ apiKey })(model);
+  if (provider === 'Anthropic') return createAnthropic({ apiKey })(model);
+  return createGoogleGenerativeAI({ apiKey })(model);
+}
 
 export async function handleCompletions(c: any) {
   try {
@@ -16,7 +38,8 @@ export async function handleCompletions(c: any) {
     // In a real app we validate reqKey against api_keys table here
     // For now we accept it to find the user. 
     // We assume the user has a valid API key, or we just look up the user by key.
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${reqKey} OR key_prefix = ${reqKey.substring(0, 10)}`;
+    const hashedKey = hashPassword(reqKey);
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 10)}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
     
     // If no user found from API key, but we have a user logged in (frontend chat), we could use c.get('userId')
@@ -34,39 +57,7 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
-    let provider = 'OpenAI';
-    if (model.includes('claude')) provider = 'Anthropic';
-    if (model.includes('gemini')) provider = 'Google';
-
-    // Get provider key from user's configured providers in Postgres
-    // In the frontend it used `db.getActiveProviderKey(provider)` which checked if it was global or user specific.
-    // Let's first check user's providers
-    const userProviders = await db`SELECT masked_key FROM providers WHERE user_id = ${finalUserId} AND provider = ${provider} AND status = 'active'`;
-    let apiKey = userProviders.length > 0 ? userProviders[0].masked_key : null;
-    
-    // Fallback to global admin providers if user doesn't have one?
-    // The instructions implied falling back to process env or global DB.
-    if (!apiKey) {
-      if (provider === 'OpenAI') apiKey = process.env.OPENAI_API_KEY;
-      if (provider === 'Anthropic') apiKey = process.env.ANTHROPIC_API_KEY;
-      if (provider === 'Google') apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    }
-
-    if (!apiKey) {
-      return c.json({ error: `No API key found for provider ${provider}. Add it in the BYOK dashboard.` }, 400);
-    }
-
-    let aiModel: any;
-    if (provider === 'OpenAI') {
-      const openai = createOpenAI({ apiKey });
-      aiModel = openai(model);
-    } else if (provider === 'Anthropic') {
-      const anthropic = createAnthropic({ apiKey });
-      aiModel = anthropic(model);
-    } else {
-      const google = createGoogleGenerativeAI({ apiKey });
-      aiModel = google(model);
-    }
+    const aiModel = await getModelInstance(finalUserId, model);
 
     // Convert messages
     const coreMessages = messages.map((m: any) => ({

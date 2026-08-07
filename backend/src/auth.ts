@@ -30,13 +30,13 @@ export async function signToken(payload: { sub: string; email: string }): Promis
   return `${header}.${body}.${sig}`;
 }
 
-export async function verifyToken(token: string): Promise<{ sub: string; email: string } | null> {
+export async function verifyToken(token: string): Promise<{ sub: string; email: string; role?: string } | null> {
   try {
     const [header, body, sig] = token.split('.');
     const expected = await sign(`${header}.${body}`);
     if (expected !== sig) return null;
     const json = JSON.parse(new TextDecoder().decode(b64urlDecode(body)));
-    return { sub: json.sub, email: json.email };
+    return { sub: json.sub, email: json.email, role: json.role };
   } catch {
     return null;
   }

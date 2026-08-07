@@ -12,19 +12,51 @@ export function BarChart({
   height?: number;
   color?: string;
 }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+  const isEmpty = !data || data.length === 0;
+  const chartData = isEmpty 
+    ? [
+        { label: 'A', value: 0 },
+        { label: 'B', value: 0 },
+        { label: 'C', value: 0 },
+        { label: 'D', value: 0 },
+        { label: 'E', value: 0 }
+      ]
+    : data;
+    
+  const max = Math.max(...chartData.map((d) => d.value), 1);
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height, padding: '16px 8px', borderBottom: '2px solid var(--color-border)', borderLeft: '2px solid var(--color-border)' }}>
-      {data.map((d) => (
-        <div key={d.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-          <span style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{d.value}</span>
-          <div
-            title={`${d.label}: ${d.value}`}
-            style={{ width: '100%', height: `${(d.value / max) * 100}%`, background: color, borderRadius: '4px 4px 0 0', minHeight: 4, transition: 'height 0.4s ease' }}
-          />
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{d.label}</span>
+    <div style={{ position: 'relative', width: '100%', height }}>
+      {isEmpty && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'var(--color-card-bg)',
+          border: '1px solid var(--color-border)',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          boxShadow: 'var(--shadow-sm)',
+          zIndex: 10,
+          color: 'var(--color-text-muted)',
+          fontSize: 13,
+          fontWeight: 600
+        }}>
+          No data available
         </div>
-      ))}
+      )}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: '100%', padding: '16px 8px', borderBottom: '2px solid var(--color-border)', borderLeft: '2px solid var(--color-border)', opacity: isEmpty ? 0.3 : 1 }}>
+        {chartData.map((d) => (
+          <div key={d.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{d.value}</span>
+            <div
+              title={`${d.label}: ${d.value}`}
+              style={{ width: '100%', height: `${(d.value / max) * 100}%`, background: color, borderRadius: '4px 4px 0 0', minHeight: 4, transition: 'height 0.4s ease' }}
+            />
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{d.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -39,22 +71,27 @@ export function AreaChart({
   height?: number;
   color?: string;
 }) {
-  // Guard: nothing to render if data is empty
-  if (!data || data.length === 0) {
-    return (
-      <div style={{ width: '100%', height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
-        No data available
-      </div>
-    );
-  }
+  const isEmpty = !data || data.length === 0;
+  // Use dummy data if empty so we still draw the chart grid and flat line
+  const chartData = isEmpty 
+    ? [
+        { label: 'Mon', value: 0 },
+        { label: 'Tue', value: 0 },
+        { label: 'Wed', value: 0 },
+        { label: 'Thu', value: 0 },
+        { label: 'Fri', value: 0 },
+        { label: 'Sat', value: 0 },
+        { label: 'Sun', value: 0 },
+      ]
+    : data;
 
-  const max = Math.max(...data.map((d) => d.value), 1);
+  const max = Math.max(...chartData.map((d) => d.value), 1);
   const w = 600;
   const h = height;
   const pad = 20;
   // Safe stepX: avoid divide-by-zero for a single data point
-  const stepX = data.length > 1 ? (w - pad * 2) / (data.length - 1) : 0;
-  const points = data.map((d, i) => [pad + i * stepX, h - pad - (d.value / max) * (h - pad * 2)]);
+  const stepX = chartData.length > 1 ? (w - pad * 2) / (chartData.length - 1) : 0;
+  const points = chartData.map((d, i) => [pad + i * stepX, h - pad - (d.value / max) * (h - pad * 2)]);
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
   const lastPt = points[points.length - 1];
   const firstPt = points[0];
@@ -62,8 +99,27 @@ export function AreaChart({
   const id = React.useId();
 
   return (
-    <div style={{ width: '100%' }}>
-      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" role="img">
+    <div style={{ width: '100%', position: 'relative' }}>
+      {isEmpty && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'var(--color-card-bg)',
+          border: '1px solid var(--color-border)',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          boxShadow: 'var(--shadow-sm)',
+          zIndex: 10,
+          color: 'var(--color-text-muted)',
+          fontSize: 13,
+          fontWeight: 600
+        }}>
+          No data available
+        </div>
+      )}
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" role="img" style={{ opacity: isEmpty ? 0.3 : 1 }}>
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.35" />

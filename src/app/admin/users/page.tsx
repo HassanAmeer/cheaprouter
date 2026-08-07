@@ -32,7 +32,11 @@ export default function UsersPage() {
       if (endDate) url += `endDate=${endDate}&`;
     }
 
-    fetch(url)
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+
+    fetch(url, {
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    })
       .then(res => {
         if (!res.ok) return null;
         const ct = res.headers.get('content-type');
@@ -58,9 +62,11 @@ export default function UsersPage() {
     const nextStatus = currentStatus === 'Active' ? 'Suspended' : 'Active';
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
     
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+
     fetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
       body: JSON.stringify({ status: nextStatus })
     }).catch(err => {
       console.error(err);
@@ -76,8 +82,11 @@ export default function UsersPage() {
     // Optimistic delete
     setUsers(prev => prev.filter(u => u.id !== targetId));
     
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+
     fetch(`/api/admin/users/${targetId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
     })
     .catch(err => {
       console.error(err);

@@ -102,6 +102,17 @@ export async function initDb() {
   `;
 
   await db`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  await db`
     CREATE TABLE IF NOT EXISTS admin_providers (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

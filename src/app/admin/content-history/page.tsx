@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Video, CheckCircle2, XCircle, Clock, ExternalLink } from 'lucide-react';
 
 type Submission = {
@@ -12,20 +12,44 @@ type Submission = {
   status: 'pending' | 'approved' | 'rejected';
 };
 
-const mockSubmissions: Submission[] = [
-  { id: '1', userId: 'user_xyz123', userName: 'John Doe', url: 'https://youtube.com/watch?v=demo1', date: '2026-08-06', status: 'pending' },
-  { id: '2', userId: 'user_abc456', userName: 'Jane Smith', url: 'https://tiktok.com/@jane/video/12345', date: '2026-08-05', status: 'approved' },
-  { id: '3', userId: 'user_def789', userName: 'Alex Johnson', url: 'https://youtube.com/watch?v=demo3', date: '2026-08-04', status: 'rejected' },
-];
-
 export default function ContentHistoryPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>(mockSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/submissions', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.submissions) {
+          setSubmissions(data.submissions.map((s: any) => ({
+            id: s.id,
+            userId: s.userId,
+            userName: s.userName,
+            url: s.url,
+            date: new Date(s.date).toISOString().split('T')[0],
+            status: s.status
+          })));
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleUpdateStatus = (id: string, newStatus: 'approved' | 'rejected') => {
-    setSubmissions(subs => subs.map(sub => 
-      sub.id === id ? { ...sub, status: newStatus } : sub
-    ));
-    // In a real app, you would also trigger the API call here to give credit if approved
+    fetch(`/api/admin/submissions/${id}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    }).then(() => {
+      setSubmissions(subs => subs.map(sub => 
+        sub.id === id ? { ...sub, status: newStatus } : sub
+      ));
+    }).catch(err => console.error(err));
   };
 
   return (
@@ -40,6 +64,9 @@ export default function ContentHistoryPage() {
         </div>
       </div>
 
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>Loading submissions...</div>
+      ) : (
       <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
@@ -114,6 +141,7 @@ export default function ContentHistoryPage() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

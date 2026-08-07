@@ -59,6 +59,9 @@ export const api = {
   analytics: () => request<any>('/api/analytics'),
   summary: () => request<any>('/api/summary'),
 
+  // Notifications
+  getNotifications: () => request<any>('/api/notifications'),
+
   // Conversations
   listConversations: () => request<{ conversations: any[] }>('/api/conversations'),
   getConversation: (id: string) => request<{ messages: any[] }>(`/api/conversations/${id}`),

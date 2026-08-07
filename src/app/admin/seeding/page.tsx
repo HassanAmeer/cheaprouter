@@ -146,7 +146,7 @@ export default function SeedingPage() {
     showToast(r.message, r.ok);
   };
 
-  const seedAll = async () => {
+  const mergeSeed = async () => {
     setSeedingAll(true);
     for (const { id } of initialSections) {
       setSections(p => p.map(s => s.id === id ? { ...s, status: 'running' } : s));
@@ -155,7 +155,28 @@ export default function SeedingPage() {
       setMessages(p => ({ ...p, [id]: r.message }));
       await new Promise(res => setTimeout(res, 180));
     }
-    showToast('All sections seeded successfully!');
+    showToast('Merged seed data successfully!');
+    setSeedingAll(false);
+  };
+
+  const freshSeedAll = async () => {
+    setSeedingAll(true);
+    showToast('Wiping old data...', true);
+    try {
+      await fetch('/api/admin/seed', { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+    } catch (e) {
+      // ignore
+    }
+    resetAll();
+    
+    for (const { id } of initialSections) {
+      setSections(p => p.map(s => s.id === id ? { ...s, status: 'running' } : s));
+      const r = await callSeed(id);
+      setSections(p => p.map(s => s.id === id ? { ...s, status: r.ok ? 'success' : 'error' } : s));
+      setMessages(p => ({ ...p, [id]: r.message }));
+      await new Promise(res => setTimeout(res, 180));
+    }
+    showToast('Fresh seed complete! Exactly 10 users created.');
     setSeedingAll(false);
   };
 
@@ -410,16 +431,27 @@ export default function SeedingPage() {
             </div>
 
             {/* Buttons */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-ghost" onClick={resetAll} disabled={anyRunning}>
-                <RefreshCw size={13} /> Reset
-              </button>
-              <button className="btn-primary" onClick={seedAll} disabled={anyRunning || allSeeded}>
-                {anyRunning
-                  ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                  : allSeeded ? <CheckCircle2 size={13} /> : <Play size={13} />}
-                {anyRunning ? 'Seeding…' : allSeeded ? 'All Seeded' : 'Seed All'}
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-ghost" onClick={resetAll} disabled={anyRunning} style={{ flex: 1, justifyContent: 'center' }}>
+                  <RefreshCw size={13} /> Reset
+                </button>
+                <button className="btn-primary" onClick={freshSeedAll} disabled={anyRunning || allSeeded} style={{ flex: 1, justifyContent: 'center' }}>
+                  {anyRunning
+                    ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                    : allSeeded ? <CheckCircle2 size={13} /> : <Play size={13} />}
+                  {anyRunning ? 'Seeding…' : allSeeded ? 'All Seeded' : 'Seed All'}
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                <button className="btn-ghost" onClick={mergeSeed} disabled={anyRunning || allSeeded} style={{ justifyContent: 'center', background: 'var(--color-bg-soft)', borderStyle: 'dashed' }}>
+                  <Layers size={13} /> Merge Seed
+                </button>
+                <p style={{ fontSize: 10, color: 'var(--color-text-muted)', margin: 0, textAlign: 'center', lineHeight: 1.2 }}>
+                  Old data + new seeding data will be merged.
+                </p>
+              </div>
             </div>
           </div>
         </div>
