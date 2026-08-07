@@ -39,14 +39,26 @@ export function AreaChart({
   height?: number;
   color?: string;
 }) {
+  // Guard: nothing to render if data is empty
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ width: '100%', height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
+        No data available
+      </div>
+    );
+  }
+
   const max = Math.max(...data.map((d) => d.value), 1);
   const w = 600;
   const h = height;
   const pad = 20;
-  const stepX = (w - pad * 2) / (data.length - 1);
+  // Safe stepX: avoid divide-by-zero for a single data point
+  const stepX = data.length > 1 ? (w - pad * 2) / (data.length - 1) : 0;
   const points = data.map((d, i) => [pad + i * stepX, h - pad - (d.value / max) * (h - pad * 2)]);
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
-  const area = `${line} L ${points[points.length - 1][0].toFixed(1)} ${h - pad} L ${points[0][0].toFixed(1)} ${h - pad} Z`;
+  const lastPt = points[points.length - 1];
+  const firstPt = points[0];
+  const area = `${line} L ${lastPt[0].toFixed(1)} ${h - pad} L ${firstPt[0].toFixed(1)} ${h - pad} Z`;
   const id = React.useId();
 
   return (
