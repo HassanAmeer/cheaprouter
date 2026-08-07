@@ -53,21 +53,94 @@
   line-height: 1.6;
 }
 
-/* Waves on Auth Page */
-.authWaves {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  line-height: 0;
-  z-index: 1;
-  opacity: 0.1;
+.featureList {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.authWaves svg {
-  display: block;
-  width: 150%;
-  height: 100px;
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: #E2E8F0;
+  font-weight: 500;
+}
+
+.featureIcon {
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* Star Animations for Left Side */
+.star {
+  width: 2px;
+  height: 2px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  animation: blink 0.5s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
+  z-index: 0;
+}
+
+.star1 { top: 20%; left: 20%; animation-delay: 0s; }
+.star2 { top: 50%; left: 80%; animation-delay: 0.1s; }
+.star3 { top: 80%; left: 40%; animation-delay: 0.2s; }
+.star4 { top: 30%; left: 60%; animation-delay: 0.3s; }
+.star5 { top: 70%; left: 10%; animation-delay: 0.15s; }
+.star6 { top: 10%; left: 90%; animation-delay: 0.25s; }
+
+.shootingStar {
+  width: 150px;
+  height: 2px;
+  position: absolute;
+  background: linear-gradient(80deg, #ffffffff, #ffffff00);
+  border-radius: 50%;
+  transform: rotate(-40deg);
+  opacity: 0;
+  z-index: 0;
+}
+
+.shootingStar1 {
+  animation: fallingStar1 10s 2s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
+}
+.shootingStar2 {
+  animation: fallingStar2 12s 4s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
+}
+.shootingStar3 {
+  animation: fallingStar3 15s 1s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
+}
+.shootingStar4 {
+  animation: fallingStar4 14s 5s cubic-bezier(0.15, 0.83, 0.66, 1) infinite;
+}
+
+@keyframes blink {
+  0% { box-shadow: 0 0 10px 0 white; }
+  50% { box-shadow: 0 0 10px 2px white; }
+  100% { box-shadow: 0 0 10px 0 white; }
+}
+
+@keyframes fallingStar1 {
+  0% { top: -10%; left: 120%; opacity: 1; }
+  100% { top: 120%; left: -20%; opacity: 1; }
+}
+@keyframes fallingStar2 {
+  0% { top: -10%; left: 80%; opacity: 1; }
+  100% { top: 120%; left: -40%; opacity: 1; }
+}
+@keyframes fallingStar3 {
+  0% { top: 10%; left: 110%; opacity: 1; }
+  100% { top: 130%; left: -10%; opacity: 1; }
+}
+@keyframes fallingStar4 {
+  0% { top: -20%; left: 50%; opacity: 1; }
+  100% { top: 110%; left: -60%; opacity: 1; }
 }
 
 .rightSide {
@@ -76,28 +149,46 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
+  background-color: var(--color-bg);
+  position: relative;
+}
+
+.rightSide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), 
-    linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+    linear-gradient(to right, var(--color-border) 1px, transparent 1px), 
+    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  opacity: 0.3;
+  z-index: 0;
 }
 
 .authCard {
   width: 100%;
   max-width: 440px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   padding: 48px;
   border-radius: var(--radius-xl);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0,0,0,0.02);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .authCard {
+  background: rgba(30, 35, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.02);
 }
 
 .authCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 30px 60px rgba(204,0,0,0.1), 0 0 0 1px rgba(204,0,0,0.05);
+  box-shadow: 0 20px 40px var(--color-primary-soft), 0 0 0 1px var(--color-primary-soft);
 }
 
 .title {

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import styles from '../admin.module.css';
 import { 
   Save, Image as ImageIcon, Type, Settings2, HelpCircle, AlignLeft, LayoutPanelLeft, 
@@ -19,6 +20,7 @@ function SettingsContent() {
   
   const [activeTab, setActiveTab] = useState<'general' | 'landing' | 'contact' | 'dashboard'>('general');
   const [landingSubTab, setLandingSubTab] = useState<'hero' | 'marquee' | 'featuresplit' | 'pricing' | 'compare' | 'features' | 'demand' | 'faq' | 'footer' | 'sections'>('hero');
+  const [activePricingTab, setActivePricingTab] = useState('tab_cli');
 
   useEffect(() => {
     if (tabParam) {
@@ -425,62 +427,14 @@ function SettingsContent() {
 
             {/* PRICING SUB-TAB */}
             {landingSubTab === 'pricing' && (
-              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Pricing Section</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                  <input type="text" value={formData.pricingSection?.title || ''} onChange={(e) => setFormData({...formData, pricingSection: {...(formData.pricingSection || { subtitle: '', plans: [] }), title: e.target.value}})} placeholder="Section Title" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                  <input type="text" value={formData.pricingSection?.subtitle || ''} onChange={(e) => setFormData({...formData, pricingSection: {...(formData.pricingSection || { title: '', plans: [] }), subtitle: e.target.value}})} placeholder="Section Subtitle" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Pricing Plans</h3>
-                  <button onClick={() => setFormData({...formData, pricingSection: {...(formData.pricingSection || { title: '', subtitle: '' }), plans: [...(formData.pricingSection?.plans || []), { id: `p_${Date.now()}`, name: 'New Plan', price: '$0', period: '/mo', desc: 'Desc', features: ['Feature 1'], cta: 'Buy Now', ctaLink: '#', featured: false }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                    <Plus size={16} /> Add Plan
-                  </button>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {(formData.pricingSection?.plans || []).map((plan, idx) => (
-                    <div key={plan.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '24px', borderRadius: '12px', position: 'relative' }}>
-                      <button onClick={() => {
-                        const newPlans = formData.pricingSection.plans.filter(p => p.id !== plan.id);
-                        setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                      }} style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16}/></button>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                        <input type="text" value={plan.name} onChange={(e) => {
-                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].name = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                        }} placeholder="Plan Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                        <input type="text" value={plan.price} onChange={(e) => {
-                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].price = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                        }} placeholder="Price (e.g. $15)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                        <input type="text" value={plan.period} onChange={(e) => {
-                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].period = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                        }} placeholder="Period (e.g. /mo)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                      </div>
-                      <input type="text" value={plan.desc} onChange={(e) => {
-                        const newPlans = [...formData.pricingSection.plans]; newPlans[idx].desc = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                      }} placeholder="Description" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                      <textarea value={plan.features.join('\n')} onChange={(e) => {
-                        const newPlans = [...formData.pricingSection.plans]; newPlans[idx].features = e.target.value.split('\n').filter(Boolean); setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                      }} placeholder="Features (one per line)" rows={4} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', resize: 'vertical' }} />
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '16px', alignItems: 'center' }}>
-                        <input type="text" value={plan.cta} onChange={(e) => {
-                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].cta = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                        }} placeholder="CTA Button Text" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                        <input type="text" value={plan.ctaLink} onChange={(e) => {
-                          const newPlans = [...formData.pricingSection.plans]; newPlans[idx].ctaLink = e.target.value; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                        }} placeholder="CTA Link" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={plan.featured} onChange={(e) => {
-                            const newPlans = [...formData.pricingSection.plans]; newPlans[idx].featured = e.target.checked; setFormData({...formData, pricingSection: {...formData.pricingSection, plans: newPlans}});
-                          }} style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }} />
-                          Featured (Highlighted)
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Pricing Settings Have Moved</h3>
+                <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+                  You can now manage all your pricing tabs and plans on the dedicated Plan Settings page.
+                </p>
+                <Link href="/admin/plan-settings" className={styles.btnPrimary} style={{ display: 'inline-flex', padding: '10px 24px', textDecoration: 'none' }}>
+                  Go to Plan Settings
+                </Link>
               </section>
             )}
 

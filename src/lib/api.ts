@@ -31,11 +31,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   // Auth
-  signup: (email: string, password: string, name?: string) =>
-    request<{ token: string; user: any }>('/api/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
-  login: (email: string, password: string) =>
-    request<{ token: string; user: any }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  signup: (email: string, password: string, name?: string, hardwareInfo?: any) =>
+    request<{ token: string; user: any }>('/api/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, name, hardwareInfo }) }),
+  login: (email: string, password: string, hardwareInfo?: any) =>
+    request<{ token: string; user: any }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password, hardwareInfo }) }),
   me: () => request<{ user: any }>('/api/me'),
+  updateProfile: (name: string, profile_picture?: string) => 
+    request<{ user: any }>('/api/me/profile', { method: 'PUT', body: JSON.stringify({ name, profile_picture }) }),
 
   // Models
   models: () => request<{ models: any[] }>('/api/models'),

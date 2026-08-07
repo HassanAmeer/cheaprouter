@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const filter = searchParams.get('filter') || undefined;
-    const startDate = searchParams.get('startDate') || undefined;
-    const endDate = searchParams.get('endDate') || undefined;
-
-    const statsResult = db.getUserStats(filter, startDate, endDate);
-
-    return NextResponse.json({
-      users: statsResult.filteredUsers,
-      allUsers: db.listUsers(),
-      stats: {
-        total: statsResult.total,
-        today: statsResult.today,
-        last7Days: statsResult.last7Days,
-        last30Days: statsResult.last30Days,
-        filteredCount: statsResult.filteredCount
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = request.headers.get('Authorization') || '';
+    
+    const response = await fetch(`${backendUrl}/api/admin/users`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader
       }
     });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: `Backend returned ${response.status}` }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+    
+  } catch (error: any) {
+    console.error('Error fetching admin users from backend:', error);
+    return NextResponse.json({ error: 'Failed to communicate with backend' }, { status: 500 });
   }
 }
-

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import styles from '../admin.module.css';
 import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Users, UserPlus, Calendar, Filter } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 50;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -213,13 +213,32 @@ export default function UsersPage() {
       </div>
 
       <div className={styles.tableContainer}>
+        {totalPages > 1 && (
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className={styles.actionBtn} 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              ><ChevronLeft size={16} /></button>
+              <button 
+                className={styles.actionBtn} 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              ><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        )}
         <table className={styles.dataTable}>
           <thead>
             <tr>
               <th>User ID</th>
               <th>Name / Email</th>
               <th>Registered Date</th>
-              <th>Plan</th>
+              <th>Active Plans</th>
               <th>API Calls</th>
               <th>Banned</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -249,44 +268,29 @@ export default function UsersPage() {
                   <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{user.email}</div>
                 </td>
                 <td style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                  {user.joined}
+                  <div style={{ color: 'var(--color-text-main)' }}>Signup: {user.joined}</div>
+                  <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>Last Login: {user.last_login}</div>
                 </td>
                 <td>
-                  {(() => {
-                    const dur = user.planDuration || 'Lifetime';
-                    if (user.plan === 'Free') {
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {[
+                      { name: 'CLI', val: user.plan_cli || 'Free' },
+                      { name: 'API', val: user.plan_api || 'Free' },
+                      { name: 'Chat', val: user.plan_chat || 'Free' },
+                      { name: 'Websites', val: user.plan_agents || 'Free' }
+                    ].map(p => {
+                      const isFree = p.val.toLowerCase() === 'free';
+                      const bg = isFree ? 'rgba(150,150,150,0.1)' : 'var(--color-primary-soft)';
+                      const color = isFree ? 'var(--color-text-muted)' : 'var(--color-primary)';
+                      const border = isFree ? '1px solid rgba(150,150,150,0.2)' : '1px solid var(--color-primary)';
                       return (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                          padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                          background: 'rgba(150,150,150,0.12)', color: 'var(--color-text-muted)',
-                          border: '1px solid rgba(150,150,150,0.2)'
-                        }}>
-                          Free
-                        </span>
+                        <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: bg, padding: '2px 8px', borderRadius: '12px', border: border }}>
+                          <span style={{ fontWeight: 500, opacity: 0.8 }}>{p.name}:</span>
+                          <span style={{ fontWeight: 700, color: color }}>{p.val}</span>
+                        </div>
                       );
-                    }
-                    // Premium plans
-                    const planMap: Record<string, { label: string; price: string; bg: string; color: string; border: string }> = {
-                      '1 Month':  { label: 'Monthly',  price: '$9/mo',  bg: 'rgba(59,130,246,0.12)',  color: '#60a5fa', border: 'rgba(59,130,246,0.25)' },
-                      '6 Months': { label: '6-Month',  price: '$49',    bg: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: 'rgba(139,92,246,0.25)' },
-                      '1 Year':   { label: 'Yearly',   price: '$89/yr', bg: 'rgba(16,185,129,0.12)', color: '#34d399', border: 'rgba(16,185,129,0.25)' },
-                      'Lifetime': { label: 'Lifetime', price: '$149',   bg: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: 'rgba(245,158,11,0.25)' },
-                    };
-                    const meta = planMap[dur] || { label: dur, price: '', bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' };
-                    return (
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                        background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`
-                      }}>
-                        {meta.label}
-                        {meta.price && (
-                          <span style={{ opacity: 0.75, fontWeight: 500 }}>· {meta.price}</span>
-                        )}
-                      </span>
-                    );
-                  })()}
+                    })}
+                  </div>
                 </td>
                 <td>{user.calls.toLocaleString()}</td>
                 <td>

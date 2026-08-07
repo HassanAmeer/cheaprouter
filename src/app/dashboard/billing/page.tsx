@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, CreditCard, Download, ArrowUpRight, Zap, Shield, Crown } from 'lucide-react';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import styles from '../dashboard.module.css';
+import { useSiteSettings } from '@/components/settings-provider';
 
 const INVOICES = [
   { id: 'INV-2026-07', date: 'Jul 1, 2026', amount: '$15.00', status: 'Paid' },
@@ -13,14 +14,18 @@ const INVOICES = [
   { id: 'INV-2026-04', date: 'Apr 1, 2026', amount: '$15.00', status: 'Paid' },
 ];
 
-const PLANS = [
-  { name: 'Free', price: '$0', features: ['Basic models', 'BYOK support', '100K tokens/mo'], current: false },
-  { name: 'Starter', price: '$2', features: ['Basic + mid-tier models', 'Priority support', '500K tokens/mo'], current: false },
-  { name: 'Pro Developer', price: '$15', features: ['All premium models', 'Highest rate limits', '1M tokens/mo', 'Grok, Claude, GLM'], current: true },
-];
-
 export default function BillingPage() {
   const { toast } = useToast();
+  const { settings } = useSiteSettings();
+  const [activeTab, setActiveTab] = useState<string>('');
+
+  useEffect(() => {
+    if (settings?.pricingSection?.tabs?.length > 0 && !activeTab) {
+      setActiveTab(settings.pricingSection.tabs[0].id);
+    }
+  }, [settings, activeTab]);
+
+  const currentTabObj = settings?.pricingSection?.tabs?.find(t => t.id === activeTab) || settings?.pricingSection?.tabs?.[0];
 
   return (
     <div>
@@ -60,30 +65,64 @@ export default function BillingPage() {
 
       {/* Plan Comparison */}
       <div style={{ marginBottom: 36 }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: 16 }}>Available Plans</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {PLANS.map((plan) => (
-            <div key={plan.name} className="card" style={{
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Available Plans</h2>
+          {/* Tab Selector */}
+          <div style={{ display: 'flex', gap: '8px', background: 'var(--color-bg-soft)', padding: '4px', borderRadius: '8px' }}>
+            {settings?.pricingSection?.tabs?.map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  border: 'none',
+                  background: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
+                  color: activeTab === tab.id ? '#fff' : 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {tab.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          {currentTabObj?.plans?.map((plan) => (
+            <div key={plan.id} className="card" style={{
               padding: '20px', position: 'relative',
-              border: plan.current ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-              opacity: plan.current ? 1 : 0.85
+              border: plan.featured ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+              display: 'flex', flexDirection: 'column'
             }}>
-              {plan.current && (
-                <div style={{ position: 'absolute', top: 12, right: 12 }}>
-                  <Badge tone="primary">Current</Badge>
+              {plan.featured && (
+                <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)' }}>
+                  <Badge tone="primary">Popular</Badge>
                 </div>
               )}
               <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: 4 }}>{plan.name}</h3>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: 12 }}>{plan.desc}</p>
               <div style={{ fontSize: '24px', fontWeight: 800, marginBottom: 16, color: 'var(--color-text-main)' }}>
-                {plan.price}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-muted)' }}>/mo</span>
+                {plan.price}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-muted)' }}>{plan.period}</span>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                    <Check size={14} color="var(--color-success)" /> {f}
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10, flex: 1, marginBottom: 20 }}>
+                {plan.features.map((f, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                    <Check size={14} color="var(--color-success)" style={{ flexShrink: 0, marginTop: 2 }} /> 
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
+              <Button 
+                variant={plan.featured ? "primary" : "secondary"} 
+                onClick={() => toast(`Purchasing ${plan.name} plan...`, 'info')}
+                style={{ width: '100%' }}
+              >
+                {plan.cta || 'Select Plan'}
+              </Button>
             </div>
           ))}
         </div>

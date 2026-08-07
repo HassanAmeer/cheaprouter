@@ -24,6 +24,8 @@ import { useSiteSettings } from '@/components/settings-provider';
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showDemandToast, setShowDemandToast] = useState(false);
+  const [activePricingTab, setActivePricingTab] = useState('tab_cli');
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [mounted, setMounted] = useState(false);
   const { settings } = useSiteSettings();
 
@@ -188,21 +190,34 @@ export default function Home() {
             <h2 className={styles.sectionTitle}>{settings.pricingSection?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.pricingSection?.subtitle}</p>
           </div>
-          <div className={styles.pricingGrid}>
-            {(settings.pricingSection?.plans || []).map((plan) => (
-              <div key={plan.id} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
-                {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
-                <div className={styles.priceCardInner}>
-                  <h3 className={styles.planName}>{plan.name}</h3>
-                  <p className={styles.planDesc}>{plan.desc}</p>
-                  <div className={styles.planPrice}>{plan.price}<span>{plan.period}</span></div>
-                  <ul className={styles.planFeatures}>
-                    {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
-                  </ul>
-                  <Link href={plan.ctaLink || '#'} prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
-                </div>
-              </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
+            {(settings.pricingSection?.tabs || []).map(tab => (
+              <button key={tab.id} onClick={() => setActivePricingTab(tab.id)} style={{ padding: '10px 24px', borderRadius: '30px', border: activePricingTab === tab.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', background: activePricingTab === tab.id ? 'var(--color-primary-soft)' : 'var(--color-card-bg)', color: activePricingTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600, fontSize: '14px', transition: 'all 0.2s ease' }}>
+                {tab.name}
+              </button>
             ))}
+          </div>
+
+          <div className={styles.pricingGrid}>
+            {(() => {
+              const activeTabObj = (settings.pricingSection?.tabs || []).find(t => t.id === activePricingTab) || (settings.pricingSection?.tabs || [])[0];
+              if (!activeTabObj) return null;
+              return (activeTabObj.plans || []).map((plan) => (
+                <div key={plan.id} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
+                  {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
+                  <div className={styles.priceCardInner}>
+                    <h3 className={styles.planName}>{plan.name}</h3>
+                    <p className={styles.planDesc}>{plan.desc}</p>
+                    <div className={styles.planPrice}>{plan.price}<span>{plan.period}</span></div>
+                    <ul className={styles.planFeatures}>
+                      {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
+                    </ul>
+                    <Link href={plan.ctaLink || '#'} prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         </section>
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -51,6 +51,9 @@ function SidebarNavContent() {
           <Link href="/admin/notifications" className={`${styles.navItem} ${pathname.startsWith('/admin/notifications') ? styles.navItemActive : ''}`}>
             <Bell size={17} /> Notify User
           </Link>
+          <Link href="/admin/logs" className={`${styles.navItem} ${pathname.startsWith('/admin/logs') ? styles.navItemActive : ''}`}>
+            <Terminal size={17} /> System Logs
+          </Link>
         </div>
       </div>
 
@@ -65,6 +68,9 @@ function SidebarNavContent() {
         <div className={styles.sectionItems}>
           <Link href="/admin/settings?tab=general" className={`${styles.navItem} ${pathname === '/admin/settings' ? styles.navItemActive : ''}`}>
             <Sparkles size={17} /> Page Settings
+          </Link>
+          <Link href="/admin/plan-settings" className={`${styles.navItem} ${pathname === '/admin/plan-settings' ? styles.navItemActive : ''}`}>
+            <DollarSign size={17} /> Plan Settings
           </Link>
           <Link href="/admin/dash-settings" className={`${styles.navItem} ${pathname === '/admin/dash-settings' ? styles.navItemActive : ''}`}>
             <LayoutDashboard size={17} /> Dash Setting
@@ -109,6 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/revenue')) return 'Revenue';
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';
     if (pathname.startsWith('/admin/dash-settings')) return 'User Dashboard Settings';
+    if (pathname.startsWith('/admin/logs')) return 'System Logs';
     return 'Admin Panel';
   };
 

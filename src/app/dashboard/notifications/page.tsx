@@ -8,7 +8,7 @@ type Notification = {
   id: string;
   title: string;
   message: string;
-  date: string;
+  created_at: string;
   read: boolean;
 };
 
@@ -131,7 +131,7 @@ export default function UserNotificationsPage() {
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>{notif.title}</h3>
                   <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={12} />
-                    {new Date(notif.date).toLocaleDateString()}
+                    {new Date(notif.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>

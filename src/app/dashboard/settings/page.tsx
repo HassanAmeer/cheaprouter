@@ -9,17 +9,32 @@ import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound,
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [name, setName] = useState(user?.name ?? 'John Doe');
   const [email] = useState(user?.email ?? 'john@company.com');
+  const [profilePic, setProfilePic] = useState<string | null>(user?.profile_picture ?? null);
   const [saving, setSaving] = useState(false);
 
-  const save = () => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setProfilePic(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const save = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await updateProfile(name, profilePic ?? undefined);
       toast('Profile changes saved', 'success');
-    }, 800);
+    } catch (err: any) {
+      toast(err.message ?? 'Failed to save profile', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -61,20 +76,26 @@ export default function SettingsPage() {
               <div style={{
                 width: 120, height: 120, borderRadius: '28px', background: 'linear-gradient(135deg, var(--color-primary), #ff6b6b)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 40,
-                boxShadow: 'inset 0 4px 10px rgba(255,255,255,0.3), 0 10px 30px rgba(0,0,0,0.2)', position: 'relative', zIndex: 1
+                boxShadow: 'inset 0 4px 10px rgba(255,255,255,0.3), 0 10px 30px rgba(0,0,0,0.2)', position: 'relative', zIndex: 1,
+                overflow: 'hidden'
               }}>
-                {initials}
+                {profilePic ? (
+                  <img src={profilePic} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  initials
+                )}
               </div>
               <div style={{ position: 'absolute', bottom: -6, right: -6, background: 'var(--color-bg)', borderRadius: '50%', padding: 5, zIndex: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 <div style={{ background: 'var(--color-success)', width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--color-bg)' }} />
               </div>
             </div>
-            <button className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px', borderRadius: 24, fontWeight: 600, background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', transition: 'all 0.2s' }}
+            <label className="btn-secondary" style={{ fontSize: '13px', padding: '10px 20px', borderRadius: 24, fontWeight: 600, background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', transition: 'all 0.2s', cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-soft)'; e.currentTarget.style.transform = 'none'; }}
             >
               Change Photo
-            </button>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+            </label>
           </div>
 
           <div style={{ flex: 1 }}>
@@ -99,7 +120,11 @@ export default function SettingsPage() {
                   Active Plan: {(user?.plan ?? 'pro').toUpperCase()}
                   <Badge tone="success" style={{ padding: '4px 10px', borderRadius: 12, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active</Badge>
                 </div>
-                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Member since Jan 2026</div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', gap: '16px' }}>
+                  <span>Member since Jan 2026</span>
+                  <span>•</span>
+                  <span>Last Login: {user?.last_login || 'Just now'}</span>
+                </div>
               </div>
             </div>
           </div>

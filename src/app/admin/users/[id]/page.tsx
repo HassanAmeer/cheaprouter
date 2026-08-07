@@ -11,6 +11,16 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUser({ ...user, profile_picture: ev.target?.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     Promise.resolve(params).then(p => {
       fetch(`/api/admin/users/${p.id}`)
@@ -110,6 +120,24 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '16px', background: 'var(--color-primary-soft)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)', fontWeight: 700, fontSize: 24,
+                overflow: 'hidden'
+              }}>
+                {user.profile_picture ? (
+                  <img src={user.profile_picture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user.name?.[0]?.toUpperCase() || '?'
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Profile Picture</label>
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ fontSize: '13px', color: 'var(--color-text-main)' }} />
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Full Name</label>
@@ -133,16 +161,33 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subscription Plan</label>
-                <select
-                  value={user.plan}
-                  onChange={e => setUser({ ...user, plan: e.target.value })}
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                >
-                  <option value="Free">Free</option>
-                  <option value="Premium">Premium</option>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>CLI Plan</label>
+                <select value={(user.plan_cli || 'Free').toLowerCase()} onChange={e => setUser({ ...user, plan_cli: e.target.value })} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
+                  <option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
                 </select>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Plan</label>
+                <select value={(user.plan_api || 'Free').toLowerCase()} onChange={e => setUser({ ...user, plan_api: e.target.value })} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
+                  <option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chat Plan</label>
+                <select value={(user.plan_chat || 'Free').toLowerCase()} onChange={e => setUser({ ...user, plan_chat: e.target.value })} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
+                  <option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Websites Plan</label>
+                <select value={(user.plan_agents || 'Free').toLowerCase()} onChange={e => setUser({ ...user, plan_agents: e.target.value })} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}>
+                  <option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Account Status</label>
                 <select
@@ -159,39 +204,6 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Plan Start Date</label>
-                <input
-                  type="text"
-                  value={user.planStart || ''}
-                  onChange={e => setUser({ ...user, planStart: e.target.value })}
-                  placeholder="YYYY-MM-DD"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Plan End Date</label>
-                <input
-                  type="text"
-                  value={user.planEnd || ''}
-                  onChange={e => setUser({ ...user, planEnd: e.target.value })}
-                  placeholder="YYYY-MM-DD or N/A"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Plan Purchased Duration</label>
-                <input
-                  type="text"
-                  value={user.planDuration || ''}
-                  onChange={e => setUser({ ...user, planDuration: e.target.value })}
-                  placeholder="e.g. 1 Month, 1 Year, Lifetime"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Calls</label>
                 <input
                   type="number"
@@ -200,9 +212,6 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                   style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                 />
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Joined Date</label>
                 <input

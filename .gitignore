@@ -45,3 +45,4 @@ next-env.d.ts
 /backend/*.db-wal
 /backend/*.db-shm
 /backend/cheapmodels.db
+backend/node_modules/

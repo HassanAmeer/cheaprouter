@@ -66,16 +66,21 @@ export interface SiteSettings {
   pricingSection: {
     title: string;
     subtitle: string;
-    plans: {
+    tabs: {
       id: string;
       name: string;
-      price: string;
-      period: string;
-      desc: string;
-      features: string[];
-      cta: string;
-      ctaLink: string;
-      featured: boolean;
+      plans: {
+        id: string;
+        name: string;
+        price: string;
+        period: string;
+        desc: string;
+        features: string[];
+        cta: string;
+        ctaLink: string;
+        featured: boolean;
+        durationDays?: number;
+      }[];
     }[];
   };
   comparisonSection: {
@@ -219,10 +224,43 @@ const defaultSettings: SiteSettings = {
   pricingSection: {
     title: 'Simple, honest pricing',
     subtitle: 'No surprise bills. No hidden token markups. Start free, pay as you grow.',
-    plans: [
-      { id: 'p_1', name: 'Free', price: '$0', period: '', desc: 'For experimenting and personal projects', features: ['Basic & open-source models', 'Unlimited BYOK routing', 'Community support', 'Dashboard & analytics', '100 requests/day'], cta: 'Start Free', ctaLink: '/signup', featured: false },
-      { id: 'p_2', name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers and side projects', features: ['All basic + mid-tier models', '500K tokens included', 'Priority email support', 'Higher rate limits', 'Custom API keys'], cta: 'Get Started', ctaLink: '/signup', featured: false },
-      { id: 'p_3', name: 'Pro', price: '$15', period: '/mo', desc: 'For teams and production apps', features: ['All premium models included', '1M tokens included', 'GPT-4o, Claude 3.5, Grok', 'Highest rate limits', 'Dedicated support', 'Team collaboration'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+    tabs: [
+      {
+        id: 'tab_cli',
+        name: 'Cheap CLI',
+        plans: [
+          { id: 'p_cli_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
+          { id: 'p_cli_2', name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
+          { id: 'p_cli_3', name: 'Pro', price: '$15', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+        ]
+      },
+      {
+        id: 'tab_api',
+        name: 'API',
+        plans: [
+          { id: 'p_api_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
+          { id: 'p_api_2', name: 'Starter', price: '$5', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
+          { id: 'p_api_3', name: 'Pro', price: '$20', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+        ]
+      },
+      {
+        id: 'tab_chat',
+        name: 'Chat',
+        plans: [
+          { id: 'p_chat_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
+          { id: 'p_chat_2', name: 'Starter', price: '$3', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
+          { id: 'p_chat_3', name: 'Pro', price: '$10', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+        ]
+      },
+      {
+        id: 'tab_agents',
+        name: 'Build Agents',
+        plans: [
+          { id: 'p_agents_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
+          { id: 'p_agents_2', name: 'Starter', price: '$10', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
+          { id: 'p_agents_3', name: 'Pro', price: '$25', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+        ]
+      }
     ]
   },
   comparisonSection: {

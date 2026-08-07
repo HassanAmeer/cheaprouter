@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Zap, Terminal, MessageSquare, Bot, Globe } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button, Input } from '@/components/ui/primitives';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/components/ui/toast';
 import styles from '../auth.module.css';
+import AnnouncementBar from '@/components/AnnouncementBar';
 
 export default function Signup() {
   const router = useRouter();
@@ -33,18 +35,48 @@ export default function Signup() {
   };
 
   return (
-    <div className={styles.splitContainer}>
-      <div className={styles.leftSide}>
+    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <AnnouncementBar />
+      <div className={styles.splitContainer} style={{ flex: 1, minHeight: 'calc(100vh - 48px)' }}>
+        <div className={styles.leftSide}>
         <div className={styles.leftContent}>
           <Logo />
-          <h1 className={styles.leftTitle}>Start Building with Premium Models Today.</h1>
+          <h1 className={styles.leftTitle}>Start Building with Cheap Rates.</h1>
           <p className={styles.leftSubtitle}>Join thousands of developers using our unified API endpoint to access GPT-4, Claude, and Gemini securely and cheaply.</p>
+          
+          <div className={styles.featureList}>
+            <div className={styles.featureItem}>
+              <div className={styles.featureIcon}><Zap size={20} /></div>
+              Access all premium models at cheap rates
+            </div>
+            <div className={styles.featureItem}>
+              <div className={styles.featureIcon}><Terminal size={20} /></div>
+              Code seamlessly with our CLI tool
+            </div>
+            <div className={styles.featureItem}>
+              <div className={styles.featureIcon}><MessageSquare size={20} /></div>
+              Chat directly with any model
+            </div>
+            <div className={styles.featureItem}>
+              <div className={styles.featureIcon}><Bot size={20} /></div>
+              Build intelligent AI agents
+            </div>
+            <div className={styles.featureItem}>
+              <div className={styles.featureIcon}><Globe size={20} /></div>
+              Create online websites with the web builder
+            </div>
+          </div>
         </div>
-        <div className={styles.authWaves}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#CC0000"></path>
-          </svg>
-        </div>
+        <div className={`${styles.star} ${styles.star1}`}></div>
+        <div className={`${styles.star} ${styles.star2}`}></div>
+        <div className={`${styles.star} ${styles.star3}`}></div>
+        <div className={`${styles.star} ${styles.star4}`}></div>
+        <div className={`${styles.star} ${styles.star5}`}></div>
+        <div className={`${styles.star} ${styles.star6}`}></div>
+        <div className={`${styles.shootingStar} ${styles.shootingStar1}`}></div>
+        <div className={`${styles.shootingStar} ${styles.shootingStar2}`}></div>
+        <div className={`${styles.shootingStar} ${styles.shootingStar3}`}></div>
+        <div className={`${styles.shootingStar} ${styles.shootingStar4}`}></div>
       </div>
 
       <div className={styles.rightSide}>
@@ -53,10 +85,10 @@ export default function Signup() {
           <h1 className={styles.title}>Create Account</h1>
           <p className={styles.subtitle}>Get your free $5 welcome credits now</p>
 
-          <form onSubmit={submit}>
-            <Input id="name" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
-            <Input id="email" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input id="password" label="Password" type="password" placeholder="••••••••" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <form onSubmit={submit} autoComplete="off">
+            <Input id="signupName" name="signupName" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
+            <Input id="signupEmail" name="signupEmail" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+            <Input id="signupPassword" name="signupPassword" label="Password" type="password" placeholder="••••••••" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
             <Button type="submit" fullWidth disabled={loading}>{loading ? 'Creating…' : 'Create Account'}</Button>
           </form>
 
@@ -66,5 +98,6 @@ export default function Signup() {
         </div>
       </div>
     </div>
+    </main>
   );
 }
