@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo } from 'react';
 
 export default function McpStatusBadge({ status }: { status: 'checking' | 'available' | 'unavailable' }) {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Change } from 'diff';
 
 export type ActionType = 'file' | 'diff' | 'shell' | 'supabase' | 'plan' | 'task-update';

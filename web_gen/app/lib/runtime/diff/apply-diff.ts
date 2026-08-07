@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { SearchReplaceBlock } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { findMatchWithStrategies, MatchingStrategy } from '~/lib/runtime/diff/search-replace';

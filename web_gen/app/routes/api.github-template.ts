@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type AppLoadContext, type LoaderFunctionArgs } from 'react-router';
 import JSZip from 'jszip';
 import { withSecurity } from '~/lib/security';

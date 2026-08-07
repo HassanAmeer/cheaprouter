@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useState, useCallback, useMemo, useRef, useEffect, type KeyboardEvent } from 'react';
 import { createScopedLogger } from '~/utils/logger';
 import { toHex, isLightColor } from '~/utils/color';

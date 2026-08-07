@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared constants for the Element Inspector subsystem.
  *

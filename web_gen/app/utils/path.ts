@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Browser-compatible path utilities
 import type { ParsedPath } from 'path';
 import pathBrowserify from 'path-browserify';

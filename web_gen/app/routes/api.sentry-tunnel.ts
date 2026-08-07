@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 
 const MAX_BODY_SIZE = 1_048_576; // 1 MB

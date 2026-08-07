@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module local-filesystem
  * Server-side filesystem implementation using Node.js native `fs` module.

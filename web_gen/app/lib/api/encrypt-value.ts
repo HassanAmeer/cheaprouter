@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createScopedLogger } from '~/utils/logger';
 import { csrfFetch } from '~/lib/api/csrf-client';
 

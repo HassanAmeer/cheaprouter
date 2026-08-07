@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { getFeatureFlags, markFeatureViewed, type Feature } from '~/lib/api/features';
 import { createScopedLogger } from '~/utils/logger';

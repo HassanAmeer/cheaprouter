@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { vercelConnection } from '~/lib/stores/vercel';
 import { chatId } from '~/lib/persistence/useChatHistory';

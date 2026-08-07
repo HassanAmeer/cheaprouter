@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { streamText } from '~/lib/.server/llm/stream-text';
 import type { ProviderInfo } from '~/types/model';

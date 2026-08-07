@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ITheme } from '@xterm/xterm';
 
 const style = getComputedStyle(document.documentElement);

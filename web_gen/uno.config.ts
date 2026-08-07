@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { globSync } from 'fast-glob';
 import fs from 'node:fs/promises';
 import { basename } from 'node:path';

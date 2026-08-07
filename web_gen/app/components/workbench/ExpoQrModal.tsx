@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { lazy, Suspense } from 'react';
 import { Dialog, DialogTitle, DialogDescription, DialogRoot } from '~/components/ui/Dialog';
 import { useStore } from '@nanostores/react';

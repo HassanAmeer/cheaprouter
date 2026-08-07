@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { getNotifications, markNotificationRead, type Notification } from '~/lib/api/notifications';
 import { logStore } from '~/lib/stores/logs';

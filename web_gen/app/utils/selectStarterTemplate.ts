@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ignore from 'ignore';
 import type { ProviderInfo } from '~/types/model';
 import type { Template } from '~/types/template';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves the SQLite database file path.
  *

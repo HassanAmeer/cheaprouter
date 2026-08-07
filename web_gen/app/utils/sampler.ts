@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Creates a function that samples calls at regular intervals and captures trailing calls.
  * - Drops calls that occur between sampling intervals

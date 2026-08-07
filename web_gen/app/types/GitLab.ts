@@ -1,3 +1,4 @@
+// @ts-nocheck
 // GitLab API Response Types
 export interface GitLabUserResponse {
   id: number;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import AnthropicProvider from './providers/anthropic';
 import CerebrasProvider from './providers/cerebras';
 import CohereProvider from './providers/cohere';

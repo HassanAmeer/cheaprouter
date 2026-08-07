@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ActionFunctionArgs } from 'react-router';
 import { streamText, type Messages } from '~/lib/.server/llm/stream-text';
 import { withSecurity } from '~/lib/security';

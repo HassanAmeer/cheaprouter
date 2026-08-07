@@ -19,6 +19,7 @@ import { listKeys, createKey, deleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
+import { handleCompletions } from './completions.ts';
 import { db, initDb, DB_URL } from './db.ts';
 
 // ---- IN-MEMORY LOGGER ----
@@ -393,6 +394,9 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   return c.json({ message: { role: 'assistant', content: reply.text } });
 });
 
+app.post('/api/v1/chat/completions', handleCompletions);
+app.post('/v1/chat/completions', handleCompletions); // Accept both for easy proxying
+
 // Streaming chat (SSE)
 app.get('/api/stream', async (c) => {
   const userId = c.get('userId');
@@ -414,6 +418,41 @@ app.get('/api/stream', async (c) => {
     },
   });
   return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });
+});
+
+// ---- Global Settings ----
+app.get('/api/settings', async (c) => {
+  const result = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+  if (result.length > 0) return c.json(result[0].data);
+  return c.json({}); // Will return empty if not initialized, frontend will merge with defaults
+});
+
+app.put('/api/settings', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO global_settings (id, data) 
+    VALUES ('global', ${db.json(data)}) 
+    ON CONFLICT (id) DO UPDATE SET data = ${db.json(data)}
+  `;
+  return c.json(data);
+});
+
+// ---- Global Admin Providers ----
+app.get('/api/admin/providers', async (c) => {
+  const result = await db`SELECT * FROM admin_providers ORDER BY priority ASC`;
+  return c.json(result);
+});
+
+app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) => {
+  const providers = c.req.valid('json');
+  await db`DELETE FROM admin_providers`;
+  for (const p of providers) {
+    await db`
+      INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers)
+      VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${db.json(p.models ?? [])}, ${db.json(p.headers ?? [])})
+    `;
+  }
+  return c.json({ success: true });
 });
 
 // ---- Models catalog ----

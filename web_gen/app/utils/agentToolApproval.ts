@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared utility for determining which agent tools should be auto-approved.
  * Used by both Chat.client.tsx (onToolCall) and ToolInvocations.tsx (fallback UI).

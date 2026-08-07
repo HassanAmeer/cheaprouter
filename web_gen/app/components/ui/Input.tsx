@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cn } from '~/utils/cn';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {

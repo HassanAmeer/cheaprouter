@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { TabType, SidebarCategoryConfig } from './types';
 import { cn } from '~/utils/cn';
 

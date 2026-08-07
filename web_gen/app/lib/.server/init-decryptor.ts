@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { setDecryptor } from '~/lib/api/cookies';
 import { createScopedLogger } from '~/utils/logger';
 

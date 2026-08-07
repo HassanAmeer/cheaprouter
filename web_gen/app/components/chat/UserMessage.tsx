@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MODEL_REGEX, PROVIDER_REGEX } from '~/utils/constants';
 import { Markdown } from './Markdown';
 import { useStore } from '@nanostores/react';

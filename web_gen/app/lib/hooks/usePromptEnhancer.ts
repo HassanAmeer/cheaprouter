@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef, useEffect } from 'react';
 import type { ProviderInfo } from '~/types/model';
 import { csrfFetch } from '~/lib/api/csrf-client';

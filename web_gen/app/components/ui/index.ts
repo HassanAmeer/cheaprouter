@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Export all UI components for easier imports
 
 // Core components

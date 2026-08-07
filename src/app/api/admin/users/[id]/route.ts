@@ -1,36 +1,43 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const user = db.getUser(id);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    return NextResponse.json({ user });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
-  }
-}
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const user = db.updateUser(id, body);
-    return NextResponse.json({ user });
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = req.headers.get('authorization') || '';
+    
+    const response = await fetch(`${backendUrl}/api/admin/users/${id}`, {
+      method: 'PUT',
+      headers: { 
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    db.deleteUser(id);
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = req.headers.get('authorization') || '';
+    
+    const response = await fetch(`${backendUrl}/api/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': authHeader }
+    });
+    
+    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

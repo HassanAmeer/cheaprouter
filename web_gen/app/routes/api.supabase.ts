@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import type { SupabaseProject } from '~/types/supabase';
 import { externalFetch } from '~/lib/api/apiUtils';

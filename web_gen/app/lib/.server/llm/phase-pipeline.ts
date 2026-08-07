@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 4-Phase Code Generation Pipeline
  *

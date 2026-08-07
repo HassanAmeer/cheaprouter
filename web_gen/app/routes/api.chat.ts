@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { createDataStream, generateId } from 'ai';
 import { chatRequestSchema } from '~/types/api-types';

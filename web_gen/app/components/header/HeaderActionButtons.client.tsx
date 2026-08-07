@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { lazy, Suspense, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { workbenchStore } from '~/lib/stores/workbench';

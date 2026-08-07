@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';

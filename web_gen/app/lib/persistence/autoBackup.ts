@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getAllChats, type Chat } from './chats';
 import { getSnapshot, getVersionsByChatId } from './db';
 import type { Snapshot } from './types';

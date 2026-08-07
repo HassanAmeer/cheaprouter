@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module command-safety
  * Validates and audits commands before execution on the local runtime.

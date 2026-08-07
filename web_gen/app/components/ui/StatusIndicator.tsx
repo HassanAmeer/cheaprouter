@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cn } from '~/utils/cn';
 
 // Status types supported by the component

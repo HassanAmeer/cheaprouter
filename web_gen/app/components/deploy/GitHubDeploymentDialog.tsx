@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';

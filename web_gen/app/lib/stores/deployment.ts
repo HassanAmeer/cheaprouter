@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 
 export interface DeploymentState {

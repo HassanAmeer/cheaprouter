@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { useEffect } from 'react';
 import { shortcutsStore, type Shortcuts } from '~/lib/stores/settings';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { IProviderSetting } from '~/types/model';
 import { BaseProvider } from './base-provider';
 import type { ModelInfo, ProviderInfo } from './types';

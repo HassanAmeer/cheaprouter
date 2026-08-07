@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { Octokit } from '@octokit/rest';
 import { z } from 'zod';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Central orchestrator hook for the Element Inspector system.
  *

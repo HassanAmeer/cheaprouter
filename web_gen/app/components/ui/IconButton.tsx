@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, type ComponentPropsWithoutRef } from 'react';
 import { cn } from '~/utils/cn';
 

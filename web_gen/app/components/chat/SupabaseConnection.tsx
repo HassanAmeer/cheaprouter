@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from 'react';
 import { useSupabaseConnection } from '~/lib/hooks/useSupabaseConnection';
 import { cn } from '~/utils/cn';

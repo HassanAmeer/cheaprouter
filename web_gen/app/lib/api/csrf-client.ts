@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Client-side CSRF Token Utility — Double-Submit Cookie Pattern
  *

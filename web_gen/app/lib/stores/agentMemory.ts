@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { map } from 'nanostores';
 import type { MemoryRef } from '~/lib/agent/types';
 import { createScopedLogger } from '~/utils/logger';

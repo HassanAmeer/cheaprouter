@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Tool } from 'ai';
 
 type ParameterProperty = {

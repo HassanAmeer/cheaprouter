@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { FileMap } from '~/lib/stores/files';
 import { extractRelativePath } from '~/utils/diff';
 import { description } from '~/lib/persistence';

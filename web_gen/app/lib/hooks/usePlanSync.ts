@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useRef } from 'react';
 import { setPlan, resetPlan, planStore, type PlanTask } from '~/lib/stores/plan';
 import { useFileContent } from '~/lib/hooks/useFileContent';

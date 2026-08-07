@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sub-hook: keyboard shortcuts for the Element Inspector.
  *

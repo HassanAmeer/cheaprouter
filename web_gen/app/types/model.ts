@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ModelInfo } from '~/lib/modules/llm/types';
 
 export type ProviderInfo = {

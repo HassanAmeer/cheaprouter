@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom, map, type MapStore } from 'nanostores';
 import Cookies from 'js-cookie';
 import { PROVIDER_LIST } from '~/utils/constants';

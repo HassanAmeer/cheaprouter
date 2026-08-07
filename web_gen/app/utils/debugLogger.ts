@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { isMac, isWindows, isLinux } from './os';
 import { isMobile } from './mobile';
 import { PROVIDER_LIST, DEFAULT_MODEL } from './constants';

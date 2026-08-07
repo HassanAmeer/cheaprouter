@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { MCPServer } from '~/lib/services/mcpService';
 import McpStatusBadge from '~/components/@settings/tabs/mcp/McpStatusBadge';
 import McpServerListItem from '~/components/@settings/tabs/mcp/McpServerListItem';

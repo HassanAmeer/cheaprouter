@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
-    }
-
-    let user = db.getUserByEmail(email);
-    if (user) {
-      return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
-    }
-
-    user = db.createUser(email, password, name);
-    // Simple mock token
-    const token = `token_${user.id}`;
+    const body = await req.json();
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     
-    return NextResponse.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
+    const response = await fetch(`${backendUrl}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return NextResponse.json({ error: data.error || 'Signup failed' }, { status: response.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

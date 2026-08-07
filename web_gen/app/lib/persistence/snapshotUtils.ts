@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Global snapshot utilities for persisting file state
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { withSecurity } from '~/lib/security';

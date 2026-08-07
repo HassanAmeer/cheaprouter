@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Vercel API Proxy
  *

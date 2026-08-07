@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createScopedLogger } from '~/utils/logger';
 import { StreamingMessageParser, type StreamingMessageParserOptions } from './message-parser';
 

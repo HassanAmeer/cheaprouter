@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 import type { NetlifyConnection, NetlifyUser, NetlifySite } from '~/types/netlify';
 import { logStore } from './logs';

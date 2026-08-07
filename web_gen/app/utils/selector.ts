@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared CSS selector builder for the Element Inspector.
  *

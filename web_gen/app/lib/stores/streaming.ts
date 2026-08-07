@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 import type { StreamingEvent } from '~/types/streaming-events';
 

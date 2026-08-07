@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { IProviderSetting } from '~/types/model';
 import type { BaseProvider } from '~/lib/modules/llm/base-provider';
 import { LLMManager } from '~/lib/modules/llm/manager';

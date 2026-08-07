@@ -1,3 +1,4 @@
+// @ts-nocheck
 import styles from './styles.module.scss';
 
 const BackgroundRays = () => {

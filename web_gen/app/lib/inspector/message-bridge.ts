@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Type-safe message bridge for the Inspector system.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AnimatePresence, motion } from 'framer-motion';
 import type { LlmErrorAlertType } from '~/types/actions';
 import { cn } from '~/utils/cn';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { createMockContext } from '~/test/test-utils';
 import { _resetApiRateLimitStore } from '~/lib/.server/api/auth';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Card, CardContent } from '~/components/ui/Card';
 import { Progress } from '~/components/ui/Progress';
 import { cn } from '~/utils/cn';

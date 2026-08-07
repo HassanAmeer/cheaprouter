@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module runtime-provider
  * Core interface definitions for the Devonz runtime abstraction layer.

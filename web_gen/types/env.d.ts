@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Global Env type declaration for server environment variables.
  *

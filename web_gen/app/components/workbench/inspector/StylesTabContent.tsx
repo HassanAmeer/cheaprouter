@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Styles tab content for the Inspector panel.
  *

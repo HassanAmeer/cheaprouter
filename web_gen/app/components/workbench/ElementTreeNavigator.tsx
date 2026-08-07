@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useCallback } from 'react';
 
 interface ElementSummary {

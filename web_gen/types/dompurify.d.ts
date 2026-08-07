@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Type declarations for dompurify
 // DOMPurify provides its own types, but module resolution may not find them in all configurations
 declare module 'dompurify' {

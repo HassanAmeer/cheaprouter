@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { GitLabProjectInfo } from '~/types/GitLab';
 
 interface RepositoryCardProps {

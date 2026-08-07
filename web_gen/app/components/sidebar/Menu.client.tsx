@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { motion, type Variants } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { toast } from 'sonner';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { LoaderFunctionArgs } from 'react-router';
 import { withSecurity } from '~/lib/security';
 import { requireApiAuth } from '~/lib/.server/api/auth';

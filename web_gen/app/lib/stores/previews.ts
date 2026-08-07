@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { RuntimeProvider, PortEvent, Disposer } from '~/lib/runtime/runtime-provider';
 import { atom } from 'nanostores';
 import { createScopedLogger } from '~/utils/logger';

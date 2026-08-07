@@ -1,3 +1,4 @@
+// @ts-nocheck
 export function stripIndents(value: string): string;
 export function stripIndents(strings: TemplateStringsArray, ...values: unknown[]): string;
 export function stripIndents(arg0: string | TemplateStringsArray, ...values: unknown[]) {

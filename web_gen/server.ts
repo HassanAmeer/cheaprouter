@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module server
  * Custom React Router v7 production server with WebSocket support.

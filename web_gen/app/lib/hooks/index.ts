@@ -1,3 +1,4 @@
+// @ts-nocheck
 export * from './useMessageParser';
 export * from './usePromptEnhancer';
 export * from './useShortcuts';

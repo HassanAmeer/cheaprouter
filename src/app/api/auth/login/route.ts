@@ -1,21 +1,22 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
-    }
-
-    const user = db.getUserByEmail(email);
-    if (!user || user.password !== password) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    const token = `token_${user.id}`;
+    const body = await req.json();
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     
-    return NextResponse.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
+    const response = await fetch(`${backendUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return NextResponse.json({ error: data.error || 'Login failed' }, { status: response.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

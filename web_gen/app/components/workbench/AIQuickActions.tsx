@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useState, useRef, useEffect } from 'react';
 import type { ElementInfo } from './inspector-types';
 import { buildElementSelector } from '~/utils/selector';

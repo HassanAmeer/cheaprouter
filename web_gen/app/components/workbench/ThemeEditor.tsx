@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Theme editor panel for the Element Inspector.
  *

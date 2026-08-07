@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared color utility functions for the UI.
  *

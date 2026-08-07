@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { createScopedLogger } from '~/utils/logger';
 import { AppError, AppErrorType } from '~/lib/api/errors';

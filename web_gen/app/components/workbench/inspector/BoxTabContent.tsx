@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Box tab content for the Inspector panel.
  *

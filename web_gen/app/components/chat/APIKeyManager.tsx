@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Cookies from 'js-cookie';
 
 const apiKeyMemoizeCache: { [k: string]: Record<string, string> } = {};

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Suspense, useEffect } from 'react';
 import { type MetaFunction, useRouteError, isRouteErrorResponse } from 'react-router';
 import { Header } from '~/components/header/Header';

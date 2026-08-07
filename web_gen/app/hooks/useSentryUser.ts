@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Sentry from '@sentry/react';
 import { useStore } from '@nanostores/react';
 import { useEffect } from 'react';

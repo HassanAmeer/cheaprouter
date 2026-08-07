@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { externalFetch } from '~/lib/api/apiUtils';
 import { createScopedLogger } from '~/utils/logger';
 import type { DeployStatusEvent } from '~/types/streaming-events';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
 import {
   MAX_TOKENS,

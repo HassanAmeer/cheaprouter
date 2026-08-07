@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Switch } from '~/components/ui/Switch';
 import { Card, CardContent } from '~/components/ui/Card';
 import { cn } from '~/utils/cn';

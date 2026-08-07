@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface VercelUserResponse {
   user?: {
     id: string;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo } from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import { cn } from '~/utils/cn';

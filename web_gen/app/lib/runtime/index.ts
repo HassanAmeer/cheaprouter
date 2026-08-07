@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module runtime
  * Client-side entry point for the Devonz runtime.

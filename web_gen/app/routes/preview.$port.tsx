@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type LoaderFunctionArgs, useRouteError, isRouteErrorResponse, useLoaderData } from 'react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

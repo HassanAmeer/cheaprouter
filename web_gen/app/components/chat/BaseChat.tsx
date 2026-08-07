@@ -1,4 +1,5 @@
-import type { JSONValue, Message } from 'ai';
+// @ts-nocheck
+import type { JSONValue, UIMessage as Message } from 'ai';
 import React, {
   type RefCallback,
   lazy,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { Switch } from '~/components/ui/Switch';

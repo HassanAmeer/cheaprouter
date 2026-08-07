@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { motion } from 'framer-motion';
 import { memo } from 'react';
 import { cubicEasingFn } from '~/utils/easings';

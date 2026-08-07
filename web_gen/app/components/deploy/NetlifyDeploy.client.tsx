@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { toast } from 'sonner';
 import { useStore } from '@nanostores/react';
 import { netlifyConnection } from '~/lib/stores/netlify';

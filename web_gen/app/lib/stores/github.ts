@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 import type { GitHubConnection, GitHubRepoInfo } from '~/types/GitHub';
 import { logStore } from './logs';

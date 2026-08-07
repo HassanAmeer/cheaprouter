@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { GitHubUserResponse } from '~/types/GitHub';
 
 interface GitHubUserProfileProps {

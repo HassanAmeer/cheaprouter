@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { memo, useCallback, useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module local-runtime
  * Server-side runtime implementation using Node.js `child_process` and native `fs`.

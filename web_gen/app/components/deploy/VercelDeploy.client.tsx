@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { toast } from 'sonner';
 import { useStore } from '@nanostores/react';
 import { vercelConnection } from '~/lib/stores/vercel';

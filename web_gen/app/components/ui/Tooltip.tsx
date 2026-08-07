@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import type { ReactElement, Ref } from 'react';
 

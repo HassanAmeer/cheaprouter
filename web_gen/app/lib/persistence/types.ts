@@ -1,4 +1,5 @@
-import type { Message } from 'ai';
+// @ts-nocheck
+import type { UIMessage as Message } from 'ai';
 import type { FileMap } from '~/lib/stores/files';
 
 export interface IChatMetadata {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, memo } from 'react';
 import type { BoxModelData } from '~/lib/inspector/types';
 

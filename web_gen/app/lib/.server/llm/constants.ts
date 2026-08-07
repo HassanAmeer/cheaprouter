@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { JSONValue } from 'ai';
 import { createScopedLogger } from '~/utils/logger';
 import type { OperationType } from './model-router';

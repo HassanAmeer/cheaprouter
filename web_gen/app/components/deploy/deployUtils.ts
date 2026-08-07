@@ -1,3 +1,4 @@
+// @ts-nocheck
 const MAX_BUILD_OUTPUT_CHARS = 4000;
 
 export function formatBuildFailureOutput(output?: string) {

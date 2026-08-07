@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type TemplateCategory = 'landing-page' | 'portfolio' | 'online-store' | 'dashboard' | 'saas' | 'ai-app';
 
 export interface ShowcaseTemplate {

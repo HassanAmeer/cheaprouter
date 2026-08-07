@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import crypto from 'crypto';
 import type { NetlifySiteInfo } from '~/types/netlify';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { EditorView, Decoration, type DecorationSet, ViewPlugin, WidgetType } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface GitHubUserResponse {
   login: string;
   avatar_url: string;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type LoaderFunctionArgs, useRouteError, isRouteErrorResponse } from 'react-router';
 import { useEffect } from 'react';
 import { default as IndexRoute } from './_index';

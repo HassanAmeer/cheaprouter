@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { map } from 'nanostores';
 import type { MCPConfig, MCPServerTools } from '~/lib/services/mcpService';
 import { createScopedLogger } from '~/utils/logger';

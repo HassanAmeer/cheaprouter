@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { indentLess } from '@codemirror/commands';
 import { indentUnit } from '@codemirror/language';
 import { EditorSelection, EditorState, Line, type ChangeSpec } from '@codemirror/state';

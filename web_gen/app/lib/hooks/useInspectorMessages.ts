@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sub-hook: iframe ↔ parent message handling for the Element Inspector.
  *

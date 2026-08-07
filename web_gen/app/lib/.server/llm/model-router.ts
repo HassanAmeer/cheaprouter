@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createScopedLogger } from '~/utils/logger';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 

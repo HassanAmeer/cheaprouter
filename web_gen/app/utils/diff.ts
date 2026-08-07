@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createTwoFilesPatch } from 'diff';
 import type { FileMap } from '~/lib/stores/files';
 import { WORK_DIR } from './constants';

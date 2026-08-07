@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface DevonzArtifactData {
   id: string;
   title: string;

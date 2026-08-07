@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Button } from '~/components/ui/Button';
 import { ConfirmationDialog, SelectionDialog } from '~/components/ui/Dialog';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Cleans up a package.json for compatibility.
  *

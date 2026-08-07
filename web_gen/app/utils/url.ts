@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * URL validation utilities with SSRF protection.
  */

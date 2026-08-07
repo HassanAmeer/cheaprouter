@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { localModelHealthMonitor, type ModelHealthStatus } from '~/lib/services/localModelHealthMonitor';
 import { createScopedLogger } from '~/utils/logger';

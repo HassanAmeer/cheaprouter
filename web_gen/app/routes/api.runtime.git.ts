@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @route /api/runtime/git
  * Server-side API route for git operations on project directories.

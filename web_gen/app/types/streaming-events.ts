@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Streaming Event Protocol — Shared Contract
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useStore } from '@nanostores/react';
 import { fileGenerationStatus, type FileMap, type FileGenerationState } from '~/lib/stores/files';

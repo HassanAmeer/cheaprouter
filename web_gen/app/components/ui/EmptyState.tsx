@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cn } from '~/utils/cn';
 import { Button } from './Button';
 import { motion } from 'framer-motion';

@@ -1,20 +1,32 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    return NextResponse.json({ providers: db.listAdminProviders() });
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendUrl}/api/admin/providers`);
+    if (!response.ok) return NextResponse.json([], { status: response.status });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch admin providers' }, { status: 500 });
+    return NextResponse.json([], { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const updated = db.saveAdminProviders(body);
-    return NextResponse.json({ providers: updated });
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendUrl}/api/admin/providers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update admin providers' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update providers' }, { status: 500 });
   }
 }

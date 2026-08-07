@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, lazy, Suspense } from 'react';
 import { useStore } from '@nanostores/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';

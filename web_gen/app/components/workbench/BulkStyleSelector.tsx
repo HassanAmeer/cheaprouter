@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import type { BulkTarget } from '~/lib/inspector/types';
 

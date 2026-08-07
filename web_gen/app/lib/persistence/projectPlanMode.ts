@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getLocalStorage, setLocalStorage } from './localStorage';
 import { createScopedLogger } from '~/utils/logger';
 

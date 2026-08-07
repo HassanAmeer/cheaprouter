@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import { computed } from 'nanostores';

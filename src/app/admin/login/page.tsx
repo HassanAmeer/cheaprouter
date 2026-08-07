@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Zap } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import styles from '../admin.module.css';
 
 export default function AdminLogin() {
@@ -43,13 +43,13 @@ export default function AdminLogin() {
       <div className={styles.loginCard}>
         <div className={styles.loginHeader}>
           <div className={styles.loginTitle}>
-            <Zap size={24} color="var(--color-primary)" fill="var(--color-primary)" />
+            <Zap size={28} color="var(--color-primary)" fill="var(--color-primary)" />
             Admin Panel
           </div>
           <div className={styles.loginSubtitle}>Sign in to manage CheapAgents</div>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} autoComplete="off">
           {error && <div className={styles.errorBox}>{error}</div>}
           
           <div className={styles.formGroup}>
@@ -60,6 +60,7 @@ export default function AdminLogin() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. admin"
+              autoComplete="off"
               required 
             />
           </div>
@@ -72,12 +73,18 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••"
+              autoComplete="new-password"
               required 
             />
           </div>
 
           <button type="submit" className={styles.loginBtn} disabled={loading}>
-            {loading ? 'Authenticating...' : 'Log In'}
+            {loading ? 'Authenticating...' : (
+              <>
+                Log In
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
       </div>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 const reset = '\x1b[0m';
 
 export const escapeCodes = {

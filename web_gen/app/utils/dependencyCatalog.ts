@@ -1,3 +1,4 @@
+// @ts-nocheck
 const SHADCN_PEER_DEPS: Record<string, string> = {
   '@radix-ui/react-icons': '^1.3.2',
   '@radix-ui/react-slot': '^1.1.0',

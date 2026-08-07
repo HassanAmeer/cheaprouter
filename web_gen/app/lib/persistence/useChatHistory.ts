@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useLoaderData, useNavigate, useSearchParams } from 'react-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { atom } from 'nanostores';

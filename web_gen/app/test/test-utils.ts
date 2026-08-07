@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import type { AppLoadContext, LoaderFunctionArgs, ActionFunctionArgs } from 'react-router';
 

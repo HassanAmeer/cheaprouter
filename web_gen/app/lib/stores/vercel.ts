@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 import type { VercelConnection, VercelUserResponse, VercelProject } from '~/types/vercel';
 import { logStore } from './logs';

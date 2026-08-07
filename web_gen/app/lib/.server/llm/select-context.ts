@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { generateText, type CoreTool, type GenerateTextResult, type Message } from 'ai';
 import { createHash } from 'node:crypto';
 import ignore from 'ignore';

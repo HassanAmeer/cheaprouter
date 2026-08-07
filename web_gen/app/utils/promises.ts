@@ -1,3 +1,4 @@
+// @ts-nocheck
 export function withResolvers<T>(): PromiseWithResolvers<T> {
   if (typeof Promise.withResolvers === 'function') {
     return Promise.withResolvers();

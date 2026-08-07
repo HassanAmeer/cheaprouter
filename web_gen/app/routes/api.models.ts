@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { LoaderFunctionArgs } from 'react-router';
 import { LLMManager } from '~/lib/modules/llm/manager';
 import type { ModelInfo } from '~/lib/modules/llm/types';

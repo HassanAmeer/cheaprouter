@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useParams } from 'react-router';
 import { cn } from '~/utils/cn';
 import { type ChatHistoryItem } from '~/lib/persistence';

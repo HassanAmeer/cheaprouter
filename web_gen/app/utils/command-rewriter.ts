@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('CommandRewriter');

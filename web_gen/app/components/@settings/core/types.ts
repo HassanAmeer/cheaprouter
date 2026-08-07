@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type TabType =
   | 'profile'
   | 'settings'

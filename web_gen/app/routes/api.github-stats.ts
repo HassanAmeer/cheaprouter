@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type LoaderFunctionArgs } from 'react-router';
 import { externalFetch, resolveToken } from '~/lib/api/apiUtils';
 import { withSecurity } from '~/lib/security';

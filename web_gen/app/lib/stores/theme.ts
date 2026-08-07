@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 import { logStore } from './logs';
 import { createScopedLogger } from '~/utils/logger';

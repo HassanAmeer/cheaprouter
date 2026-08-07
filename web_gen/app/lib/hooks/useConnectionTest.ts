@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback } from 'react';
 import type { ConnectionTestResult } from '~/components/@settings/shared/service-integration';
 

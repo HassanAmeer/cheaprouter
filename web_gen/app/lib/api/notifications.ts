@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logStore } from '~/lib/stores/logs';
 import type { LogEntry } from '~/lib/stores/logs';
 

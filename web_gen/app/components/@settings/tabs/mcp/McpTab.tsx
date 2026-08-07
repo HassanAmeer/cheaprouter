@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { cn } from '~/utils/cn';

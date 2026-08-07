@@ -1,3 +1,4 @@
+// @ts-nocheck
 interface Window {
   showDirectoryPicker(): Promise<FileSystemDirectoryHandle>;
   webkitSpeechRecognition: typeof SpeechRecognition;

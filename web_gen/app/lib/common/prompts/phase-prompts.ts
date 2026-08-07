@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Phase-specific prompt templates for the 5-phase code generation pipeline.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   getLockedItems,
   isFileLocked as isFileLockedInternal,

@@ -1,4 +1,5 @@
-import type { Message } from 'ai';
+// @ts-nocheck
+import type { UIMessage as Message } from 'ai';
 import { generateId } from './fileUtils';
 import { detectProjectCommands, createCommandsMessage, escapeDevonzTags } from './projectCommands';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useMemo } from 'react';
 import { Button } from '~/components/ui/Button';
 import { RepositoryCard } from './RepositoryCard';

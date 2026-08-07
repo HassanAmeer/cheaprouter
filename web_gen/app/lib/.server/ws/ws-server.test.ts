@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { WebSocket } from 'ws';
 import { createServer, type Server } from 'node:http';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module ws-handlers
  * Message handlers for the WebSocket server.

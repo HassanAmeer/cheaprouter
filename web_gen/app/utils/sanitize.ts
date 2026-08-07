@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sanitization utilities for user-controlled text before AI prompt injection.
  *

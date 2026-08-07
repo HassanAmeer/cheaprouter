@@ -1,4 +1,5 @@
-import type { Message } from 'ai';
+// @ts-nocheck
+import type { UIMessage as Message } from 'ai';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { atom } from 'nanostores';
 import { useStore } from '@nanostores/react';

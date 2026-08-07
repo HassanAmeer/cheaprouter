@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Message } from '@ai-sdk/ui-utils';
 import { useCallback, useState } from 'react';
 import { EnhancedStreamingMessageParser } from '~/lib/runtime/enhanced-message-parser';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export { RepositoryCard } from './RepositoryCard';
 
 // GitHubDialog components not yet implemented

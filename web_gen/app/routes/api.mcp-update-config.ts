@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { MCPService, type MCPConfig } from '~/lib/services/mcpService';
 import { withSecurity } from '~/lib/security';

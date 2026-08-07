@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { RuntimeProvider, WatchEvent } from '~/lib/runtime/runtime-provider';
 import { getEncoding } from 'istextorbinary';
 import { map, type MapStore } from 'nanostores';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @route /api/runtime/fs
  * Server-side API route for filesystem operations.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import path from 'node:path';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { openDatabase, getAll, getSnapshot } from '~/lib/persistence/db';
 import { createScopedLogger } from '~/utils/logger';

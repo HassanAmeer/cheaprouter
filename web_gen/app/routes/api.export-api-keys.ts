@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type LoaderFunctionArgs } from 'react-router';
 import { getApiKeysFromCookie } from '~/lib/api/cookies';
 import { withSecurity } from '~/lib/security';

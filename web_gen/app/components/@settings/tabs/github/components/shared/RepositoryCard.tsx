@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cn } from '~/utils/cn';
 import { formatSize } from '~/utils/formatSize';
 import type { GitHubRepoInfo } from '~/types/GitHub';

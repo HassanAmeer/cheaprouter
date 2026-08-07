@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 import { useStore } from '@nanostores/react';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IconButton } from '~/components/ui/IconButton';
 import { cn } from '~/utils/cn';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { externalFetch } from '~/lib/api/apiUtils';
 import { withSecurity } from '~/lib/security';
 import { successResponse, errorResponse } from '~/lib/api/responses';

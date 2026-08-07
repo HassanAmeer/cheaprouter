@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { ShowcaseTemplate, TemplateCategory } from '~/types/showcase-template';

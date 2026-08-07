@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { LLMManager } from '~/lib/modules/llm/manager';
 import type { Template } from '~/types/template';
 

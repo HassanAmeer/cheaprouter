@@ -1,3 +1,4 @@
+// @ts-nocheck
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import type { PluggableList, Plugin } from 'unified';

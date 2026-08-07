@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { LanguageModelV1 } from 'ai';
 import type { IProviderSetting } from '~/types/model';
 

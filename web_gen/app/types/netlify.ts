@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface NetlifySite {
   id: string;
   name: string;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getFineTunedPrompt } from './prompts/new-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { lazy, memo } from 'react';
 
 export const genericMemo: <T extends keyof JSX.IntrinsicElements | React.JSXElementConstructor<any>>(

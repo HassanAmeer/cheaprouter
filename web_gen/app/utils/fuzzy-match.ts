@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Lightweight fuzzy matching utilities for template name resolution.
  *

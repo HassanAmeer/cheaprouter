@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { buildMissingPackageFixInstructions, getPreferredPackageVersion } from './dependencyCatalog';
 

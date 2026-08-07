@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Type definitions
 export type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
 

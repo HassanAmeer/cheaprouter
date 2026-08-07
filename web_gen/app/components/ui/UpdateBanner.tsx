@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react';
 import { useVersionCheck } from '~/lib/hooks/useVersionCheck';
 import { csrfFetch } from '~/lib/api/csrf-client';

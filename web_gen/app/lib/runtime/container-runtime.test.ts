@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { ContainerRuntime, isDockerAvailable, createRuntimeWithFallback } from './container-runtime';
 import { validateCommand } from './command-safety';

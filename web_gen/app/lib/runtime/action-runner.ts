@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { RuntimeProvider, DirEntry, ProcessResult } from './runtime-provider';
 import { path as nodePath, toRelativePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';

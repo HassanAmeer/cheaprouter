@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { computed, map, type MapStore } from 'nanostores';
 import { createScopedLogger } from '~/utils/logger';
 

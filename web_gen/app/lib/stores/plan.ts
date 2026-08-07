@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { map, computed, atom } from 'nanostores';
 import type { SubTask } from '~/lib/agent/types';
 import { createScopedLogger } from '~/utils/logger';

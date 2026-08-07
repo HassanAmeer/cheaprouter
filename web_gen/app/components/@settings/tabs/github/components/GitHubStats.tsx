@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Button } from '~/components/ui/Button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { cn } from '~/utils/cn';

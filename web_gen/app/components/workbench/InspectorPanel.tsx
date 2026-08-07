@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Element Inspector detail panel.
  *

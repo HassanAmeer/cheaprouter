@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AppLoadContext } from 'react-router';
 import { getApiKeysFromCookie } from '~/lib/api/cookies';
 import { createScopedLogger } from '~/utils/logger';

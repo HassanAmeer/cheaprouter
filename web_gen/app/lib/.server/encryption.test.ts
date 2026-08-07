@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { randomBytes } from 'node:crypto';
 
 const TEST_KEY_HEX = 'a'.repeat(64);

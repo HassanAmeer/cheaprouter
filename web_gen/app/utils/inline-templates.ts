@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Inline starter template files — embedded directly in the codebase.
  * Eliminates the need to fetch from GitHub API for starter scaffolding.

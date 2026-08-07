@@ -93,6 +93,30 @@ export async function initDb() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS global_settings (
+      id TEXT PRIMARY KEY,
+      data JSON NOT NULL
+    );
+  `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS admin_providers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      status BOOLEAN NOT NULL DEFAULT true,
+      key TEXT NOT NULL,
+      priority INTEGER NOT NULL DEFAULT 0,
+      base_url TEXT,
+      use_models_api BOOLEAN DEFAULT false,
+      models_api_link TEXT,
+      api_format TEXT,
+      is_custom BOOLEAN DEFAULT false,
+      models JSON,
+      headers JSON
+    );
+  `;
 }
 
 export function genId(prefix: string) {

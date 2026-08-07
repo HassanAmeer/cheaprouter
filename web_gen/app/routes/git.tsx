@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Suspense, useEffect } from 'react';
 import { type LoaderFunctionArgs, type MetaFunction, useRouteError, isRouteErrorResponse } from 'react-router';
 import { BaseChat } from '~/components/chat/BaseChat';

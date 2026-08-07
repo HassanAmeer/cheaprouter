@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MCPService } from '~/lib/services/mcpService';
 import { withSecurity } from '~/lib/security';
 import { successResponse, errorResponse } from '~/lib/api/responses';

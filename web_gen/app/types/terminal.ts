@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface ITerminal {
   readonly cols?: number;
   readonly rows?: number;

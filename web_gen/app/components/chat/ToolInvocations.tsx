@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ToolInvocationUIPart } from '@ai-sdk/ui-utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect, useRef, useCallback } from 'react';

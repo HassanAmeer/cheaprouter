@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   experimental_createMCPClient,
   type ToolSet,

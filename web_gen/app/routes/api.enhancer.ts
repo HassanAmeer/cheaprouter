@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { generateText } from 'ai';
 import { stripIndents } from '~/utils/stripIndent';

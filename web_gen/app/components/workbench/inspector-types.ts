@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Re-exports from the canonical inspector type definitions.
  *

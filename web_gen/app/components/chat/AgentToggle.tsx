@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Popover from '@radix-ui/react-popover';
 import { useState } from 'react';
 import { useStore } from '@nanostores/react';

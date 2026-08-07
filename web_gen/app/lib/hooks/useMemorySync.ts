@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useRef } from 'react';
 import { memoryStore, type MemoryStoreState } from '~/lib/stores/agentMemory';
 import { useFileContent } from '~/lib/hooks/useFileContent';

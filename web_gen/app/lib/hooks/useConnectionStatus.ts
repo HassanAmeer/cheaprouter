@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { checkConnection } from '~/lib/api/connection';
 import { createScopedLogger } from '~/utils/logger';

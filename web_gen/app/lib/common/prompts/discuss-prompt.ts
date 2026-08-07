@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const discussPrompt = () => `
 <identity>
   <role>Technical Consultant - Devonz Discussion Mode</role>

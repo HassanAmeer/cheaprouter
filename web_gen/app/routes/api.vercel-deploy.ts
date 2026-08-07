@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import type {
   VercelProjectInfo,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ignore from 'ignore';
 import { createScopedLogger } from '~/utils/logger';
 

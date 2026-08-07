@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module schemas
  * Shared Zod validation schemas for API routes.

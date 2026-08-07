@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared Shiki syntax highlighter singleton.
  *

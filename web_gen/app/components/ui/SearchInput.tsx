@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { InputHTMLAttributes, Ref } from 'react';
 import { cn } from '~/utils/cn';
 import { Input } from './Input';

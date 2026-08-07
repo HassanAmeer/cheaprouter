@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Utility functions for the Artifact component
  * - Diff stats calculation

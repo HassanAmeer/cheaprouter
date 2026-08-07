@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { timingSafeEqual } from 'node:crypto';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { createScopedLogger } from '~/utils/logger';

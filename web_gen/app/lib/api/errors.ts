@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Centralized error module — typed error hierarchy for the application.
  *

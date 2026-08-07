@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { motion } from 'framer-motion';

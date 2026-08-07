@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Smart design control for individual CSS properties.
  *

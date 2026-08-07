@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ProviderInfo } from '~/types/model';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';

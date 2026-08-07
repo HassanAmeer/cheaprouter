@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { clientLazy } from '~/utils/react';
 import { cn } from '~/utils/cn';

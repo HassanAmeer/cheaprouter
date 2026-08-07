@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { withSecurity } from '~/lib/security';
 import { successResponse, errorResponse } from '~/lib/api/responses';

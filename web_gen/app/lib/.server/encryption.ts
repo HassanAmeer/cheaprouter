@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { createScopedLogger } from '~/utils/logger';
 

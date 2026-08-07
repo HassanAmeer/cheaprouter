@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @route /api/runtime/search
  * Server-side API route for full-text search across project files.

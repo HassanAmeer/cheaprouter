@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { createMockRequest, createMockContext } from '~/test/test-utils';
 

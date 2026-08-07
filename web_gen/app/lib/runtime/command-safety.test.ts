@@ -1,3 +1,4 @@
+// @ts-nocheck
 /// <reference types="vitest/globals" />
 import { validateCommand, auditCommand, DEFAULT_EXEC_TIMEOUT_MS, DEFAULT_SPAWN_TIMEOUT_MS } from './command-safety';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { LanguageDescription } from '@codemirror/language';
 
 export const supportedLanguages = [

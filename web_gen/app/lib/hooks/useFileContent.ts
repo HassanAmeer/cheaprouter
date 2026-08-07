@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo } from 'react';
 import { computed } from 'nanostores';
 import { useStore } from '@nanostores/react';

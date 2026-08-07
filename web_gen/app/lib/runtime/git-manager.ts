@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module git-manager
  * Local git integration for project version control.

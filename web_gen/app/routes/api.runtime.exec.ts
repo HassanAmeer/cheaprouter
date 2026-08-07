@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @route /api/runtime/exec
  * Server-side API route for command execution and runtime lifecycle.

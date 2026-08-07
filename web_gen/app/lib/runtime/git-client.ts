@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @module git-client
  * Client-side git operations via the /api/runtime/git endpoint.

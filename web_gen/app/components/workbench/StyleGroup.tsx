@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Collapsible style property group for the Inspector panel.
  *

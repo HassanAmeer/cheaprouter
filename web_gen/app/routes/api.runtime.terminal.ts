@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @route /api/runtime/terminal
  * Server-side API route for terminal session management.

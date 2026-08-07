@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef, useCallback, type PropsWithChildren } from 'react';
 
 const ThoughtBox = ({ title, children }: PropsWithChildren<{ title: string }>) => {

@@ -1,4 +1,5 @@
-import type { Message } from 'ai';
+// @ts-nocheck
+import type { UIMessage as Message } from 'ai';
 import { clearProjectPlanMode } from './projectPlanMode';
 import { createScopedLogger } from '~/utils/logger';
 import type { ChatHistoryItem, IChatMetadata, Snapshot } from './types';

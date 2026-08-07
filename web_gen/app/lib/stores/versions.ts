@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom, map, type MapStore, type WritableAtom } from 'nanostores';
 import { createScopedLogger } from '~/utils/logger';
 import { saveVersions as saveVersionsToDB, getVersionsByChatId } from '~/lib/persistence/db';

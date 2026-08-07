@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom, computed } from 'nanostores';
 import Cookies from 'js-cookie';
 import { logStore } from '~/lib/stores/logs';

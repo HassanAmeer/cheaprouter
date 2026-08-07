@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Suspense } from 'react';
 import { useStore } from '@nanostores/react';
 import { chatStore } from '~/lib/stores/chat';

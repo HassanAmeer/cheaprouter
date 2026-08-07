@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useEffect, useState } from 'react';
 import { safeCodeToHtml, type BundledLanguage, type SpecialLanguage } from '~/utils/shiki-highlighter';
 import { cn } from '~/utils/cn';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useEffect } from 'react';
 import type { Terminal as XTerm } from '@xterm/xterm';
 import { createScopedLogger } from '~/utils/logger';

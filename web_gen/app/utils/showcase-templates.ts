@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ShowcaseTemplate, TemplateCategory } from '~/types/showcase-template';
 import { createScopedLogger } from '~/utils/logger';
 

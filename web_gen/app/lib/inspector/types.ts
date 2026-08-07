@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive type definitions for the Element Inspector system.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';

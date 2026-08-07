@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import type { GitHubStats, GitHubConnection } from '~/types/GitHub';

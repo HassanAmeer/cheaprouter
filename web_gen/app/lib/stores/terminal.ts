@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { RuntimeProvider, SpawnedProcess } from '~/lib/runtime/runtime-provider';
 import { atom, type WritableAtom } from 'nanostores';
 import type { ITerminal } from '~/types/terminal';

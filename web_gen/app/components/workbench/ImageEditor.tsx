@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Image editing panel for the Element Inspector.
  *

@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization');
-  if (!auth || !auth.startsWith('Bearer token_')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendUrl}/api/me`, {
+      headers: { 'Authorization': authHeader }
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  const userId = auth.replace('Bearer token_', '');
-  const user = db.getUser(userId);
-
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
-
-  return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
 }

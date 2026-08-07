@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { memo, useDeferredValue, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';

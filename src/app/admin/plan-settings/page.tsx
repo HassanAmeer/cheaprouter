@@ -47,7 +47,7 @@ export default function PlanSettingsPage() {
           <p style={{ color: 'var(--color-text-muted)' }}>Manage pricing tabs and configuration for all your product plans.</p>
         </div>
         <button onClick={handleSave} disabled={saving} style={{ 
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px',
           background: 'transparent', border: '2px solid var(--color-primary)',
           color: 'var(--color-primary)', borderRadius: '8px', fontWeight: 600,
           cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.2s',

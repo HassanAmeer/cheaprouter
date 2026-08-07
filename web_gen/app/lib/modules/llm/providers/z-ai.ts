@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';

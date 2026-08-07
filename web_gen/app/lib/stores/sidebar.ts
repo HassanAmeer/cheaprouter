@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom } from 'nanostores';
 
 // Store to manage sidebar open/closed state

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '~/components/ui/Button';

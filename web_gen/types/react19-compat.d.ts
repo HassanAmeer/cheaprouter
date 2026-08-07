@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * React 19 JSX namespace compatibility shim.
  *

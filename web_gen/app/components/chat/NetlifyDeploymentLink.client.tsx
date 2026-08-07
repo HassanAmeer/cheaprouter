@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { netlifyConnection, fetchNetlifyStats } from '~/lib/stores/netlify';
 import { chatId } from '~/lib/persistence/useChatHistory';

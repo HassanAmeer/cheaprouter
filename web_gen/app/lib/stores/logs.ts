@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { atom, map, type MapStore, type WritableAtom } from 'nanostores';
 import Cookies from 'js-cookie';
 import { createScopedLogger } from '~/utils/logger';

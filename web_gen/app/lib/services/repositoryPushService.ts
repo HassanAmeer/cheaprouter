@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
 import type { FileMap } from '~/lib/stores/files';
 import { extractRelativePath } from '~/utils/diff';

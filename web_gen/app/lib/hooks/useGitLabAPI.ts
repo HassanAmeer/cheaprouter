@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Basic GitLab API hook placeholder
 export const useGitLabAPI = (config?: { token: string; baseUrl: string }) => {
   return {

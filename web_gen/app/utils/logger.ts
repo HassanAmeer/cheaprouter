@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type DebugLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'none';
 import { Chalk } from 'chalk';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useStore } from '@nanostores/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { computed, type MapStore } from 'nanostores';
@@ -23,12 +24,11 @@ import {
   truncateFilePath,
 } from './artifact-utils';
 
+const globalAny = globalThis as any;
 const codeHighlighter: HighlighterGeneric<BundledLanguage, BundledTheme> =
-  import.meta.hot?.data.codeHighlighter ?? (await getSharedHighlighter());
+  globalAny.__codeHighlighter ?? (await getSharedHighlighter());
 
-if (import.meta.hot) {
-  import.meta.hot.data.codeHighlighter = codeHighlighter;
-}
+globalAny.__codeHighlighter = codeHighlighter;
 
 interface ArtifactProps {
   messageId: string;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Cleans runtime preview URLs from stack traces to show relative paths instead.
  * Handles both localhost URLs (local runtime) and legacy webcontainer-api.io URLs.

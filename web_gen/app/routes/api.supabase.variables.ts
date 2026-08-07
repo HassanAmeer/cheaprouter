@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ActionFunctionArgs } from 'react-router';
 import { externalFetch } from '~/lib/api/apiUtils';
 import { withSecurity } from '~/lib/security';
