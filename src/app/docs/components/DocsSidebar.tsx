@@ -1,5 +1,4 @@
 import React from 'react';
-import { Terminal, Book, Code, Activity } from 'lucide-react';
 
 export type ViewType = 'introduction' | 'models' | 'chat-completions' | 'limits';
 
@@ -14,36 +13,36 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
     {
       groupTitle: 'CORE API',
       items: [
-        { id: 'introduction', label: 'API Reference', badge: 'GET', badgeColor: '#ccff00' },
-        { id: 'models', label: 'List of Models', badge: 'GET', badgeColor: '#ccff00' },
-        { id: 'chat-completions', label: 'Chat Completions', badge: 'POST', badgeColor: '#a855f7' },
+        { id: 'introduction', label: 'API Reference', badge: 'GET', badgeColor: '#16A34A' },
+        { id: 'models', label: 'List of Models', badge: 'GET', badgeColor: '#16A34A' },
+        { id: 'chat-completions', label: 'Chat Completions', badge: 'POST', badgeColor: 'var(--color-primary)' },
       ]
     },
     {
       groupTitle: 'ACCOUNT SETTINGS',
       items: [
-        { id: 'limits', label: 'Limit of Account', badge: 'GET', badgeColor: '#ccff00' },
+        { id: 'limits', label: 'Limit of Account', badge: 'GET', badgeColor: '#16A34A' },
       ]
     }
   ];
 
   return (
-    <aside style={{ 
-      width: '280px', 
+    <aside className="glass-card" style={{ 
+      width: '260px', 
       flexShrink: 0, 
-      backgroundColor: '#0a0a0a',
-      borderRight: '1px solid #1f1f1f',
-      padding: '24px 16px',
-      height: 'calc(100vh - 65px)',
-      overflowY: 'auto'
+      position: 'sticky', 
+      top: '40px', 
+      height: 'max-content',
+      padding: '24px',
+      borderRadius: 'var(--radius-lg)'
     }}>
       
       <div style={{ marginBottom: '32px', paddingLeft: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span style={{ backgroundColor: '#ccff00', color: '#000', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>API</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>Reference</span>
+          <span style={{ backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>API</span>
+          <span style={{ color: 'var(--color-text-main)', fontWeight: 700, fontSize: '16px' }}>Reference</span>
         </div>
-        <div style={{ color: '#666', fontSize: '12px' }}>CheapAgents REST endpoints</div>
+        <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '6px' }}>CheapAgents REST endpoints</div>
       </div>
 
       {navGroups.map((group, gIdx) => (
@@ -51,7 +50,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
           <h3 style={{ 
             fontSize: '11px', 
             fontWeight: 700, 
-            color: '#666', 
+            color: 'var(--color-text-muted)', 
             textTransform: 'uppercase', 
             letterSpacing: '1px', 
             marginBottom: '12px',
@@ -71,8 +70,8 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '10px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: isActive ? '#1a1a1a' : 'transparent',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: isActive ? 'var(--color-primary-soft)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
@@ -80,7 +79,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     width: '100%'
                   }}
                   onMouseOver={(e) => {
-                    if (!isActive) e.currentTarget.style.backgroundColor = '#111';
+                    if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)';
                   }}
                   onMouseOut={(e) => {
                     if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
@@ -97,7 +96,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                       {item.badge}
                     </span>
                     <span style={{ 
-                      color: isActive ? '#fff' : '#888', 
+                      color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)', 
                       fontSize: '13px', 
                       fontWeight: isActive ? 600 : 500 
                     }}>
@@ -105,7 +104,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     </span>
                   </div>
                   {isActive && (
-                    <div style={{ width: '6px', height: '6px', backgroundColor: '#ccff00', borderRadius: '50%' }} />
+                    <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--color-primary)', borderRadius: '50%' }} />
                   )}
                 </button>
               );

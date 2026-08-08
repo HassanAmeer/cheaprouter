@@ -47,56 +47,39 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
   };
 
   return (
-    <div style={{
-      backgroundColor: '#0a0a0a',
-      borderRadius: '12px',
-      border: '1px solid #1f1f1f',
-      overflow: 'hidden',
+    <div className="glass-card" style={{
+      borderRadius: 'var(--radius-lg)',
+      padding: '24px',
     }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#0f0f0f',
-        borderBottom: '1px solid #1f1f1f',
-        padding: '12px 16px',
+        marginBottom: '24px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Play size={14} color="#ccff00" />
-          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Live Tester</span>
+          <Play size={16} color="var(--color-primary)" />
+          <span style={{ color: 'var(--color-text-main)', fontSize: '14px', fontWeight: 700 }}>Live Tester</span>
         </div>
       </div>
 
-      <div style={{ padding: '24px' }}>
+      <div>
         {requiresAuth && (
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               API Key
             </label>
             <div style={{ position: 'relative' }}>
-              <Key size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+              <Key size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
               <input
                 type="password"
+                className="input"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="sk-..."
                 style={{
-                  width: '100%',
-                  padding: '10px 10px 10px 36px',
-                  borderRadius: '6px',
-                  border: '1px solid #333',
-                  backgroundColor: '#000',
-                  color: '#fff',
-                  fontSize: '13px',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
+                  paddingLeft: '36px',
                   fontFamily: 'monospace'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#ccff00';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#333';
                 }}
               />
             </div>
@@ -105,31 +88,17 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
 
         {method === 'POST' && (
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Body Payload
             </label>
             <textarea
+              className="input"
               value={payload}
               onChange={(e) => setPayload(e.target.value)}
               rows={6}
               style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '6px',
-                border: '1px solid #333',
-                backgroundColor: '#000',
-                color: '#a3a3a3',
-                fontSize: '13px',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                outline: 'none',
                 resize: 'vertical',
-                transition: 'all 0.2s ease',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#ccff00';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#333';
               }}
             />
           </div>
@@ -138,21 +107,20 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
         <button
           onClick={handleTest}
           disabled={loading || (requiresAuth && !apiKey.trim())}
+          className="btn-primary"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
             width: '100%',
-            padding: '10px',
-            borderRadius: '6px',
-            backgroundColor: (loading || (requiresAuth && !apiKey.trim())) ? '#1f1f1f' : '#ccff00',
-            color: (loading || (requiresAuth && !apiKey.trim())) ? '#666' : '#000',
+            padding: '12px',
             border: 'none',
+            borderRadius: 'var(--radius-md)',
+            opacity: (loading || (requiresAuth && !apiKey.trim())) ? 0.6 : 1,
             cursor: (loading || (requiresAuth && !apiKey.trim())) ? 'not-allowed' : 'pointer',
             fontWeight: 700,
-            fontSize: '13px',
-            transition: 'all 0.2s ease',
+            fontSize: '14px',
           }}
         >
           {loading ? <Loader2 size={16} className="lucide-spin" /> : <Send size={16} />}
@@ -168,15 +136,16 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
               style={{ overflow: 'hidden', marginTop: '20px' }}
             >
               <div style={{
-                backgroundColor: '#000',
-                borderRadius: '6px',
-                border: `1px solid ${error ? '#ef4444' : '#333'}`,
+                backgroundColor: '#0f172a',
+                borderRadius: 'var(--radius-md)',
+                border: `1px solid ${error ? 'var(--color-danger)' : 'rgba(255,255,255,0.1)'}`,
                 padding: '16px',
                 maxHeight: '300px',
-                overflowY: 'auto'
+                overflowY: 'auto',
+                boxShadow: 'var(--shadow-md)'
               }}>
                 <div style={{ 
-                  color: error ? '#ef4444' : '#a3a3a3', 
+                  color: error ? '#fca5a5' : '#94a3b8', 
                   fontSize: '10px', 
                   fontWeight: 700, 
                   textTransform: 'uppercase', 
@@ -184,7 +153,7 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
                 }}>
                   {error ? 'Error' : 'Live Response'}
                 </div>
-                <pre style={{ margin: 0, fontSize: '13px', color: error ? '#fca5a5' : '#fff', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>
+                <pre style={{ margin: 0, fontSize: '13px', color: error ? '#fca5a5' : '#f8fafc', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>
                   <code>{error || response}</code>
                 </pre>
               </div>
