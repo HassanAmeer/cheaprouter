@@ -26,13 +26,33 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
   const [fetchingModels, setFetchingModels] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('adminToken') || '') : '';
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   useEffect(() => {
-    fetch('/api/admin/openrouter')
+    fetch('/api/admin/openrouter', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.key) setApiKey(data.key);
         if (data.status !== undefined) setStatus(data.status);
-        if (data.models) setSelectedModels(data.models);
+        if (data.models && Array.isArray(data.models)) {
+          const normalized = data.models.map((m: any) =>
+            typeof m === 'string'
+              ? { originalId: m, originalName: m, name: m, id: m, text: true, image: false, vision: false }
+              : {
+                  originalId: m.originalId || m.id || '',
+                  originalName: m.originalName || m.name || m.id || '',
+                  name: m.name || m.id || '',
+                  id: m.id || m.originalId || '',
+                  text: m.text ?? m.reasoning ?? true,
+                  image: m.image ?? false,
+                  vision: m.vision ?? m.image ?? false
+                }
+          );
+          setSelectedModels(normalized);
+        }
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
@@ -59,7 +79,10 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
     try {
       const res = await fetch('/api/admin/openrouter', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ key: keyToSave, status: true, models: modelsToSave })
       });
       if (res.ok) {
@@ -74,27 +97,32 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
 
   const toggleModelSelection = (model: any) => {
     const exists = selectedModels.find(m => m.originalId === model.id);
+    let next: SelectedModel[];
     if (exists) {
-      setSelectedModels(selectedModels.filter(m => m.originalId !== model.id));
+      next = selectedModels.filter(m => m.originalId !== model.id);
     } else {
-      setSelectedModels([...selectedModels, {
+      next = [...selectedModels, {
         originalId: model.id,
         originalName: model.name || model.id,
-        name: model.name || '',
-        id: model.id.split('/').pop()?.replace(/[^a-zA-Z0-9_-]/g, '_') || '',
+        name: model.name || model.id,
+        id: model.id.split('/').pop()?.replace(/[^a-zA-Z0-9_-]/g, '_') || model.id,
         text: true,
         image: false,
         vision: false
-      }]);
+      }];
     }
+    setSelectedModels(next);
+    handleSave(next, apiKey);
   };
 
   const updateSelectedModel = (originalId: string, field: keyof SelectedModel, value: any) => {
-    setSelectedModels(selectedModels.map(m => m.originalId === originalId ? { ...m, [field]: value } : m));
+    const next = selectedModels.map(m => m.originalId === originalId ? { ...m, [field]: value } : m);
+    setSelectedModels(next);
+    handleSave(next, apiKey);
   };
 
   const handleDrawerClose = () => {
-    handleSave();
+    handleSave(selectedModels, apiKey);
     setIsDrawerOpen(false);
   };
 

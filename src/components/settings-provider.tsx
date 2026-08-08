@@ -254,7 +254,7 @@ const defaultSettings: SiteSettings = {
       },
       {
         id: 'tab_agents',
-        name: 'Build Agents',
+        name: 'Build Website',
         plans: [
           { id: 'p_agents_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
           { id: 'p_agents_2', name: 'Starter', price: '$10', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
