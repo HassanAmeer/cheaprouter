@@ -110,7 +110,64 @@ Authorization: Bearer YOUR_API_KEY
 &nbsp;&nbsp;&#125;'
               </code>
             </pre>
+          
+          <hr style={{ border: 'none', borderBottom: '1px solid var(--color-border)', margin: '40px 0' }} />
+
+          <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }} id="models">
+            <Book size={28} color="var(--color-primary)" /> List Models
+          </h2>
+          <p style={{ fontSize: '16px', color: 'var(--color-text-muted)', marginBottom: '24px', lineHeight: '1.6' }}>
+            Get a list of all currently available models for your account, along with their custom names and supported capabilities (text, vision, reasoning, etc).
+          </p>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 12px', borderRadius: '4px', fontWeight: 700, fontSize: '14px' }}>GET</span>
+            <code style={{ fontSize: '16px', fontWeight: 600 }}>/v1/models</code>
           </div>
+
+          <div className={styles.codeSection} style={{ marginTop: '24px', marginBottom: '40px' }}>
+            <div className={styles.codeHeader}>
+              <Terminal size={20} />
+              <span>cURL Example</span>
+            </div>
+            <pre style={{ margin: 0, fontSize: '14px' }}>
+              <code>
+<span style={{ color: '#FF7B72' }}>curl</span> https://api.cheapagents.com/v1/models \<br/>
+&nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer YOUR_API_KEY"</span>
+              </code>
+            </pre>
+          </div>
+          
+          <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px' }}>Response Details</h3>
+          <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            The JSON response contains an array of model objects. Each object provides the model's <code>id</code> and <code>name</code> (as customized by the admin), and a <code>features</code> object indicating supported modalities.
+          </p>
+          
+          <div className={styles.codeSection} style={{ marginTop: '16px', marginBottom: '24px', backgroundColor: '#0d1117' }}>
+            <pre style={{ margin: 0, fontSize: '13px' }}>
+              <code>
+<span style={{ color: '#8b949e' }}>// Example JSON Response</span><br/>
+&#123;<br/>
+&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"object"</span>: <span style={{ color: '#A5D6FF' }}>"list"</span>,<br/>
+&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"data"</span>: [<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&#123;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"id"</span>: <span style={{ color: '#A5D6FF' }}>"gpt-4o"</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"object"</span>: <span style={{ color: '#A5D6FF' }}>"model"</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"name"</span>: <span style={{ color: '#A5D6FF' }}>"GPT-4 Omni"</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"features"</span>: &#123;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"text"</span>: <span style={{ color: '#FF7B72' }}>true</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"vision"</span>: <span style={{ color: '#FF7B72' }}>true</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"reasoning"</span>: <span style={{ color: '#FF7B72' }}>false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#125;,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: '#79C0FF' }}>"context_length"</span>: <span style={{ color: '#79C0FF' }}>128000</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&#125;<br/>
+&nbsp;&nbsp;]<br/>
+&#125;
+              </code>
+            </pre>
+          </div>
+
+</div>
 
         </div>
       </div>

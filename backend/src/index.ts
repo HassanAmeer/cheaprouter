@@ -459,6 +459,65 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
 app.post('/api/v1/chat/completions', handleCompletions);
 app.post('/v1/chat/completions', handleCompletions); // Accept both for easy proxying
 
+app.get('/api/v1/models', handleListModels);
+app.get('/v1/models', handleListModels); // Accept both for easy proxying
+
+async function handleListModels(c: any) {
+  try {
+    const auth = c.req.header('authorization');
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const reqKey = auth.replace('Bearer ', '');
+    const { hashPassword } = await import('./auth.ts');
+    const hashedKey = hashPassword(reqKey);
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 10)}`;
+    const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
+    const finalUserId = userId || c.get('userId');
+    
+    if (!finalUserId) {
+      return c.json({ error: 'Invalid API key or unauthorized' }, 401);
+    }
+
+    const providersResult = await db`SELECT models FROM admin_providers WHERE status = true`;
+    const data: any[] = [];
+    for (const p of providersResult) {
+      if (p.models && Array.isArray(p.models)) {
+        p.models.forEach((m: any) => {
+           // Skip if we already added a model with this custom ID to avoid duplicates
+           if (!data.find(existing => existing.id === m.id)) {
+             data.push({
+               id: m.id || m.originalId,
+               object: 'model',
+               created: Math.floor(Date.now() / 1000),
+               owned_by: 'cheaprouter',
+               name: m.name || m.originalName,
+               features: {
+                 text: !!m.text,
+                 image: !!m.image,
+                 vision: !!m.vision,
+                 audio: !!m.audio,
+                 reasoning: !!m.reasoning,
+                 video: !!m.video
+               },
+               context_length: m.context_length || 128000
+             });
+           }
+        });
+      }
+    }
+    
+    return c.json({
+      object: 'list',
+      data: data
+    });
+  } catch (error) {
+    console.error('Error in /v1/models:', error);
+    return c.json({ error: 'Failed to fetch models' }, 500);
+  }
+}
+
+
 // Streaming chat (SSE)
 app.get('/api/stream', async (c) => {
   const userId = c.get('userId');
