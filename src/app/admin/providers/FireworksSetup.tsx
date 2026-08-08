@@ -242,7 +242,7 @@ const FireworksSetup = forwardRef<FireworksSetupRef, { onModelsUpdated?: () => v
             onClick={() => {
               const newStatus = !status;
               setStatus(newStatus);
-              handleSave(selectedModels, apiKeys, false, newStatus);
+              handleSave(selectedModels, apiKeys, true, newStatus);
             }}
             style={{
               display: 'flex',

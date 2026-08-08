@@ -21,6 +21,13 @@ import TogetherSetup, { TogetherSetupRef } from '../TogetherSetup';
 import DeepSeekSetup, { DeepSeekSetupRef } from '../DeepSeekSetup';
 import FireworksSetup, { FireworksSetupRef } from '../FireworksSetup';
 import PerplexitySetup, { PerplexitySetupRef } from '../PerplexitySetup';
+import AmazonBedrockSetup, { AmazonBedrockSetupRef } from '../AmazonBedrockSetup';
+import GithubSetup, { GithubSetupRef } from '../GithubSetup';
+import HuggingFaceSetup, { HuggingFaceSetupRef } from '../HuggingFaceSetup';
+import HyperbolicSetup, { HyperbolicSetupRef } from '../HyperbolicSetup';
+import MoonshotSetup, { MoonshotSetupRef } from '../MoonshotSetup';
+import ZaiSetup, { ZaiSetupRef } from '../ZaiSetup';
+
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
@@ -51,6 +58,13 @@ export default function ManageProvidersPage() {
   const deepseekRef = useRef<DeepSeekSetupRef>(null);
   const fireworksRef = useRef<FireworksSetupRef>(null);
   const perplexityRef = useRef<PerplexitySetupRef>(null);
+  const amazonbedrockRef = useRef<AmazonBedrockSetupRef>(null);
+  const githubRef = useRef<GithubSetupRef>(null);
+  const huggingfaceRef = useRef<HuggingFaceSetupRef>(null);
+  const hyperbolicRef = useRef<HyperbolicSetupRef>(null);
+  const moonshotRef = useRef<MoonshotSetupRef>(null);
+  const zaiRef = useRef<ZaiSetupRef>(null);
+
   const [testingAll, setTestingAll] = useState(false);
 
   // Add Provider form state
@@ -664,6 +678,13 @@ export default function ManageProvidersPage() {
               <DeepSeekSetup ref={deepseekRef} index={16} onModelsUpdated={() => fetchProviders(true)} />
               <FireworksSetup ref={fireworksRef} index={17} onModelsUpdated={() => fetchProviders(true)} />
               <PerplexitySetup ref={perplexityRef} index={18} onModelsUpdated={() => fetchProviders(true)} />
+              <AmazonBedrockSetup ref={amazonbedrockRef} index={19} onModelsUpdated={() => fetchProviders(true)} />
+              <GithubSetup ref={githubRef} index={20} onModelsUpdated={() => fetchProviders(true)} />
+              <HuggingFaceSetup ref={huggingfaceRef} index={21} onModelsUpdated={() => fetchProviders(true)} />
+              <HyperbolicSetup ref={hyperbolicRef} index={22} onModelsUpdated={() => fetchProviders(true)} />
+              <MoonshotSetup ref={moonshotRef} index={23} onModelsUpdated={() => fetchProviders(true)} />
+              <ZaiSetup ref={zaiRef} index={24} onModelsUpdated={() => fetchProviders(true)} />
+
             </div>
           </div>
         </>

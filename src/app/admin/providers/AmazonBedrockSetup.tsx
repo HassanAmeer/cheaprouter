@@ -16,11 +16,11 @@ type SelectedModel = {
   video: boolean;
 };
 
-export interface GroqSetupRef {
+export interface AmazonBedrockSetupRef {
   testApi: (silent?: boolean) => Promise<boolean>;
 }
 
-const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index?: number }>(({ onModelsUpdated, index }, ref) => {
+const AmazonBedrockSetup = forwardRef<AmazonBedrockSetupRef, { onModelsUpdated?: () => void, index?: number }>(({ onModelsUpdated, index }, ref) => {
   const [apiKeys, setApiKeys] = useState<{key: string, active: boolean}[]>([{key: '', active: true}]);
   const [status, setStatus] = useState(false);
   const [showKeys, setShowKeys] = useState<boolean[]>([]);
@@ -66,7 +66,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
     setTesting(prev => { const n = [...prev]; n[index] = true; return n; });
     setTestSuccesses(prev => { const n = [...prev]; n[index] = null; return n; });
     try {
-      const res = await fetch(`/api/admin/groq/models?key=${encodeURIComponent(keyObj.key)}`, {
+      const res = await fetch(`/api/admin/amazonbedrock/models?key=${encodeURIComponent(keyObj.key)}`, {
         headers: getAuthHeaders()
       });
       const data = await res.json();
@@ -91,7 +91,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
   };
 
   useEffect(() => {
-    fetch('/api/admin/groq', { headers: getAuthHeaders() })
+    fetch('/api/admin/amazonbedrock', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.key) {
@@ -136,7 +136,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
     setFetchingModels(true);
     try {
       const validKey = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '';
-      const res = await fetch(`/api/admin/groq/models?key=${encodeURIComponent(validKey)}`, {
+      const res = await fetch(`/api/admin/amazonbedrock/models?key=${encodeURIComponent(validKey)}`, {
         headers: getAuthHeaders()
       });
       const data = await res.json();
@@ -155,7 +155,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to fetch Groq models.');
+      alert('Failed to fetch AmazonBedrock models.');
     } finally {
       setFetchingModels(false);
     }
@@ -166,7 +166,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
     try {
       const validKeys = keysToSave.filter(k => k.key.trim() !== '');
       const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : [{key: '', active: true}]);
-      const res = await fetch('/api/admin/groq', {
+      const res = await fetch('/api/admin/amazonbedrock', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ key: keyString, status: overrideStatus !== null ? overrideStatus : status, models: modelsToSave })
@@ -234,9 +234,9 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
               </span>
             )}
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src="https://www.google.com/s2/favicons?domain=groq.com&sz=128" alt="Groq" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+              <img src="https://www.google.com/s2/favicons?domain=aws.amazon.com&sz=128" alt="AmazonBedrock" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 600 }}>Groq</span>
+            <span style={{ fontSize: '18px', fontWeight: 600 }}>AmazonBedrock</span>
           </div>
                     <div 
             onClick={() => {
@@ -363,7 +363,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
           <div style={{ width: '460px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }} onClick={(e) => e.stopPropagation()}>
             
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Groq Models</h2>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>AmazonBedrock Models</h2>
               <button onClick={handleDrawerClose} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
@@ -387,7 +387,7 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/groq/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={`/api/admin/amazonbedrock/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 
@@ -515,4 +515,4 @@ const GroqSetup = forwardRef<GroqSetupRef, { onModelsUpdated?: () => void, index
   );
 });
 
-export default GroqSetup;
+export default AmazonBedrockSetup;

@@ -685,7 +685,7 @@ export default function ProvidersPage() {
       )}
     </div>
   );
-  const allModelsListUnfiltered = providers.flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m })));
+  const allModelsListUnfiltered = providers.filter(p => p.status !== false).flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m })));
   const allModelsList = allModelsListUnfiltered.filter(m => {
     let match = true;
 

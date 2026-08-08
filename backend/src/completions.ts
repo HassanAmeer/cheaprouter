@@ -107,6 +107,24 @@ export async function getModelInstance(userId: string, model: string) {
   const perplexityInst = checkProv('ap_perplexity', (key) => createOpenAI({ baseURL: 'https://api.perplexity.ai', apiKey: key }));
   if (perplexityInst) return perplexityInst;
 
+  const amazonbedrockInst = checkProv('ap_amazonbedrock', (key) => createOpenAI({ baseURL: 'https://bedrock.proxy/v1', apiKey: key }));
+  if (amazonbedrockInst) return amazonbedrockInst;
+
+  const githubInst = checkProv('ap_github', (key) => createOpenAI({ baseURL: 'https://models.inference.ai.azure.com', apiKey: key }));
+  if (githubInst) return githubInst;
+
+  const huggingfaceInst = checkProv('ap_huggingface', (key) => createOpenAI({ baseURL: 'https://api-inference.huggingface.co/v1', apiKey: key }));
+  if (huggingfaceInst) return huggingfaceInst;
+
+  const hyperbolicInst = checkProv('ap_hyperbolic', (key) => createOpenAI({ baseURL: 'https://api.hyperbolic.xyz/v1', apiKey: key }));
+  if (hyperbolicInst) return hyperbolicInst;
+
+  const moonshotInst = checkProv('ap_moonshot', (key) => createOpenAI({ baseURL: 'https://api.moonshot.cn/v1', apiKey: key }));
+  if (moonshotInst) return moonshotInst;
+
+  const zaiInst = checkProv('ap_zai', (key) => createOpenAI({ baseURL: 'https://api.z.ai/v1', apiKey: key }));
+  if (zaiInst) return zaiInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
