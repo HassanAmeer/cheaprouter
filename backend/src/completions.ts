@@ -146,6 +146,12 @@ export async function getModelInstance(userId: string, model: string) {
   const unorouterInst = checkProv('ap_unorouter', (key) => createOpenAI({ baseURL: 'https://api.unorouter.com/v1', apiKey: key }));
   if (unorouterInst) return unorouterInst;
 
+  const routewayInst = checkProv('ap_routeway', (key) => createOpenAI({ baseURL: 'https://api.routeway.ai/v1', apiKey: key }));
+  if (routewayInst) return routewayInst;
+
+  const stepfunInst = checkProv('ap_stepfun', (key) => createOpenAI({ baseURL: 'https://api.stepfun.com/v1', apiKey: key }));
+  if (stepfunInst) return stepfunInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';

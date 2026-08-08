@@ -34,6 +34,8 @@ import PoixeSetup, { PoixeSetupRef } from '../PoixeSetup';
 import SiliconFlowSetup, { SiliconFlowSetupRef } from '../SiliconFlowSetup';
 import ZenmuxSetup, { ZenmuxSetupRef } from '../ZenmuxSetup';
 import UnoRouterSetup, { UnoRouterSetupRef } from '../UnoRouterSetup';
+import RoutewaySetup, { RoutewaySetupRef } from '../RoutewaySetup';
+import StepFunSetup, { StepFunSetupRef } from '../StepFunSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -78,6 +80,8 @@ export default function ManageProvidersPage() {
   const siliconflowRef = useRef<SiliconFlowSetupRef>(null);
   const zenmuxRef = useRef<ZenmuxSetupRef>(null);
   const unorouterRef = useRef<UnoRouterSetupRef>(null);
+  const routewayRef = useRef<RoutewaySetupRef>(null);
+  const stepfunRef = useRef<StepFunSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -705,6 +709,8 @@ export default function ManageProvidersPage() {
               <SiliconFlowSetup ref={siliconflowRef} index={29} onModelsUpdated={() => fetchProviders(true)} />
               <ZenmuxSetup ref={zenmuxRef} index={30} onModelsUpdated={() => fetchProviders(true)} />
               <UnoRouterSetup ref={unorouterRef} index={31} onModelsUpdated={() => fetchProviders(true)} />
+              <RoutewaySetup ref={routewayRef} index={32} onModelsUpdated={() => fetchProviders(true)} />
+              <StepFunSetup ref={stepfunRef} index={33} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>
