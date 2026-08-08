@@ -234,7 +234,7 @@ const FireworksSetup = forwardRef<FireworksSetupRef, { onModelsUpdated?: () => v
               </span>
             )}
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src="https://www.google.com/s2/favicons?domain=fireworks.com&sz=128" alt="Fireworks" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+              <img src="https://www.google.com/s2/favicons?domain=fireworks.ai&sz=128" alt="Fireworks" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '18px', fontWeight: 600 }}>Fireworks</span>
           </div>
