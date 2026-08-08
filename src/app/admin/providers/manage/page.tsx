@@ -646,24 +646,24 @@ export default function ManageProvidersPage() {
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-              <OpenRouterSetup ref={openRouterRef} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenCodeSetup ref={openCodeRef} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenAISetup ref={openaiRef} onModelsUpdated={() => fetchProviders(true)} />
-              <AnthropicSetup ref={anthropicRef} onModelsUpdated={() => fetchProviders(true)} />
-              <CohereSetup ref={cohereRef} onModelsUpdated={() => fetchProviders(true)} />
-              <GroqSetup ref={groqRef} onModelsUpdated={() => fetchProviders(true)} />
-              <GoogleSetup ref={googleRef} onModelsUpdated={() => fetchProviders(true)} />
-              <CerebrasSetup ref={cerebrasRef} onModelsUpdated={() => fetchProviders(true)} />
-              <SambaNovaSetup ref={sambanovaRef} onModelsUpdated={() => fetchProviders(true)} />
-              <XAISetup ref={xaiRef} onModelsUpdated={() => fetchProviders(true)} />
-              <NovitaSetup ref={novitaRef} onModelsUpdated={() => fetchProviders(true)} />
-              <BytezSetup ref={bytezRef} onModelsUpdated={() => fetchProviders(true)} />
-              <AIMLAPISetup ref={aimlapiRef} onModelsUpdated={() => fetchProviders(true)} />
-              <MistralSetup ref={mistralRef} onModelsUpdated={() => fetchProviders(true)} />
-              <TogetherSetup ref={togetherRef} onModelsUpdated={() => fetchProviders(true)} />
-              <DeepSeekSetup ref={deepseekRef} onModelsUpdated={() => fetchProviders(true)} />
-              <FireworksSetup ref={fireworksRef} onModelsUpdated={() => fetchProviders(true)} />
-              <PerplexitySetup ref={perplexityRef} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenRouterSetup ref={openRouterRef} index={1} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenCodeSetup ref={openCodeRef} index={2} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenAISetup ref={openaiRef} index={3} onModelsUpdated={() => fetchProviders(true)} />
+              <AnthropicSetup ref={anthropicRef} index={4} onModelsUpdated={() => fetchProviders(true)} />
+              <CohereSetup ref={cohereRef} index={5} onModelsUpdated={() => fetchProviders(true)} />
+              <GroqSetup ref={groqRef} index={6} onModelsUpdated={() => fetchProviders(true)} />
+              <GoogleSetup ref={googleRef} index={7} onModelsUpdated={() => fetchProviders(true)} />
+              <CerebrasSetup ref={cerebrasRef} index={8} onModelsUpdated={() => fetchProviders(true)} />
+              <SambaNovaSetup ref={sambanovaRef} index={9} onModelsUpdated={() => fetchProviders(true)} />
+              <XAISetup ref={xaiRef} index={10} onModelsUpdated={() => fetchProviders(true)} />
+              <NovitaSetup ref={novitaRef} index={11} onModelsUpdated={() => fetchProviders(true)} />
+              <BytezSetup ref={bytezRef} index={12} onModelsUpdated={() => fetchProviders(true)} />
+              <AIMLAPISetup ref={aimlapiRef} index={13} onModelsUpdated={() => fetchProviders(true)} />
+              <MistralSetup ref={mistralRef} index={14} onModelsUpdated={() => fetchProviders(true)} />
+              <TogetherSetup ref={togetherRef} index={15} onModelsUpdated={() => fetchProviders(true)} />
+              <DeepSeekSetup ref={deepseekRef} index={16} onModelsUpdated={() => fetchProviders(true)} />
+              <FireworksSetup ref={fireworksRef} index={17} onModelsUpdated={() => fetchProviders(true)} />
+              <PerplexitySetup ref={perplexityRef} index={18} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

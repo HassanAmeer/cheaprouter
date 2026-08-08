@@ -20,7 +20,7 @@ export interface SambaNovaSetupRef {
   testApi: (silent?: boolean) => Promise<boolean>;
 }
 
-const SambaNovaSetup = forwardRef<SambaNovaSetupRef, { onModelsUpdated?: () => void }>(({ onModelsUpdated }, ref) => {
+const SambaNovaSetup = forwardRef<SambaNovaSetupRef, { onModelsUpdated?: () => void, index?: number }>(({ onModelsUpdated, index }, ref) => {
   const [apiKeys, setApiKeys] = useState<{key: string, active: boolean}[]>([{key: '', active: true}]);
   const [status, setStatus] = useState(false);
   const [showKeys, setShowKeys] = useState<boolean[]>([]);
@@ -161,7 +161,7 @@ const SambaNovaSetup = forwardRef<SambaNovaSetupRef, { onModelsUpdated?: () => v
     }
   };
 
-  const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false) => {
+  const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false, overrideStatus: boolean | null = null) => {
     setSaving(true);
     try {
       const validKeys = keysToSave.filter(k => k.key.trim() !== '');
@@ -169,7 +169,7 @@ const SambaNovaSetup = forwardRef<SambaNovaSetupRef, { onModelsUpdated?: () => v
       const res = await fetch('/api/admin/sambanova', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ key: keyString, status, models: modelsToSave })
+        body: JSON.stringify({ key: keyString, status: overrideStatus !== null ? overrideStatus : status, models: modelsToSave })
       });
       if (res.ok) {
         if (shouldNotify && onModelsUpdated) onModelsUpdated();
@@ -225,12 +225,44 @@ const SambaNovaSetup = forwardRef<SambaNovaSetupRef, { onModelsUpdated?: () => v
   return (
     <>
       <div style={{ background: 'var(--color-card-bg)', border: `1px solid ${testSuccesses.includes(false) ? '#ef4444' : testSuccesses.includes(true) ? '#10b981' : 'var(--color-border)'}`, padding: '24px', borderRadius: '12px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', transition: 'border-color 0.3s' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src="https://www.google.com/s2/favicons?domain=sambanova.com&sz=128" alt="SambaNova" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {index !== undefined && (
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 600, background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px' }}>
+                #${index}
+              </span>
+            )}
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <img src=https://www.google.com/s2/favicons?domain=sambanova.com&sz=128 alt=SambaNova style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+            </div>
+            <span style={{ fontSize: '18px', fontWeight: 600 }}>SambaNova</span>
           </div>
-          <span style={{ fontSize: '18px', fontWeight: 600 }}>SambaNova</span>
+          <button
+            onClick={() => {
+              const newStatus = !status;
+              setStatus(newStatus);
+              handleSave(selectedModels, apiKeys, false, newStatus);
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 600,
+              background: status ? '#10b98122' : 'var(--color-bg-soft)',
+              color: status ? '#10b981' : 'var(--color-text-muted)',
+              border: `1px solid ${status ? '#10b98155' : 'var(--color-border)'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            {status ? <Check size={14} /> : <Pause size={14} />}
+            {status ? 'Enabled' : 'Disabled'}
+          </button>
         </div>
+
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {apiKeys.map((keyObj, index) => (
