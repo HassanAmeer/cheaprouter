@@ -22,7 +22,7 @@ export default function ManageProvidersPage() {
   const [newProvId, setNewProvId] = useState('');
   const [newProvName, setNewProvName] = useState('');
   const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
-  const [newProvApiFormat, setNewProvApiFormat] = useState('OpenAI Compatible');
+  const [newProvApiFormat, setNewProvApiFormat] = useState('');
   const [newProvUseModelsApi, setNewProvUseModelsApi] = useState(false);
   const [newProvModelsApiLink, setNewProvModelsApiLink] = useState('');
   const [newProvModels, setNewProvModels] = useState<Model[]>([]);
@@ -364,13 +364,14 @@ export default function ManageProvidersPage() {
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 2, minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Base URL</label>
-                  <input type="text" value={newProvBaseUrl} onChange={(e) => setNewProvBaseUrl(e.target.value)} placeholder="e.g. https://api.openai.com/v1"
+                  <input type="text" value={newProvBaseUrl} onChange={(e) => setNewProvBaseUrl(e.target.value)} placeholder="e.g. https://api.openai.com/v1" autoComplete="off"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Format</label>
                   <select value={newProvApiFormat} onChange={(e) => setNewProvApiFormat(e.target.value)}
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}>
+                    <option value="" disabled>Select API Format</option>
                     <option value="OpenAI Compatible">OpenAI Compatible</option>
                     <option value="OpenAI Responses">OpenAI Responses</option>
                     <option value="Anthropic Messages">Anthropic Messages</option>
@@ -381,7 +382,7 @@ export default function ManageProvidersPage() {
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Root API Key</label>
-                  <input type="password" value={newProvKey} onChange={(e) => setNewProvKey(e.target.value)} placeholder="sk-..."
+                  <input type="password" value={newProvKey} onChange={(e) => setNewProvKey(e.target.value)} placeholder="sk-..." autoComplete="new-password"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
                 </div>
               </div>

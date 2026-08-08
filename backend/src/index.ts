@@ -555,6 +555,19 @@ app.put('/api/admin/opencode', zValidator('json', z.any()), async (c) => {
   return c.json({ success: true });
 });
 
+app.get('/api/admin/opencode/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://opencode.ai/zen/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    const data = await res.json();
+    return c.json(data);
+  } catch (e) {
+    return c.json({ error: 'Failed to fetch OpenCode models' }, 500);
+  }
+});
+
 // ---- OpenRouter Setup ----
 app.get('/api/admin/openrouter', async (c) => {
   const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter'`;

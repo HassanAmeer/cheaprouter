@@ -61,7 +61,7 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
   const handleFetchModels = async () => {
     setFetchingModels(true);
     try {
-      const res = await fetch('https://openrouter.ai/api/v1/models');
+      const res = await fetch('https://openrouter.ai/api/v1/models?output_modalities=text,image');
       const data = await res.json();
       if (data && data.data) {
         setAvailableModels(data.data);
@@ -211,8 +211,18 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
                         style={{ width: '14px', height: '14px', cursor: 'pointer' }}
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</span>
-                        <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.id}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.1)', padding: '1px 4px', borderRadius: '4px' }}>
+                            {model.context_length ? `${Math.round(model.context_length / 1000)}K` : ''}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.id}</span>
+                          <span style={{ fontSize: '9px', color: 'var(--color-text-muted)', opacity: 0.8, textTransform: 'uppercase' }}>
+                            {model.architecture?.modality || 'TEXT'}
+                          </span>
+                        </div>
                       </div>
                     </label>
                   );

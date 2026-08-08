@@ -60,10 +60,12 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
   const handleFetchModels = async () => {
     setFetchingModels(true);
     try {
-      const res = await fetch('https://opencode.ai/zen/v1/models');
+      const res = await fetch(`/api/admin/opencode/models?key=${encodeURIComponent(apiKey)}`);
       const data = await res.json();
-      if (data && data.data) {
+      if (data && Array.isArray(data.data)) {
         setAvailableModels(data.data);
+      } else if (data && data.error) {
+        alert('Failed to fetch OpenCode models: ' + data.error);
       }
     } catch (e) {
       console.error(e);
@@ -127,7 +129,7 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
 
   const filteredAvailableModels = availableModels.filter(m => 
     m.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    m.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    (m.name || m.id).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) return null;
@@ -199,6 +201,7 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
               <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {filteredAvailableModels.map(model => {
                   const isSelected = selectedModels.some(m => m.originalId === model.id);
+                  const displayName = model.name || model.id.split('/').pop() || model.id;
                   return (
                     <label key={model.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', background: isSelected ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-bg-soft)', border: '1px solid', borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)', borderRadius: '6px', cursor: 'pointer' }}>
                       <input 
@@ -208,7 +211,7 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
                         style={{ width: '14px', height: '14px', cursor: 'pointer' }}
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
                         <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.id}</span>
                       </div>
                     </label>

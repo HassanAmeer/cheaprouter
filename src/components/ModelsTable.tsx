@@ -4,82 +4,67 @@ import React, { useState } from 'react';
 import { Search, Type, Image as ImageIcon, Code, Mic, Eye, Layers } from 'lucide-react';
 import styles from './ModelsTable.module.css';
 
-const allModels = [
-  { 
-    id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', icon: 'https://cdn.simpleicons.org/openai/10A37F',
-    context: '128K', latency: '1.2s', throughput: '45tps', input: '$5/M', output: '$15/M', cache: 'Read: $2.5/M', 
-    caps: ['text', 'vision'], type: 'Premium'
-  },
-  { 
-    id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', icon: 'https://cdn.simpleicons.org/openai/10A37F',
-    context: '128K', latency: '0.6s', throughput: '120tps', input: '$0.15/M', output: '$0.60/M', cache: 'Read: $0.075/M', 
-    caps: ['text', 'vision'], type: 'Cheap Rate'
-  },
-  { 
-    id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', icon: 'https://cdn.simpleicons.org/anthropic/D97757',
-    context: '200K', latency: '1.5s', throughput: '40tps', input: '$3/M', output: '$15/M', cache: 'Read: $0.3/M', 
-    caps: ['text', 'vision', 'code'], type: 'Premium'
-  },
-  { 
-    id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', icon: 'https://cdn.simpleicons.org/anthropic/D97757',
-    context: '200K', latency: '0.8s', throughput: '100tps', input: '$0.25/M', output: '$1.25/M', cache: 'Read: $0.025/M', 
-    caps: ['text', 'vision'], type: 'Cheap Rate'
-  },
-  { 
-    id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', icon: 'https://cdn.simpleicons.org/google/4285F4',
-    context: '2M', latency: '2.4s', throughput: '30tps', input: '$3.50/M', output: '$10.50/M', cache: 'Read: $0.875/M', 
-    caps: ['text', 'vision', 'audio', 'video'], type: 'Premium'
-  },
-  { 
-    id: 'google/gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google', icon: 'https://cdn.simpleicons.org/google/4285F4',
-    context: '1M', latency: '0.9s', throughput: '150tps', input: '$0.075/M', output: '$0.30/M', cache: 'Read: $0.018/M', 
-    caps: ['text', 'vision', 'audio', 'video'], type: 'Free (Limited)'
-  },
-  { 
-    id: 'meta-llama/llama-3.1-405b', name: 'Llama 3.1 405B', provider: 'Meta', icon: 'https://cdn.simpleicons.org/meta/0668E1',
-    context: '128K', latency: '2.8s', throughput: '20tps', input: '$2/M', output: '$2/M', cache: '-', 
-    caps: ['text', 'code'], type: 'Premium'
-  },
-  { 
-    id: 'meta-llama/llama-3-70b', name: 'Llama 3 70B', provider: 'Meta', icon: 'https://cdn.simpleicons.org/meta/0668E1',
-    context: '8K', latency: '0.8s', throughput: '80tps', input: '$0.50/M', output: '$0.50/M', cache: '-', 
-    caps: ['text'], type: 'Free'
-  },
-  { 
-    id: 'deepseek/deepseek-coder-v2', name: 'DeepSeek Coder V2', provider: 'DeepSeek', icon: 'https://logo.clearbit.com/deepseek.com',
-    context: '128K', latency: '1.4s', throughput: '65tps', input: '$0.14/M', output: '$0.28/M', cache: 'Read: $0.014/M', 
-    caps: ['text', 'code'], type: 'Cheap Rate'
-  },
-  { 
-    id: 'x-ai/grok-1.5', name: 'Grok 1.5', provider: 'X.AI', icon: 'https://cdn.simpleicons.org/x/000000',
-    context: '128K', latency: '1.8s', throughput: '45tps', input: '$5/M', output: '$15/M', cache: '-', 
-    caps: ['text', 'vision'], type: 'Premium'
-  },
-  { 
-    id: 'x-ai/grok-super', name: 'Super Grok', provider: 'X.AI', icon: 'https://cdn.simpleicons.org/x/000000',
-    context: '200K', latency: '1.2s', throughput: '60tps', input: '$8/M', output: '$20/M', cache: '-', 
-    caps: ['text', 'vision', 'code'], type: 'Premium'
-  },
-  { 
-    id: 'openai/chatgpt-5.6', name: 'ChatGPT 5.6', provider: 'OpenAI', icon: 'https://cdn.simpleicons.org/openai/10A37F',
-    context: '1M', latency: '1.0s', throughput: '50tps', input: '$10/M', output: '$30/M', cache: 'Read: $5/M', 
-    caps: ['text', 'vision', 'code', 'audio'], type: 'Premium'
-  },
-  { 
-    id: 'fable/fable-5.6', name: 'Fable 5.6', provider: 'Fable', icon: 'https://cdn.simpleicons.org/openai/10A37F',
-    context: '1M', latency: '0.8s', throughput: '80tps', input: '$8/M', output: '$24/M', cache: 'Read: $4/M', 
-    caps: ['text', 'vision'], type: 'Premium'
-  },
-  { 
-    id: 'zhipu/glm-4', name: 'GLM 4', provider: 'Zhipu AI', icon: 'https://cdn.simpleicons.org/google/4285F4',
-    context: '128K', latency: '1.5s', throughput: '55tps', input: '$2/M', output: '$6/M', cache: '-', 
-    caps: ['text', 'code'], type: 'Cheap Rate'
-  },
-];
+
 
 export default function ModelsTable() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  const [allModels, setAllModels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/admin/providers')
+      .then(res => res.json())
+      .then(data => {
+        let models: any[] = [];
+        if (Array.isArray(data)) {
+          const rawArray = data[0]?.id && !data[0]?.providers ? data : (data.providers || []);
+          models = rawArray.flatMap((p: any) => 
+            (p.models || [])
+              .filter((m: any) => m.showOnLandingPage)
+              .map((m: any) => {
+                const iconMap: Record<string, string> = {
+                  'OpenAI': 'https://cdn.simpleicons.org/openai/10A37F',
+                  'Anthropic': 'https://cdn.simpleicons.org/anthropic/D97757',
+                  'Google': 'https://cdn.simpleicons.org/google/4285F4',
+                  'Meta': 'https://cdn.simpleicons.org/meta/0668E1',
+                  'DeepSeek': 'https://logo.clearbit.com/deepseek.com',
+                  'X.AI': 'https://cdn.simpleicons.org/x/000000',
+                  'Mistral': 'https://logo.clearbit.com/mistral.ai'
+                };
+                return {
+                  id: m.originalId || m.id,
+                  name: m.name,
+                  provider: p.name,
+                  icon: iconMap[p.name] || 'https://cdn.simpleicons.org/openai/10A37F',
+                  context: m.contextWindow || '-',
+                  latency: '-',
+                  throughput: '-',
+                  input: m.inputPrice ? `$${m.inputPrice}/1M` : '-',
+                  output: m.outputPrice ? `$${m.outputPrice}/1M` : '-',
+                  cache: '-',
+                  caps: [
+                    m.text && 'text',
+                    m.vision && 'vision',
+                    m.image && 'image',
+                    m.video && 'video',
+                    m.audio && 'audio',
+                    m.reasoning && 'reasoning',
+                    m.embedding && 'embedding'
+                  ].filter(Boolean),
+                  type: m.access || 'Standard'
+                };
+              })
+          );
+        }
+        setAllModels(models);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch landing page models:', err);
+        setLoading(false);
+      });
+  }, []);
 
   const filteredModels = allModels.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase()) || m.provider.toLowerCase().includes(search.toLowerCase());
@@ -153,7 +138,13 @@ export default function ModelsTable() {
             </tr>
           </thead>
           <tbody>
-            {filteredModels.map((m, i) => (
+            {loading ? (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '60px', color: '#666' }}>
+                  Loading models...
+                </td>
+              </tr>
+            ) : filteredModels.map((m, i) => (
               <tr key={i}>
                 <td>
                   <div className={styles.modelNameCol}>
@@ -189,7 +180,7 @@ export default function ModelsTable() {
                 </td>
               </tr>
             ))}
-            {filteredModels.length === 0 && (
+            {!loading && filteredModels.length === 0 && (
               <tr>
                 <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                   No models found matching your search.
