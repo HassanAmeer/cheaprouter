@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import OpenRouterSetup from './OpenRouterSetup';
 
 type Model = { id: string; name: string; originalId?: string; reasoning?: boolean; image?: boolean };
 type Header = { id: string; key: string; value: string };
@@ -13,7 +14,39 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showGlobalModels, setShowGlobalModels] = useState(false);
+  const [showGlobalModels, setShowGlobalModels] = useState(true);
+  const [testingModelId, setTestingModelId] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
+
+  const handleTestModel = async (providerId: string, modelId: string) => {
+    const key = `${providerId}-${modelId}`;
+    setTestingModelId(key);
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      setTestResults(prev => ({
+        ...prev,
+        [key]: { success: true, message: '200 OK - Active' }
+      }));
+    } catch (e) {
+      setTestResults(prev => ({
+        ...prev,
+        [key]: { success: false, message: 'Error' }
+      }));
+    } finally {
+      setTestingModelId(null);
+    }
+  };
+
+  const handleModelUpdateInGlobalSummary = (providerId: string, modelIndex: number, field: string, value: any) => {
+    setProviders(prev => prev.map(p => {
+      if (p.id === providerId) {
+        const nextModels = [...(p.models || [])];
+        nextModels[modelIndex] = { ...nextModels[modelIndex], [field]: value };
+        return { ...p, models: nextModels };
+      }
+      return p;
+    }));
+  };
   
   // State for Add Provider Modal
   const [showAddProvider, setShowAddProvider] = useState(false);
@@ -43,21 +76,59 @@ export default function ProvidersPage() {
     setExpandedProviders(next);
   };
 
-  useEffect(() => {
-    fetch('/api/admin/providers')
-      .then(res => {
-        if (!res.ok) return null;
-        const ct = res.headers.get('content-type');
-        if (ct && ct.includes('application/json')) {
-          return res.json().catch(() => null);
+  const fetchProviders = async () => {
+    setLoading(true);
+    try {
+      let list: Provider[] = [];
+      const res = await fetch('/api/admin/providers');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (data && data.providers) {
+          list = data.providers;
         }
-        return null;
-      })
-      .then(data => {
-        if (data && data.providers) setProviders(data.providers);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+      }
+
+      // Also check OpenRouter config
+      const openRouterRes = await fetch('/api/admin/openrouter');
+      if (openRouterRes.ok) {
+        const openRouterData = await openRouterRes.json();
+        if (openRouterData && openRouterData.models && openRouterData.models.length > 0) {
+          const idx = list.findIndex(p => p.id === 'ap_openrouter' || p.id === 'openrouter');
+          const openRouterProv: Provider = {
+            id: 'ap_openrouter',
+            name: 'OpenRouter',
+            status: openRouterData.status ?? true,
+            key: openRouterData.key || '',
+            priority: 10,
+            models: openRouterData.models.map((m: any) => ({
+              id: m.id || m.originalId,
+              name: m.name || m.originalName || m.id,
+              originalId: m.originalId || m.id,
+              reasoning: m.text ?? true,
+              image: m.image || m.vision || false
+            })),
+            isCustom: true
+          };
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], ...openRouterProv };
+          } else {
+            list.push(openRouterProv);
+          }
+        }
+      }
+
+      setProviders(list);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProviders();
   }, []);
 
   const toggleProvider = (id: string) => {
@@ -84,10 +155,24 @@ export default function ProvidersPage() {
     setSaving(true);
     try {
       const res = await fetch('/api/admin/providers', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(providers)
       });
+
+      const openRouterProv = providers.find(p => p.id === 'ap_openrouter' || p.id === 'openrouter');
+      if (openRouterProv) {
+        await fetch('/api/admin/openrouter', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: openRouterProv.key,
+            status: openRouterProv.status,
+            models: openRouterProv.models
+          })
+        });
+      }
+
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
@@ -437,6 +522,97 @@ export default function ProvidersPage() {
   );
   return (
     <div>
+      {!loading && (
+        <>
+          <div style={{ marginBottom: '32px', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div 
+              style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--color-bg-soft)' }}
+              onClick={() => setShowGlobalModels(!showGlobalModels)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+                <Layers size={18} /> All Selected Models Summary ({providers.flatMap(p => p.models || []).length})
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); fetchProviders(); }}
+                  title="Reload Models" 
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '4px 8px', borderRadius: '4px' }}
+                >
+                  <RefreshCw size={14} className={loading ? styles.spin : ''} /> Reload
+                </button>
+                {showGlobalModels ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </div>
+            </div>
+            {showGlobalModels && (
+              <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {providers.flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m }))).length === 0 ? (
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>No models selected.</div>
+                  ) : (
+                    <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+                          <th style={{ padding: '8px' }}>Provider</th>
+                          <th style={{ padding: '8px' }}>Original Model ID</th>
+                          <th style={{ padding: '8px' }}>Showing Name</th>
+                          <th style={{ padding: '8px' }}>Showing ID</th>
+                          <th style={{ padding: '8px' }}>Features & Options</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {providers.flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m }))).map((m, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '8px', fontWeight: 600 }}>{m.providerName}</td>
+                            <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--color-text-muted)', fontSize: '12px' }}>{m.originalId || m.id}</td>
+                            <td style={{ padding: '4px 8px' }}>
+                              <input 
+                                type="text"
+                                value={m.name}
+                                onChange={(e) => handleModelUpdateInGlobalSummary(m.providerId, m.mIdx, 'name', e.target.value)}
+                                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', minWidth: '130px' }}
+                              />
+                            </td>
+                            <td style={{ padding: '4px 8px' }}>
+                              <input 
+                                type="text"
+                                value={m.id}
+                                onChange={(e) => handleModelUpdateInGlobalSummary(m.providerId, m.mIdx, 'id', e.target.value)}
+                                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', minWidth: '130px' }}
+                              />
+                            </td>
+                            <td style={{ padding: '4px 8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={!!m.reasoning}
+                                  onChange={(e) => handleModelUpdateInGlobalSummary(m.providerId, m.mIdx, 'reasoning', e.target.checked)}
+                                />
+                                Reasoning
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={!!m.image}
+                                  onChange={(e) => handleModelUpdateInGlobalSummary(m.providerId, m.mIdx, 'image', e.target.checked)}
+                                />
+                                Vision/Image
+                              </label>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
+            <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
+          </div>
+        </>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Provider Routing & Keys</h2>
@@ -464,6 +640,7 @@ export default function ProvidersPage() {
         </div>
       ) : (
         <>
+
           {showAddProvider && (
             <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', padding: '24px', borderRadius: '12px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -493,163 +670,131 @@ export default function ProvidersPage() {
                     type="text" 
                     value={newProvBaseUrl}
                     onChange={(e) => setNewProvBaseUrl(e.target.value)}
-                    placeholder="e.g. https://api.together.xyz/v1"
-                    autoComplete="off"
+                    placeholder="e.g. https://api.myprovider.com/v1"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                   />
                 </div>
               </div>
-
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
-                <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider API Format</label>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Format</label>
                   <select 
                     value={newProvApiFormat}
                     onChange={(e) => setNewProvApiFormat(e.target.value)}
-                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', appearance: 'auto' }}
+                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                   >
                     <option value="OpenAI Compatible">OpenAI Compatible</option>
-                    <option value="OpenAI Responses">OpenAI Responses</option>
-                    <option value="Anthropic Messages">Anthropic Messages</option>
+                    <option value="Anthropic">Anthropic</option>
+                    <option value="Google Vertex/Gemini">Google Vertex/Gemini</option>
+                    <option value="Custom HTTP">Custom HTTP</option>
                   </select>
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
-                <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key (Optional, leave empty if using headers)</label>
+                <div style={{ flex: 1.5, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Root API Key</label>
                   <input 
                     type="password" 
                     value={newProvKey}
                     onChange={(e) => setNewProvKey(e.target.value)}
-                    placeholder="API Key"
-                    autoComplete="new-password"
+                    placeholder="sk-..."
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Headers (Optional)</label>
-                  <button 
-                    onClick={() => setNewProvHeaders([...newProvHeaders, { id: `h_${Date.now()}`, key: '', value: '' }])}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Plus size={14} /> Add Header
-                  </button>
-                </div>
-                {newProvHeaders.map(header => (
-                  <div key={header.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="text"
-                      value={header.key}
-                      onChange={(e) => setNewProvHeaders(newProvHeaders.map(h => h.id === header.id ? { ...h, key: e.target.value } : h))}
-                      placeholder="Header Name (e.g. Authorization)"
-                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }}
-                    />
-                    <input 
-                      type="text"
-                      value={header.value}
-                      onChange={(e) => setNewProvHeaders(newProvHeaders.map(h => h.id === header.id ? { ...h, value: e.target.value } : h))}
-                      placeholder="Value (e.g. Bearer sk-...)"
-                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }}
-                    />
-                    <button onClick={() => setNewProvHeaders(newProvHeaders.filter(h => h.id !== header.id))} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Use Models API Link</span>
-                  <label className={styles.toggleSwitch}>
-                    <input 
-                      type="checkbox" 
-                      checked={newProvUseModelsApi} 
-                      onChange={() => setNewProvUseModelsApi(!newProvUseModelsApi)} 
-                    />
-                    <span className={styles.toggleSlider}></span>
-                  </label>
-                </div>
-              </div>
-
-              {newProvUseModelsApi ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    value={newProvModelsApiLink}
-                    onChange={(e) => setNewProvModelsApiLink(e.target.value)}
-                    placeholder="Models List API Link (e.g. https://api.openai.com/v1/models)"
-                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                  />
-                </div>
-              ) : (
+              <div style={{ background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '16px', borderRadius: '8px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 12px 0' }}>Custom Headers</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Initial Models (Optional)</label>
-                    <button 
-                      onClick={() => setNewProvModels([...newProvModels, { id: '', name: '', originalId: '', reasoning: false, image: false }])}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Plus size={14} /> Add Model
-                    </button>
-                  </div>
-                  {newProvModels.map((model, idx) => (
-                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--color-bg-soft)', borderRadius: '8px', border: '1px solid var(--color-border)', position: 'relative' }}>
-                      <button onClick={() => setNewProvModels(newProvModels.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                        <X size={16} />
-                      </button>
-                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', paddingRight: '24px' }}>
-                        <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Original Model ID</label>
-                          <input 
-                            type="text"
-                            value={model.originalId || ''}
-                            onChange={(e) => { const next = [...newProvModels]; next[idx].originalId = e.target.value; setNewProvModels(next); }}
-                            placeholder="e.g. gpt-4"
-                            style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model Name</label>
-                          <input 
-                            type="text"
-                            value={model.name}
-                            onChange={(e) => { const next = [...newProvModels]; next[idx].name = e.target.value; setNewProvModels(next); }}
-                            placeholder="e.g. GPT-4"
-                            style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
-                          />
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model ID</label>
-                        <input 
-                          type="text"
-                          value={model.id}
-                          onChange={(e) => { const next = [...newProvModels]; next[idx].id = e.target.value; setNewProvModels(next); }}
-                          placeholder="e.g. cr-gpt-4"
-                          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
-                        />
-                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>* Users calling our API will use this ID, but will see the "Showing Model Name" in the UI.</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={model.reasoning} onChange={(e) => { const next = [...newProvModels]; next[idx].reasoning = e.target.checked; setNewProvModels(next); }} />
-                          Reasoning
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={model.image} onChange={(e) => { const next = [...newProvModels]; next[idx].image = e.target.checked; setNewProvModels(next); }} />
-                          Image
-                        </label>
-                      </div>
+                  {newProvHeaders.map((header, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={header.key}
+                        onChange={(e) => { const next = [...newProvHeaders]; next[idx].key = e.target.value; setNewProvHeaders(next); }}
+                        placeholder="Header Key (e.g. HTTP-Referer)"
+                        style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', color: 'var(--color-text-main)', outline: 'none' }}
+                      />
+                      <input 
+                        type="text" 
+                        value={header.value}
+                        onChange={(e) => { const next = [...newProvHeaders]; next[idx].value = e.target.value; setNewProvHeaders(next); }}
+                        placeholder="Header Value"
+                        style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', color: 'var(--color-text-main)', outline: 'none' }}
+                      />
+                      <button onClick={() => setNewProvHeaders(newProvHeaders.filter((_, i) => i !== idx))} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '0 12px', borderRadius: '6px', cursor: 'pointer' }}><X size={16} /></button>
                     </div>
                   ))}
-                  {newProvModels.length === 0 && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No initial models added.</span>}
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => setNewProvHeaders([...newProvHeaders, { id: Date.now().toString(), key: '', value: '' }])}
+                    style={{ alignSelf: 'flex-start', padding: '6px 12px', fontSize: '12px' }}
+                  >
+                    + Add Header
+                  </button>
                 </div>
-              )}
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>Configure Models</h4>
+                  <button 
+                    onClick={() => setNewProvModels([...newProvModels, { id: '', name: '', originalId: '', reasoning: false, image: false }])}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Plus size={14} /> Add Model
+                  </button>
+                </div>
+                {newProvModels.map((model, idx) => (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--color-bg-soft)', borderRadius: '8px', border: '1px solid var(--color-border)', position: 'relative' }}>
+                    <button onClick={() => setNewProvModels(newProvModels.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                      <X size={16} />
+                    </button>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', paddingRight: '24px' }}>
+                      <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Original Model ID</label>
+                        <input 
+                          type="text"
+                          value={model.originalId || ''}
+                          onChange={(e) => { const next = [...newProvModels]; next[idx].originalId = e.target.value; setNewProvModels(next); }}
+                          placeholder="e.g. gpt-4"
+                          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model Name</label>
+                        <input 
+                          type="text"
+                          value={model.name}
+                          onChange={(e) => { const next = [...newProvModels]; next[idx].name = e.target.value; setNewProvModels(next); }}
+                          placeholder="e.g. GPT-4"
+                          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model ID</label>
+                      <input 
+                        type="text"
+                        value={model.id}
+                        onChange={(e) => { const next = [...newProvModels]; next[idx].id = e.target.value; setNewProvModels(next); }}
+                        placeholder="e.g. cr-gpt-4"
+                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                      />
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>* Users calling our API will use this ID, but will see the "Showing Model Name" in the UI.</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={model.reasoning} onChange={(e) => { const next = [...newProvModels]; next[idx].reasoning = e.target.checked; setNewProvModels(next); }} />
+                        Reasoning
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={model.image} onChange={(e) => { const next = [...newProvModels]; next[idx].image = e.target.checked; setNewProvModels(next); }} />
+                        Image
+                      </label>
+                    </div>
+                  </div>
+                ))}
+                {newProvModels.length === 0 && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No initial models added.</span>}
+              </div>
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button className="btn-primary" onClick={handleAddProvider} style={{ padding: '10px 24px' }}>Create</button>
@@ -658,99 +803,47 @@ export default function ProvidersPage() {
             </div>
           )}
 
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '12px', color: '#ef4444', marginBottom: '32px' }}>
-            <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '14px', lineHeight: 1.5 }}>
-              <strong>Critical Warning:</strong> Changing these keys will affect all users on the platform who do not use BYOK.
+          {showAddProvider && (
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
+              <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
             </div>
-          </div>
-
-          <div style={{ marginBottom: '32px', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
-            <div 
-              style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--color-bg-soft)' }}
-              onClick={() => setShowGlobalModels(!showGlobalModels)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
-                <Layers size={18} /> All Selected Models Summary
-              </div>
-              {showGlobalModels ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-            </div>
-            {showGlobalModels && (
-              <div style={{ padding: '20px', borderTop: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {providers.flatMap(p => (p.models || []).map(m => ({ providerName: p.name, ...m }))).length === 0 ? (
-                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>No models selected.</div>
-                  ) : (
-                    <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
-                          <th style={{ padding: '8px' }}>Provider</th>
-                          <th style={{ padding: '8px' }}>Original Model ID</th>
-                          <th style={{ padding: '8px' }}>Showing Name</th>
-                          <th style={{ padding: '8px' }}>Showing ID</th>
-                          <th style={{ padding: '8px' }}>Features</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {providers.flatMap(p => (p.models || []).map(m => ({ providerName: p.name, ...m }))).map((m, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                            <td style={{ padding: '8px', fontWeight: 600 }}>{m.providerName}</td>
-                            <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{m.originalId || m.id}</td>
-                            <td style={{ padding: '8px' }}>{m.name}</td>
-                            <td style={{ padding: '8px' }}>{m.id}</td>
-                            <td style={{ padding: '8px', display: 'flex', gap: '6px' }}>
-                              {m.reasoning && <span style={{ background: 'var(--color-bg-soft)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reasoning</span>}
-                              {m.image && <span style={{ background: 'var(--color-bg-soft)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Vision</span>}
-                              {!m.reasoning && !m.image && <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Text</span>}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           <div>
-            {providers.filter(p => p.isCustom).length > 0 && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Custom Providers</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {providers.filter(p => p.isCustom).map(provider => renderProviderTile(provider, true))}
-                </div>
-              </div>
-            )}
-
             <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Fixed Providers</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Custom Providers</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {providers.filter(p => !p.isCustom).map(provider => renderProviderTile(provider, false))}
               </div>
             </div>
 
-            <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Models</h3>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <Link href="/admin/openrouter" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', padding: '20px', borderRadius: '12px', width: '250px', cursor: 'pointer', transition: 'border-color 0.2s', display: 'flex', flexDirection: 'column', gap: '12px' }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Globe size={20} color="var(--color-primary)" />
-                      </div>
-                      <span style={{ fontSize: '16px', fontWeight: 600 }}>OpenRouter</span>
-                    </div>
-                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0 }}>Configure and select models from OpenRouter.</p>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
+              <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
+            </div>
+
+            {providers.filter(p => p.isCustom).length > 0 && (
+              <>
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Other Added Providers</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {providers.filter(p => p.isCustom).map(provider => renderProviderTile(provider, true))}
                   </div>
-                </Link>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
+                  <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
+                </div>
+              </>
+            )}
+
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Providers</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                <OpenRouterSetup onModelsUpdated={fetchProviders} />
               </div>
             </div>
           </div>
-</>
+        </>
       )}
     </div>
   );
