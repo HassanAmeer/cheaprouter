@@ -221,11 +221,11 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {index !== undefined && (
               <span style={{ color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 600, background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px' }}>
-                #${index}
+                #{index}
               </span>
             )}
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src=https://www.google.com/s2/favicons?domain=opencode.ai&sz=128 alt=OpenCode style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+              <img src="https://www.google.com/s2/favicons?domain=opencode.ai&sz=128" alt="OpenCode" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: '18px', fontWeight: 600 }}>OpenCode</span>
           </div>
