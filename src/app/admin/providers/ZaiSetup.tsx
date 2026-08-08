@@ -346,11 +346,11 @@ const ZaiSetup = forwardRef<ZaiSetupRef, { onModelsUpdated?: () => void, index?:
           ))}
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-            <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-              <Plus size={14} /> Add Another API Key
+            <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ flex: 1, justifyContent: 'center', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }}>
+              <Plus size={12} /> Add Another API Key
             </button>
-            <button className="btn-primary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }} title="Save All Keys">
-              {saving ? <RefreshCcw size={14} className={styles.spin} /> : <Save size={14} />} Save Keys
+            <button onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px', background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', borderRadius: '6px', cursor: 'pointer' }} title="Save All Keys">
+              {saving ? <RefreshCcw size={12} className={styles.spin} /> : <Save size={12} />} Save Keys
             </button>
           </div>
         </div>
