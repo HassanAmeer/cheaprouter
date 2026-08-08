@@ -16,11 +16,11 @@ type SelectedModel = {
   video: boolean;
 };
 
-export interface OpenCodeSetupRef {
+export interface CohereSetupRef {
   testApi: (silent?: boolean) => Promise<boolean>;
 }
 
-const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => void }>(({ onModelsUpdated }, ref) => {
+const CohereSetup = forwardRef<CohereSetupRef, { onModelsUpdated?: () => void }>(({ onModelsUpdated }, ref) => {
   const [apiKeys, setApiKeys] = useState<{key: string, active: boolean}[]>([{key: '', active: true}]);
   const [status, setStatus] = useState(false);
   const [showKeys, setShowKeys] = useState<boolean[]>([]);
@@ -29,10 +29,11 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Drawer state
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
+  
   const [testing, setTesting] = useState<boolean[]>([]);
   const [testSuccesses, setTestSuccesses] = useState<(boolean | null)[]>([]);
   const [showKeyErrors, setShowKeyErrors] = useState<boolean[]>([]);
@@ -65,8 +66,8 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
     setTesting(prev => { const n = [...prev]; n[index] = true; return n; });
     setTestSuccesses(prev => { const n = [...prev]; n[index] = null; return n; });
     try {
-      const res = await fetch('https://opencode.ai/api/v1/models?output_modalities=text,image', {
-        headers: { 'Authorization': `Bearer ${keyObj.key}` }
+      const res = await fetch(`/api/admin/cohere/models?key=${encodeURIComponent(keyObj.key)}`, {
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (res.ok && data && data.data) {
@@ -90,7 +91,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
   };
 
   useEffect(() => {
-    fetch('/api/admin/opencode', { headers: getAuthHeaders() })
+    fetch('/api/admin/cohere', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.key) {
@@ -135,18 +136,26 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
     setFetchingModels(true);
     try {
       const validKey = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '';
-      const res = await fetch(`https://opencode.ai/api/v1/models`, {
-        headers: { 'Authorization': `Bearer ${validKey}` }
+      const res = await fetch(`/api/admin/cohere/models?key=${encodeURIComponent(validKey)}`, {
+        headers: getAuthHeaders()
       });
       const data = await res.json();
-      if (data && Array.isArray(data.data)) {
-        setAvailableModels(data.data);
-      } else if (data && data.error) {
-        alert('Failed to fetch OpenCode models: ' + data.error);
+      const rawModels = Array.isArray(data.data) ? data.data : data;
+      if (Array.isArray(rawModels)) {
+        const sorted = rawModels.sort((a: any, b: any) => {
+          const aMod = a.architecture?.modality || '';
+          const bMod = b.architecture?.modality || '';
+          const aIsText = aMod === 'text->text' || (!aMod.includes('image') && !aMod.includes('video') && !aMod.includes('audio'));
+          const bIsText = bMod === 'text->text' || (!bMod.includes('image') && !bMod.includes('video') && !bMod.includes('audio'));
+          if (aIsText && !bIsText) return -1;
+          if (!aIsText && bIsText) return 1;
+          return 0;
+        });
+        setAvailableModels(sorted);
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to fetch OpenCode models.');
+      alert('Failed to fetch Cohere models.');
     } finally {
       setFetchingModels(false);
     }
@@ -157,7 +166,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
     try {
       const validKeys = keysToSave.filter(k => k.key.trim() !== '');
       const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : [{key: '', active: true}]);
-      const res = await fetch('/api/admin/opencode', {
+      const res = await fetch('/api/admin/cohere', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ key: keyString, status, models: modelsToSave })
@@ -208,7 +217,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
 
   const filteredAvailableModels = availableModels.filter(m => 
     m.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (m.name || m.id).toLowerCase().includes(searchQuery.toLowerCase())
+    m.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) return null;
@@ -218,9 +227,9 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
       <div style={{ background: 'var(--color-card-bg)', border: `1px solid ${testSuccesses.includes(false) ? '#ef4444' : testSuccesses.includes(true) ? '#10b981' : 'var(--color-border)'}`, padding: '24px', borderRadius: '12px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', transition: 'border-color 0.3s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src="https://www.google.com/s2/favicons?domain=opencode.ai&sz=128" alt="OpenCode" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+            <img src="https://www.google.com/s2/favicons?domain=cohere.com&sz=128" alt="Cohere" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           </div>
-          <span style={{ fontSize: '18px', fontWeight: 600 }}>OpenCode</span>
+          <span style={{ fontSize: '18px', fontWeight: 600 }}>Cohere</span>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -242,7 +251,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
                         const ne = [...showKeyErrors]; ne[index] = false; setShowKeyErrors(ne);
                       }
                     }}
-                    placeholder="zen-..."
+                    placeholder="sk-or-v1-..."
                     disabled={!keyObj.active}
                     style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 40px 10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                   />
@@ -298,17 +307,19 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
         </button>
       </div>
 
+      {/* RIGHT SIDE DRAWER */}
       {isDrawerOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={handleDrawerClose}>
           <div style={{ width: '460px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }} onClick={(e) => e.stopPropagation()}>
             
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>OpenCode AI Models</h2>
+              <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Cohere Models</h2>
               <button onClick={handleDrawerClose} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
 
+            {/* TOP HALF: Model Selection */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderBottom: '1px solid var(--color-border)' }}>
               <div style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
@@ -326,7 +337,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/opencode/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={`/api/admin/cohere/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 
@@ -340,7 +351,6 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
               <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {filteredAvailableModels.map(model => {
                   const isSelected = selectedModels.some(m => m.originalId === model.id);
-                  const displayName = model.name || model.id.split('/').pop() || model.id;
                   return (
                     <label key={model.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', background: isSelected ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-bg-soft)', border: '1px solid', borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)', borderRadius: '6px', cursor: 'pointer' }}>
                       <input 
@@ -351,15 +361,15 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                          <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</span>
                           <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.1)', padding: '1px 4px', borderRadius: '4px' }}>
-                            {model.context_length ? `${Math.round(model.context_length / 1000)}K` : model.context_window ? `${Math.round(model.context_window / 1000)}K` : 'N/A'}
+                            {model.context_length ? `${Math.round(model.context_length / 1000)}K` : ''}
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.id}</span>
                           <span style={{ fontSize: '9px', color: 'var(--color-text-muted)', opacity: 0.8, textTransform: 'uppercase' }}>
-                            {model.architecture?.modality || 'UNKNOWN'}
+                            {model.architecture?.modality || 'TEXT'}
                           </span>
                         </div>
                       </div>
@@ -372,6 +382,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
               </div>
             </div>
 
+            {/* BOTTOM HALF: Selected Models Configuration */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--color-bg-soft)' }}>
               <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--color-border)', fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Selected Models</span>
@@ -454,4 +465,4 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
   );
 });
 
-export default OpenCodeSetup;
+export default CohereSetup;

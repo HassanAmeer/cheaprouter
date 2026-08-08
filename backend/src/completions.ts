@@ -1,32 +1,72 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createCohere } from '@ai-sdk/cohere';
 import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
 import { hashPassword } from './auth.ts';
 
+function pickActiveKey(keyStr: string): string | null {
+  if (!keyStr) return null;
+  try {
+    const parsed = JSON.parse(keyStr);
+    if (Array.isArray(parsed)) {
+      const activeKeys = parsed.filter((k: any) => {
+        if (typeof k === 'string') return true;
+        return k.active !== false && k.key?.trim() !== '';
+      }).map((k: any) => typeof k === 'string' ? k : k.key);
+      if (activeKeys.length > 0) {
+        return activeKeys[Math.floor(Math.random() * activeKeys.length)];
+      }
+      return null;
+    }
+    return keyStr;
+  } catch {
+    return keyStr;
+  }
+}
+
 export async function getSystemPromptForModel(model: string) {
-  const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
-  if (openRouterResult.length > 0) {
-    const models = openRouterResult[0].models || [];
-    const matched = models.find((m: any) => m.id === model);
-    if (matched && matched.systemPrompt) {
-      return matched.systemPrompt;
+  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
+  for (const prov of providersResult) {
+    if (prov.models && Array.isArray(prov.models)) {
+      const matched = prov.models.find((m: any) => m.id === model);
+      if (matched && matched.systemPrompt) {
+        return matched.systemPrompt;
+      }
     }
   }
   return null;
 }
 
 export async function getModelInstance(userId: string, model: string) {
-  const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
-  if (openRouterResult.length > 0) {
-    const models = openRouterResult[0].models || [];
-    const matched = models.find((m: any) => m.id === model);
-    if (matched) {
-      return createOpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: openRouterResult[0].key })(matched.originalId);
+  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
+  
+  // Helper to check a specific provider
+  const checkProv = (provId: string, factory: (key: string) => any) => {
+    const p = providersResult.find((r: any) => r.id === provId);
+    if (p && p.models) {
+      const matched = p.models.find((m: any) => m.id === model);
+      if (matched) {
+        const apiKey = pickActiveKey(p.key);
+        if (apiKey) return factory(apiKey)(matched.originalId || matched.id);
+      }
     }
-  }
+    return null;
+  };
+
+  const orInst = checkProv('ap_openrouter', (key) => createOpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: key }));
+  if (orInst) return orInst;
+
+  const oaInst = checkProv('ap_openai', (key) => createOpenAI({ apiKey: key }));
+  if (oaInst) return oaInst;
+
+  const anthInst = checkProv('ap_anthropic', (key) => createAnthropic({ apiKey: key }));
+  if (anthInst) return anthInst;
+
+  const cohereInst = checkProv('ap_cohere', (key) => createCohere({ apiKey: key }));
+  if (cohereInst) return cohereInst;
 
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
@@ -82,7 +122,7 @@ export async function handleCompletions(c: any) {
     const systemPrompt = await getSystemPromptForModel(model);
 
     // Convert messages
-    const coreMessages = messages.map((m: any) => ({
+    const coreMessages: any[] = messages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content
     }));
@@ -108,7 +148,7 @@ export async function handleCompletions(c: any) {
         messages: coreMessages,
       });
       
-      const tokens = result.usage ? result.usage.totalTokens : 150;
+      const tokens: number = result.usage?.totalTokens || 150;
       await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
       
       return c.json({
@@ -122,8 +162,8 @@ export async function handleCompletions(c: any) {
           finish_reason: 'stop'
         }],
         usage: {
-          prompt_tokens: result.usage?.promptTokens || 0,
-          completion_tokens: result.usage?.completionTokens || 0,
+          prompt_tokens: (result.usage as any)?.promptTokens || 0,
+          completion_tokens: (result.usage as any)?.completionTokens || 0,
           total_tokens: tokens
         }
       });

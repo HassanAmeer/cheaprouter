@@ -13,7 +13,6 @@ export function LegalShell({ title, updated, children }: { title: string; update
         links={[
           { href: '/docs', label: 'Docs' },
           { href: '/pricing', label: 'Pricing' },
-          { href: '/chat', label: 'Chat' },
           { href: '/compare', label: 'Compare' },
         ]}
       />

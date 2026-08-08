@@ -180,13 +180,6 @@ export default function DashboardOverview() {
               <div className={styles.quickActionDesc}>Generate a new key for your app</div>
             </div>
           </Link>
-          <Link href="/chat" className={styles.quickAction}>
-            <div className={styles.quickActionIcon}><Send size={18} /></div>
-            <div>
-              <div className={styles.quickActionText}>Open Chat Playground</div>
-              <div className={styles.quickActionDesc}>Test models interactively</div>
-            </div>
-          </Link>
           <Link href="/dashboard/providers" className={styles.quickAction}>
             <div className={styles.quickActionIcon}><Plug size={18} /></div>
             <div>

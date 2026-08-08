@@ -251,9 +251,9 @@ export default function ModelCarousel3D() {
                     <span className={styles.priceLabel}>CheapRouter Rate</span>
                     <div className={styles.priceVal}>{model.price}</div>
                   </div>
-                  <Link href="/chat" className={styles.cardCta}>
+                  <button className={styles.cardCta} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                     Try Model <ArrowUpRight size={16} />
-                  </Link>
+                  </button>
                 </div>
 
                 {/* Tag Pills */}

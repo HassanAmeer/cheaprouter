@@ -7,53 +7,7 @@ import styles from '@/app/page.module.css';
 export default function InstallGrid() {
   return (
         <div className={styles.installGrid}>
-          {/* Card 1: Try Chat */}
-          <div className={styles.installCard}>
-            <div className={styles.cardStarsBg}>
-              <div className={`${styles.cardStar} ${styles.cardStar1}`} />
-              <div className={`${styles.cardStar} ${styles.cardStar2}`} />
-              <div className={`${styles.cardStar} ${styles.cardStar3}`} />
-              <div className={`${styles.cardStar} ${styles.cardStar4}`} />
-              <div className={`${styles.cardStar} ${styles.cardStar5}`} />
-              <div className={`${styles.cardStar} ${styles.cardStar6}`} />
-              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`} />
-              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`} />
-              <div className={`${styles.cardShootingStar} ${styles.cardShootingStar3}`} />
-            </div>
-            <div className={styles.cardTopRow}>
-              <div className={styles.liveTextOnly}>
-                <span className={styles.liveDot} /> LIVE
-              </div>
-              <Link href="/chat" className={styles.openOutlineBtn}>
-                Open <ArrowUpRight size={13} />
-              </Link>
-            </div>
-            <div className={styles.installCardHeader}>
-              <div className={styles.installTitleRow}>
-                <div className={styles.installIcon}><MessageSquare size={20} /></div>
-                <h3 className={styles.installTitle}>Try Chat</h3>
-              </div>
-              <p className={styles.installDesc}>Compare GPT-4o, Claude 3.5 & more in a real-time playground.</p>
-            </div>
-            <div className={styles.installPreview}>
-              <div className={styles.miniChat}>
-                <div className={styles.miniChatHeader}>
-                  <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>cheapagents.io/chat</div>
-                </div>
-                <div className={styles.miniChatBody}>
-                  <div className={styles.chatBubbleUser}>Which model is fastest?</div>
-                  <div className={styles.chatBubbleAi}>Comparing 15+ models...</div>
-                </div>
-                <div className={styles.miniChatInput}>
-                  <div className={styles.miniInputField} />
-                  <div className={styles.miniSendBtn} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Free Unlimited Coding */}
+          {/* Card 1: Free Unlimited Coding */}
           <div className={styles.installCard}>
             <div className={styles.cardStarsBg}>
               <div className={`${styles.cardStar} ${styles.cardStar1}`} />

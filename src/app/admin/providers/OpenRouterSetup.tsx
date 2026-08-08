@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
-import { Globe, RefreshCcw, Search, X, Check, Code, Play, Save, Eye, EyeOff, Plus } from 'lucide-react';
+import { Globe, RefreshCcw, Search, X, Check, Code, Play, Save, Eye, EyeOff, Plus, Pause } from 'lucide-react';
 import styles from '../admin.module.css';
 
 type SelectedModel = {
@@ -21,7 +21,7 @@ export interface OpenRouterSetupRef {
 }
 
 const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () => void }>(({ onModelsUpdated }, ref) => {
-  const [apiKeys, setApiKeys] = useState<string[]>(['']);
+  const [apiKeys, setApiKeys] = useState<{key: string, active: boolean}[]>([{key: '', active: true}]);
   const [status, setStatus] = useState(false);
   const [showKeys, setShowKeys] = useState<boolean[]>([]);
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
@@ -53,8 +53,8 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
   }));
 
   const handleTestApi = async (index: number, silent = false) => {
-    const key = apiKeys[index];
-    if (!key) {
+    const keyObj = apiKeys[index];
+    if (!keyObj || !keyObj.key) {
       if (!silent) {
         setShowKeyErrors(prev => { const n = [...prev]; n[index] = true; return n; });
         apiKeyRefs.current[index]?.focus();
@@ -67,7 +67,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
     setTestSuccesses(prev => { const n = [...prev]; n[index] = null; return n; });
     try {
       const res = await fetch('https://openrouter.ai/api/v1/models?output_modalities=text,image', {
-        headers: { 'Authorization': `Bearer ${key}` }
+        headers: { 'Authorization': `Bearer ${keyObj.key}` }
       });
       const data = await res.json();
       if (res.ok && data && data.data) {
@@ -97,9 +97,14 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
         if (data.key) {
           try {
             const parsed = JSON.parse(data.key);
-            setApiKeys(Array.isArray(parsed) && parsed.length > 0 ? parsed : [data.key]);
+            if (Array.isArray(parsed)) {
+              const mapped = parsed.map(k => typeof k === 'string' ? { key: k, active: true } : { key: k.key || '', active: k.active ?? true });
+              setApiKeys(mapped.length > 0 ? mapped : [{key: '', active: true}]);
+            } else {
+              setApiKeys([{key: data.key, active: true}]);
+            }
           } catch {
-            setApiKeys([data.key]);
+            setApiKeys([{key: data.key, active: true}]);
           }
         }
         if (data.status !== undefined) setStatus(data.status);
@@ -155,8 +160,8 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
   const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false) => {
     setSaving(true);
     try {
-      const validKeys = keysToSave.map(k => k.trim()).filter(k => k !== '');
-      const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : ['']);
+      const validKeys = keysToSave.filter(k => k.key.trim() !== '');
+      const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : [{key: '', active: true}]);
       const res = await fetch('/api/admin/openrouter', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -217,17 +222,17 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
     <>
       <div style={{ background: 'var(--color-card-bg)', border: `1px solid ${testSuccesses.includes(false) ? '#ef4444' : testSuccesses.includes(true) ? '#10b981' : 'var(--color-border)'}`, padding: '24px', borderRadius: '12px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', transition: 'border-color 0.3s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Globe size={20} color="var(--color-primary)" />
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src="https://www.google.com/s2/favicons?domain=openrouter.ai&sz=128" alt="OpenRouter" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           </div>
           <span style={{ fontSize: '18px', fontWeight: 600 }}>OpenRouter</span>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {apiKeys.map((key, index) => (
-            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {apiKeys.map((keyObj, index) => (
+            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: keyObj.active ? 1 : 0.6 }}>
               <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                API Key {index + 1}
+                API Key {index + 1} {keyObj.active ? '' : '(Paused)'}
                 {showKeyErrors[index] && <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500 }}>*Required</span>}
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -235,14 +240,15 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
                   <input 
                     ref={el => { apiKeyRefs.current[index] = el; }}
                     type={showKeys[index] ? "text" : "password"} 
-                    value={key}
+                    value={keyObj.key}
                     onChange={(e) => { 
-                      const n = [...apiKeys]; n[index] = e.target.value; setApiKeys(n); 
+                      const n = [...apiKeys]; n[index] = { ...n[index], key: e.target.value }; setApiKeys(n); 
                       if (showKeyErrors[index]) {
                         const ne = [...showKeyErrors]; ne[index] = false; setShowKeyErrors(ne);
                       }
                     }}
                     placeholder="sk-or-v1-..."
+                    disabled={!keyObj.active}
                     style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 40px 10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
                   />
                   <button 
@@ -254,7 +260,14 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
                     {showKeys[index] ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                <button className="btn-secondary" onClick={() => handleTestApi(index, false)} disabled={testing[index]} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '6px', height: '40px', color: testSuccesses[index] === true ? '#10b981' : testSuccesses[index] === false ? '#ef4444' : 'inherit' }} title="Test Provider">
+                
+                <button className="btn-secondary" onClick={() => {
+                  const n = [...apiKeys]; n[index] = { ...n[index], active: !n[index].active }; setApiKeys(n);
+                }} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', height: '40px', color: keyObj.active ? '#eab308' : '#10b981' }} title={keyObj.active ? "Pause Key" : "Resume Key"}>
+                  {keyObj.active ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+
+                <button className="btn-secondary" onClick={() => handleTestApi(index, false)} disabled={testing[index] || !keyObj.active} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '6px', height: '40px', color: testSuccesses[index] === true ? '#10b981' : testSuccesses[index] === false ? '#ef4444' : 'inherit' }} title="Test Provider">
                   {testing[index] ? <RefreshCcw size={16} className={styles.spin} /> : testSuccesses[index] === true ? <Check size={16} /> : testSuccesses[index] === false ? <X size={16} /> : <Play size={16} />}
                 </button>
                 {index > 0 && (
@@ -272,7 +285,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
           ))}
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-            <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, ''])} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+            <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
               <Plus size={14} /> Add Another API Key
             </button>
             <button className="btn-primary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }} title="Save All Keys">

@@ -1,10 +1,13 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw, Play } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup, { OpenRouterSetupRef } from '../OpenRouterSetup';
 import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
+import OpenAISetup, { OpenAISetupRef } from '../OpenAISetup';
+import AnthropicSetup, { AnthropicSetupRef } from '../AnthropicSetup';
+import CohereSetup, { CohereSetupRef } from '../CohereSetup';
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
@@ -19,10 +22,13 @@ export default function ManageProvidersPage() {
 
   const openRouterRef = useRef<OpenRouterSetupRef>(null);
   const openCodeRef = useRef<OpenCodeSetupRef>(null);
+  const openAiRef = useRef<OpenAISetupRef>(null);
+  const anthropicRef = useRef<AnthropicSetupRef>(null);
+  const cohereRef = useRef<CohereSetupRef>(null);
   const [testingAll, setTestingAll] = useState(false);
 
   // Add Provider form state
-  const [showAddProvider, setShowAddProvider] = useState(false);
+  const [showAddProvider, setShowAddProvider] = useState(true);
   const [newProvId, setNewProvId] = useState('');
   const [newProvName, setNewProvName] = useState('');
   const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
@@ -98,11 +104,23 @@ export default function ManageProvidersPage() {
     setTestingAll(true);
     let allPassed = true;
     if (openRouterRef.current) {
-      const res = await openRouterRef.current.testApi(true);
+      const res = await openRouterRef.current.testApi();
       if (!res) allPassed = false;
     }
     if (openCodeRef.current) {
-      const res = await openCodeRef.current.testApi(true);
+      const res = await openCodeRef.current.testApi();
+      if (!res) allPassed = false;
+    }
+    if (openAiRef.current) {
+      const res = await openAiRef.current.testApi();
+      if (!res) allPassed = false;
+    }
+    if (anthropicRef.current) {
+      const res = await anthropicRef.current.testApi();
+      if (!res) allPassed = false;
+    }
+    if (cohereRef.current) {
+      const res = await cohereRef.current.testApi();
       if (!res) allPassed = false;
     }
     setTestingAll(false);
@@ -111,13 +129,15 @@ export default function ManageProvidersPage() {
   const toggleProvider = (id: string) => { setProviders(providers.map(p => p.id === id ? { ...p, status: !p.status } : p)); setSaved(false); };
   const toggleExpanded = (id: string) => { const next = new Set(expandedProviders); if (next.has(id)) next.delete(id); else next.add(id); setExpandedProviders(next); };
   
-  const parseKeys = (keyStr: string): string[] => {
+  const parseKeys = (keyStr: string): { key: string, active: boolean }[] => {
     try {
       const parsed = JSON.parse(keyStr || '[""]');
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      return [keyStr || ''];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(k => typeof k === 'string' ? { key: k, active: true } : { key: k.key || '', active: k.active ?? true });
+      }
+      return [{ key: keyStr || '', active: true }];
     } catch {
-      return [keyStr || ''];
+      return [{ key: keyStr || '', active: true }];
     }
   };
 
@@ -125,7 +145,17 @@ export default function ManageProvidersPage() {
     setProviders(providers.map(p => {
       if (p.id !== id) return p;
       const keys = parseKeys(p.key);
-      keys[index] = val;
+      keys[index].key = val;
+      return { ...p, key: JSON.stringify(keys) };
+    }));
+    setSaved(false);
+  };
+
+  const toggleKeyActive = (id: string, index: number) => {
+    setProviders(providers.map(p => {
+      if (p.id !== id) return p;
+      const keys = parseKeys(p.key);
+      keys[index].active = !keys[index].active;
       return { ...p, key: JSON.stringify(keys) };
     }));
     setSaved(false);
@@ -135,7 +165,7 @@ export default function ManageProvidersPage() {
     setProviders(providers.map(p => {
       if (p.id !== id) return p;
       const keys = parseKeys(p.key);
-      keys.push('');
+      keys.push({ key: '', active: true });
       return { ...p, key: JSON.stringify(keys) };
     }));
     setSaved(false);
@@ -195,6 +225,14 @@ export default function ManageProvidersPage() {
   const handleUpdateHeader = (provId: string, headerId: string, field: 'key' | 'value', val: string) => { setProviders(providers.map(p => p.id === provId ? { ...p, headers: (p.headers || []).map(h => h.id === headerId ? { ...h, [field]: val } : h) } : p)); setSaved(false); };
   const handleRemoveHeader = (provId: string, headerId: string) => { setProviders(providers.map(p => p.id === provId ? { ...p, headers: (p.headers || []).filter(h => h.id !== headerId) } : p)); setSaved(false); };
 
+  const getDomainFromUrl = (url?: string) => {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      return u.hostname;
+    } catch { return null; }
+  };
+
   const renderProviderTile = (provider: Provider, isCustomGroup: boolean) => (
     <div key={provider.id} style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
       <div
@@ -202,6 +240,13 @@ export default function ManageProvidersPage() {
         onClick={() => toggleExpanded(provider.id)}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            {getDomainFromUrl(provider.baseUrl) ? (
+              <img src={`https://www.google.com/s2/favicons?domain=${getDomainFromUrl(provider.baseUrl)}&sz=128`} alt={provider.name} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+            ) : (
+              <Globe size={18} color="var(--color-primary)" />
+            )}
+          </div>
           <span style={{ fontWeight: 600, fontSize: '15px' }}>{provider.name}</span>
           {isCustomGroup && <span style={{ fontSize: '11px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Custom</span>}
         </div>
@@ -216,13 +261,16 @@ export default function ManageProvidersPage() {
       {expandedProviders.has(provider.id) && (
         <div style={{ padding: '16px', borderTop: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {parseKeys(provider.key).map((k, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key {idx + 1}</label>
+            {parseKeys(provider.key).map((kObj, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: kObj.active ? 1 : 0.6 }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key {idx + 1} {kObj.active ? '' : '(Paused)'}</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="password" value={k} onChange={(e) => updateKeyIndex(provider.id, idx, e.target.value)}
-                    placeholder={`Enter ${provider.name} API Key`} disabled={!provider.status} autoComplete="new-password"
+                  <input type="password" value={kObj.key} onChange={(e) => updateKeyIndex(provider.id, idx, e.target.value)}
+                    placeholder={`Enter ${provider.name} API Key`} disabled={!provider.status || !kObj.active} autoComplete="new-password"
                     style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontFamily: 'monospace', fontSize: '13px' }} />
+                  <button onClick={() => toggleKeyActive(provider.id, idx)} disabled={!provider.status} className="btn-secondary" style={{ padding: '10px 12px', display: 'flex', color: kObj.active ? '#eab308' : '#10b981', height: '40px' }} title={kObj.active ? "Pause Key" : "Resume Key"}>
+                    {kObj.active ? <Pause size={16} /> : <Play size={16} />}
+                  </button>
                   {idx > 0 && (
                     <button onClick={() => removeKey(provider.id, idx)} disabled={!provider.status} className="btn-secondary" style={{ padding: '10px 12px', display: 'flex', color: '#ef4444', height: '40px' }} title="Remove Key">
                       <X size={16} />
@@ -394,14 +442,8 @@ export default function ManageProvidersPage() {
           </div>
         </div>
 
-        {/* ===== ADD PROVIDER BUTTON (TOP, OUTLINED) ===== */}
+        {/* ===== HEADER ACTION BUTTONS ===== */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={() => { setShowAddProvider(!showAddProvider); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', borderRadius: '8px', border: '1.5px solid var(--color-primary)', background: showAddProvider ? 'var(--color-primary)' : 'transparent', color: showAddProvider ? 'white' : 'var(--color-primary)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-          >
-            <Plus size={15} /> {showAddProvider ? 'Cancel' : 'Add Custom Provider'}
-          </button>
           <button onClick={() => fetchProviders()} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', padding: '9px 14px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
             <RefreshCw size={14} />
           </button>
@@ -544,7 +586,15 @@ export default function ManageProvidersPage() {
 
           {/* ===== CUSTOM PROVIDERS ===== */}
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Custom Providers</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>Custom Providers</h3>
+              <button
+                onClick={() => { setShowAddProvider(!showAddProvider); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '8px', background: showAddProvider ? 'var(--color-primary)' : 'transparent', border: showAddProvider ? '1px solid var(--color-primary)' : '1px solid var(--color-border)', color: showAddProvider ? 'white' : 'var(--color-text-main)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <Plus size={14} /> {showAddProvider ? 'Close Form' : 'Add Custom Provider'}
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {providers.filter(p => !p.isCustom).map(provider => renderProviderTile(provider, false))}
             </div>
@@ -553,8 +603,6 @@ export default function ManageProvidersPage() {
           <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
             <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
           </div>
-
-
 
           {/* ===== PREFIX PROVIDERS ===== */}
           <div style={{ marginBottom: '32px' }}>
@@ -572,6 +620,9 @@ export default function ManageProvidersPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
               <OpenRouterSetup ref={openRouterRef} onModelsUpdated={() => fetchProviders(true)} />
               <OpenCodeSetup ref={openCodeRef} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenAISetup ref={openAiRef} onModelsUpdated={() => fetchProviders(true)} />
+              <AnthropicSetup ref={anthropicRef} onModelsUpdated={() => fetchProviders(true)} />
+              <CohereSetup ref={cohereRef} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

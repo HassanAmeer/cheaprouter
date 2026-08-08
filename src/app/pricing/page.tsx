@@ -53,7 +53,6 @@ export default function PricingPage() {
       <SiteNav
         links={[
           { href: '/docs', label: 'Docs' },
-          { href: '/chat', label: 'Chat' },
           { href: '/cli', label: 'CLI' },
           { href: '/compare', label: 'Compare' },
         ]}

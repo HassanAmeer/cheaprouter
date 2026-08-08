@@ -39,7 +39,6 @@ export default function CliPage() {
       <SiteNav
         links={[
           { href: '/docs', label: 'Docs' },
-          { href: '/chat', label: 'Chat' },
           { href: '/dashboard', label: 'Dashboard' },
           { href: '/compare', label: 'Compare' },
         ]}

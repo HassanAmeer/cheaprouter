@@ -60,7 +60,6 @@ export default function Home() {
         { href: '#models', label: 'Models' },
         { href: '#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
-        { href: '/chat', label: 'Chat' },
         { href: '/cli', label: 'Coding' },
         { href: '/compare', label: 'Compare' },
       ]} />
