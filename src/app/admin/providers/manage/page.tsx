@@ -37,6 +37,7 @@ import UnoRouterSetup, { UnoRouterSetupRef } from '../UnoRouterSetup';
 import RoutewaySetup, { RoutewaySetupRef } from '../RoutewaySetup';
 import StepFunSetup, { StepFunSetupRef } from '../StepFunSetup';
 import LLM7Setup, { LLM7SetupRef } from '../LLM7Setup';
+import ModelScopeSetup, { ModelScopeSetupRef } from '../ModelScopeSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -84,6 +85,7 @@ export default function ManageProvidersPage() {
   const routewayRef = useRef<RoutewaySetupRef>(null);
   const stepfunRef = useRef<StepFunSetupRef>(null);
   const llm7Ref = useRef<LLM7SetupRef>(null);
+  const modelscopeRef = useRef<ModelScopeSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -714,6 +716,7 @@ export default function ManageProvidersPage() {
               <RoutewaySetup ref={routewayRef} index={32} onModelsUpdated={() => fetchProviders(true)} />
               <StepFunSetup ref={stepfunRef} index={33} onModelsUpdated={() => fetchProviders(true)} />
               <LLM7Setup ref={llm7Ref} index={34} onModelsUpdated={() => fetchProviders(true)} />
+              <ModelScopeSetup ref={modelscopeRef} index={35} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

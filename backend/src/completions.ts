@@ -155,6 +155,9 @@ export async function getModelInstance(userId: string, model: string) {
   const llm7Inst = checkProv('ap_llm7', (key) => createOpenAI({ baseURL: 'https://api.llm7.io/v1', apiKey: key }));
   if (llm7Inst) return llm7Inst;
 
+  const modelscopeInst = checkProv('ap_modelscope', (key) => createOpenAI({ baseURL: 'https://api-inference.modelscope.cn/v1', apiKey: key }));
+  if (modelscopeInst) return modelscopeInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
