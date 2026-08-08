@@ -349,7 +349,7 @@ const AIMLAPISetup = forwardRef<AIMLAPISetupRef, { onModelsUpdated?: () => void,
             <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ flex: 1, justifyContent: 'center', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }}>
               <Plus size={12} /> Add Another API Key
             </button>
-            <button onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)', color: 'color-mix(in srgb, var(--color-primary) 30%, transparent)', borderRadius: '6px', cursor: 'pointer' }} title="Save All Keys">
+            <button className="btn-secondary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }} title="Save All Keys">
               {saving ? <RefreshCcw size={12} className={styles.spin} /> : <Save size={12} />} Save Keys
             </button>
           </div>
