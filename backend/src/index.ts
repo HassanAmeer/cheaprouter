@@ -464,21 +464,6 @@ app.get('/v1/models', handleListModels); // Accept both for easy proxying
 
 async function handleListModels(c: any) {
   try {
-    const auth = c.req.header('authorization');
-    if (!auth || !auth.startsWith('Bearer ')) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    const reqKey = auth.replace('Bearer ', '');
-    const { hashPassword } = await import('./auth.ts');
-    const hashedKey = hashPassword(reqKey);
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 10)}`;
-    const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
-    const finalUserId = userId || c.get('userId');
-    
-    if (!finalUserId) {
-      return c.json({ error: 'Invalid API key or unauthorized' }, 401);
-    }
-
     const providersResult = await db`SELECT models FROM admin_providers WHERE status = true`;
     const data: any[] = [];
     for (const p of providersResult) {

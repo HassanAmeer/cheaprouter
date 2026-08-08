@@ -141,8 +141,7 @@ Authorization: Bearer YOUR_API_KEY
             </div>
             <pre style={{ margin: 0, fontSize: '14px' }}>
               <code>
-<span style={{ color: '#FF7B72' }}>curl</span> {baseUrl}/v1/models \<br/>
-&nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer YOUR_API_KEY"</span>
+<span style={{ color: '#FF7B72' }}>curl</span> {baseUrl}/v1/models
               </code>
             </pre>
           </div>
