@@ -17,50 +17,52 @@ export default function IntroductionView() {
       </p>
 
       <div style={{
-        backgroundColor: 'rgba(59, 130, 246, 0.05)',
-        border: '1px solid rgba(59, 130, 246, 0.2)',
+        backgroundColor: 'var(--color-primary-soft)',
+        border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-lg)',
         padding: '24px',
         marginBottom: '40px'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#3b82f6', marginBottom: '12px' }}>Base URL</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-primary)', marginBottom: '12px' }}>Base URL</h3>
         <p style={{ fontSize: '15px', color: 'var(--color-text-main)', marginBottom: '16px' }}>
           All API requests must be routed to our global unified endpoint. For the best experience, use our API through official SDKs.
         </p>
         <div style={{
-          backgroundColor: '#0d1117',
+          backgroundColor: '#111827',
           padding: '16px',
-          borderRadius: '8px',
-          border: '1px solid #30363d',
-          fontFamily: 'monospace',
-          color: '#c9d1d9',
-          fontSize: '14px'
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          color: '#E5E7EB',
+          fontSize: '14px',
+          boxShadow: 'var(--shadow-sm)'
         }}>
           https://api.cheapagents.com/v1
         </div>
       </div>
 
       <div style={{
-        backgroundColor: 'rgba(168, 85, 247, 0.05)',
-        border: '1px solid rgba(168, 85, 247, 0.2)',
+        backgroundColor: 'var(--color-bg-muted)',
+        border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-lg)',
         padding: '24px'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#a855f7', marginBottom: '12px' }}>Authentication</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '12px' }}>Authentication</h3>
         <p style={{ fontSize: '15px', color: 'var(--color-text-main)', marginBottom: '16px', lineHeight: '1.6' }}>
           Authenticate your API requests using your CheapAgents API Key. Pass your API key in the <code>Authorization</code> HTTP header as a Bearer token. 
           Some endpoints (like the Models list) may not require authentication, but most do.
         </p>
         <div style={{
-          backgroundColor: '#0d1117',
+          backgroundColor: '#111827',
           padding: '16px',
-          borderRadius: '8px',
-          border: '1px solid #30363d',
-          fontFamily: 'monospace',
-          color: '#c9d1d9',
-          fontSize: '14px'
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          color: '#E5E7EB',
+          fontSize: '14px',
+          boxShadow: 'var(--shadow-sm)'
         }}>
-          <span style={{ color: '#8b949e' }}>// Example HTTP Header</span><br/>
+          <span style={{ color: '#9CA3AF' }}>// Example HTTP Header</span><br/>
           Authorization: Bearer YOUR_API_KEY
         </div>
       </div>

@@ -48,38 +48,27 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
 
   return (
     <div style={{
-      backgroundColor: 'var(--color-card-bg)',
+      backgroundColor: 'var(--color-card-bg-2)', // Slightly offset background from the main card
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border)',
       padding: '24px',
-      marginTop: '24px',
+      marginTop: '16px',
       marginBottom: '40px',
-      boxShadow: 'var(--shadow-md)',
       position: 'relative',
       overflow: 'hidden'
     }}>
       {/* Decorative top border */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, var(--color-primary), #a855f7)' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', backgroundColor: 'var(--color-primary)' }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Play size={18} color="var(--color-primary)" /> API Playground
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-main)' }}>
+          <Play size={18} color="var(--color-primary)" /> Live API Tester
         </h3>
-        <span style={{ 
-          fontSize: '12px', 
-          padding: '4px 8px', 
-          borderRadius: '4px', 
-          backgroundColor: requiresAuth ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-          color: requiresAuth ? '#ef4444' : '#22c55e',
-          fontWeight: 600
-        }}>
-          {requiresAuth ? 'Auth Required' : 'No Auth Required'}
-        </span>
       </div>
 
       {requiresAuth && (
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--color-text-muted)' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-main)' }}>
             API Key
           </label>
           <div style={{ position: 'relative' }}>
@@ -88,45 +77,58 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your API key..."
+              placeholder="Enter your CheapAgents API Key..."
               style={{
                 width: '100%',
-                padding: '10px 12px 10px 36px',
+                padding: '12px 12px 12px 36px',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg-soft)',
+                backgroundColor: 'var(--color-input-bg)',
                 color: 'var(--color-text-main)',
                 fontSize: '14px',
                 outline: 'none',
-                transition: 'border-color 0.2s ease',
+                transition: 'all 0.2s ease',
+                boxShadow: 'var(--shadow-sm)'
               }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--color-primary)';
+                e.target.style.boxShadow = '0 0 0 3px var(--color-primary-soft)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'var(--color-border)';
+                e.target.style.boxShadow = 'var(--shadow-sm)';
+              }}
             />
           </div>
         </div>
       )}
 
       {method === 'POST' && (
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--color-text-muted)' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-main)' }}>
             JSON Payload
           </label>
           <textarea
             value={payload}
             onChange={(e) => setPayload(e.target.value)}
-            rows={6}
+            rows={8}
             style={{
               width: '100%',
-              padding: '12px',
+              padding: '16px',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)',
-              backgroundColor: '#0d1117',
-              color: '#c9d1d9',
-              fontSize: '13px',
-              fontFamily: 'monospace',
+              border: '1px solid #374151',
+              backgroundColor: '#111827', // Dark background for code input
+              color: '#E5E7EB',
+              fontSize: '14px',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               outline: 'none',
               resize: 'vertical',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = 'var(--color-primary)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#374151';
             }}
           />
         </div>
@@ -141,18 +143,19 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
           justifyContent: 'center',
           gap: '8px',
           width: '100%',
-          padding: '12px',
+          padding: '14px',
           borderRadius: 'var(--radius-md)',
-          backgroundColor: (loading || (requiresAuth && !apiKey.trim())) ? 'var(--color-bg-hover)' : 'var(--color-primary)',
-          color: (loading || (requiresAuth && !apiKey.trim())) ? 'var(--color-text-muted)' : '#fff',
+          backgroundColor: (loading || (requiresAuth && !apiKey.trim())) ? 'var(--color-border)' : 'var(--color-primary)',
+          color: (loading || (requiresAuth && !apiKey.trim())) ? 'var(--color-text-muted)' : '#ffffff',
           border: 'none',
           cursor: (loading || (requiresAuth && !apiKey.trim())) ? 'not-allowed' : 'pointer',
           fontWeight: 600,
-          fontSize: '14px',
+          fontSize: '15px',
           transition: 'all 0.2s ease',
+          boxShadow: (loading || (requiresAuth && !apiKey.trim())) ? 'none' : 'var(--shadow-md)'
         }}
       >
-        {loading ? <Loader2 size={16} className="lucide-spin" /> : <Send size={16} />}
+        {loading ? <Loader2 size={18} className="lucide-spin" /> : <Send size={18} />}
         {loading ? 'Sending Request...' : 'Send Request'}
       </button>
 
@@ -162,20 +165,31 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            style={{ overflow: 'hidden', marginTop: '20px' }}
+            style={{ overflow: 'hidden', marginTop: '24px' }}
           >
             <div style={{
-              backgroundColor: '#0d1117',
+              backgroundColor: '#111827',
               borderRadius: 'var(--radius-md)',
-              border: `1px solid ${error ? '#ef4444' : '#30363d'}`,
-              padding: '16px',
+              border: `1px solid ${error ? 'var(--color-danger)' : '#374151'}`,
             }}>
-              <div style={{ fontSize: '12px', color: '#8b949e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
-                Response
+              <div style={{ 
+                backgroundColor: error ? 'var(--color-danger)' : '#1F2937', 
+                padding: '8px 16px', 
+                borderTopLeftRadius: 'var(--radius-md)', 
+                borderTopRightRadius: 'var(--radius-md)',
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>
+                {error ? 'Error' : 'Response'}
               </div>
-              <pre style={{ margin: 0, fontSize: '13px', color: error ? '#ff7b72' : '#c9d1d9', fontFamily: 'monospace', overflowX: 'auto', maxHeight: '400px', overflowY: 'auto' }}>
-                <code>{error || response}</code>
-              </pre>
+              <div style={{ padding: '16px', overflowX: 'auto', maxHeight: '400px', overflowY: 'auto' }}>
+                <pre style={{ margin: 0, fontSize: '13.5px', color: error ? '#FCA5A5' : '#A5D6FF', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>
+                  <code>{error || response}</code>
+                </pre>
+              </div>
             </div>
           </motion.div>
         )}
