@@ -42,8 +42,8 @@ export default function ManageProvidersPage() {
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   };
 
-  const fetchProviders = async () => {
-    setLoading(true);
+  const fetchProviders = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       let list: Provider[] = [];
       const headers: Record<string, string> = getAuthHeaders();
@@ -81,8 +81,11 @@ export default function ManageProvidersPage() {
         }
       }
       setProviders(list);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error('Error fetching providers:', error);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   };
 
   useEffect(() => { fetchProviders(); }, []);
@@ -485,8 +488,8 @@ export default function ManageProvidersPage() {
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Providers</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-              <OpenRouterSetup onModelsUpdated={fetchProviders} />
-              <OpenCodeSetup onModelsUpdated={fetchProviders} />
+              <OpenRouterSetup onModelsUpdated={() => fetchProviders(true)} />
+              <OpenCodeSetup onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

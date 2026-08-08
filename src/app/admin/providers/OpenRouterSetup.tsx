@@ -64,7 +64,16 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
       const res = await fetch('https://openrouter.ai/api/v1/models?output_modalities=text,image');
       const data = await res.json();
       if (data && data.data) {
-        setAvailableModels(data.data);
+        const sorted = data.data.sort((a: any, b: any) => {
+          const aMod = a.architecture?.modality || '';
+          const bMod = b.architecture?.modality || '';
+          const aIsText = aMod === 'text->text' || (!aMod.includes('image') && !aMod.includes('video') && !aMod.includes('audio'));
+          const bIsText = bMod === 'text->text' || (!bMod.includes('image') && !bMod.includes('video') && !bMod.includes('audio'));
+          if (aIsText && !bIsText) return -1;
+          if (!aIsText && bIsText) return 1;
+          return 0;
+        });
+        setAvailableModels(sorted);
       }
     } catch (e) {
       console.error(e);
@@ -74,7 +83,7 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
     }
   };
 
-  const handleSave = async (modelsToSave = selectedModels, keyToSave = apiKey) => {
+  const handleSave = async (modelsToSave = selectedModels, keyToSave = apiKey, shouldNotify = false) => {
     setSaving(true);
     try {
       const res = await fetch('/api/admin/openrouter', {
@@ -86,7 +95,7 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
         body: JSON.stringify({ key: keyToSave, status: true, models: modelsToSave })
       });
       if (res.ok) {
-        if (onModelsUpdated) onModelsUpdated();
+        if (shouldNotify && onModelsUpdated) onModelsUpdated();
       }
     } catch (e) {
       console.error(e);
@@ -112,17 +121,17 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
       }];
     }
     setSelectedModels(next);
-    handleSave(next, apiKey);
+    handleSave(next, apiKey, false);
   };
 
   const updateSelectedModel = (originalId: string, field: keyof SelectedModel, value: any) => {
     const next = selectedModels.map(m => m.originalId === originalId ? { ...m, [field]: value } : m);
     setSelectedModels(next);
-    handleSave(next, apiKey);
+    handleSave(next, apiKey, false);
   };
 
   const handleDrawerClose = () => {
-    handleSave(selectedModels, apiKey);
+    handleSave(selectedModels, apiKey, true);
     setIsDrawerOpen(false);
   };
 
@@ -153,7 +162,7 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
               placeholder="sk-or-v1-..."
               style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
             />
-            <button className="btn-primary" onClick={() => handleSave()} disabled={saving}>
+            <button className="btn-primary" onClick={() => handleSave(selectedModels, apiKey, true)} disabled={saving}>
               {saving ? 'Saving...' : 'Save Key'}
             </button>
           </div>
@@ -170,8 +179,8 @@ export default function OpenRouterSetup({ onModelsUpdated }: { onModelsUpdated?:
 
       {/* RIGHT SIDE DRAWER */}
       {isDrawerOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ width: '460px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={handleDrawerClose}>
+          <div style={{ width: '460px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }} onClick={(e) => e.stopPropagation()}>
             
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>OpenRouter Models</h2>

@@ -10,10 +10,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [profileFile, setProfileFile] = useState<File | null>(null);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setProfileFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setUser({ ...user, profile_picture: ev.target?.result as string });
@@ -61,15 +63,26 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    Promise.resolve(params).then(p => {
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-      fetch(`/api/admin/users/${p.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-        body: JSON.stringify(user)
+    try {
+      let finalUser = { ...user };
+      if (profileFile) {
+        const formData = new FormData();
+        formData.append('file', profileFile);
+        const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
+        if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
+        const uploadData = await uploadRes.json();
+        finalUser.profile_picture = uploadData.url;
+      }
+      await Promise.resolve(params).then(p => {
+        const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+        return fetch(`/api/admin/users/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify(finalUser)
+        });
       })
         .then(res => res.json())
         .then(data => {
@@ -77,7 +90,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         })
         .catch(err => console.error(err))
         .finally(() => setSaving(false));
-    });
+    } catch (err) {
+      console.error(err);
+      setSaving(false);
+    }
   };
 
   if (loading) {

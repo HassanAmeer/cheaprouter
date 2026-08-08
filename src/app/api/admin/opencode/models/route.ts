@@ -6,8 +6,11 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const apiKey = url.searchParams.get('key') || '';
+    const authHeader = req.headers.get('authorization') || '';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
-    const response = await fetch(`${backendUrl}/api/admin/opencode/models?key=${encodeURIComponent(apiKey)}`);
+    const response = await fetch(`${backendUrl}/api/admin/opencode/models?key=${encodeURIComponent(apiKey)}`, {
+      headers: { 'Authorization': authHeader }
+    });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
     const data = await response.json();
     return NextResponse.json(data);

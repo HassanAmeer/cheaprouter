@@ -21,7 +21,7 @@ interface AuthValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
-  updateProfile: (name: string, profile_picture?: string) => Promise<void>;
+  updateProfile: (name: string, profile_picture?: string | File) => Promise<void>;
   logout: () => void;
 }
 
@@ -73,8 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(r.user);
   };
 
-  const updateProfile = async (name: string, profile_picture?: string) => {
-    const r = await api.updateProfile(name, profile_picture);
+  const updateProfile = async (name: string, profile_picture?: string | File) => {
+    let finalPicture: string | undefined;
+    if (profile_picture instanceof File) {
+      const formData = new FormData();
+      formData.append('file', profile_picture);
+      const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
+      const uploadData = await uploadRes.json();
+      finalPicture = uploadData.url;
+    } else if (profile_picture) {
+      finalPicture = profile_picture;
+    }
+    const r = await api.updateProfile(name, finalPicture);
     setUser(r.user);
   };
 

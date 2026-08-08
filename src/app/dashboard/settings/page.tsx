@@ -13,11 +13,13 @@ export default function SettingsPage() {
   const [name, setName] = useState(user?.name ?? 'John Doe');
   const [email] = useState(user?.email ?? 'john@company.com');
   const [profilePic, setProfilePic] = useState<string | null>(user?.profile_picture ?? null);
+  const [profileFile, setProfileFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setProfileFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setProfilePic(ev.target?.result as string);
@@ -28,7 +30,8 @@ export default function SettingsPage() {
   const save = async () => {
     setSaving(true);
     try {
-      await updateProfile(name, profilePic ?? undefined);
+      await updateProfile(name, profileFile ?? profilePic ?? undefined);
+      setProfileFile(null);
       toast('Profile changes saved', 'success');
     } catch (err: any) {
       toast(err.message ?? 'Failed to save profile', 'error');
