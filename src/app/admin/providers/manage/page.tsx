@@ -27,6 +27,7 @@ import HuggingFaceSetup, { HuggingFaceSetupRef } from '../HuggingFaceSetup';
 import HyperbolicSetup, { HyperbolicSetupRef } from '../HyperbolicSetup';
 import MoonshotSetup, { MoonshotSetupRef } from '../MoonshotSetup';
 import ZaiSetup, { ZaiSetupRef } from '../ZaiSetup';
+import NvidiaSetup, { NvidiaSetupRef } from '../NvidiaSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -64,6 +65,7 @@ export default function ManageProvidersPage() {
   const hyperbolicRef = useRef<HyperbolicSetupRef>(null);
   const moonshotRef = useRef<MoonshotSetupRef>(null);
   const zaiRef = useRef<ZaiSetupRef>(null);
+  const nvidiaRef = useRef<NvidiaSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -684,6 +686,7 @@ export default function ManageProvidersPage() {
               <HyperbolicSetup ref={hyperbolicRef} index={22} onModelsUpdated={() => fetchProviders(true)} />
               <MoonshotSetup ref={moonshotRef} index={23} onModelsUpdated={() => fetchProviders(true)} />
               <ZaiSetup ref={zaiRef} index={24} onModelsUpdated={() => fetchProviders(true)} />
+              <NvidiaSetup ref={nvidiaRef} index={25} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

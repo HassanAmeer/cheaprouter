@@ -125,6 +125,9 @@ export async function getModelInstance(userId: string, model: string) {
   const zaiInst = checkProv('ap_zai', (key) => createOpenAI({ baseURL: 'https://api.z.ai/v1', apiKey: key }));
   if (zaiInst) return zaiInst;
 
+  const nvidiaInst = checkProv('ap_nvidia', (key) => createOpenAI({ baseURL: 'https://integrate.api.nvidia.com/v1', apiKey: key }));
+  if (nvidiaInst) return nvidiaInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
