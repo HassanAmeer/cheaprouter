@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Globe, RefreshCcw, Search, X, Check } from 'lucide-react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
+import { Globe, RefreshCcw, Search, X, Check, Code, Play, Save, Eye, EyeOff, Plus } from 'lucide-react';
 import styles from '../admin.module.css';
 
 type SelectedModel = {
@@ -11,11 +11,19 @@ type SelectedModel = {
   text: boolean;
   image: boolean;
   vision: boolean;
+  audio: boolean;
+  reasoning: boolean;
+  video: boolean;
 };
 
-export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: () => void }) {
-  const [apiKey, setApiKey] = useState('');
+export interface OpenCodeSetupRef {
+  testApi: (silent?: boolean) => Promise<boolean>;
+}
+
+const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => void }>(({ onModelsUpdated }, ref) => {
+  const [apiKeys, setApiKeys] = useState<string[]>(['']);
   const [status, setStatus] = useState(false);
+  const [showKeys, setShowKeys] = useState<boolean[]>([]);
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,6 +32,57 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [fetchingModels, setFetchingModels] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [testing, setTesting] = useState<boolean[]>([]);
+  const [testSuccesses, setTestSuccesses] = useState<(boolean | null)[]>([]);
+  const [showKeyErrors, setShowKeyErrors] = useState<boolean[]>([]);
+  const apiKeyRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const testAllApiKeys = async (silent = false) => {
+    let allPassed = true;
+    for (let i = 0; i < apiKeys.length; i++) {
+      const passed = await handleTestApi(i, silent);
+      if (!passed) allPassed = false;
+    }
+    return allPassed;
+  };
+
+  useImperativeHandle(ref, () => ({
+    testApi: testAllApiKeys
+  }));
+
+  const handleTestApi = async (index: number, silent = false) => {
+    const key = apiKeys[index];
+    if (!key) {
+      if (!silent) {
+        setShowKeyErrors(prev => { const n = [...prev]; n[index] = true; return n; });
+        apiKeyRefs.current[index]?.focus();
+      }
+      setTestSuccesses(prev => { const n = [...prev]; n[index] = false; return n; });
+      return false;
+    }
+    setShowKeyErrors(prev => { const n = [...prev]; n[index] = false; return n; });
+    setTesting(prev => { const n = [...prev]; n[index] = true; return n; });
+    setTestSuccesses(prev => { const n = [...prev]; n[index] = null; return n; });
+    try {
+      const res = await fetch('https://opencode.ai/api/v1/models?output_modalities=text,image', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      const data = await res.json();
+      if (res.ok && data && data.data) {
+        setTestSuccesses(prev => { const n = [...prev]; n[index] = true; return n; });
+        return true;
+      } else {
+        setTestSuccesses(prev => { const n = [...prev]; n[index] = false; return n; });
+        return false;
+      }
+    } catch (e) {
+      setTestSuccesses(prev => { const n = [...prev]; n[index] = false; return n; });
+      return false;
+    } finally {
+      setTesting(prev => { const n = [...prev]; n[index] = false; return n; });
+    }
+  };
 
   const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('adminToken') || '') : '';
@@ -34,12 +93,19 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
     fetch('/api/admin/opencode', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
-        if (data.key) setApiKey(data.key);
+        if (data.key) {
+          try {
+            const parsed = JSON.parse(data.key);
+            setApiKeys(Array.isArray(parsed) && parsed.length > 0 ? parsed : [data.key]);
+          } catch {
+            setApiKeys([data.key]);
+          }
+        }
         if (data.status !== undefined) setStatus(data.status);
         if (data.models && Array.isArray(data.models)) {
           const normalized = data.models.map((m: any) =>
             typeof m === 'string'
-              ? { originalId: m, originalName: m, name: m, id: m, text: true, image: false, vision: false }
+              ? { originalId: m, originalName: m, name: m, id: m, text: true, image: false, vision: false, audio: false, reasoning: false, video: false }
               : {
                   originalId: m.originalId || m.id || '',
                   originalName: m.originalName || m.name || m.id || '',
@@ -47,7 +113,10 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
                   id: m.id || m.originalId || '',
                   text: m.text ?? m.reasoning ?? true,
                   image: m.image ?? false,
-                  vision: m.vision ?? m.image ?? false
+                  vision: m.vision ?? m.image ?? false,
+                  audio: m.audio ?? false,
+                  reasoning: m.reasoning ?? false,
+                  video: m.video ?? false
                 }
           );
           setSelectedModels(normalized);
@@ -60,25 +129,12 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
   const handleFetchModels = async () => {
     setFetchingModels(true);
     try {
-      const res = await fetch(`/api/admin/opencode/models?key=${encodeURIComponent(apiKey)}`, {
-        headers: getAuthHeaders()
+      const res = await fetch(`https://opencode.ai/api/v1/models`, {
+        headers: { 'Authorization': `Bearer ${apiKeys[0] || ''}` }
       });
       const data = await res.json();
       if (data && Array.isArray(data.data)) {
-        const sorted = data.data.sort((a: any, b: any) => {
-          const aId = (a.id || '').toLowerCase();
-          const bId = (b.id || '').toLowerCase();
-          const aMod = a.architecture?.modality || '';
-          const bMod = b.architecture?.modality || '';
-          
-          const aIsText = (!aMod || aMod === 'text->text') && !aId.includes('vision') && !aId.includes('image');
-          const bIsText = (!bMod || bMod === 'text->text') && !bId.includes('vision') && !bId.includes('image');
-          
-          if (aIsText && !bIsText) return -1;
-          if (!aIsText && bIsText) return 1;
-          return 0;
-        });
-        setAvailableModels(sorted);
+        setAvailableModels(data.data);
       } else if (data && data.error) {
         alert('Failed to fetch OpenCode models: ' + data.error);
       }
@@ -90,16 +146,15 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
     }
   };
 
-  const handleSave = async (modelsToSave = selectedModels, keyToSave = apiKey, shouldNotify = false) => {
+  const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false) => {
     setSaving(true);
     try {
+      const validKeys = keysToSave.map(k => k.trim()).filter(k => k !== '');
+      const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : ['']);
       const res = await fetch('/api/admin/opencode', {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({ key: keyToSave, status: true, models: modelsToSave })
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ key: keyString, status, models: modelsToSave })
       });
       if (res.ok) {
         if (shouldNotify && onModelsUpdated) onModelsUpdated();
@@ -124,21 +179,24 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
         id: model.id.split('/').pop()?.replace(/[^a-zA-Z0-9_-]/g, '_') || model.id,
         text: true,
         image: false,
-        vision: false
+        vision: false,
+        audio: false,
+        reasoning: false,
+        video: false
       }];
     }
     setSelectedModels(next);
-    handleSave(next, apiKey, false);
+    handleSave(next, apiKeys, false);
   };
 
   const updateSelectedModel = (originalId: string, field: keyof SelectedModel, value: any) => {
     const next = selectedModels.map(m => m.originalId === originalId ? { ...m, [field]: value } : m);
     setSelectedModels(next);
-    handleSave(next, apiKey, false);
+    handleSave(next, apiKeys, false);
   };
 
   const handleDrawerClose = () => {
-    handleSave(selectedModels, apiKey, true);
+    handleSave(selectedModels, apiKeys, true);
     setIsDrawerOpen(false);
   };
 
@@ -151,26 +209,68 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
 
   return (
     <>
-      <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', padding: '24px', borderRadius: '12px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ background: 'var(--color-card-bg)', border: `1px solid ${testSuccesses.includes(false) ? '#ef4444' : testSuccesses.includes(true) ? '#10b981' : 'var(--color-border)'}`, padding: '24px', borderRadius: '12px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', transition: 'border-color 0.3s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Globe size={20} color="var(--color-primary)" />
+            <Code size={20} color="var(--color-primary)" />
           </div>
-          <span style={{ fontSize: '18px', fontWeight: 600 }}>OpenCode AI</span>
+          <span style={{ fontSize: '18px', fontWeight: 600 }}>OpenCode</span>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input 
-              type="password" 
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="zen-..."
-              style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-            />
-            <button className="btn-primary" onClick={() => handleSave(selectedModels, apiKey, true)} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Key'}
+          {apiKeys.map((key, index) => (
+            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                API Key {index + 1}
+                {showKeyErrors[index] && <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500 }}>*Required</span>}
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    ref={el => { apiKeyRefs.current[index] = el; }}
+                    type={showKeys[index] ? "text" : "password"} 
+                    value={key}
+                    onChange={(e) => { 
+                      const n = [...apiKeys]; n[index] = e.target.value; setApiKeys(n); 
+                      if (showKeyErrors[index]) {
+                        const ne = [...showKeyErrors]; ne[index] = false; setShowKeyErrors(ne);
+                      }
+                    }}
+                    placeholder="zen-..."
+                    style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 40px 10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
+                  />
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => { const n = [...showKeys]; n[index] = !n[index]; setShowKeys(n); }} 
+                    style={{ position: 'absolute', right: '4px', background: 'transparent', border: 'none', padding: '6px', color: 'var(--color-text-muted)' }}
+                    title={showKeys[index] ? "Hide Key" : "Show Key"}
+                  >
+                    {showKeys[index] ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <button className="btn-secondary" onClick={() => handleTestApi(index, false)} disabled={testing[index]} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '6px', height: '40px', color: testSuccesses[index] === true ? '#10b981' : testSuccesses[index] === false ? '#ef4444' : 'inherit' }} title="Test Provider">
+                  {testing[index] ? <RefreshCcw size={16} className={styles.spin} /> : testSuccesses[index] === true ? <Check size={16} /> : testSuccesses[index] === false ? <X size={16} /> : <Play size={16} />}
+                </button>
+                {index > 0 && (
+                  <button className="btn-secondary" onClick={() => {
+                    const nk = [...apiKeys]; nk.splice(index, 1); setApiKeys(nk);
+                    const nt = [...testing]; nt.splice(index, 1); setTesting(nt);
+                    const nts = [...testSuccesses]; nts.splice(index, 1); setTestSuccesses(nts);
+                    const nsk = [...showKeys]; nsk.splice(index, 1); setShowKeys(nsk);
+                  }} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', height: '40px', color: '#ef4444' }} title="Remove Key">
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, ''])} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+              <Plus size={14} /> Add Another API Key
+            </button>
+            <button className="btn-primary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }} title="Save All Keys">
+              {saving ? <RefreshCcw size={14} className={styles.spin} /> : <Save size={14} />} Save Keys
             </button>
           </div>
         </div>
@@ -211,6 +311,16 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
                   <RefreshCcw size={13} className={fetchingModels ? styles.spin : ''} /> 
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
+                <a 
+                  href={`/api/admin/opencode/models?key=${encodeURIComponent(apiKeys[0] || '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn-secondary" 
+                  style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px' }}
+                  title="View Raw JSON"
+                >
+                  <Code size={14} color="var(--color-text-muted)" />
+                </a>
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -284,7 +394,7 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
                         <input type="checkbox" checked={model.text} onChange={(e) => updateSelectedModel(model.originalId, 'text', e.target.checked)} />
                         Text
@@ -296,6 +406,18 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
                       <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
                         <input type="checkbox" checked={model.vision} onChange={(e) => updateSelectedModel(model.originalId, 'vision', e.target.checked)} />
                         Vision
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={model.audio} onChange={(e) => updateSelectedModel(model.originalId, 'audio', e.target.checked)} />
+                        Audio
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={model.reasoning} onChange={(e) => updateSelectedModel(model.originalId, 'reasoning', e.target.checked)} />
+                        Reasoning
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={model.video} onChange={(e) => updateSelectedModel(model.originalId, 'video', e.target.checked)} />
+                        Video
                       </label>
                     </div>
 
@@ -316,4 +438,6 @@ export default function OpenCodeSetup({ onModelsUpdated }: { onModelsUpdated?: (
       )}
     </>
   );
-}
+});
+
+export default OpenCodeSetup;

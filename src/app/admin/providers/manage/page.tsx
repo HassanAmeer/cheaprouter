@@ -1,10 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play } from 'lucide-react';
 import Link from 'next/link';
-import OpenRouterSetup from '../OpenRouterSetup';
-import OpenCodeSetup from '../OpenCodeSetup';
+import OpenRouterSetup, { OpenRouterSetupRef } from '../OpenRouterSetup';
+import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
@@ -16,6 +16,10 @@ export default function ManageProvidersPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+
+  const openRouterRef = useRef<OpenRouterSetupRef>(null);
+  const openCodeRef = useRef<OpenCodeSetupRef>(null);
+  const [testingAll, setTestingAll] = useState(false);
 
   // Add Provider form state
   const [showAddProvider, setShowAddProvider] = useState(false);
@@ -90,9 +94,63 @@ export default function ManageProvidersPage() {
 
   useEffect(() => { fetchProviders(); }, []);
 
+  const handleTestAllPrefixProviders = async () => {
+    setTestingAll(true);
+    let allPassed = true;
+    if (openRouterRef.current) {
+      const res = await openRouterRef.current.testApi(true);
+      if (!res) allPassed = false;
+    }
+    if (openCodeRef.current) {
+      const res = await openCodeRef.current.testApi(true);
+      if (!res) allPassed = false;
+    }
+    setTestingAll(false);
+  };
+
   const toggleProvider = (id: string) => { setProviders(providers.map(p => p.id === id ? { ...p, status: !p.status } : p)); setSaved(false); };
   const toggleExpanded = (id: string) => { const next = new Set(expandedProviders); if (next.has(id)) next.delete(id); else next.add(id); setExpandedProviders(next); };
-  const updateKey = (id: string, val: string) => { setProviders(providers.map(p => p.id === id ? { ...p, key: val } : p)); setSaved(false); };
+  
+  const parseKeys = (keyStr: string): string[] => {
+    try {
+      const parsed = JSON.parse(keyStr || '[""]');
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return [keyStr || ''];
+    } catch {
+      return [keyStr || ''];
+    }
+  };
+
+  const updateKeyIndex = (id: string, index: number, val: string) => {
+    setProviders(providers.map(p => {
+      if (p.id !== id) return p;
+      const keys = parseKeys(p.key);
+      keys[index] = val;
+      return { ...p, key: JSON.stringify(keys) };
+    }));
+    setSaved(false);
+  };
+
+  const addKey = (id: string) => {
+    setProviders(providers.map(p => {
+      if (p.id !== id) return p;
+      const keys = parseKeys(p.key);
+      keys.push('');
+      return { ...p, key: JSON.stringify(keys) };
+    }));
+    setSaved(false);
+  };
+
+  const removeKey = (id: string, index: number) => {
+    setProviders(providers.map(p => {
+      if (p.id !== id) return p;
+      const keys = parseKeys(p.key);
+      keys.splice(index, 1);
+      return { ...p, key: JSON.stringify(keys) };
+    }));
+    setSaved(false);
+  };
+
   const updateBaseUrl = (id: string, val: string) => { setProviders(providers.map(p => p.id === id ? { ...p, baseUrl: val } : p)); setSaved(false); };
   const updateApiFormat = (id: string, val: string) => { setProviders(providers.map(p => p.id === id ? { ...p, apiFormat: val } : p)); setSaved(false); };
 
@@ -158,10 +216,24 @@ export default function ManageProvidersPage() {
       {expandedProviders.has(provider.id) && (
         <div style={{ padding: '16px', borderTop: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Root API Key</label>
-            <input type="password" value={provider.key} onChange={(e) => updateKey(provider.id, e.target.value)}
-              placeholder={`Enter ${provider.name} API Key`} disabled={!provider.status} autoComplete="new-password"
-              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontFamily: 'monospace', fontSize: '13px' }} />
+            {parseKeys(provider.key).map((k, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key {idx + 1}</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="password" value={k} onChange={(e) => updateKeyIndex(provider.id, idx, e.target.value)}
+                    placeholder={`Enter ${provider.name} API Key`} disabled={!provider.status} autoComplete="new-password"
+                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontFamily: 'monospace', fontSize: '13px' }} />
+                  {idx > 0 && (
+                    <button onClick={() => removeKey(provider.id, idx)} disabled={!provider.status} className="btn-secondary" style={{ padding: '10px 12px', display: 'flex', color: '#ef4444', height: '40px' }} title="Remove Key">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button onClick={() => addKey(provider.id)} disabled={!provider.status} className="btn-secondary" style={{ alignSelf: 'flex-start', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginTop: '4px' }}>
+              <Plus size={14} /> Add Another API Key
+            </button>
           </div>
 
           {isCustomGroup && (
@@ -486,10 +558,20 @@ export default function ManageProvidersPage() {
 
           {/* ===== PREFIX PROVIDERS ===== */}
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Providers</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>Prefix Providers</h3>
+              <button 
+                className="btn-secondary" 
+                onClick={handleTestAllPrefixProviders} 
+                disabled={testingAll}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '12px' }}
+              >
+                <Play size={14} /> {testingAll ? 'Testing...' : 'Test All Prefix Providers'}
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-              <OpenRouterSetup onModelsUpdated={() => fetchProviders(true)} />
-              <OpenCodeSetup onModelsUpdated={() => fetchProviders(true)} />
+              <OpenRouterSetup ref={openRouterRef} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenCodeSetup ref={openCodeRef} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

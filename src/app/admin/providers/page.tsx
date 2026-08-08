@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
 
@@ -28,6 +28,24 @@ export default function ProvidersPage() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  const [showAddCustomModel, setShowAddCustomModel] = useState(false);
+  const [customModelProviderId, setCustomModelProviderId] = useState('');
+  const [customModelOriginalId, setCustomModelOriginalId] = useState('');
+  const [customModelName, setCustomModelName] = useState('');
+  const [customModelShowingId, setCustomModelShowingId] = useState('');
+  const [customModelText, setCustomModelText] = useState(true);
+  const [customModelReasoning, setCustomModelReasoning] = useState(false);
+  const [customModelVision, setCustomModelVision] = useState(false);
+  const [customModelImage, setCustomModelImage] = useState(false);
+  const [customModelVideo, setCustomModelVideo] = useState(false);
+  const [customModelEmbedding, setCustomModelEmbedding] = useState(false);
+  const [customModelAudio, setCustomModelAudio] = useState(false);
+  const [customModelTokenLimit, setCustomModelTokenLimit] = useState('');
+  const [customModelContextWindow, setCustomModelContextWindow] = useState('');
+  const [customModelAccess, setCustomModelAccess] = useState('Free');
+  const [customModelInputPrice, setCustomModelInputPrice] = useState('');
+  const [customModelOutputPrice, setCustomModelOutputPrice] = useState('');
 
   const handleBulkDelete = () => {
     if (selectedModels.size === 0) return;
@@ -63,6 +81,50 @@ export default function ProvidersPage() {
       ...p,
       models: p.models.map(m => m.id === modelId ? { ...m, showOnLandingPage: false } : m)
     } : p));
+    setSaved(false);
+  };
+
+  const handleAddCustomModel = () => {
+    if (!customModelProviderId || !customModelOriginalId.trim() || !customModelName.trim()) return;
+    const targetProvider = providers.find(p => p.id === customModelProviderId);
+    if (!targetProvider) return;
+    const showingId = customModelShowingId.trim() || customModelOriginalId.trim();
+    const newModel: Model = {
+      id: showingId,
+      name: customModelName,
+      originalId: customModelOriginalId.trim(),
+      text: customModelText,
+      reasoning: customModelReasoning,
+      vision: customModelVision,
+      image: customModelImage,
+      video: customModelVideo,
+      embedding: customModelEmbedding,
+      audio: customModelAudio,
+      tokenLimit: customModelTokenLimit || 'Unlimited',
+      contextWindow: customModelContextWindow || 'Dynamic',
+      access: customModelAccess,
+      inputPrice: customModelInputPrice || 'Variable',
+      outputPrice: customModelOutputPrice || 'Variable',
+      showOnLandingPage: false
+    };
+    setProviders(prevProviders => prevProviders.map(p => p.id === customModelProviderId ? { ...p, models: [...p.models, newModel] } : p));
+    setCustomModelProviderId('');
+    setCustomModelOriginalId('');
+    setCustomModelName('');
+    setCustomModelShowingId('');
+    setCustomModelText(true);
+    setCustomModelReasoning(false);
+    setCustomModelVision(false);
+    setCustomModelImage(false);
+    setCustomModelVideo(false);
+    setCustomModelEmbedding(false);
+    setCustomModelAudio(false);
+    setCustomModelTokenLimit('');
+    setCustomModelContextWindow('');
+    setCustomModelAccess('Free');
+    setCustomModelInputPrice('');
+    setCustomModelOutputPrice('');
+    setShowAddCustomModel(false);
     setSaved(false);
   };
 
@@ -724,6 +786,12 @@ export default function ProvidersPage() {
           >
             <Plus size={15} /> Add & Manage Providers
           </Link>
+          <button
+            onClick={() => setShowAddCustomModel(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', borderRadius: '8px', border: '1.5px solid var(--color-primary)', background: 'transparent', color: 'var(--color-primary)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <Settings2 size={15} /> Add Custom Model
+          </button>
           <button className="btn-primary" onClick={handleSave} disabled={saving || loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', borderRadius: '8px' }}>
             <Save size={16} /> {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
           </button>
@@ -1189,6 +1257,104 @@ export default function ProvidersPage() {
           </table>
         </div>
       </div>
+
+      {/* ===== ADD CUSTOM MODEL DRAWER ===== */}
+      {showAddCustomModel && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setShowAddCustomModel(false)}>
+          <div style={{ width: '420px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Add Custom Model</h2>
+              <button onClick={() => setShowAddCustomModel(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Provider</label>
+                <select value={customModelProviderId} onChange={e => setCustomModelProviderId(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
+                  <option value="">Select Provider</option>
+                  {providers.filter(p => p.status).map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original Model ID</label>
+                <input type="text" value={customModelOriginalId} onChange={e => setCustomModelOriginalId(e.target.value)} placeholder="e.g. gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Name</label>
+                <input type="text" value={customModelName} onChange={e => setCustomModelName(e.target.value)} placeholder="e.g. GPT-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Showing Model ID</label>
+                <input type="text" value={customModelShowingId} onChange={e => setCustomModelShowingId(e.target.value)} placeholder="e.g. cr-gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Users will use this ID to call the API.</span>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'block' }}>Capabilities</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                  {[
+                    { label: 'Text', state: customModelText, setter: setCustomModelText },
+                    { label: 'Reasoning', state: customModelReasoning, setter: setCustomModelReasoning },
+                    { label: 'Vision', state: customModelVision, setter: setCustomModelVision },
+                    { label: 'Image', state: customModelImage, setter: setCustomModelImage },
+                    { label: 'Video', state: customModelVideo, setter: setCustomModelVideo },
+                    { label: 'Embedding', state: customModelEmbedding, setter: setCustomModelEmbedding },
+                    { label: 'Audio', state: customModelAudio, setter: setCustomModelAudio },
+                  ].map(cap => (
+                    <label key={cap.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer', background: 'var(--color-bg-soft)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <input type="checkbox" checked={cap.state} onChange={e => cap.setter(e.target.checked)} />
+                      {cap.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Token Limit</label>
+                  <input type="text" value={customModelTokenLimit} onChange={e => setCustomModelTokenLimit(e.target.value)} placeholder="e.g. 128000" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context Window</label>
+                  <input type="text" value={customModelContextWindow} onChange={e => setCustomModelContextWindow(e.target.value)} placeholder="e.g. 128K" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Access Level</label>
+                <select value={customModelAccess} onChange={e => setCustomModelAccess(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
+                  <option value="Free">Free</option>
+                  <option value="Pro">Pro</option>
+                  <option value="Enterprise">Enterprise</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Input Price (per 1M)</label>
+                  <input type="text" value={customModelInputPrice} onChange={e => setCustomModelInputPrice(e.target.value)} placeholder="e.g. $5/M" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Output Price (per 1M)</label>
+                  <input type="text" value={customModelOutputPrice} onChange={e => setCustomModelOutputPrice(e.target.value)} placeholder="e.g. $15/M" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', justifyContent: 'flex-end', background: 'var(--color-card-bg)' }}>
+              <button onClick={() => setShowAddCustomModel(false)} style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={handleAddCustomModel} className="btn-primary" style={{ padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}>Add Model</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

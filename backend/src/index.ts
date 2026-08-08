@@ -603,35 +603,21 @@ app.get('/api/models', async (c) => {
   ];
   
   try {
-    const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
-    if (openRouterResult.length > 0) {
-      const openRouterModels = openRouterResult[0].models || [];
-      for (const m of openRouterModels) {
-        models.push({
-          id: m.id,
-          name: m.name,
-          provider: 'OpenRouter',
-          context: 'Dynamic',
-          input: 'Variable',
-          output: 'Variable'
-        });
-      }
-    }
-  } catch (e) {}
-
-  try {
-    const openCodeResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_opencode' AND status = true`;
-    if (openCodeResult.length > 0) {
-      const openCodeModels = openCodeResult[0].models || [];
-      for (const m of openCodeModels) {
-        models.push({
-          id: m.id,
-          name: m.name,
-          provider: 'OpenCode',
-          context: 'Dynamic',
-          input: 'Variable',
-          output: 'Variable'
-        });
+    const allProviders = await db`SELECT * FROM admin_providers WHERE status = true`;
+    for (const provider of allProviders) {
+      const providerModels = provider.models || [];
+      for (const m of providerModels) {
+        const exists = models.some(existing => existing.id === m.id && existing.provider === provider.name);
+        if (!exists) {
+          models.push({
+            id: m.id,
+            name: m.name,
+            provider: provider.name,
+            context: m.contextWindow || 'Dynamic',
+            input: m.inputPrice || 'Variable',
+            output: m.outputPrice || 'Variable'
+          });
+        }
       }
     }
   } catch (e) {}
