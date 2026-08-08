@@ -1145,7 +1145,7 @@ app.put('/api/admin/hyperbolic', zValidator('json', z.any()), async (c) => {
   const data = c.req.valid('json');
   await db`
     INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
-    VALUES ('ap_hyperbolic', 'Hyperbolic', ${data.status}, ${data.key}, 28, 'https://api.hyperbolic.xyz/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    VALUES ('ap_hyperbolic', 'Hyperbolic', ${data.status}, ${data.key}, 28, 'https://api.hyperbolic.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
     ON CONFLICT (id) DO UPDATE SET 
       key = ${data.key},
       status = ${data.status},
@@ -1417,7 +1417,7 @@ app.get('/api/admin/huggingface/models', async (c) => {
 app.get('/api/admin/hyperbolic/models', async (c) => {
   try {
     const apiKey = c.req.query('key') || '';
-    const res = await fetch('https://api.hyperbolic.xyz/v1/models', {
+    const res = await fetch('https://api.hyperbolic.ai/v1/models', {
       headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
     });
     if (!res.ok) return c.json({ data: [] });

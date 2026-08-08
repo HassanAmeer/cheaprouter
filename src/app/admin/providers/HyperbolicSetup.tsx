@@ -291,7 +291,7 @@ const HyperbolicSetup = forwardRef<HyperbolicSetupRef, { onModelsUpdated?: () =>
                 {showKeyErrors[index] && <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500 }}>*Required</span>}
               </div>
                 {index === 0 && (
-                  <a href="https://app.hyperbolic.xyz/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: '11px', color: 'var(--color-primary)', textDecoration: 'none', background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontWeight: 500 }}>
+                  <a href="https://app.hyperbolic.ai/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: '11px', color: 'var(--color-primary)', textDecoration: 'none', background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontWeight: 500 }}>
                     Get API Key ↗
                   </a>
                 )}

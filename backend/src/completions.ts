@@ -116,7 +116,7 @@ export async function getModelInstance(userId: string, model: string) {
   const huggingfaceInst = checkProv('ap_huggingface', (key) => createOpenAI({ baseURL: 'https://api-inference.huggingface.co/v1', apiKey: key }));
   if (huggingfaceInst) return huggingfaceInst;
 
-  const hyperbolicInst = checkProv('ap_hyperbolic', (key) => createOpenAI({ baseURL: 'https://api.hyperbolic.xyz/v1', apiKey: key }));
+  const hyperbolicInst = checkProv('ap_hyperbolic', (key) => createOpenAI({ baseURL: 'https://api.hyperbolic.ai/v1', apiKey: key }));
   if (hyperbolicInst) return hyperbolicInst;
 
   const moonshotInst = checkProv('ap_moonshot', (key) => createOpenAI({ baseURL: 'https://api.moonshot.cn/v1', apiKey: key }));
