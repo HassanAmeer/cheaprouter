@@ -475,7 +475,6 @@ async function handleListModels(c: any) {
                id: m.id || m.originalId,
                object: 'model',
                created: Math.floor(Date.now() / 1000),
-               owned_by: 'cheaprouter',
                name: m.name || m.originalName,
                features: {
                  text: !!m.text,
