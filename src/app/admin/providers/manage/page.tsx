@@ -31,6 +31,8 @@ import NvidiaSetup, { NvidiaSetupRef } from '../NvidiaSetup';
 import KiloCodeSetup, { KiloCodeSetupRef } from '../KiloCodeSetup';
 import ClineCodeSetup, { ClineCodeSetupRef } from '../ClineCodeSetup';
 import PoixeSetup, { PoixeSetupRef } from '../PoixeSetup';
+import SiliconFlowSetup, { SiliconFlowSetupRef } from '../SiliconFlowSetup';
+import ZenmuxSetup, { ZenmuxSetupRef } from '../ZenmuxSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -72,6 +74,8 @@ export default function ManageProvidersPage() {
   const kilocodeRef = useRef<KiloCodeSetupRef>(null);
   const clinecodeRef = useRef<ClineCodeSetupRef>(null);
   const poixeRef = useRef<PoixeSetupRef>(null);
+  const siliconflowRef = useRef<SiliconFlowSetupRef>(null);
+  const zenmuxRef = useRef<ZenmuxSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -696,6 +700,8 @@ export default function ManageProvidersPage() {
               <KiloCodeSetup ref={kilocodeRef} index={26} onModelsUpdated={() => fetchProviders(true)} />
               <ClineCodeSetup ref={clinecodeRef} index={27} onModelsUpdated={() => fetchProviders(true)} />
               <PoixeSetup ref={poixeRef} index={28} onModelsUpdated={() => fetchProviders(true)} />
+              <SiliconFlowSetup ref={siliconflowRef} index={29} onModelsUpdated={() => fetchProviders(true)} />
+              <ZenmuxSetup ref={zenmuxRef} index={30} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

@@ -137,6 +137,12 @@ export async function getModelInstance(userId: string, model: string) {
   const poixeInst = checkProv('ap_poixe', (key) => createOpenAI({ baseURL: 'https://api.poixe.com/v1', apiKey: key }));
   if (poixeInst) return poixeInst;
 
+  const siliconflowInst = checkProv('ap_siliconflow', (key) => createOpenAI({ baseURL: 'https://api.siliconflow.cn/v1', apiKey: key }));
+  if (siliconflowInst) return siliconflowInst;
+
+  const zenmuxInst = checkProv('ap_zenmux', (key) => createOpenAI({ baseURL: 'https://api.zenmux.ai/v1', apiKey: key }));
+  if (zenmuxInst) return zenmuxInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
