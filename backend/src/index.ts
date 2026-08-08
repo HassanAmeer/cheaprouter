@@ -1866,6 +1866,45 @@ app.get('/api/admin/agnesai/models', async (c) => {
   }
 });
 
+
+// ---- TokenRouter Setup ----
+app.get('/api/admin/tokenrouter', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_tokenrouter'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/tokenrouter', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_tokenrouter', 'TokenRouter', ${data.status}, ${data.key}, 46, 'https://api.tokenrouter.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/tokenrouter/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.tokenrouter.com/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
 app.get('/api/models', async (c) => {
   const models: any[] = [];
   

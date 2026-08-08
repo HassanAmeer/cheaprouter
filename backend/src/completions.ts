@@ -170,6 +170,9 @@ export async function getModelInstance(userId: string, model: string) {
   const agnesaiInst = checkProv('ap_agnesai', (key) => createOpenAI({ baseURL: 'https://api.agnes-ai.com/v1', apiKey: key }));
   if (agnesaiInst) return agnesaiInst;
 
+  const tokenrouterInst = checkProv('ap_tokenrouter', (key) => createOpenAI({ baseURL: 'https://api.tokenrouter.com/v1', apiKey: key }));
+  if (tokenrouterInst) return tokenrouterInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
