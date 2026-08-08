@@ -394,7 +394,7 @@ const DeepSeekSetup = forwardRef<DeepSeekSetupRef, { onModelsUpdated?: () => voi
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/deepseek/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.deepseek.com/models?key=" + encodeURIComponent(k) : "https://api.deepseek.com/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

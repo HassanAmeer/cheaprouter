@@ -394,7 +394,7 @@ const FireworksSetup = forwardRef<FireworksSetupRef, { onModelsUpdated?: () => v
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/fireworks/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.fireworks.ai/inference/v1/models?key=" + encodeURIComponent(k) : "https://api.fireworks.ai/inference/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

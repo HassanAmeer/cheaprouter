@@ -390,7 +390,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href="https://openrouter.ai/api/v1/models?output_modalities=text,image" 
+                  href="https://openrouter.ai/api/v1/models" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

@@ -394,7 +394,7 @@ const NvidiaSetup = forwardRef<NvidiaSetupRef, { onModelsUpdated?: () => void, i
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/nvidia/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://integrate.api.nvidia.com/v1/models?key=" + encodeURIComponent(k) : "https://integrate.api.nvidia.com/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

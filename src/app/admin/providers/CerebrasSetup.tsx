@@ -394,7 +394,7 @@ const CerebrasSetup = forwardRef<CerebrasSetupRef, { onModelsUpdated?: () => voi
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/cerebras/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.cerebras.ai/v1/models?key=" + encodeURIComponent(k) : "https://api.cerebras.ai/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

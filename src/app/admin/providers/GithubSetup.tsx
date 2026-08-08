@@ -394,7 +394,7 @@ const GithubSetup = forwardRef<GithubSetupRef, { onModelsUpdated?: () => void, i
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/github/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://models.inference.ai.azure.com/models?key=" + encodeURIComponent(k) : "https://models.inference.ai.azure.com/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

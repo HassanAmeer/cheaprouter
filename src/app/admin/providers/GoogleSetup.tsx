@@ -394,7 +394,7 @@ const GoogleSetup = forwardRef<GoogleSetupRef, { onModelsUpdated?: () => void, i
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/google/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(k) : "https://generativelanguage.googleapis.com/v1beta/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

@@ -394,7 +394,7 @@ const NovitaSetup = forwardRef<NovitaSetupRef, { onModelsUpdated?: () => void, i
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/novita/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.novita.ai/v3/openai/models?key=" + encodeURIComponent(k) : "https://api.novita.ai/v3/openai/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

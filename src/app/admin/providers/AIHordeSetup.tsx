@@ -394,7 +394,7 @@ const AIHordeSetup = forwardRef<AIHordeSetupRef, { onModelsUpdated?: () => void,
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/aihorde/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://aihorde.net/api/v2/status/models?key=" + encodeURIComponent(k) : "https://aihorde.net/api/v2/status/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

@@ -394,7 +394,7 @@ const LLM7Setup = forwardRef<LLM7SetupRef, { onModelsUpdated?: () => void, index
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/llm7/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.llm7.io/v1/models?key=" + encodeURIComponent(k) : "https://api.llm7.io/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

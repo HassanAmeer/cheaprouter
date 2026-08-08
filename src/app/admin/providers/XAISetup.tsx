@@ -394,7 +394,7 @@ const XAISetup = forwardRef<XAISetupRef, { onModelsUpdated?: () => void, index?:
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/xai/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.x.ai/v1/models?key=" + encodeURIComponent(k) : "https://api.x.ai/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

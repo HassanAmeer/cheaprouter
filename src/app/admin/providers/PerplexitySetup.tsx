@@ -394,7 +394,7 @@ const PerplexitySetup = forwardRef<PerplexitySetupRef, { onModelsUpdated?: () =>
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/perplexity/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://api.perplexity.ai/models?key=" + encodeURIComponent(k) : "https://api.perplexity.ai/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 

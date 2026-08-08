@@ -383,7 +383,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
                   {fetchingModels ? 'Loading...' : 'Load API'}
                 </button>
                 <a 
-                  href={`/api/admin/opencode/models?key=${encodeURIComponent(apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '')}`} 
+                  href={(() => { const k = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || ''; return k ? "https://opencode.ai/zen/v1/models?key=" + encodeURIComponent(k) : "https://opencode.ai/zen/v1/models"; })()} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="btn-secondary" 
