@@ -41,6 +41,7 @@ import ModelScopeSetup, { ModelScopeSetupRef } from '../ModelScopeSetup';
 import AIHordeSetup, { AIHordeSetupRef } from '../AIHordeSetup';
 import PollinationsSetup, { PollinationsSetupRef } from '../PollinationsSetup';
 import AnyRouterSetup, { AnyRouterSetupRef } from '../AnyRouterSetup';
+import AgnesAISetup, { AgnesAISetupRef } from '../AgnesAISetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -92,6 +93,7 @@ export default function ManageProvidersPage() {
   const aihordeRef = useRef<AIHordeSetupRef>(null);
   const pollinationsRef = useRef<PollinationsSetupRef>(null);
   const anyrouterRef = useRef<AnyRouterSetupRef>(null);
+  const agnesaiRef = useRef<AgnesAISetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -726,6 +728,7 @@ export default function ManageProvidersPage() {
               <AIHordeSetup ref={aihordeRef} index={36} onModelsUpdated={() => fetchProviders(true)} />
               <PollinationsSetup ref={pollinationsRef} index={37} onModelsUpdated={() => fetchProviders(true)} />
               <AnyRouterSetup ref={anyrouterRef} index={38} onModelsUpdated={() => fetchProviders(true)} />
+              <AgnesAISetup ref={agnesaiRef} index={39} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

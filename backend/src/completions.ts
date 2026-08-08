@@ -167,6 +167,9 @@ export async function getModelInstance(userId: string, model: string) {
   const anyrouterInst = checkProv('ap_anyrouter', (key) => createOpenAI({ baseURL: 'https://api.anyrouter.dev/v1', apiKey: key }));
   if (anyrouterInst) return anyrouterInst;
 
+  const agnesaiInst = checkProv('ap_agnesai', (key) => createOpenAI({ baseURL: 'https://api.agnes-ai.com/v1', apiKey: key }));
+  if (agnesaiInst) return agnesaiInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
