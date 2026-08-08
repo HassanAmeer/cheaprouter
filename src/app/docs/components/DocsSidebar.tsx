@@ -13,36 +13,35 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
     {
       groupTitle: 'CORE API',
       items: [
-        { id: 'introduction', label: 'API Reference', badge: 'GET', badgeColor: '#16A34A' },
-        { id: 'models', label: 'List of Models', badge: 'GET', badgeColor: '#16A34A' },
-        { id: 'chat-completions', label: 'Chat Completions', badge: 'POST', badgeColor: 'var(--color-primary)' },
+        { id: 'introduction', label: 'API Reference', badge: 'GET', badgeColor: '#4ade80' }, // Green
+        { id: 'models', label: 'List of Models', badge: 'GET', badgeColor: '#4ade80' },
+        { id: 'chat-completions', label: 'Chat Completions', badge: 'POST', badgeColor: 'var(--color-primary)' }, // Red
       ]
     },
     {
       groupTitle: 'ACCOUNT SETTINGS',
       items: [
-        { id: 'limits', label: 'Limit of Account', badge: 'GET', badgeColor: '#16A34A' },
+        { id: 'limits', label: 'Limit of Account', badge: 'GET', badgeColor: '#4ade80' },
       ]
     }
   ];
 
   return (
-    <aside className="glass-card" style={{ 
+    <aside style={{ 
       width: '260px', 
       flexShrink: 0, 
       position: 'sticky', 
       top: '40px', 
       height: 'max-content',
-      padding: '24px',
-      borderRadius: 'var(--radius-lg)'
+      padding: '24px 0',
     }}>
       
       <div style={{ marginBottom: '32px', paddingLeft: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span style={{ backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>API</span>
-          <span style={{ color: 'var(--color-text-main)', fontWeight: 700, fontSize: '16px' }}>Reference</span>
+          <span style={{ backgroundColor: 'rgba(204, 0, 0, 0.1)', color: 'var(--color-primary)', fontSize: '10px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>API</span>
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>Reference</span>
         </div>
-        <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '6px' }}>CheapAgents REST endpoints</div>
+        <div style={{ color: '#666', fontSize: '12px', marginTop: '6px' }}>CheapAgents REST endpoints</div>
       </div>
 
       {navGroups.map((group, gIdx) => (
@@ -50,7 +49,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
           <h3 style={{ 
             fontSize: '11px', 
             fontWeight: 700, 
-            color: 'var(--color-text-muted)', 
+            color: '#666', 
             textTransform: 'uppercase', 
             letterSpacing: '1px', 
             marginBottom: '12px',
@@ -70,8 +69,8 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '10px 8px',
-                    borderRadius: 'var(--radius-md)',
-                    backgroundColor: isActive ? 'var(--color-primary-soft)' : 'transparent',
+                    borderRadius: '6px',
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
@@ -79,7 +78,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     width: '100%'
                   }}
                   onMouseOver={(e) => {
-                    if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.03)';
+                    if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)';
                   }}
                   onMouseOut={(e) => {
                     if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
@@ -96,7 +95,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                       {item.badge}
                     </span>
                     <span style={{ 
-                      color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)', 
+                      color: isActive ? '#fff' : '#999', 
                       fontSize: '13px', 
                       fontWeight: isActive ? 600 : 500 
                     }}>

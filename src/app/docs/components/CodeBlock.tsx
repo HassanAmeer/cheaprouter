@@ -33,20 +33,19 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
 
   return (
     <div style={{
-      backgroundColor: '#0f172a', // Very dark slate for the code block itself
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--color-border)',
+      backgroundColor: '#0F0F0F',
+      borderRadius: '12px',
+      border: '1px solid #1f1f1f',
       overflow: 'hidden',
       marginBottom: '24px',
-      boxShadow: 'var(--shadow-md)'
     }}>
       {/* Header Tabs */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        backgroundColor: '#141414',
+        borderBottom: '1px solid #1f1f1f',
         padding: '12px 16px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -58,7 +57,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
           </div>
           
           {title ? (
-            <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
+            <span style={{ color: '#888', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
           ) : (
             <div style={{ display: 'flex', gap: '16px' }}>
               {snippets.map((snippet) => {
@@ -71,7 +70,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
                       padding: 0,
                       backgroundColor: 'transparent',
                       border: 'none',
-                      color: isActive ? '#f8fafc' : '#64748b',
+                      color: isActive ? '#fff' : '#666',
                       cursor: 'pointer',
                       fontWeight: isActive ? 600 : 500,
                       fontSize: '12px',
@@ -94,17 +93,17 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
             gap: '6px',
             padding: '4px 8px',
             backgroundColor: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 'var(--radius-sm)',
-            color: '#94a3b8',
+            border: '1px solid #1f1f1f',
+            borderRadius: '4px',
+            color: '#888',
             cursor: 'pointer',
             fontSize: '11px',
             transition: 'all 0.2s ease',
           }}
-          onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}
+          onMouseOver={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#333'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = '#888'; e.currentTarget.style.borderColor = '#1f1f1f'; }}
         >
-          {copied ? <Check size={12} color="var(--color-success)" /> : <Copy size={12} />}
+          {copied ? <Check size={12} color="var(--color-primary)" /> : <Copy size={12} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -118,16 +117,16 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+            style={{ margin: 0, fontSize: '13px', color: '#a3a3a3', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
           >
             <code>
               {/* Basic syntax coloring for dark theme */}
               {activeSnippet.split('\n').map((line, idx) => {
                 let htmlLine = line
-                  .replace(/(".*?")/g, '<span style="color:#fca5a5">$1</span>') // strings (red tint)
-                  .replace(/(fetch|requests\.get|requests\.post|curl|-X GET|-X POST)/g, '<span style="color:#7dd3fc">$1</span>') // keywords (blue)
-                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:#bae6fd">$1</span>') // urls
-                  .replace(/(true|false|null)/g, '<span style="color:#7dd3fc">$1</span>'); // booleans
+                  .replace(/(".*?")/g, '<span style="color:#ce9178">$1</span>') // strings
+                  .replace(/(fetch|requests\.get|requests\.post|curl|-X GET|-X POST)/g, '<span style="color:#569cd6">$1</span>') // keywords
+                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:#9cdcfe">$1</span>') // urls
+                  .replace(/(true|false|null)/g, '<span style="color:#569cd6">$1</span>'); // booleans
                 return (
                   <div key={idx} dangerouslySetInnerHTML={{ __html: htmlLine || ' ' }} />
                 );

@@ -38,33 +38,55 @@ export default function DocsPage() {
   };
 
   return (
-    <div className="bg-grid-light" style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg-soft)', color: 'var(--color-text-main)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       
-      {/* Top Navigation - Matching Landing Page exactly */}
+      {/* Top Navigation - Default site theme */}
       <AnnouncementBar />
-      <SiteNav />
+      <SiteNav links={[
+        { href: '/', label: 'Home' },
+        { href: '/#models', label: 'Models' },
+        { href: '/#pricing', label: 'Pricing' },
+        { href: '/docs', label: 'API Docs' },
+        { href: '/cli', label: 'Coding' },
+        { href: '/compare', label: 'Compare' },
+      ]} />
 
-      {/* Docs Layout Container */}
-      <main className="container" style={{ display: 'flex', gap: '32px', paddingTop: '32px', paddingBottom: '100px', flex: 1 }}>
-        
-        {/* Sidebar Navigation */}
-        <DocsSidebar activeView={activeView} setActiveView={setActiveView} />
-
-        {/* Main Content Area */}
-        <div style={{ 
-          flex: 1, 
-          position: 'relative',
-          overflowY: 'auto',
-          minWidth: 0 // Prevent flex children from overflowing
+      {/* Docs Layout Container - Full Dark Background as requested */}
+      <div style={{ backgroundColor: '#0A0A0A', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <main style={{ 
+          display: 'flex', 
+          gap: '32px', 
+          paddingTop: '32px', 
+          paddingBottom: '100px', 
+          flex: 1,
+          maxWidth: '1200px',
+          margin: '0 auto',
+          width: '100%',
+          paddingLeft: '24px',
+          paddingRight: '24px'
         }}>
-          <AnimatePresence mode="wait">
-            {renderView()}
-          </AnimatePresence>
-        </div>
+          
+          {/* Sidebar Navigation */}
+          <DocsSidebar activeView={activeView} setActiveView={setActiveView} />
 
-      </main>
+          {/* Main Content Area */}
+          <div style={{ 
+            flex: 1, 
+            position: 'relative',
+            overflowY: 'auto',
+            minWidth: 0 // Prevent flex children from overflowing
+          }}>
+            <AnimatePresence mode="wait">
+              {renderView()}
+            </AnimatePresence>
+          </div>
 
-      <SiteFooter />
+        </main>
+      </div>
+
+      <div style={{ backgroundColor: '#0A0A0A' }}>
+        <SiteFooter />
+      </div>
     </div>
   );
 }
