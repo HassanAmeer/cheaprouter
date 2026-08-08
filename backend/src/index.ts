@@ -1057,7 +1057,224 @@ app.get('/api/admin/perplexity/models', async (c) => {
   return c.json({ data: MODEL_REGISTRY['perplexity'] || [] });
 });
 
-// ---- Models catalog ----
+
+// ---- AmazonBedrock Setup ----
+app.get('/api/admin/amazonbedrock', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_amazonbedrock'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/amazonbedrock', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_amazonbedrock', 'AmazonBedrock', ${data.status}, ${data.key}, 25, 'https://bedrock.proxy/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Github Setup ----
+app.get('/api/admin/github', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_github'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/github', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_github', 'Github', ${data.status}, ${data.key}, 26, 'https://models.inference.ai.azure.com', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- HuggingFace Setup ----
+app.get('/api/admin/huggingface', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_huggingface'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/huggingface', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_huggingface', 'HuggingFace', ${data.status}, ${data.key}, 27, 'https://api-inference.huggingface.co/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Hyperbolic Setup ----
+app.get('/api/admin/hyperbolic', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_hyperbolic'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/hyperbolic', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_hyperbolic', 'Hyperbolic', ${data.status}, ${data.key}, 28, 'https://api.hyperbolic.xyz/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Moonshot Setup ----
+app.get('/api/admin/moonshot', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_moonshot'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/moonshot', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_moonshot', 'Moonshot', ${data.status}, ${data.key}, 29, 'https://api.moonshot.cn/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Zai Setup ----
+app.get('/api/admin/zai', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_zai'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/zai', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_zai', 'Zai', ${data.status}, ${data.key}, 30, 'https://api.z.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Nvidia Setup ----
+app.get('/api/admin/nvidia', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_nvidia'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/nvidia', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_nvidia', 'Nvidia', ${data.status}, ${data.key}, 31, 'https://integrate.api.nvidia.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- KiloCode Setup ----
+app.get('/api/admin/kilocode', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_kilocode'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/kilocode', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_kilocode', 'KiloCode', ${data.status}, ${data.key}, 32, 'https://api.kilocode.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- ClineCode Setup ----
+app.get('/api/admin/clinecode', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_clinecode'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/clinecode', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_clinecode', 'ClineCode', ${data.status}, ${data.key}, 33, 'https://api.clinecode.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+
 app.get('/api/models', async (c) => {
   const models: any[] = [];
   
