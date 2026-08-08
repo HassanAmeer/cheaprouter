@@ -1,11 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
 
-type Model = { id: string; name: string; originalId?: string; reasoning?: boolean; image?: boolean; tokenLimit?: string; access?: string };
+type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
 type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string };
 
@@ -18,8 +18,53 @@ export default function ProvidersPage() {
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
+  const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    capabilities: [] as string[],
+    access: [] as string[],
+    providers: [] as string[]
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 50;
+
+  const handleBulkDelete = () => {
+    if (selectedModels.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedModels.size} selected models?`)) return;
+
+    setProviders(prevProviders => prevProviders.map(p => {
+      return {
+        ...p,
+        models: p.models.filter(m => !selectedModels.has(`${p.id}-${m.id}`))
+      };
+    }));
+    setSelectedModels(new Set());
+    setSelectedModels(new Set());
+    setSaved(false);
+  };
+
+  const handleAddLandingPage = () => {
+    if (selectedModels.size === 0) return;
+    
+    setProviders(prevProviders => prevProviders.map(p => {
+      return {
+        ...p,
+        models: p.models.map(m => selectedModels.has(`${p.id}-${m.id}`) ? { ...m, showOnLandingPage: true } : m)
+      };
+    }));
+    setSelectedModels(new Set());
+    setSaved(false);
+  };
+
+  const handleRemoveLandingPage = (providerId: string, modelId: string) => {
+    if (!confirm('Remove this model from the landing page?')) return;
+    setProviders(prevProviders => prevProviders.map(p => p.id === providerId ? {
+      ...p,
+      models: p.models.map(m => m.id === modelId ? { ...m, showOnLandingPage: false } : m)
+    } : p));
+    setSaved(false);
+  };
 
   const handleTestModel = async (providerId: string, model: Model) => {
     const key = `${providerId}-${model.id}`;
@@ -578,7 +623,33 @@ export default function ProvidersPage() {
       )}
     </div>
   );
-  const allModelsList = providers.flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m })));
+  const allModelsListUnfiltered = providers.flatMap(p => (p.models || []).map((m, mIdx) => ({ providerId: p.id, providerName: p.name, mIdx, ...m })));
+  const allModelsList = allModelsListUnfiltered.filter(m => {
+    let match = true;
+
+    if (activeFilters.providers.length > 0) {
+      if (!activeFilters.providers.includes(m.providerId)) match = false;
+    }
+    if (activeFilters.access.length > 0) {
+      if (!activeFilters.access.includes(m.access || 'Free')) match = false;
+    }
+    if (activeFilters.capabilities.length > 0) {
+      const hasCap = activeFilters.capabilities.some(cap => m[cap as keyof Model]);
+      if (!hasCap) match = false;
+    }
+
+    if (match && searchQuery) {
+      const term = searchQuery.toLowerCase();
+      match = (
+        m.name.toLowerCase().includes(term) || 
+        (m.originalId || m.id).toLowerCase().includes(term) || 
+        m.id.toLowerCase().includes(term) ||
+        m.providerName.toLowerCase().includes(term)
+      );
+    }
+    
+    return match;
+  });
   const totalPages = Math.ceil(allModelsList.length / itemsPerPage) || 1;
 
   useEffect(() => {
@@ -588,6 +659,46 @@ export default function ProvidersPage() {
   }, [allModelsList.length, totalPages, currentPage]);
 
   const currentPageModels = allModelsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  
+  const allCurrentKeys = currentPageModels.map(m => `${m.providerId}-${m.id}`);
+  const isAllSelected = allCurrentKeys.length > 0 && allCurrentKeys.every(k => selectedModels.has(k));
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = new Set(selectedModels);
+    if (e.target.checked) {
+      allCurrentKeys.forEach(k => next.add(k));
+    } else {
+      allCurrentKeys.forEach(k => next.delete(k));
+    }
+    setSelectedModels(next);
+  };
+
+  const renderPagination = () => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+        Showing {allModelsList.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, allModelsList.length)} of {allModelsList.length} models
+      </span>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button 
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+          disabled={currentPage === 1}
+          style={{ padding: '5px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontSize: '12px', fontWeight: 600, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1 }}
+        >
+          Previous
+        </button>
+        <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600, padding: '0 4px' }}>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button 
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+          disabled={currentPage >= totalPages}
+          style={{ padding: '5px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontSize: '12px', fontWeight: 600, cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', opacity: currentPage >= totalPages ? 0.4 : 1 }}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 
   const groupedCurrentPageModels: Record<string, { providerName: string; models: any[] }> = {};
   currentPageModels.forEach(m => {
@@ -628,37 +739,171 @@ export default function ProvidersPage() {
       ) : (
         <>
           {/* Selected Models */}
-          <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden', marginBottom: '32px' }}>
-              <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+          <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'visible', marginBottom: '32px' }}>
+              <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', borderTopLeftRadius: '11px', borderTopRightRadius: '11px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600, flex: 1 }}>
                   <Layers size={18} /> Cheap: All Selected Models <span style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '13px' }}>({allModelsList.length})</span>
                 </div>
-                <button 
-                  onClick={() => fetchProviders()}
-                  title="Reload Models" 
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '4px 8px', borderRadius: '4px' }}
-                >
-                  <RefreshCw size={14} className={loading ? styles.spin : ''} /> Reload
-                </button>
+                
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 12px', width: '100%', maxWidth: '350px' }}>
+                    <Search size={14} style={{ color: 'var(--color-text-muted)', marginRight: '8px' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search models or providers..." 
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                      style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--color-text-main)', width: '100%' }}
+                    />
+                    <button 
+                      onClick={() => setShowFilterMenu(!showFilterMenu)}
+                      style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: (activeFilters.capabilities.length > 0 || activeFilters.access.length > 0 || activeFilters.providers.length > 0) ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted)' }}
+                      title="Filter Models"
+                    >
+                      <Filter size={14} />
+                    </button>
+                  </div>
+                  
+                  {showFilterMenu && (
+                    <div style={{ position: 'absolute', top: '100%', marginTop: '8px', zIndex: 100, background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}>Filter Models</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {(activeFilters.providers.length > 0 || activeFilters.capabilities.length > 0 || activeFilters.access.length > 0) && (
+                            <button onClick={() => { setActiveFilters({ providers: [], capabilities: [], access: [] }); setSearchQuery(''); setCurrentPage(1); setShowFilterMenu(false); }} style={{ fontSize: '11px', padding: '4px 8px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                              Clear All
+                            </button>
+                          )}
+                          <button onClick={() => setShowFilterMenu(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex' }}><X size={16} /></button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Providers</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {providers.map(p => (
+                            <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={activeFilters.providers.includes(p.id)} onChange={(e) => {
+                                const next = e.target.checked ? [...activeFilters.providers, p.id] : activeFilters.providers.filter(id => id !== p.id);
+                                setActiveFilters({...activeFilters, providers: next});
+                                setCurrentPage(1);
+                              }} style={{ cursor: 'pointer' }} />
+                              {p.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Capabilities</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {['text', 'reasoning', 'vision', 'image', 'video', 'embedding', 'audio'].map(cap => (
+                            <label key={cap} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={activeFilters.capabilities.includes(cap)} onChange={(e) => {
+                                const next = e.target.checked ? [...activeFilters.capabilities, cap] : activeFilters.capabilities.filter(c => c !== cap);
+                                setActiveFilters({...activeFilters, capabilities: next});
+                                setCurrentPage(1);
+                              }} style={{ cursor: 'pointer' }} />
+                              <span style={{ textTransform: 'capitalize' }}>{cap}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Access Level</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {['Free', 'Pro'].map(acc => (
+                            <label key={acc} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={activeFilters.access.includes(acc)} onChange={(e) => {
+                                const next = e.target.checked ? [...activeFilters.access, acc] : activeFilters.access.filter(a => a !== acc);
+                                setActiveFilters({...activeFilters, access: next});
+                                setCurrentPage(1);
+                              }} style={{ cursor: 'pointer' }} />
+                              {acc}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleAddLandingPage}
+                    disabled={selectedModels.size === 0}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px',
+                      background: selectedModels.size > 0 ? 'var(--color-primary, #3b82f6)' : 'transparent',
+                      color: selectedModels.size > 0 ? '#fff' : 'var(--color-text-muted)',
+                      border: `1px solid ${selectedModels.size > 0 ? 'var(--color-primary, #3b82f6)' : 'var(--color-border)'}`,
+                      fontSize: '12px', fontWeight: 600,
+                      cursor: selectedModels.size > 0 ? 'pointer' : 'not-allowed',
+                      opacity: selectedModels.size > 0 ? 1 : 0.5,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Globe size={14} /> Add to Landing Page ({selectedModels.size})
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={selectedModels.size === 0}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px',
+                      background: selectedModels.size > 0 ? 'var(--color-danger, #ef4444)' : 'transparent',
+                      color: selectedModels.size > 0 ? '#fff' : 'var(--color-text-muted)',
+                      border: `1px solid ${selectedModels.size > 0 ? 'var(--color-danger, #ef4444)' : 'var(--color-border)'}`,
+                      fontSize: '12px', fontWeight: 600,
+                      cursor: selectedModels.size > 0 ? 'pointer' : 'not-allowed',
+                      opacity: selectedModels.size > 0 ? 1 : 0.5,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Trash2 size={14} /> Delete Selected ({selectedModels.size})
+                  </button>
+                  <button 
+                    onClick={() => fetchProviders()}
+                    title="Reload Models" 
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '4px 8px', borderRadius: '4px' }}
+                  >
+                    <RefreshCw size={14} className={loading ? styles.spin : ''} /> Reload
+                  </button>
+                </div>
               </div>
 
-              {allModelsList.length === 0 ? (
+              {allModelsListUnfiltered.length === 0 ? (
                 <div style={{ padding: '40px 20px', fontSize: '13px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  No models selected yet. Click on <strong>"Add & Manage Providers"</strong> tab to select or configure models.
+                  No models selected yet. Click on the <strong>"Add & Manage Providers"</strong> button to select or configure models.
+                </div>
+              ) : allModelsList.length === 0 ? (
+                <div style={{ padding: '40px 20px', fontSize: '13px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  No models match your search for "{searchQuery}".
                 </div>
               ) : (
                 <>
+                  {renderPagination()}
+
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '20%' }}>Original Model ID</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '18%' }}>Showing Name</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '18%' }}>Showing ID</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '13%' }}>Token Limit</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '13%' }}>Access Level</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '10%' }}>Capabilities</th>
-                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '8%', textAlign: 'right' }}>Action</th>
+                          <th style={{ padding: '10px 16px', width: '4%' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={isAllSelected}
+                              onChange={handleSelectAll}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </th>
+                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '15%' }}>Original Model ID</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '18%' }}>Custom Names</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '9%' }}>Context</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '10%' }}>Token Limit</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '12%' }}>Pricing (1M)</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '9%' }}>Access Level</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '16%' }}>Capabilities</th>
+                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '7%', textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -666,7 +911,7 @@ export default function ProvidersPage() {
                           <React.Fragment key={pId}>
                             {/* Provider Section Row */}
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <td colSpan={7} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+                              <td colSpan={9} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ 
                                     color: 'var(--color-primary, #ef4444)', 
@@ -684,37 +929,114 @@ export default function ProvidersPage() {
                               </td>
                             </tr>
                             {/* Model Rows */}
-                            {group.models.map((m) => (
-                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            {group.models.map((m) => {
+                              const key = `${pId}-${m.id}`;
+                              return (
+                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)', background: selectedModels.has(key) ? 'var(--color-bg-soft)' : 'transparent' }}>
+                                <td style={{ padding: '6px 16px' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selectedModels.has(key)}
+                                    onChange={(e) => {
+                                      const next = new Set(selectedModels);
+                                      if (e.target.checked) next.add(key);
+                                      else next.delete(key);
+                                      setSelectedModels(next);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                  />
+                                </td>
                                 <td style={{ padding: '6px 16px' }}>
                                   <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
                                     {m.originalId || m.id}
                                   </code>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
-                                  <input 
-                                    type="text"
-                                    value={m.name}
-                                    onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'name', e.target.value)}
-                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '100%' }}
-                                  />
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '35px' }}>Name:</span>
+                                      <input 
+                                        type="text"
+                                        value={m.name}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'name', e.target.value)}
+                                        placeholder="Showing Name"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '100%' }}
+                                      />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '35px' }}>ID:</span>
+                                      <input 
+                                        type="text"
+                                        value={m.id}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'id', e.target.value)}
+                                        placeholder="Showing ID"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '100%' }}
+                                      />
+                                    </div>
+                                  </div>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
-                                  <input 
-                                    type="text"
-                                    value={m.id}
-                                    onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'id', e.target.value)}
-                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '100%' }}
-                                  />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input 
+                                      type="number"
+                                      value={m.contextWindow ? m.contextWindow.replace('K', '') : ''}
+                                      onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'contextWindow', e.target.value ? `${e.target.value}K` : '')}
+                                      placeholder="128"
+                                      style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '50px' }}
+                                    />
+                                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>K</span>
+                                  </div>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
-                                  <input 
-                                    type="text"
-                                    value={m.tokenLimit || 'Unlimited'}
-                                    onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'tokenLimit', e.target.value)}
-                                    placeholder="e.g. 1M or Unlimited"
-                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '100%' }}
-                                  />
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={!m.tokenLimit || m.tokenLimit === 'Unlimited'}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'tokenLimit', e.target.checked ? 'Unlimited' : '')}
+                                      />
+                                      Unlimited
+                                    </label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: (!m.tokenLimit || m.tokenLimit === 'Unlimited') ? 0.5 : 1 }}>
+                                      <input 
+                                        type="number"
+                                        value={(m.tokenLimit && m.tokenLimit !== 'Unlimited') ? m.tokenLimit.replace('M', '') : ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'tokenLimit', e.target.value ? `${e.target.value}M` : '')}
+                                        disabled={!m.tokenLimit || m.tokenLimit === 'Unlimited'}
+                                        placeholder="0"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
+                                      />
+                                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>M</span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '4px 12px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>In:</span>
+                                      <input 
+                                        type="number"
+                                        value={m.inputPrice || ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'inputPrice', e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.0001"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
+                                      />
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>$</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>Out:</span>
+                                      <input 
+                                        type="number"
+                                        value={m.outputPrice || ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'outputPrice', e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.0001"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
+                                      />
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>$</span>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
                                   <select 
@@ -723,31 +1045,30 @@ export default function ProvidersPage() {
                                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 8px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '100%', cursor: 'pointer' }}
                                   >
                                     <option value="Free">Free</option>
-                                    <option value="Pro">Pro / Premium</option>
-                                    <option value="Enterprise">Enterprise</option>
-                                    <option value="Unlimited">Unlimited</option>
+                                    <option value="Pro">Pro</option>
                                   </select>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        checked={!!m.reasoning}
-                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'reasoning', e.target.checked)}
-                                        style={{ cursor: 'pointer' }}
-                                      />
-                                      Reasoning
-                                    </label>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        checked={!!m.image}
-                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'image', e.target.checked)}
-                                        style={{ cursor: 'pointer' }}
-                                      />
-                                      Vision/Image
-                                    </label>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', width: '100%', minWidth: '150px' }}>
+                                    {[
+                                      { key: 'text', label: 'Text' },
+                                      { key: 'reasoning', label: 'Reasoning' },
+                                      { key: 'vision', label: 'Vision' },
+                                      { key: 'image', label: 'Image' },
+                                      { key: 'video', label: 'Video' },
+                                      { key: 'embedding', label: 'Embedding' },
+                                      { key: 'audio', label: 'Audio' }
+                                    ].map(cap => (
+                                      <label key={cap.key} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={!!m[cap.key as keyof Model]}
+                                          onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, cap.key, e.target.checked)}
+                                          style={{ cursor: 'pointer', transform: 'scale(0.85)' }}
+                                        />
+                                        {cap.label}
+                                      </label>
+                                    ))}
                                   </div>
                                 </td>
                                 <td style={{ padding: '4px 16px', textAlign: 'right' }}>
@@ -787,46 +1108,87 @@ export default function ProvidersPage() {
                                     >
                                       <Play size={10} fill="currentColor" /> {testingModelId === `${pId}-${m.id}` ? 'Testing...' : 'Test'}
                                     </button>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </React.Fragment>
                         ))}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Pagination Controls */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      Showing {allModelsList.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, allModelsList.length)} of {allModelsList.length} models
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button 
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                        disabled={currentPage === 1}
-                        style={{ padding: '5px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontSize: '12px', fontWeight: 600, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1 }}
-                      >
-                        Previous
-                      </button>
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600, padding: '0 4px' }}>
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button 
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                        disabled={currentPage >= totalPages}
-                        style={{ padding: '5px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontSize: '12px', fontWeight: 600, cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', opacity: currentPage >= totalPages ? 0.4 : 1 }}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  {renderPagination()}
                 </>
               )}
             </div>
         </>
       )}
+
+      {/* Landing Page Models Section */}
+      <hr style={{ margin: '40px 0', borderColor: 'var(--color-border)', opacity: 0.5 }} />
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page Models</h2>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table.</p>
+      </div>
+
+      <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Provider</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '25%' }}>Model Name</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Model ID</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%' }}>Context</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%' }}>Token Limit</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Pricing (In / Out)</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%', textAlign: 'right' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {providers.flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id }))).filter(m => m.showOnLandingPage).length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                    No models selected for landing page. Select models from the list above and click "Add to Landing Page".
+                  </td>
+                </tr>
+              ) : (
+                providers.flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id }))).filter(m => m.showOnLandingPage).map(m => (
+                  <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)' }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
+                        {m.providerName}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--color-text-main)' }}>{m.name}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                        {m.id}
+                      </code>
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>{m.contextWindow || 'N/A'}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>{m.tokenLimit || 'Unlimited'}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>
+                      ${m.inputPrice || '0'} / ${m.outputPrice || '0'}
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <button 
+                        onClick={() => handleRemoveLandingPage(m.providerId, m.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-danger, #ef4444)', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center' }}
+                        title="Remove from Landing Page"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -531,6 +531,30 @@ app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) 
   return c.json({ success: true });
 });
 
+// ---- OpenCode Setup ----
+app.get('/api/admin/opencode', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_opencode'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/opencode', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_opencode', 'OpenCode', ${data.status}, ${data.key}, 11, 'https://opencode.ai/zen/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
 // ---- OpenRouter Setup ----
 app.get('/api/admin/openrouter', async (c) => {
   const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter'`;
@@ -574,6 +598,23 @@ app.get('/api/models', async (c) => {
           id: m.id,
           name: m.name,
           provider: 'OpenRouter',
+          context: 'Dynamic',
+          input: 'Variable',
+          output: 'Variable'
+        });
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const openCodeResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_opencode' AND status = true`;
+    if (openCodeResult.length > 0) {
+      const openCodeModels = openCodeResult[0].models || [];
+      for (const m of openCodeModels) {
+        models.push({
+          id: m.id,
+          name: m.name,
+          provider: 'OpenCode',
           context: 'Dynamic',
           input: 'Variable',
           output: 'Variable'

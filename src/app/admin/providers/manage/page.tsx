@@ -4,8 +4,9 @@ import styles from '../../admin.module.css';
 import { Save, Plus, X, ChevronLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from '../OpenRouterSetup';
+import OpenCodeSetup from '../OpenCodeSetup';
 
-type Model = { id: string; name: string; originalId?: string; reasoning?: boolean; image?: boolean; tokenLimit?: string; access?: string };
+type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
 type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string };
 
@@ -100,6 +101,10 @@ export default function ManageProvidersPage() {
       const openRouterProv = providers.find(p => p.id === 'ap_openrouter' || p.id === 'openrouter');
       if (openRouterProv) {
         await fetch('/api/admin/openrouter', { method: 'PUT', headers, body: JSON.stringify({ key: openRouterProv.key, status: openRouterProv.status, models: openRouterProv.models }) });
+      }
+      const openCodeProv = providers.find(p => p.id === 'ap_opencode' || p.id === 'opencode');
+      if (openCodeProv) {
+        await fetch('/api/admin/opencode', { method: 'PUT', headers, body: JSON.stringify({ key: openCodeProv.key, status: openCodeProv.status, models: openCodeProv.models }) });
       }
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
     } catch (e) { console.error(e); } finally { setSaving(false); }
@@ -473,27 +478,14 @@ export default function ManageProvidersPage() {
             <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
           </div>
 
-          {/* ===== OTHER ADDED PROVIDERS ===== */}
-          {providers.filter(p => p.isCustom).length > 0 && (
-            <>
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Other Added Providers</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {providers.filter(p => p.isCustom).map(provider => renderProviderTile(provider, true))}
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
-                <div style={{ width: '50%', height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
-              </div>
-            </>
-          )}
 
           {/* ===== PREFIX PROVIDERS ===== */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Providers</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
               <OpenRouterSetup onModelsUpdated={fetchProviders} />
+              <OpenCodeSetup onModelsUpdated={fetchProviders} />
             </div>
           </div>
         </>
