@@ -1749,6 +1749,45 @@ app.get('/api/admin/aihorde/models', async (c) => {
   }
 });
 
+
+// ---- Pollinations Setup ----
+app.get('/api/admin/pollinations', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_pollinations'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/pollinations', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_pollinations', 'Pollinations', ${data.status}, ${data.key}, 43, 'https://text.pollinations.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/pollinations/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://text.pollinations.ai/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
 app.get('/api/models', async (c) => {
   const models: any[] = [];
   

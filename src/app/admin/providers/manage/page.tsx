@@ -39,6 +39,7 @@ import StepFunSetup, { StepFunSetupRef } from '../StepFunSetup';
 import LLM7Setup, { LLM7SetupRef } from '../LLM7Setup';
 import ModelScopeSetup, { ModelScopeSetupRef } from '../ModelScopeSetup';
 import AIHordeSetup, { AIHordeSetupRef } from '../AIHordeSetup';
+import PollinationsSetup, { PollinationsSetupRef } from '../PollinationsSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -88,6 +89,7 @@ export default function ManageProvidersPage() {
   const llm7Ref = useRef<LLM7SetupRef>(null);
   const modelscopeRef = useRef<ModelScopeSetupRef>(null);
   const aihordeRef = useRef<AIHordeSetupRef>(null);
+  const pollinationsRef = useRef<PollinationsSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -720,6 +722,7 @@ export default function ManageProvidersPage() {
               <LLM7Setup ref={llm7Ref} index={34} onModelsUpdated={() => fetchProviders(true)} />
               <ModelScopeSetup ref={modelscopeRef} index={35} onModelsUpdated={() => fetchProviders(true)} />
               <AIHordeSetup ref={aihordeRef} index={36} onModelsUpdated={() => fetchProviders(true)} />
+              <PollinationsSetup ref={pollinationsRef} index={37} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

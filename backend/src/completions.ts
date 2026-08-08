@@ -161,6 +161,9 @@ export async function getModelInstance(userId: string, model: string) {
   const aihordeInst = checkProv('ap_aihorde', (key) => createOpenAI({ baseURL: 'https://aihorde.net/api/v2', apiKey: key }));
   if (aihordeInst) return aihordeInst;
 
+  const pollinationsInst = checkProv('ap_pollinations', (key) => createOpenAI({ baseURL: 'https://text.pollinations.ai/v1', apiKey: key }));
+  if (pollinationsInst) return pollinationsInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
