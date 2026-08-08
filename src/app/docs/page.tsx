@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import styles from '../page.module.css';
 
 import DocsSidebar, { ViewType } from './components/DocsSidebar';
 import IntroductionView from './views/IntroductionView';
@@ -13,7 +12,7 @@ import LimitsView from './views/LimitsView';
 
 export default function DocsPage() {
   const [baseUrl, setBaseUrl] = useState('https://api.cheapagents.com');
-  const [activeView, setActiveView] = useState<ViewType>('introduction');
+  const [activeView, setActiveView] = useState<ViewType>('models');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -32,27 +31,41 @@ export default function DocsPage() {
       case 'limits':
         return <LimitsView key="limits" />;
       default:
-        return <IntroductionView key="intro-default" />;
+        return <ModelsView key="models-default" baseUrl={baseUrl} />;
     }
   };
 
   return (
-    <main style={{ backgroundColor: 'var(--color-bg-soft)', minHeight: '100vh', color: 'var(--color-text-main)' }}>
-      {/* Navbar */}
-      <div className="container">
-        <nav className={styles.navbar} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px', paddingTop: '16px', marginBottom: '40px' }}>
-          <Link href="/" className={styles.logo} style={{ color: 'inherit', textDecoration: 'none' }}>
-            <span className={styles.logoIcon}><Zap size={28} fill="currentColor" /></span>
-            CheapAgents
+    <main style={{ backgroundColor: '#050505', minHeight: '100vh', color: '#f5f5f5', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
+      {/* Top Navbar */}
+      <nav style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '16px 32px', 
+        borderBottom: '1px solid #1f1f1f',
+        backgroundColor: '#0a0a0a'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: '18px' }}>
+            <Zap size={24} color="#ccff00" /> {/* Neon yellow icon */}
+            CheapAgents VPS
           </Link>
-          <div className={styles.navLinks}>
-            <Link href="/" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-muted)', textDecoration: 'none' }}>Back to Home</Link>
-            <Link href="/dashboard" style={{ fontSize: '14px', fontWeight: 500, backgroundColor: 'var(--color-primary)', color: '#fff', padding: '8px 16px', borderRadius: '6px', textDecoration: 'none' }}>Dashboard</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '32px' }}>
+            <Link href="/" style={{ color: '#888', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Home</Link>
+            <Link href="/docs" style={{ color: '#ccff00', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Developer APIs</Link>
+            <Link href="/dashboard" style={{ color: '#888', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Consoles</Link>
+            <Link href="/status" style={{ color: '#888', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>System Status</Link>
           </div>
-        </nav>
-      </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Link href="/login" style={{ color: '#fff', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Login</Link>
+          <Link href="/signup" style={{ backgroundColor: '#ccff00', color: '#000', padding: '8px 16px', borderRadius: '4px', fontSize: '14px', fontWeight: 700, textDecoration: 'none' }}>Sign Up</Link>
+        </div>
+      </nav>
 
-      <div className="container" style={{ display: 'flex', gap: '48px', paddingBottom: '100px' }}>
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 65px)' }}>
         
         {/* Sidebar Navigation */}
         <DocsSidebar activeView={activeView} setActiveView={setActiveView} />
@@ -60,31 +73,13 @@ export default function DocsPage() {
         {/* Main Content Area */}
         <div style={{ 
           flex: 1, 
-          backgroundColor: 'var(--color-card-bg)', 
           padding: '48px', 
-          borderRadius: 'var(--radius-xl)', 
-          boxShadow: 'var(--shadow-md)', 
-          border: '1px solid var(--color-border)',
           position: 'relative',
-          overflow: 'hidden'
+          overflowY: 'auto'
         }}>
-          {/* Glassmorphism gradient blob for premium feel */}
-          <div style={{
-            position: 'absolute',
-            top: '-150px',
-            right: '-150px',
-            width: '300px',
-            height: '300px',
-            background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%)',
-            pointerEvents: 'none',
-            zIndex: 0
-          }} />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <AnimatePresence mode="wait">
-              {renderView()}
-            </AnimatePresence>
-          </div>
+          <AnimatePresence mode="wait">
+            {renderView()}
+          </AnimatePresence>
         </div>
 
       </div>

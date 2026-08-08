@@ -12,9 +12,10 @@ interface CodeSnippet {
 
 interface CodeBlockProps {
   snippets: CodeSnippet[];
+  title?: string;
 }
 
-export default function CodeBlock({ snippets }: CodeBlockProps) {
+export default function CodeBlock({ snippets, title }: CodeBlockProps) {
   const [activeTab, setActiveTab] = useState<Language>(snippets[0].language);
   const [copied, setCopied] = useState(false);
 
@@ -32,47 +33,56 @@ export default function CodeBlock({ snippets }: CodeBlockProps) {
 
   return (
     <div style={{
-      backgroundColor: '#111827', // Very dark slate (Tailwind gray-900)
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid rgba(0, 0, 0, 0.1)',
+      backgroundColor: '#0a0a0a',
+      borderRadius: '12px',
+      border: '1px solid #1f1f1f',
       overflow: 'hidden',
-      marginTop: '16px',
-      marginBottom: '32px',
-      boxShadow: 'var(--shadow-lg)'
+      marginBottom: '24px',
     }}>
       {/* Header Tabs */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#1F2937', // Slightly lighter slate (gray-800)
-        borderBottom: '1px solid #374151',
-        padding: '0 8px',
+        backgroundColor: '#0f0f0f',
+        borderBottom: '1px solid #1f1f1f',
+        padding: '12px 16px',
       }}>
-        <div style={{ display: 'flex' }}>
-          {snippets.map((snippet) => {
-            const isActive = activeTab === snippet.language;
-            return (
-              <button
-                key={snippet.language}
-                onClick={() => setActiveTab(snippet.language)}
-                style={{
-                  padding: '12px 20px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid var(--color-primary)' : '2px solid transparent',
-                  color: isActive ? '#F9FAFB' : '#9CA3AF',
-                  cursor: 'pointer',
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: '13px',
-                  transition: 'color 0.2s ease',
-                  position: 'relative'
-                }}
-              >
-                {snippet.language}
-              </button>
-            );
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Mac OS Window Dots */}
+          <div style={{ display: 'flex', gap: '6px', marginRight: '12px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
+          </div>
+          
+          {title ? (
+            <span style={{ color: '#888', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
+          ) : (
+            <div style={{ display: 'flex', gap: '16px' }}>
+              {snippets.map((snippet) => {
+                const isActive = activeTab === snippet.language;
+                return (
+                  <button
+                    key={snippet.language}
+                    onClick={() => setActiveTab(snippet.language)}
+                    style={{
+                      padding: 0,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: isActive ? '#fff' : '#666',
+                      cursor: 'pointer',
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: '12px',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    {snippet.language}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         <button
@@ -81,20 +91,19 @@ export default function CodeBlock({ snippets }: CodeBlockProps) {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '6px 12px',
-            marginRight: '8px',
+            padding: '4px 8px',
             backgroundColor: 'transparent',
-            border: '1px solid #374151',
-            borderRadius: 'var(--radius-sm)',
-            color: '#9CA3AF',
+            border: '1px solid #1f1f1f',
+            borderRadius: '4px',
+            color: '#888',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: '11px',
             transition: 'all 0.2s ease',
           }}
-          onMouseOver={(e) => { e.currentTarget.style.color = '#F9FAFB'; e.currentTarget.style.borderColor = '#6B7280'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.borderColor = '#374151'; }}
+          onMouseOver={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#333'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = '#888'; e.currentTarget.style.borderColor = '#1f1f1f'; }}
         >
-          {copied ? <Check size={14} color="var(--color-success)" /> : <Copy size={14} />}
+          {copied ? <Check size={12} color="#ccff00" /> : <Copy size={12} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -108,16 +117,16 @@ export default function CodeBlock({ snippets }: CodeBlockProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ margin: 0, fontSize: '13.5px', color: '#E5E7EB', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+            style={{ margin: 0, fontSize: '13px', color: '#a3a3a3', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
           >
             <code>
-              {/* Very basic syntax coloring to make it look premium */}
+              {/* Basic syntax coloring for dark theme */}
               {activeSnippet.split('\n').map((line, idx) => {
                 let htmlLine = line
-                  .replace(/(".*?")/g, '<span style="color:#A5D6FF">$1</span>') // strings
-                  .replace(/(fetch|requests\.get|requests\.post|curl)/g, '<span style="color:#FF7B72">$1</span>') // keywords
-                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:#79C0FF">$1</span>') // urls
-                  .replace(/(true|false|null)/g, '<span style="color:#79C0FF">$1</span>'); // booleans
+                  .replace(/(".*?")/g, '<span style="color:#ce9178">$1</span>') // strings
+                  .replace(/(fetch|requests\.get|requests\.post|curl|-X GET|-X POST)/g, '<span style="color:#569cd6">$1</span>') // keywords
+                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:#9cdcfe">$1</span>') // urls
+                  .replace(/(true|false|null)/g, '<span style="color:#569cd6">$1</span>'); // booleans
                 return (
                   <div key={idx} dangerouslySetInnerHTML={{ __html: htmlLine || ' ' }} />
                 );
