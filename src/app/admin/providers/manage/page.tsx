@@ -8,6 +8,14 @@ import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
 import OpenAISetup, { OpenAISetupRef } from '../OpenAISetup';
 import AnthropicSetup, { AnthropicSetupRef } from '../AnthropicSetup';
 import CohereSetup, { CohereSetupRef } from '../CohereSetup';
+import GroqSetup, { GroqSetupRef } from '../GroqSetup';
+import GoogleSetup, { GoogleSetupRef } from '../GoogleSetup';
+import CerebrasSetup, { CerebrasSetupRef } from '../CerebrasSetup';
+import SambaNovaSetup, { SambaNovaSetupRef } from '../SambaNovaSetup';
+import XAISetup, { XAISetupRef } from '../XAISetup';
+import NovitaSetup, { NovitaSetupRef } from '../NovitaSetup';
+import BytezSetup, { BytezSetupRef } from '../BytezSetup';
+import AIMLAPISetup, { AIMLAPISetupRef } from '../AIMLAPISetup';
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
@@ -22,9 +30,17 @@ export default function ManageProvidersPage() {
 
   const openRouterRef = useRef<OpenRouterSetupRef>(null);
   const openCodeRef = useRef<OpenCodeSetupRef>(null);
-  const openAiRef = useRef<OpenAISetupRef>(null);
+  const openaiRef = useRef<OpenAISetupRef>(null);
   const anthropicRef = useRef<AnthropicSetupRef>(null);
   const cohereRef = useRef<CohereSetupRef>(null);
+  const groqRef = useRef<GroqSetupRef>(null);
+  const googleRef = useRef<GoogleSetupRef>(null);
+  const cerebrasRef = useRef<CerebrasSetupRef>(null);
+  const sambanovaRef = useRef<SambaNovaSetupRef>(null);
+  const xaiRef = useRef<XAISetupRef>(null);
+  const novitaRef = useRef<NovitaSetupRef>(null);
+  const bytezRef = useRef<BytezSetupRef>(null);
+  const aimlapiRef = useRef<AIMLAPISetupRef>(null);
   const [testingAll, setTestingAll] = useState(false);
 
   // Add Provider form state
@@ -102,27 +118,23 @@ export default function ManageProvidersPage() {
 
   const handleTestAllPrefixProviders = async () => {
     setTestingAll(true);
-    let allPassed = true;
-    if (openRouterRef.current) {
-      const res = await openRouterRef.current.testApi();
-      if (!res) allPassed = false;
-    }
-    if (openCodeRef.current) {
-      const res = await openCodeRef.current.testApi();
-      if (!res) allPassed = false;
-    }
-    if (openAiRef.current) {
-      const res = await openAiRef.current.testApi();
-      if (!res) allPassed = false;
-    }
-    if (anthropicRef.current) {
-      const res = await anthropicRef.current.testApi();
-      if (!res) allPassed = false;
-    }
-    if (cohereRef.current) {
-      const res = await cohereRef.current.testApi();
-      if (!res) allPassed = false;
-    }
+    const openRouterPassed = openRouterRef.current ? await openRouterRef.current.testApi() : true;
+    const openCodePassed = openCodeRef.current ? await openCodeRef.current.testApi() : true;
+    const openaiPassed = openaiRef.current ? await openaiRef.current.testApi(true) : true;
+    const anthropicPassed = anthropicRef.current ? await anthropicRef.current.testApi(true) : true;
+    const coherePassed = cohereRef.current ? await cohereRef.current.testApi(true) : true;
+    const groqPassed = groqRef.current ? await groqRef.current.testApi(true) : true;
+    const googlePassed = googleRef.current ? await googleRef.current.testApi(true) : true;
+    const cerebrasPassed = cerebrasRef.current ? await cerebrasRef.current.testApi(true) : true;
+    const sambanovaPassed = sambanovaRef.current ? await sambanovaRef.current.testApi(true) : true;
+    const xaiPassed = xaiRef.current ? await xaiRef.current.testApi(true) : true;
+    const novitaPassed = novitaRef.current ? await novitaRef.current.testApi(true) : true;
+    const bytezPassed = bytezRef.current ? await bytezRef.current.testApi(true) : true;
+    const aimlapiPassed = aimlapiRef.current ? await aimlapiRef.current.testApi(true) : true;
+
+    const allPassed = openRouterPassed && openCodePassed && openaiPassed && anthropicPassed && coherePassed &&
+      groqPassed && googlePassed && cerebrasPassed && sambanovaPassed && xaiPassed && novitaPassed && bytezPassed && aimlapiPassed;
+    
     setTestingAll(false);
   };
 
@@ -620,9 +632,17 @@ export default function ManageProvidersPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
               <OpenRouterSetup ref={openRouterRef} onModelsUpdated={() => fetchProviders(true)} />
               <OpenCodeSetup ref={openCodeRef} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenAISetup ref={openAiRef} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenAISetup ref={openaiRef} onModelsUpdated={() => fetchProviders(true)} />
               <AnthropicSetup ref={anthropicRef} onModelsUpdated={() => fetchProviders(true)} />
               <CohereSetup ref={cohereRef} onModelsUpdated={() => fetchProviders(true)} />
+              <GroqSetup ref={groqRef} onModelsUpdated={() => fetchProviders(true)} />
+              <GoogleSetup ref={googleRef} onModelsUpdated={() => fetchProviders(true)} />
+              <CerebrasSetup ref={cerebrasRef} onModelsUpdated={() => fetchProviders(true)} />
+              <SambaNovaSetup ref={sambanovaRef} onModelsUpdated={() => fetchProviders(true)} />
+              <XAISetup ref={xaiRef} onModelsUpdated={() => fetchProviders(true)} />
+              <NovitaSetup ref={novitaRef} onModelsUpdated={() => fetchProviders(true)} />
+              <BytezSetup ref={bytezRef} onModelsUpdated={() => fetchProviders(true)} />
+              <AIMLAPISetup ref={aimlapiRef} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

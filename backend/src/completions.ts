@@ -68,6 +68,30 @@ export async function getModelInstance(userId: string, model: string) {
   const cohereInst = checkProv('ap_cohere', (key) => createCohere({ apiKey: key }));
   if (cohereInst) return cohereInst;
 
+  const groqInst = checkProv('ap_groq', (key) => createOpenAI({ baseURL: 'https://api.groq.com/openai/v1', apiKey: key }));
+  if (groqInst) return groqInst;
+
+  const googleInst = checkProv('ap_google', (key) => createGoogleGenerativeAI({ apiKey: key }));
+  if (googleInst) return googleInst;
+
+  const cerebrasInst = checkProv('ap_cerebras', (key) => createOpenAI({ baseURL: 'https://api.cerebras.ai/v1', apiKey: key }));
+  if (cerebrasInst) return cerebrasInst;
+
+  const sambanovaInst = checkProv('ap_sambanova', (key) => createOpenAI({ baseURL: 'https://api.sambanova.ai/v1', apiKey: key }));
+  if (sambanovaInst) return sambanovaInst;
+
+  const xaiInst = checkProv('ap_xai', (key) => createOpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: key }));
+  if (xaiInst) return xaiInst;
+
+  const novitaInst = checkProv('ap_novita', (key) => createOpenAI({ baseURL: 'https://api.novita.ai/v3/openai', apiKey: key }));
+  if (novitaInst) return novitaInst;
+
+  const bytezInst = checkProv('ap_bytez', (key) => createOpenAI({ baseURL: 'https://api.bytez.com/v1', apiKey: key }));
+  if (bytezInst) return bytezInst;
+
+  const aimlapiInst = checkProv('ap_aimlapi', (key) => createOpenAI({ baseURL: 'https://api.aimlapi.com/v1', apiKey: key }));
+  if (aimlapiInst) return aimlapiInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';

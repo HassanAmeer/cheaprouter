@@ -18,6 +18,7 @@ import {
 import { listKeys, createKey, deleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
+import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
 import { handleCompletions, getModelInstance, getSystemPromptForModel } from './completions.ts';
 import { generateText, streamText } from 'ai';
@@ -701,6 +702,223 @@ app.get('/api/admin/cohere/models', async (c) => {
   } catch (e) {
     return c.json({ error: 'Failed to fetch Cohere models' }, 500);
   }
+});
+
+
+app.get('/api/admin/groq', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_groq'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/groq', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_groq', 'Groq', ${data.status}, ${data.key}, 15, 'https://api.groq.com/openai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/groq/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['groq'] || [] });
+});
+
+app.get('/api/admin/google', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_google'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/google', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_google', 'Google', ${data.status}, ${data.key}, 15, 'https://generativelanguage.googleapis.com/v1beta/openai', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/google/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['google'] || [] });
+});
+
+app.get('/api/admin/cerebras', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_cerebras'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/cerebras', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_cerebras', 'Cerebras', ${data.status}, ${data.key}, 15, 'https://api.cerebras.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/cerebras/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['cerebras'] || [] });
+});
+
+app.get('/api/admin/sambanova', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_sambanova'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/sambanova', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_sambanova', 'SambaNova', ${data.status}, ${data.key}, 15, 'https://api.sambanova.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/sambanova/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['sambanova'] || [] });
+});
+
+app.get('/api/admin/xai', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_xai'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/xai', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_xai', 'XAI', ${data.status}, ${data.key}, 15, 'https://api.x.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/xai/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['xai'] || [] });
+});
+
+app.get('/api/admin/novita', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_novita'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/novita', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_novita', 'Novita', ${data.status}, ${data.key}, 15, 'https://api.novita.ai/v3/openai', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/novita/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['novita'] || [] });
+});
+
+app.get('/api/admin/bytez', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_bytez'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/bytez', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_bytez', 'Bytez', ${data.status}, ${data.key}, 15, 'https://api.bytez.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/bytez/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['bytez'] || [] });
+});
+
+app.get('/api/admin/aimlapi', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_aimlapi'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/aimlapi', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_aimlapi', 'AIMLAPI', ${data.status}, ${data.key}, 15, 'https://api.aimlapi.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/aimlapi/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['aimlapi'] || [] });
 });
 
 // ---- Models catalog ----
