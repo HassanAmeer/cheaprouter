@@ -28,6 +28,8 @@ import HyperbolicSetup, { HyperbolicSetupRef } from '../HyperbolicSetup';
 import MoonshotSetup, { MoonshotSetupRef } from '../MoonshotSetup';
 import ZaiSetup, { ZaiSetupRef } from '../ZaiSetup';
 import NvidiaSetup, { NvidiaSetupRef } from '../NvidiaSetup';
+import KiloCodeSetup, { KiloCodeSetupRef } from '../KiloCodeSetup';
+import ClineCodeSetup, { ClineCodeSetupRef } from '../ClineCodeSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -66,6 +68,8 @@ export default function ManageProvidersPage() {
   const moonshotRef = useRef<MoonshotSetupRef>(null);
   const zaiRef = useRef<ZaiSetupRef>(null);
   const nvidiaRef = useRef<NvidiaSetupRef>(null);
+  const kilocodeRef = useRef<KiloCodeSetupRef>(null);
+  const clinecodeRef = useRef<ClineCodeSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -687,6 +691,8 @@ export default function ManageProvidersPage() {
               <MoonshotSetup ref={moonshotRef} index={23} onModelsUpdated={() => fetchProviders(true)} />
               <ZaiSetup ref={zaiRef} index={24} onModelsUpdated={() => fetchProviders(true)} />
               <NvidiaSetup ref={nvidiaRef} index={25} onModelsUpdated={() => fetchProviders(true)} />
+              <KiloCodeSetup ref={kilocodeRef} index={26} onModelsUpdated={() => fetchProviders(true)} />
+              <ClineCodeSetup ref={clinecodeRef} index={27} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

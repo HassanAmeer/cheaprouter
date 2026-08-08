@@ -128,6 +128,12 @@ export async function getModelInstance(userId: string, model: string) {
   const nvidiaInst = checkProv('ap_nvidia', (key) => createOpenAI({ baseURL: 'https://integrate.api.nvidia.com/v1', apiKey: key }));
   if (nvidiaInst) return nvidiaInst;
 
+  const kilocodeInst = checkProv('ap_kilocode', (key) => createOpenAI({ baseURL: 'https://api.kilocode.ai/v1', apiKey: key }));
+  if (kilocodeInst) return kilocodeInst;
+
+  const clinecodeInst = checkProv('ap_clinecode', (key) => createOpenAI({ baseURL: 'https://api.clinecode.ai/v1', apiKey: key }));
+  if (clinecodeInst) return clinecodeInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
