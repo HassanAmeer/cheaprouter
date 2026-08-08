@@ -33,6 +33,7 @@ import ClineCodeSetup, { ClineCodeSetupRef } from '../ClineCodeSetup';
 import PoixeSetup, { PoixeSetupRef } from '../PoixeSetup';
 import SiliconFlowSetup, { SiliconFlowSetupRef } from '../SiliconFlowSetup';
 import ZenmuxSetup, { ZenmuxSetupRef } from '../ZenmuxSetup';
+import UnoRouterSetup, { UnoRouterSetupRef } from '../UnoRouterSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -76,6 +77,7 @@ export default function ManageProvidersPage() {
   const poixeRef = useRef<PoixeSetupRef>(null);
   const siliconflowRef = useRef<SiliconFlowSetupRef>(null);
   const zenmuxRef = useRef<ZenmuxSetupRef>(null);
+  const unorouterRef = useRef<UnoRouterSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -702,6 +704,7 @@ export default function ManageProvidersPage() {
               <PoixeSetup ref={poixeRef} index={28} onModelsUpdated={() => fetchProviders(true)} />
               <SiliconFlowSetup ref={siliconflowRef} index={29} onModelsUpdated={() => fetchProviders(true)} />
               <ZenmuxSetup ref={zenmuxRef} index={30} onModelsUpdated={() => fetchProviders(true)} />
+              <UnoRouterSetup ref={unorouterRef} index={31} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>

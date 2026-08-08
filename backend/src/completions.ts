@@ -143,6 +143,9 @@ export async function getModelInstance(userId: string, model: string) {
   const zenmuxInst = checkProv('ap_zenmux', (key) => createOpenAI({ baseURL: 'https://api.zenmux.ai/v1', apiKey: key }));
   if (zenmuxInst) return zenmuxInst;
 
+  const unorouterInst = checkProv('ap_unorouter', (key) => createOpenAI({ baseURL: 'https://api.unorouter.com/v1', apiKey: key }));
+  if (unorouterInst) return unorouterInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
