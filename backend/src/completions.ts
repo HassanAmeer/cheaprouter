@@ -6,7 +6,28 @@ import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
 import { hashPassword } from './auth.ts';
 
+export async function getSystemPromptForModel(model: string) {
+  const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
+  if (openRouterResult.length > 0) {
+    const models = openRouterResult[0].models || [];
+    const matched = models.find((m: any) => m.id === model);
+    if (matched && matched.systemPrompt) {
+      return matched.systemPrompt;
+    }
+  }
+  return null;
+}
+
 export async function getModelInstance(userId: string, model: string) {
+  const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
+  if (openRouterResult.length > 0) {
+    const models = openRouterResult[0].models || [];
+    const matched = models.find((m: any) => m.id === model);
+    if (matched) {
+      return createOpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: openRouterResult[0].key })(matched.originalId);
+    }
+  }
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
@@ -58,12 +79,17 @@ export async function handleCompletions(c: any) {
     }
 
     const aiModel = await getModelInstance(finalUserId, model);
+    const systemPrompt = await getSystemPromptForModel(model);
 
     // Convert messages
     const coreMessages = messages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content
     }));
+
+    if (systemPrompt) {
+      coreMessages.unshift({ role: 'system', content: systemPrompt });
+    }
 
     if (stream) {
       const result = await streamText({

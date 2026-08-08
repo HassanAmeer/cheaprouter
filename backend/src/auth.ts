@@ -57,10 +57,8 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export async function getUserById(id: string) {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents FROM users WHERE id = ${id}`;
-  return result[0] as
-    | { id: string; name: string; email: string; plan: string; created_at: string; profile_picture: string | null; status: string; last_login: string | null; plan_cli: string; plan_api: string; plan_chat: string; plan_agents: string; }
-    | undefined;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry FROM users WHERE id = ${id}`;
+  return result[0] as any;
 }
 
 export async function getUserByEmail(email: string) {
@@ -104,7 +102,7 @@ export async function updateUserLoginInfo(
 }
 
 export async function getAllUsers() {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents FROM users ORDER BY created_at DESC`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry FROM users ORDER BY created_at DESC`;
   return result.map(row => ({
     id: row.id,
     name: row.name,
@@ -114,8 +112,17 @@ export async function getAllUsers() {
     plan_api: row.plan_api || 'Free',
     plan_chat: row.plan_chat || 'Free',
     plan_agents: row.plan_agents || 'Free',
+    plan_cli_start: row.plan_cli_start ? new Date(row.plan_cli_start).toISOString() : null,
+    plan_cli_expiry: row.plan_cli_expiry ? new Date(row.plan_cli_expiry).toISOString() : null,
+    plan_api_start: row.plan_api_start ? new Date(row.plan_api_start).toISOString() : null,
+    plan_api_expiry: row.plan_api_expiry ? new Date(row.plan_api_expiry).toISOString() : null,
+    plan_chat_start: row.plan_chat_start ? new Date(row.plan_chat_start).toISOString() : null,
+    plan_chat_expiry: row.plan_chat_expiry ? new Date(row.plan_chat_expiry).toISOString() : null,
+    plan_agents_start: row.plan_agents_start ? new Date(row.plan_agents_start).toISOString() : null,
+    plan_agents_expiry: row.plan_agents_expiry ? new Date(row.plan_agents_expiry).toISOString() : null,
+    created_at: new Date(row.created_at).toISOString(),
     joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    last_login: row.last_login ? new Date(row.last_login).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never',
+    last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
     calls: 0,
     status: row.status || 'Active',
     profile_picture: row.profile_picture
@@ -131,7 +138,15 @@ export async function updateUserProfile(id: string, name: string, profile_pictur
 }
 
 export async function adminUpdateUser(id: string, data: any) {
-  const allowedFields = ['name', 'email', 'plan', 'status', 'profile_picture', 'plan_cli', 'plan_api', 'plan_chat', 'plan_agents'];
+  const allowedFields = [
+    'name', 'email', 'plan', 'status', 'profile_picture', 
+    'plan_cli', 'plan_api', 'plan_chat', 'plan_agents',
+    'plan_cli_start', 'plan_cli_expiry',
+    'plan_api_start', 'plan_api_expiry',
+    'plan_chat_start', 'plan_chat_expiry',
+    'plan_agents_start', 'plan_agents_expiry',
+    'created_at', 'last_login'
+  ];
   const updates = Object.keys(data).filter(k => allowedFields.includes(k) && data[k] !== undefined);
   if (updates.length === 0) return;
 

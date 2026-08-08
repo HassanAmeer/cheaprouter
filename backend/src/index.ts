@@ -19,7 +19,7 @@ import { listKeys, createKey, deleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
-import { handleCompletions, getModelInstance } from './completions.ts';
+import { handleCompletions, getModelInstance, getSystemPromptForModel } from './completions.ts';
 import { generateText, streamText } from 'ai';
 import { db, initDb, DB_URL } from './db.ts';
 
@@ -344,6 +344,22 @@ app.delete('/api/admin/users/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+app.delete('/api/admin/users', zValidator('json', z.object({ ids: z.array(z.string()) })), async (c) => {
+  const { ids } = c.req.valid('json');
+  for (const id of ids) {
+    await adminDeleteUser(id);
+  }
+  return c.json({ ok: true, count: ids.length });
+});
+
+app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.string()), data: z.any() })), async (c) => {
+  const { ids, data } = c.req.valid('json');
+  for (const id of ids) {
+    await adminUpdateUser(id, data);
+  }
+  return c.json({ ok: true, count: ids.length });
+});
+
 app.get('/api/admin/submissions', async (c) => {
   const submissions = await db`SELECT id, user_id as "userId", user_name as "userName", url, status, created_at as date FROM submissions ORDER BY created_at DESC`;
   return c.json({ submissions });
@@ -412,9 +428,10 @@ app.post('/api/conversations', zValidator('json', z.object({ title: z.string().o
   const convId = await createConversation(userId, title ?? message.slice(0, 28));
   await addMessage(convId, 'user', message);
   const aiModel = await getModelInstance(userId, 'gpt-4o');
-  const result = await generateText({ model: aiModel, prompt: message });
+  const systemPrompt = await getSystemPromptForModel('gpt-4o');
+  const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
   const replyText = result.text;
-  const tokens = result.usage ? result.usage.totalTokens : 150;
+  const tokens = result.usage?.totalTokens ?? 150;
   
   await addMessage(convId, 'assistant', replyText);
   await recordUsage(userId, 'gpt-4o', tokens, tokens * 0.000003);
@@ -428,9 +445,10 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   if (!(await getMessages(convId, userId))) return c.json({ error: 'Not found' }, 404);
   await addMessage(convId, 'user', message);
   const aiModel = await getModelInstance(userId, model || 'gpt-4o');
-  const result = await generateText({ model: aiModel, prompt: message });
+  const systemPrompt = await getSystemPromptForModel(model || 'gpt-4o');
+  const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
   const replyText = result.text;
-  const tokens = result.usage ? result.usage.totalTokens : 150;
+  const tokens = result.usage?.totalTokens ?? 150;
   
   await addMessage(convId, 'assistant', replyText);
   await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003);
@@ -448,7 +466,8 @@ app.get('/api/stream', async (c) => {
   const model = url.searchParams.get('model') ?? 'gpt-4o';
   try {
     const aiModel = await getModelInstance(userId, model);
-    const result = await streamText({ model: aiModel, prompt });
+    const systemPrompt = await getSystemPromptForModel(model);
+    const result = await streamText({ model: aiModel, prompt, system: systemPrompt || undefined });
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -461,7 +480,7 @@ app.get('/api/stream', async (c) => {
         
         // Wait for final usage
         const usage = await result.usage;
-        const tokens = usage ? usage.totalTokens : 150;
+        const tokens = usage?.totalTokens ?? 150;
         await recordUsage(userId, model, tokens, tokens * 0.000003);
       },
     });
@@ -512,6 +531,30 @@ app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) 
   return c.json({ success: true });
 });
 
+// ---- OpenRouter Setup ----
+app.get('/api/admin/openrouter', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/openrouter', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_openrouter', 'OpenRouter', ${data.status}, ${data.key}, 10, 'https://openrouter.ai/api/v1', 'openrouter', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
 // ---- Models catalog ----
 app.get('/api/models', async (c) => {
   const models = [
@@ -521,6 +564,24 @@ app.get('/api/models', async (c) => {
     { id: 'llama-3-70b', name: 'Llama 3 70B', provider: 'Meta', context: '8K', input: '$0.50/M', output: '$0.50/M' },
     { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2', provider: 'DeepSeek', context: '128K', input: '$0.14/M', output: '$0.28/M' },
   ];
+  
+  try {
+    const openRouterResult = await db`SELECT * FROM admin_providers WHERE id = 'ap_openrouter' AND status = true`;
+    if (openRouterResult.length > 0) {
+      const openRouterModels = openRouterResult[0].models || [];
+      for (const m of openRouterModels) {
+        models.push({
+          id: m.id,
+          name: m.name,
+          provider: 'OpenRouter',
+          context: 'Dynamic',
+          input: 'Variable',
+          output: 'Variable'
+        });
+      }
+    }
+  } catch (e) {}
+
   return c.json({ models });
 });
 
@@ -595,8 +656,25 @@ app.post('/api/admin/seed', zValidator('json', z.object({ section: z.string() })
         const ex = await db`SELECT id FROM users WHERE email = ${u.email}`;
         if (ex.length > 0) continue;
         const id = genSeedId('usr');
-        await db`INSERT INTO users (id, name, email, password_hash, plan, plan_cli, plan_api, plan_chat, plan_agents, status, last_login, created_at)
-          VALUES (${id}, ${u.name}, ${u.email}, ${_hp('password123')}, ${u.plan}, ${u.plan_cli}, ${u.plan_api}, ${u.plan_chat}, ${u.plan_agents}, ${u.status}, ${daysAgo(randBetween(0,5)).toISOString()}, ${daysAgo(u.days).toISOString()})`;
+        const start = daysAgo(u.days).toISOString();
+        const expiry = daysAgo(u.days - 365).toISOString(); // 1 year expiry
+        await db`INSERT INTO users (
+          id, name, email, password_hash, plan, 
+          plan_cli, plan_api, plan_chat, plan_agents, 
+          plan_cli_start, plan_cli_expiry, 
+          plan_api_start, plan_api_expiry, 
+          plan_chat_start, plan_chat_expiry, 
+          plan_agents_start, plan_agents_expiry, 
+          status, last_login, created_at
+        ) VALUES (
+          ${id}, ${u.name}, ${u.email}, ${_hp('password123')}, ${u.plan}, 
+          ${u.plan_cli}, ${u.plan_api}, ${u.plan_chat}, ${u.plan_agents}, 
+          ${start}, ${expiry}, 
+          ${start}, ${expiry}, 
+          ${start}, ${expiry}, 
+          ${start}, ${expiry}, 
+          ${u.status}, ${daysAgo(randBetween(0,5)).toISOString()}, ${start}
+        )`;
         created++;
       }
       return c.json({ ok: true, message: `Created ${created} users (skipped ${SEED_USERS.length - created} existing)` });

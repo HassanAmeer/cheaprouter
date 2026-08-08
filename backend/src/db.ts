@@ -27,6 +27,14 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_api TEXT DEFAULT 'Free';`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_chat TEXT DEFAULT 'Free';`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_agents TEXT DEFAULT 'Free';`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_cli_start TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_cli_expiry TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_api_start TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_api_expiry TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_chat_start TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_chat_expiry TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_agents_start TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_agents_expiry TIMESTAMP;`;
   } catch (e) {
     console.error('Migration error:', e);
   }

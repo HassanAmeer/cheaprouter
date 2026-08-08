@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from '../admin.module.css';
-import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Users, UserPlus, Calendar, Filter } from 'lucide-react';
+import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Edit3, Users, UserPlus, Calendar, Filter } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -22,6 +23,37 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const router = useRouter();
+
+  const handleBulkEdit = () => {
+    localStorage.setItem('bulkEditUserIds', JSON.stringify(Array.from(selectedUserIds)));
+    router.push('/admin/users/bulk-edit');
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedUserIds.size} users?`)) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: Array.from(selectedUserIds) })
+      });
+      if (res.ok) {
+        setUsers(users.filter(u => !selectedUserIds.has(u.id)));
+        setSelectedUserIds(new Set());
+      } else {
+        alert('Failed to delete selected users');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting users');
+    }
+  };
 
   const fetchUsers = () => {
     setLoading(true);
@@ -221,6 +253,20 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {selectedUserIds.size > 0 && (
+        <div style={{ padding: '16px 24px', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: '14px' }}>{selectedUserIds.size} users selected</span>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={handleBulkEdit} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              <Edit3 size={16} /> Bulk Edit Plans
+            </button>
+            <button onClick={handleDeleteSelected} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              <Trash2 size={16} /> Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={styles.tableContainer}>
         {totalPages > 1 && (
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -244,6 +290,24 @@ export default function UsersPage() {
         <table className={styles.dataTable}>
           <thead>
             <tr>
+              <th style={{ width: 40, paddingLeft: '24px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={paginatedUsers.length > 0 && selectedUserIds.size === paginatedUsers.length}
+                  onChange={e => {
+                    if (e.target.checked) {
+                      const newSet = new Set(selectedUserIds);
+                      paginatedUsers.forEach(u => newSet.add(u.id));
+                      setSelectedUserIds(newSet);
+                    } else {
+                      const newSet = new Set(selectedUserIds);
+                      paginatedUsers.forEach(u => newSet.delete(u.id));
+                      setSelectedUserIds(newSet);
+                    }
+                  }}
+                  style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                />
+              </th>
               <th>User ID</th>
               <th>Name / Email</th>
               <th>Registered Date</th>
@@ -257,6 +321,7 @@ export default function UsersPage() {
             {loading ? (
               [...Array(3)].map((_, idx) => (
                 <tr key={idx} style={{ opacity: 0.5 }}>
+                  <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '14px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '80px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}>
                     <div style={{ height: '14px', width: '120px', background: 'var(--color-border)', borderRadius: '4px', marginBottom: '8px' }}></div>
@@ -270,7 +335,20 @@ export default function UsersPage() {
                 </tr>
               ))
             ) : paginatedUsers.map((user) => (
-              <tr key={user.id}>
+              <tr key={user.id} style={{ background: selectedUserIds.has(user.id) ? 'rgba(16, 185, 129, 0.05)' : '' }}>
+                <td style={{ paddingLeft: '24px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedUserIds.has(user.id)}
+                    onChange={e => {
+                      const newSet = new Set(selectedUserIds);
+                      if (e.target.checked) newSet.add(user.id);
+                      else newSet.delete(user.id);
+                      setSelectedUserIds(newSet);
+                    }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                  />
+                </td>
                 <td style={{ fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{user.id}</td>
                 <td>
                   <div style={{ fontWeight: 600 }}>{user.name}</div>

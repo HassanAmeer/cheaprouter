@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers } from 'lucide-react';
+import Link from 'next/link';
 
 type Model = { id: string; name: string; originalId?: string; reasoning?: boolean; image?: boolean };
 type Header = { id: string; key: string; value: string };
@@ -12,6 +13,7 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showGlobalModels, setShowGlobalModels] = useState(false);
   
   // State for Add Provider Modal
   const [showAddProvider, setShowAddProvider] = useState(false);
@@ -663,7 +665,55 @@ export default function ProvidersPage() {
             </div>
           </div>
 
-                    <div>
+          <div style={{ marginBottom: '32px', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div 
+              style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--color-bg-soft)' }}
+              onClick={() => setShowGlobalModels(!showGlobalModels)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+                <Layers size={18} /> All Selected Models Summary
+              </div>
+              {showGlobalModels ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </div>
+            {showGlobalModels && (
+              <div style={{ padding: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {providers.flatMap(p => (p.models || []).map(m => ({ providerName: p.name, ...m }))).length === 0 ? (
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>No models selected.</div>
+                  ) : (
+                    <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+                          <th style={{ padding: '8px' }}>Provider</th>
+                          <th style={{ padding: '8px' }}>Original Model ID</th>
+                          <th style={{ padding: '8px' }}>Showing Name</th>
+                          <th style={{ padding: '8px' }}>Showing ID</th>
+                          <th style={{ padding: '8px' }}>Features</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {providers.flatMap(p => (p.models || []).map(m => ({ providerName: p.name, ...m }))).map((m, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '8px', fontWeight: 600 }}>{m.providerName}</td>
+                            <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{m.originalId || m.id}</td>
+                            <td style={{ padding: '8px' }}>{m.name}</td>
+                            <td style={{ padding: '8px' }}>{m.id}</td>
+                            <td style={{ padding: '8px', display: 'flex', gap: '6px' }}>
+                              {m.reasoning && <span style={{ background: 'var(--color-bg-soft)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reasoning</span>}
+                              {m.image && <span style={{ background: 'var(--color-bg-soft)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Vision</span>}
+                              {!m.reasoning && !m.image && <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Text</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
             {providers.filter(p => p.isCustom).length > 0 && (
               <div style={{ marginBottom: '32px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Custom Providers</h3>
@@ -677,6 +727,26 @@ export default function ProvidersPage() {
               <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Fixed Providers</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {providers.filter(p => !p.isCustom).map(provider => renderProviderTile(provider, false))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--color-text-main)' }}>Prefix Models</h3>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <Link href="/admin/openrouter" style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', padding: '20px', borderRadius: '12px', width: '250px', cursor: 'pointer', transition: 'border-color 0.2s', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Globe size={20} color="var(--color-primary)" />
+                      </div>
+                      <span style={{ fontSize: '16px', fontWeight: 600 }}>OpenRouter</span>
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0 }}>Configure and select models from OpenRouter.</p>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>

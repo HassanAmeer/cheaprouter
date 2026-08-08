@@ -236,63 +236,112 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
               <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Active Subscriptions</h3>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <HardDrive size={12} /> CLI Plan
-                </label>
-                <select 
-                  value={(user.plan_cli || 'Free').toLowerCase()} 
-                  onChange={e => setUser({ ...user, plan_cli: e.target.value })} 
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                >
-                  <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                  <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                  <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+              
+              {/* CLI Plan */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <HardDrive size={12} /> CLI Plan
+                  </label>
+                  <select 
+                    value={(user.plan_cli || 'Free').toLowerCase()} 
+                    onChange={e => setUser({ ...user, plan_cli: e.target.value })} 
+                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
+                  >
+                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
+                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
+                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
+                  <input type="datetime-local" value={user.plan_cli_start ? user.plan_cli_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_cli_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
+                  <input type="datetime-local" value={user.plan_cli_expiry ? user.plan_cli_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_cli_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Zap size={12} /> API Plan
-                </label>
-                <select 
-                  value={(user.plan_api || 'Free').toLowerCase()} 
-                  onChange={e => setUser({ ...user, plan_api: e.target.value })} 
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                >
-                  <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                  <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                  <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                </select>
+
+              {/* API Plan */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Zap size={12} /> API Plan
+                  </label>
+                  <select 
+                    value={(user.plan_api || 'Free').toLowerCase()} 
+                    onChange={e => setUser({ ...user, plan_api: e.target.value })} 
+                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
+                  >
+                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
+                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
+                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
+                  <input type="datetime-local" value={user.plan_api_start ? user.plan_api_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_api_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
+                  <input type="datetime-local" value={user.plan_api_expiry ? user.plan_api_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_api_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Mail size={12} /> Chat Plan
-                </label>
-                <select 
-                  value={(user.plan_chat || 'Free').toLowerCase()} 
-                  onChange={e => setUser({ ...user, plan_chat: e.target.value })} 
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                >
-                  <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                  <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                  <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                </select>
+
+              {/* Chat Plan */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Mail size={12} /> Chat Plan
+                  </label>
+                  <select 
+                    value={(user.plan_chat || 'Free').toLowerCase()} 
+                    onChange={e => setUser({ ...user, plan_chat: e.target.value })} 
+                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
+                  >
+                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
+                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
+                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
+                  <input type="datetime-local" value={user.plan_chat_start ? user.plan_chat_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_chat_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
+                  <input type="datetime-local" value={user.plan_chat_expiry ? user.plan_chat_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_chat_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Shield size={12} /> Websites Plan
-                </label>
-                <select 
-                  value={(user.plan_agents || 'Free').toLowerCase()} 
-                  onChange={e => setUser({ ...user, plan_agents: e.target.value })} 
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                >
-                  <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                  <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                  <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                </select>
+
+              {/* Websites Plan */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Shield size={12} /> Websites Plan
+                  </label>
+                  <select 
+                    value={(user.plan_agents || 'Free').toLowerCase()} 
+                    onChange={e => setUser({ ...user, plan_agents: e.target.value })} 
+                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
+                  >
+                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
+                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
+                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
+                  <input type="datetime-local" value={user.plan_agents_start ? user.plan_agents_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_agents_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
+                  <input type="datetime-local" value={user.plan_agents_expiry ? user.plan_agents_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_agents_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+                </div>
               </div>
+
             </div>
           </div>
 
@@ -312,11 +361,34 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>{(user.calls || 0).toLocaleString()}</div>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 600 }}>
-                  <Calendar size={16} /> Joined
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '14px' }}>{user.joined}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={14} /> Joined / Signup Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={user.created_at ? user.created_at.slice(0, 16) : ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setUser({ ...user, created_at: val ? new Date(val).toISOString() : null });
+                  }}
+                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%' }}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Activity size={14} /> Last Login
+                </label>
+                <input
+                  type="datetime-local"
+                  value={user.last_login ? user.last_login.slice(0, 16) : ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setUser({ ...user, last_login: val ? new Date(val).toISOString() : null });
+                  }}
+                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%' }}
+                />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
