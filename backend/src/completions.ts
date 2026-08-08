@@ -158,6 +158,9 @@ export async function getModelInstance(userId: string, model: string) {
   const modelscopeInst = checkProv('ap_modelscope', (key) => createOpenAI({ baseURL: 'https://api-inference.modelscope.cn/v1', apiKey: key }));
   if (modelscopeInst) return modelscopeInst;
 
+  const aihordeInst = checkProv('ap_aihorde', (key) => createOpenAI({ baseURL: 'https://aihorde.net/api/v2', apiKey: key }));
+  if (aihordeInst) return aihordeInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
