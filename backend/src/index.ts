@@ -729,6 +729,20 @@ app.put('/api/admin/groq', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/groq/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['groq'] || [] });
 });
 
@@ -756,6 +770,22 @@ app.put('/api/admin/google', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/google/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.models)) {
+          const mapped = data.models.map((m: any) => ({
+            id: m.name ? m.name.replace('models/', '') : m.id,
+            name: m.displayName || m.name || m.id
+          }));
+          return c.json({ data: mapped });
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['google'] || [] });
 });
 
@@ -783,6 +813,20 @@ app.put('/api/admin/cerebras', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/cerebras/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.cerebras.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['cerebras'] || [] });
 });
 
@@ -810,6 +854,20 @@ app.put('/api/admin/sambanova', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/sambanova/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.sambanova.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['sambanova'] || [] });
 });
 
@@ -837,6 +895,20 @@ app.put('/api/admin/xai', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/xai/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.x.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['xai'] || [] });
 });
 
@@ -864,6 +936,20 @@ app.put('/api/admin/novita', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/novita/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.novita.ai/v3/openai/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['novita'] || [] });
 });
 
@@ -891,6 +977,20 @@ app.put('/api/admin/bytez', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/bytez/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.bytez.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['bytez'] || [] });
 });
 
@@ -918,6 +1018,20 @@ app.put('/api/admin/aimlapi', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/aimlapi/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.aimlapi.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['aimlapi'] || [] });
 });
 
@@ -946,6 +1060,20 @@ app.put('/api/admin/mistral', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/mistral/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.mistral.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['mistral'] || [] });
 });
 
@@ -973,6 +1101,20 @@ app.put('/api/admin/together', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/together/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.together.xyz/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['together'] || [] });
 });
 
@@ -1000,6 +1142,20 @@ app.put('/api/admin/deepseek', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/deepseek/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.deepseek.com/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['deepseek'] || [] });
 });
 
@@ -1027,6 +1183,20 @@ app.put('/api/admin/fireworks', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/fireworks/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.fireworks.ai/inference/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['fireworks'] || [] });
 });
 
@@ -1054,6 +1224,20 @@ app.put('/api/admin/perplexity', zValidator('json', z.any()), async (c) => {
 });
 
 app.get('/api/admin/perplexity/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.perplexity.ai/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
   return c.json({ data: MODEL_REGISTRY['perplexity'] || [] });
 });
 
