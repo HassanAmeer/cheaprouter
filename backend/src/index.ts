@@ -1275,6 +1275,285 @@ app.put('/api/admin/clinecode', zValidator('json', z.any()), async (c) => {
 });
 
 
+
+// ---- Poixe Setup ----
+app.get('/api/admin/poixe', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_poixe'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/poixe', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_poixe', 'Poixe', ${data.status}, ${data.key}, 34, 'https://api.poixe.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- SiliconFlow Setup ----
+app.get('/api/admin/siliconflow', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_siliconflow'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/siliconflow', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_siliconflow', 'SiliconFlow', ${data.status}, ${data.key}, 35, 'https://api.siliconflow.cn/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- Zenmux Setup ----
+app.get('/api/admin/zenmux', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_zenmux'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/zenmux', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_zenmux', 'Zenmux', ${data.status}, ${data.key}, 36, 'https://api.zenmux.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+// ---- UnoRouter Setup ----
+app.get('/api/admin/unorouter', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_unorouter'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/unorouter', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_unorouter', 'UnoRouter', ${data.status}, ${data.key}, 37, 'https://api.unorouter.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/amazonbedrock/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://bedrock.proxy/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/github/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://models.inference.ai.azure.com/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/huggingface/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api-inference.huggingface.co/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/hyperbolic/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.hyperbolic.xyz/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/moonshot/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.moonshot.cn/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/zai/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.z.ai/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/nvidia/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://integrate.api.nvidia.com/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/kilocode/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.kilocode.ai/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/clinecode/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.clinecode.ai/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/poixe/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.poixe.com/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/siliconflow/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.siliconflow.cn/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/zenmux/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.zenmux.ai/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
+app.get('/api/admin/unorouter/models', async (c) => {
+  try {
+    const apiKey = c.req.query('key') || '';
+    const res = await fetch('https://api.unorouter.com/v1/models', {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) return c.json({ data: [] });
+    const data = await res.json();
+    return c.json(data);
+  } catch {
+    return c.json({ data: [] });
+  }
+});
+
 app.get('/api/models', async (c) => {
   const models: any[] = [];
   
