@@ -134,6 +134,9 @@ export async function getModelInstance(userId: string, model: string) {
   const clinecodeInst = checkProv('ap_clinecode', (key) => createOpenAI({ baseURL: 'https://api.clinecode.ai/v1', apiKey: key }));
   if (clinecodeInst) return clinecodeInst;
 
+  const poixeInst = checkProv('ap_poixe', (key) => createOpenAI({ baseURL: 'https://api.poixe.com/v1', apiKey: key }));
+  if (poixeInst) return poixeInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';

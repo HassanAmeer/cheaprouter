@@ -30,6 +30,7 @@ import ZaiSetup, { ZaiSetupRef } from '../ZaiSetup';
 import NvidiaSetup, { NvidiaSetupRef } from '../NvidiaSetup';
 import KiloCodeSetup, { KiloCodeSetupRef } from '../KiloCodeSetup';
 import ClineCodeSetup, { ClineCodeSetupRef } from '../ClineCodeSetup';
+import PoixeSetup, { PoixeSetupRef } from '../PoixeSetup';
 
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
@@ -70,6 +71,7 @@ export default function ManageProvidersPage() {
   const nvidiaRef = useRef<NvidiaSetupRef>(null);
   const kilocodeRef = useRef<KiloCodeSetupRef>(null);
   const clinecodeRef = useRef<ClineCodeSetupRef>(null);
+  const poixeRef = useRef<PoixeSetupRef>(null);
 
   const [testingAll, setTestingAll] = useState(false);
 
@@ -693,6 +695,7 @@ export default function ManageProvidersPage() {
               <NvidiaSetup ref={nvidiaRef} index={25} onModelsUpdated={() => fetchProviders(true)} />
               <KiloCodeSetup ref={kilocodeRef} index={26} onModelsUpdated={() => fetchProviders(true)} />
               <ClineCodeSetup ref={clinecodeRef} index={27} onModelsUpdated={() => fetchProviders(true)} />
+              <PoixeSetup ref={poixeRef} index={28} onModelsUpdated={() => fetchProviders(true)} />
 
             </div>
           </div>
