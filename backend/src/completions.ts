@@ -152,6 +152,9 @@ export async function getModelInstance(userId: string, model: string) {
   const stepfunInst = checkProv('ap_stepfun', (key) => createOpenAI({ baseURL: 'https://api.stepfun.com/v1', apiKey: key }));
   if (stepfunInst) return stepfunInst;
 
+  const llm7Inst = checkProv('ap_llm7', (key) => createOpenAI({ baseURL: 'https://api.llm7.io/v1', apiKey: key }));
+  if (llm7Inst) return llm7Inst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
