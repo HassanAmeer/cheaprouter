@@ -1059,13 +1059,7 @@ app.get('/api/admin/perplexity/models', async (c) => {
 
 // ---- Models catalog ----
 app.get('/api/models', async (c) => {
-  const models = [
-    { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', context: '128K', input: '$5/M', output: '$15/M' },
-    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K', input: '$3/M', output: '$15/M' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', context: '2M', input: '$3.50/M', output: '$10.50/M' },
-    { id: 'llama-3-70b', name: 'Llama 3 70B', provider: 'Meta', context: '8K', input: '$0.50/M', output: '$0.50/M' },
-    { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2', provider: 'DeepSeek', context: '128K', input: '$0.14/M', output: '$0.28/M' },
-  ];
+  const models: any[] = [];
   
   try {
     const allProviders = await db`SELECT * FROM admin_providers WHERE status = true`;
