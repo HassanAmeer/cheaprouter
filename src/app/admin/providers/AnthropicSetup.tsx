@@ -285,9 +285,16 @@ const AnthropicSetup = forwardRef<AnthropicSetupRef, { onModelsUpdated?: () => v
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {apiKeys.map((keyObj, index) => (
             <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: keyObj.active ? 1 : 0.6 }}>
-              <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 API Key {index + 1} {keyObj.active ? '' : '(Paused)'}
                 {showKeyErrors[index] && <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 500 }}>*Required</span>}
+              </div>
+                {index === 0 && (
+                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: '11px', color: 'var(--color-primary)', textDecoration: 'none', background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontWeight: 500 }}>
+                    Get API Key ↗
+                  </a>
+                )}
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
