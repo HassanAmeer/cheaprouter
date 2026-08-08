@@ -164,6 +164,9 @@ export async function getModelInstance(userId: string, model: string) {
   const pollinationsInst = checkProv('ap_pollinations', (key) => createOpenAI({ baseURL: 'https://text.pollinations.ai/v1', apiKey: key }));
   if (pollinationsInst) return pollinationsInst;
 
+  const anyrouterInst = checkProv('ap_anyrouter', (key) => createOpenAI({ baseURL: 'https://api.anyrouter.dev/v1', apiKey: key }));
+  if (anyrouterInst) return anyrouterInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';
