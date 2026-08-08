@@ -92,6 +92,21 @@ export async function getModelInstance(userId: string, model: string) {
   const aimlapiInst = checkProv('ap_aimlapi', (key) => createOpenAI({ baseURL: 'https://api.aimlapi.com/v1', apiKey: key }));
   if (aimlapiInst) return aimlapiInst;
 
+  const mistralInst = checkProv('ap_mistral', (key) => createOpenAI({ baseURL: 'https://api.mistral.ai/v1', apiKey: key }));
+  if (mistralInst) return mistralInst;
+
+  const togetherInst = checkProv('ap_together', (key) => createOpenAI({ baseURL: 'https://api.together.xyz/v1', apiKey: key }));
+  if (togetherInst) return togetherInst;
+
+  const deepseekInst = checkProv('ap_deepseek', (key) => createOpenAI({ baseURL: 'https://api.deepseek.com/v1', apiKey: key }));
+  if (deepseekInst) return deepseekInst;
+
+  const fireworksInst = checkProv('ap_fireworks', (key) => createOpenAI({ baseURL: 'https://api.fireworks.ai/inference/v1', apiKey: key }));
+  if (fireworksInst) return fireworksInst;
+
+  const perplexityInst = checkProv('ap_perplexity', (key) => createOpenAI({ baseURL: 'https://api.perplexity.ai', apiKey: key }));
+  if (perplexityInst) return perplexityInst;
+
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
   if (model.includes('gemini')) provider = 'Google';

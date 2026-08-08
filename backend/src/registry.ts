@@ -212,5 +212,34 @@ export const MODEL_REGISTRY: { [provider: string]: ModelInfo[] } = {
     { id: 'Nano Banana Pro (Gemini 3 Pro Image)', name: 'Gemini 3 Pro Image', provider: 'aimlapi', contextWindow: 0, maxTokens: 0, features: ['google', 'image', 'pro'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
     { id: 'Nano Banana Pro Edit (Gemini 3 Pro Image Edit)', name: 'Gemini 3 Pro Edit', provider: 'aimlapi', contextWindow: 0, maxTokens: 0, features: ['google', 'edit', 'pro'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
     { id: 'grok-2-image', name: 'Grok 2 Image', provider: 'aimlapi', contextWindow: 0, maxTokens: 0, features: ['xai', 'image'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+
+  mistral: [
+    { id: 'mistral-large-latest', name: 'Mistral Large', provider: 'mistral', contextWindow: 131000, maxTokens: 32768, features: ['powerful', 'flagship'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'pixtral-large-latest', name: 'Pixtral Large', provider: 'mistral', contextWindow: 131000, maxTokens: 32768, features: ['vision', 'powerful'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'ministral-8b-latest', name: 'Ministral 8B', provider: 'mistral', contextWindow: 131000, maxTokens: 32768, features: ['fast', 'efficient'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'codestral-latest', name: 'Codestral', provider: 'mistral', contextWindow: 32768, maxTokens: 32768, features: ['coding'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  together: [
+    { id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3 70B Turbo', provider: 'together', contextWindow: 131000, maxTokens: 4096, features: ['fast', 'turbo'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', provider: 'together', contextWindow: 131000, maxTokens: 4096, features: ['advanced'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1', provider: 'together', contextWindow: 131000, maxTokens: 4096, features: ['reasoning'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'Qwen/Qwen2.5-72B-Instruct-Turbo', name: 'Qwen 2.5 72B Turbo', provider: 'together', contextWindow: 32768, maxTokens: 4096, features: ['fast', 'instruct'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  deepseek: [
+    { id: 'deepseek-chat', name: 'DeepSeek V3 Chat', provider: 'deepseek', contextWindow: 65536, maxTokens: 8192, features: ['chat', 'advanced'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'deepseek-reasoner', name: 'DeepSeek R1 Reasoner', provider: 'deepseek', contextWindow: 65536, maxTokens: 8192, features: ['reasoning'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  fireworks: [
+    { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B', provider: 'fireworks', contextWindow: 131000, maxTokens: 4096, features: ['fast', 'instruct'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'accounts/fireworks/models/qwen2p5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'fireworks', contextWindow: 32768, maxTokens: 4096, features: ['fast', 'instruct'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'accounts/fireworks/models/deepseek-v3', name: 'DeepSeek V3', provider: 'fireworks', contextWindow: 131000, maxTokens: 4096, features: ['advanced'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  perplexity: [
+    { id: 'sonar-reasoning-pro', name: 'Sonar Reasoning Pro', provider: 'perplexity', contextWindow: 127000, maxTokens: 8192, features: ['search', 'reasoning', 'pro'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'sonar-reasoning', name: 'Sonar Reasoning', provider: 'perplexity', contextWindow: 127000, maxTokens: 4096, features: ['search', 'reasoning'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', contextWindow: 200000, maxTokens: 8192, features: ['search', 'pro'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'sonar', name: 'Sonar', provider: 'perplexity', contextWindow: 127000, maxTokens: 4096, features: ['search'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
   ]
+
 };

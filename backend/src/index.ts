@@ -921,6 +921,142 @@ app.get('/api/admin/aimlapi/models', async (c) => {
   return c.json({ data: MODEL_REGISTRY['aimlapi'] || [] });
 });
 
+
+app.get('/api/admin/mistral', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_mistral'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/mistral', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_mistral', 'Mistral', ${data.status}, ${data.key}, 16, 'https://api.mistral.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/mistral/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['mistral'] || [] });
+});
+
+app.get('/api/admin/together', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_together'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/together', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_together', 'Together', ${data.status}, ${data.key}, 16, 'https://api.together.xyz/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/together/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['together'] || [] });
+});
+
+app.get('/api/admin/deepseek', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_deepseek'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/deepseek', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_deepseek', 'DeepSeek', ${data.status}, ${data.key}, 16, 'https://api.deepseek.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/deepseek/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['deepseek'] || [] });
+});
+
+app.get('/api/admin/fireworks', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_fireworks'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/fireworks', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_fireworks', 'Fireworks', ${data.status}, ${data.key}, 16, 'https://api.fireworks.ai/inference/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/fireworks/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['fireworks'] || [] });
+});
+
+app.get('/api/admin/perplexity', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_perplexity'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/perplexity', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_perplexity', 'Perplexity', ${data.status}, ${data.key}, 16, 'https://api.perplexity.ai', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/perplexity/models', async (c) => {
+  return c.json({ data: MODEL_REGISTRY['perplexity'] || [] });
+});
+
 // ---- Models catalog ----
 app.get('/api/models', async (c) => {
   const models = [

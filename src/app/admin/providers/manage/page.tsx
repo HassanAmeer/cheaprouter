@@ -16,6 +16,11 @@ import XAISetup, { XAISetupRef } from '../XAISetup';
 import NovitaSetup, { NovitaSetupRef } from '../NovitaSetup';
 import BytezSetup, { BytezSetupRef } from '../BytezSetup';
 import AIMLAPISetup, { AIMLAPISetupRef } from '../AIMLAPISetup';
+import MistralSetup, { MistralSetupRef } from '../MistralSetup';
+import TogetherSetup, { TogetherSetupRef } from '../TogetherSetup';
+import DeepSeekSetup, { DeepSeekSetupRef } from '../DeepSeekSetup';
+import FireworksSetup, { FireworksSetupRef } from '../FireworksSetup';
+import PerplexitySetup, { PerplexitySetupRef } from '../PerplexitySetup';
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
@@ -41,6 +46,11 @@ export default function ManageProvidersPage() {
   const novitaRef = useRef<NovitaSetupRef>(null);
   const bytezRef = useRef<BytezSetupRef>(null);
   const aimlapiRef = useRef<AIMLAPISetupRef>(null);
+  const mistralRef = useRef<MistralSetupRef>(null);
+  const togetherRef = useRef<TogetherSetupRef>(null);
+  const deepseekRef = useRef<DeepSeekSetupRef>(null);
+  const fireworksRef = useRef<FireworksSetupRef>(null);
+  const perplexityRef = useRef<PerplexitySetupRef>(null);
   const [testingAll, setTestingAll] = useState(false);
 
   // Add Provider form state
@@ -131,9 +141,15 @@ export default function ManageProvidersPage() {
     const novitaPassed = novitaRef.current ? await novitaRef.current.testApi(true) : true;
     const bytezPassed = bytezRef.current ? await bytezRef.current.testApi(true) : true;
     const aimlapiPassed = aimlapiRef.current ? await aimlapiRef.current.testApi(true) : true;
+    const mistralPassed = mistralRef.current ? await mistralRef.current.testApi(true) : true;
+    const togetherPassed = togetherRef.current ? await togetherRef.current.testApi(true) : true;
+    const deepseekPassed = deepseekRef.current ? await deepseekRef.current.testApi(true) : true;
+    const fireworksPassed = fireworksRef.current ? await fireworksRef.current.testApi(true) : true;
+    const perplexityPassed = perplexityRef.current ? await perplexityRef.current.testApi(true) : true;
 
     const allPassed = openRouterPassed && openCodePassed && openaiPassed && anthropicPassed && coherePassed &&
-      groqPassed && googlePassed && cerebrasPassed && sambanovaPassed && xaiPassed && novitaPassed && bytezPassed && aimlapiPassed;
+      groqPassed && googlePassed && cerebrasPassed && sambanovaPassed && xaiPassed && novitaPassed && bytezPassed && aimlapiPassed &&
+      mistralPassed && togetherPassed && deepseekPassed && fireworksPassed && perplexityPassed;
     
     setTestingAll(false);
   };
@@ -643,6 +659,11 @@ export default function ManageProvidersPage() {
               <NovitaSetup ref={novitaRef} onModelsUpdated={() => fetchProviders(true)} />
               <BytezSetup ref={bytezRef} onModelsUpdated={() => fetchProviders(true)} />
               <AIMLAPISetup ref={aimlapiRef} onModelsUpdated={() => fetchProviders(true)} />
+              <MistralSetup ref={mistralRef} onModelsUpdated={() => fetchProviders(true)} />
+              <TogetherSetup ref={togetherRef} onModelsUpdated={() => fetchProviders(true)} />
+              <DeepSeekSetup ref={deepseekRef} onModelsUpdated={() => fetchProviders(true)} />
+              <FireworksSetup ref={fireworksRef} onModelsUpdated={() => fetchProviders(true)} />
+              <PerplexitySetup ref={perplexityRef} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>
