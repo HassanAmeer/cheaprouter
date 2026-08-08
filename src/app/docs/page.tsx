@@ -1,9 +1,18 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Zap, Terminal, Book, Code, Shield } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function DocsPage() {
+  const [baseUrl, setBaseUrl] = useState('https://api.cheapagents.com');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
+
   return (
     <main style={{ backgroundColor: 'var(--color-bg-soft)', minHeight: '100vh', color: 'var(--color-text-main)' }}>
       {/* Navbar */}
@@ -71,7 +80,7 @@ Authorization: Bearer YOUR_API_KEY
           </p>
           <div className={styles.codeSection} style={{ marginTop: '0', marginBottom: '40px', padding: '16px 24px' }}>
             <pre style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
-              <code>https://api.cheapagents.com/v1</code>
+              <code>{baseUrl}/v1</code>
             </pre>
           </div>
 
@@ -96,7 +105,7 @@ Authorization: Bearer YOUR_API_KEY
             </div>
             <pre style={{ margin: 0, fontSize: '14px' }}>
               <code>
-<span style={{ color: '#FF7B72' }}>curl</span> https://api.cheapagents.com/v1/chat/completions \<br/>
+<span style={{ color: '#FF7B72' }}>curl</span> {baseUrl}/v1/chat/completions \<br/>
 &nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Content-Type: application/json"</span> \<br/>
 &nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer $CHEAPAGENTS_API_KEY"</span> \<br/>
 &nbsp;&nbsp;-d '&#123;<br/>
@@ -132,7 +141,7 @@ Authorization: Bearer YOUR_API_KEY
             </div>
             <pre style={{ margin: 0, fontSize: '14px' }}>
               <code>
-<span style={{ color: '#FF7B72' }}>curl</span> https://api.cheapagents.com/v1/models \<br/>
+<span style={{ color: '#FF7B72' }}>curl</span> {baseUrl}/v1/models \<br/>
 &nbsp;&nbsp;-H <span style={{ color: '#A5D6FF' }}>"Authorization: Bearer YOUR_API_KEY"</span>
               </code>
             </pre>
