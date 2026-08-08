@@ -469,22 +469,26 @@ async function handleListModels(c: any) {
     for (const p of providersResult) {
       if (p.models && Array.isArray(p.models)) {
         p.models.forEach((m: any) => {
+           const isString = typeof m === 'string';
+           const modelId = isString ? m : (m.id || m.originalId);
+           const modelName = isString ? m : (m.name || m.originalName);
+           
            // Skip if we already added a model with this custom ID to avoid duplicates
-           if (!data.find(existing => existing.id === m.id)) {
+           if (modelId && !data.find(existing => existing.id === modelId)) {
              data.push({
-               id: m.id || m.originalId,
+               id: modelId,
                object: 'model',
                created: Math.floor(Date.now() / 1000),
-               name: m.name || m.originalName,
+               name: modelName,
                features: {
-                 text: !!m.text,
-                 image: !!m.image,
-                 vision: !!m.vision,
-                 audio: !!m.audio,
-                 reasoning: !!m.reasoning,
-                 video: !!m.video
+                 text: isString ? true : !!m.text,
+                 image: isString ? false : !!m.image,
+                 vision: isString ? false : !!m.vision,
+                 audio: isString ? false : !!m.audio,
+                 reasoning: isString ? false : !!m.reasoning,
+                 video: isString ? false : !!m.video
                },
-               context_length: m.context_length || 128000
+               context_length: isString ? 128000 : (m.context_length || 128000)
              });
            }
         });
