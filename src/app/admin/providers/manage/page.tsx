@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup, { OpenRouterSetupRef } from '../OpenRouterSetup';
 import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
