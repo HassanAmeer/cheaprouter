@@ -1,20 +1,27 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization') || '';
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
-    const url = new URL(req.url);
-    const key = url.searchParams.get('key') || '';
-    const response = await fetch(`${backendUrl}/api/admin/modelscope/models${key ? '?key=' + encodeURIComponent(key) : ''}`, {
-      headers: { 'Authorization': authHeader }
-    });
-    if (!response.ok) return NextResponse.json({ data: [] }, { status: response.status });
+    const { searchParams } = new URL(req.url);
+    const key = searchParams.get('key');
+    
+    if (!key) {
+      return NextResponse.json({ error: 'API key is required' }, { status: 400 });
+    }
+
+    const response = await fetch('http://localhost:4000/api/admin/modelscope/models?key=' + key);
+    
+    if (!response.ok) {
+      throw new Error('Backend responded with ' + response.status);
+    }
+
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ data: [] }, { status: 500 });
+  } catch (error: any) {
+    console.error('Proxy error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch from backend', details: error.message },
+      { status: 500 }
+    );
   }
 }

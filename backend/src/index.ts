@@ -736,7 +736,7 @@ app.get('/api/admin/groq/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -775,7 +775,7 @@ app.get('/api/admin/google/models', async (c) => {
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && Array.isArray(data.models)) {
           const mapped = data.models.map((m: any) => ({
             id: m.name ? m.name.replace('models/', '') : m.id,
@@ -820,7 +820,7 @@ app.get('/api/admin/cerebras/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -861,7 +861,7 @@ app.get('/api/admin/sambanova/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -902,7 +902,7 @@ app.get('/api/admin/xai/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -943,7 +943,7 @@ app.get('/api/admin/novita/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -984,7 +984,7 @@ app.get('/api/admin/bytez/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1025,7 +1025,7 @@ app.get('/api/admin/aimlapi/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1067,7 +1067,7 @@ app.get('/api/admin/mistral/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1108,7 +1108,7 @@ app.get('/api/admin/together/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1149,7 +1149,7 @@ app.get('/api/admin/deepseek/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1190,7 +1190,7 @@ app.get('/api/admin/fireworks/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
@@ -1231,7 +1231,7 @@ app.get('/api/admin/perplexity/models', async (c) => {
         headers: { 'Authorization': `Bearer ${apiKey}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as any;
         if (data && (Array.isArray(data.data) || Array.isArray(data))) {
           return c.json(data);
         }
