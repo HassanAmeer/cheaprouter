@@ -16,6 +16,7 @@ import InstallGrid from '../components/InstallGrid';
 import LaserFlow from '../components/LaserFlow';
 import SplashCursor from '../components/SplashCursor';
 import AnnouncementBar from '../components/AnnouncementBar';
+import PricingSection from '../components/PricingSection';
 import { SiteNav } from '../components/site-nav';
 import { SiteFooter } from '../components/site-footer';
 import { theme } from '../config/theme';
@@ -61,7 +62,6 @@ export default function Home() {
         { href: '#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/cli', label: 'Coding' },
-        { href: '/compare', label: 'Compare' },
       ]} />
 
       <div className="container">
@@ -138,18 +138,9 @@ export default function Home() {
         </section>
 
         {/* ═══════════════ WORKS WITH YOUR STACK ═══════════════ */}
-        <section id="integrations" className={styles.section} style={{ paddingTop: '28px', paddingBottom: '72px' }}>
-          <div style={{ border: '1px solid var(--color-border)', borderRadius: '24px', padding: '48px 32px', background: 'var(--color-card-bg)', boxShadow: 'var(--shadow-sm)' }}>
-            <div className={styles.sectionHeader} style={{ marginBottom: '36px' }}>
-              <p className={`${styles.sectionSubtitle} ${styles.shimmerSubtitle}`} style={{ fontSize: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                {settings.integrationsSection?.title}
-              </p>
-            </div>
-            <StackSection />
-          </div>
-        </section>
+        <StackSection title={settings.integrationsSection?.title} subtitle="Integrations" />
 
-        {/* ═══════════════ DROP-IN REPLACEMENT ═══════════════ */}
+        {/* ═══════════════ SPLIT FEATURE ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.apiSplit}>
             <div className={styles.apiText}>
@@ -184,41 +175,7 @@ export default function Home() {
 
 
         {/* ═══════════════ PRICING ═══════════════ */}
-        <section id="pricing" className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>{settings.pricingSection?.title}</h2>
-            <p className={styles.sectionSubtitle}>{settings.pricingSection?.subtitle}</p>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
-            {(settings.pricingSection?.tabs || []).map(tab => (
-              <button key={tab.id} onClick={() => setActivePricingTab(tab.id)} style={{ padding: '10px 24px', borderRadius: '30px', border: activePricingTab === tab.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', background: activePricingTab === tab.id ? 'var(--color-primary-soft)' : 'var(--color-card-bg)', color: activePricingTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-main)', cursor: 'pointer', fontWeight: 600, fontSize: '14px', transition: 'all 0.2s ease' }}>
-                {tab.name}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.pricingGrid}>
-            {(() => {
-              const activeTabObj = (settings.pricingSection?.tabs || []).find(t => t.id === activePricingTab) || (settings.pricingSection?.tabs || [])[0];
-              if (!activeTabObj) return null;
-              return (activeTabObj.plans || []).map((plan) => (
-                <div key={plan.id} className={`${styles.priceCard} ${plan.featured ? styles.priceCardFeatured : ''}`}>
-                  {plan.featured && <div className={styles.popularBadge}>MOST POPULAR</div>}
-                  <div className={styles.priceCardInner}>
-                    <h3 className={styles.planName}>{plan.name}</h3>
-                    <p className={styles.planDesc}>{plan.desc}</p>
-                    <div className={styles.planPrice}>{plan.price}<span>{plan.period}</span></div>
-                    <ul className={styles.planFeatures}>
-                      {plan.features.map(f => <li key={f}><Check size={15} strokeWidth={2.5} color="var(--color-success)" />{f}</li>)}
-                    </ul>
-                    <Link href={plan.ctaLink || '#'} prefetch={false} className={plan.featured ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', textAlign: 'center', display: 'block', marginTop: 'auto' }}>{plan.cta}</Link>
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-        </section>
+        <PricingSection />
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>

@@ -55,7 +55,12 @@ const CHIP_FREQS = [
   784, 831, 880, 932, 988,1047,1109,1175, // row 3
 ];
 
-export default function StackSection() {
+export interface StackSectionProps {
+  title?: string;
+  subtitle?: string;
+}
+
+export default function StackSection({ title, subtitle }: StackSectionProps) {
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [visible, setVisible] = useState([false, false, false]);
   const [showMore, setShowMore] = useState(false);
@@ -145,10 +150,17 @@ export default function StackSection() {
   }, [scheduleRowSounds]);
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.rowsWrap}>
-        {ROWS.map(([start, end], rowIdx) => {
-          const isVisible = visible[rowIdx];
+    <section className={`container ${styles.sectionContainer}`} id="integrations">
+      <div className={styles.sectionBox}>
+        <div className={styles.sectionHeader}>
+          {subtitle && <span className={styles.sectionSubtitle}>{subtitle}</span>}
+          {title && <h2 className={styles.sectionTitle}>{title}</h2>}
+        </div>
+        
+        <div className={styles.wrapper}>
+          <div className={styles.rowsWrap}>
+            {ROWS.map(([start, end], rowIdx) => {
+              const isVisible = visible[rowIdx];
 
           return (
             <div
@@ -219,6 +231,8 @@ export default function StackSection() {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </section>
   );
 }

@@ -162,11 +162,12 @@ const defaultSettings: SiteSettings = {
     ],
   },
   marqueeProviders: [
-    { id: 'mq_1', name: 'OpenAI', iconUrl: '/logos/openai.svg' },
-    { id: 'mq_2', name: 'Anthropic', iconUrl: '/logos/anthropic.svg' },
-    { id: 'mq_3', name: 'Google', iconUrl: '/logos/google.svg' },
-    { id: 'mq_4', name: 'Meta', iconUrl: '/logos/meta.svg' },
-    { id: 'mq_5', name: 'DeepSeek', iconUrl: '/logos/deepseek.svg' },
+    { id: 'mq_1', name: 'Meta', iconUrl: '/logos/meta.svg' },
+    { id: 'mq_2', name: 'DeepSeek', iconUrl: '/logos/deepseek.svg' },
+    { id: 'mq_3', name: 'OpenAI', iconUrl: '/logos/openai.svg' },
+    { id: 'mq_4', name: 'Anthropic', iconUrl: '/logos/anthropic.svg' },
+    { id: 'mq_5', name: 'Google', iconUrl: '/logos/google.svg' },
+    { id: 'mq_6', name: 'Meta', iconUrl: '/logos/meta.svg' },
   ],
   faqs: [
     { id: 'faq_1', q: 'How does CheapAgents work?', a: 'CheapAgents is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },

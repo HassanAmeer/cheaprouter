@@ -145,6 +145,11 @@ button {
   margin: 0 auto;
   padding: 0 24px;
 }
+@media (min-width: 1024px) {
+  .container {
+    max-width: 85%;
+  }
+}
 
 .btn-primary {
   background-color: var(--color-primary);

@@ -1,56 +1,12 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
-import { SiteNav } from '@/components/site-nav';
-import { SiteFooter } from '@/components/site-footer';
 import { Check, X, Minus, Terminal, Shield, Unlock, Globe, Zap, Code, ChevronRight, Key, Layers, ArrowRight } from 'lucide-react';
-import styles from './page.module.css';
+import styles from './CompareSection.module.css';
 
-export default function ComparePage() {
+export default function CompareSection() {
   return (
-    <main className={styles.page}>
-      <SiteNav links={[
-        { href: '/', label: 'Home' },
-        { href: '/#models', label: 'Models' },
-        { href: '/#pricing', label: 'Pricing' },
-        { href: '/docs', label: 'API Docs' },
-        { href: '/cli', label: 'Coding' },
-        { href: '/compare', label: 'Compare' },
-      ]} />
-
+    <section className={styles.section} id="compare">
       <div className={styles.container}>
-        <div className={styles.header}>
-          <div className={styles.badge}>CheapAgents v2.4</div>
-          <h1 className={styles.title}>CheapAgents vs the rest</h1>
-          <p className={styles.subtitle}>
-            An honest comparison. CheapAgents is the only unified API and CLI that gives you access to 100+ premium AI models with a single key, unbeatable prices, and zero lock-in.
-          </p>
-        </div>
-
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}><Check size={24} /></div>
-            <div className={styles.statValue}>11/13</div>
-            <div className={styles.statLabel}>features covered</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}><Unlock size={24} /></div>
-            <div className={styles.statValue}>100+</div>
-            <div className={styles.statLabel}>models supported</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}><Key size={24} /></div>
-            <div className={styles.statValue}>1</div>
-            <div className={styles.statLabel}>API key needed</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}><Zap size={24} /></div>
-            <div className={styles.statValue}>$2</div>
-            <div className={styles.statLabel}>to get started</div>
-          </div>
-        </div>
-
         <h2 className={styles.sectionTitle}>Pricing comparison</h2>
         <p className={styles.sectionSubtitle}>What it actually costs to use each platform.</p>
 
@@ -229,42 +185,8 @@ export default function ComparePage() {
           ))}
         </div>
 
-        <div className={styles.header}>
-          <h2 className={styles.title} style={{ fontSize: '2.5rem' }}>The difference</h2>
-        </div>
 
-        <div className={styles.differenceGrid}>
-          <div className={styles.diffCard}>
-            <div className={styles.diffIcon}><Key size={28} /></div>
-            <h3 className={styles.diffTitle}>One Key to Rule Them All</h3>
-            <p className={styles.diffDesc}>Stop juggling API keys and credit card charges across 5 different providers. Get one CheapAgents key and access every major model instantly.</p>
-          </div>
-          <div className={styles.diffCard}>
-            <div className={styles.diffIcon}><Terminal size={28} /></div>
-            <h3 className={styles.diffTitle}>Terminal Native</h3>
-            <p className={styles.diffDesc}>Not just an API. CheapAgents comes with a blazing-fast CLI tool so you can chat, code, and route models directly from your terminal.</p>
-          </div>
-          <div className={styles.diffCard}>
-            <div className={styles.diffIcon}><Zap size={28} /></div>
-            <h3 className={styles.diffTitle}>Unbeatable Pricing</h3>
-            <p className={styles.diffDesc}>Start for just $2/month and get access to premium models. No crazy markups, no hidden fees. Transparent usage analytics included.</p>
-          </div>
-        </div>
-
-        <div className={styles.cta}>
-          <h2 className={styles.ctaTitle}>Try CheapAgents Today</h2>
-          <p className={styles.ctaDesc}>Get your single API key and start coding with 100+ models in seconds.</p>
-          <div className={styles.ctaButtons}>
-            <Link href="/signup" className={styles.btnPrimary}>
-              Get API Key <ArrowRight size={18} />
-            </Link>
-            <Link href="/docs" className={styles.btnSecondary}>
-              Read the Docs
-            </Link>
-          </div>
-        </div>
       </div>
-      <SiteFooter />
-    </main>
+    </section>
   );
 }

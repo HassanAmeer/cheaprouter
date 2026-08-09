@@ -1,4 +1,34 @@
 /* ─── STACK SECTION — Works with your stack ─── */
+.sectionContainer {
+  padding-top: 28px;
+  padding-bottom: 72px;
+}
+.sectionBox {
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 48px 32px;
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-sm);
+}
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.sectionSubtitle {
+  color: #ff4d4d;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  display: block;
+}
+.sectionTitle {
+  font-size: 40px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
 
 .wrapper {
   width: 100%;

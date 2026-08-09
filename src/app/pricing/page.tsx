@@ -52,9 +52,11 @@ export default function PricingPage() {
     <main className={styles.page}>
       <SiteNav
         links={[
-          { href: '/docs', label: 'Docs' },
-          { href: '/cli', label: 'CLI' },
-          { href: '/compare', label: 'Compare' },
+          { href: '/', label: 'Home' },
+          { href: '/#models', label: 'Models' },
+          { href: '/#pricing', label: 'Pricing' },
+          { href: '/docs', label: 'API Docs' },
+          { href: '/cli', label: 'Coding' },
         ]}
       />
 

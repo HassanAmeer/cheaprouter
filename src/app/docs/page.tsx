@@ -48,7 +48,6 @@ export default function DocsPage() {
         { href: '/#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/cli', label: 'Coding' },
-        { href: '/compare', label: 'Compare' },
       ]} />
 
       {/* Docs Layout Container */}
