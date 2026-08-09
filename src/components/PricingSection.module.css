@@ -1,5 +1,5 @@
 .pricingSection {
-  padding: 100px 0;
+  padding: 60px 0;
   position: relative;
   background: rgba(10, 10, 10, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -55,9 +55,9 @@
 
 .pricingGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 28px;
-  max-width: 1060px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+  width: 100%;
   margin: 0 auto;
 }
 

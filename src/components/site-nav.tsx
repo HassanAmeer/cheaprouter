@@ -45,7 +45,6 @@ export function SiteNav({ links = [], cta = true }: { links?: NavLink[]; cta?: b
         </nav>
 
         <div className={styles.desktopActions}>
-          <ThemeToggle />
           {cta && (
             <>
               <SpaceButton 
@@ -65,6 +64,7 @@ export function SiteNav({ links = [], cta = true }: { links?: NavLink[]; cta?: b
               </SpaceButton>
             </>
           )}
+          <ThemeToggle />
         </div>
 
         <button className={styles.burger} onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>

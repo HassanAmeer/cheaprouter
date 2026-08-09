@@ -3,7 +3,7 @@ import styles from './CliGridFeatures.module.css';
 
 export default function CliGridFeatures() {
   return (
-    <section className={styles.section}>
+    <section className={`container ${styles.section}`}>
       <div className={styles.grid}>
         
         {/* Card 1 */}

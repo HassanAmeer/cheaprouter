@@ -162,9 +162,6 @@ export default function CliPage() {
 
       {/* Features */}
       <section className={`container ${styles.featuresSection}`}>
-        <div className={styles.featuresHeader}>
-          <p className={styles.featuresDesc}>Explore all 8 powerful features built natively into the Cheap CLI Editor.</p>
-        </div>
         <div className={styles.grid}>
           {[
             { icon: <Wand2 size={28} />, title: 'AI Scaffolding', desc: 'Initialize Next.js, Node, or Python environments fully configured with AI capabilities.' },
@@ -201,7 +198,7 @@ export default function CliPage() {
           How each CLI tool stacks up for modern AI engineering.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '5rem', width: '100%', maxWidth: '85%', margin: '0 auto 5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '5rem', width: '100%', margin: '0 auto 5rem' }}>
           {[
             { name: 'CheapAgents CLI', score: 12, total: 13 },
             { name: 'OpenCode', score: 8, total: 13 },
@@ -376,8 +373,6 @@ export default function CliPage() {
 
       {/* Stack Section */}
       <StackSection title="Works with your favorite stack." subtitle="Framework Support" />
-
-      <DifferenceSection />
       
       <BottomCtaCard />
 
