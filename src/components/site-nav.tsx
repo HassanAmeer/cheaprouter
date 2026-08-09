@@ -14,7 +14,7 @@ interface NavLink {
   label: string;
 }
 
-export function SiteNav({ links, cta = true }: { links: NavLink[]; cta?: boolean }) {
+export function SiteNav({ links = [], cta = true }: { links?: NavLink[]; cta?: boolean }) {
   const [open, setOpen] = useState(false);
   const { settings } = useSiteSettings();
 

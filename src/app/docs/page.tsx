@@ -38,7 +38,7 @@ export default function DocsPage() {
   };
 
   return (
-    <div className="bg-grid-light" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--color-bg-soft)', color: 'var(--color-text-main)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#09090b', color: '#f8fafc' }}>
       
       {/* Top Navigation - Default site theme */}
       <AnnouncementBar />
@@ -51,19 +51,19 @@ export default function DocsPage() {
         { href: '/compare', label: 'Compare' },
       ]} />
 
-      {/* Docs Layout Container - Light Theme Native */}
+      {/* Docs Layout Container */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <main style={{ 
           display: 'flex', 
-          gap: '32px', 
-          paddingTop: '32px', 
+          gap: '48px', 
+          paddingTop: '40px', 
           paddingBottom: '100px', 
           flex: 1,
-          maxWidth: '1200px',
+          maxWidth: '1440px',
           margin: '0 auto',
           width: '100%',
-          paddingLeft: '24px',
-          paddingRight: '24px'
+          paddingLeft: '32px',
+          paddingRight: '32px'
         }}>
           
           {/* Sidebar Navigation */}
@@ -74,7 +74,8 @@ export default function DocsPage() {
             flex: 1, 
             position: 'relative',
             overflowY: 'auto',
-            minWidth: 0 // Prevent flex children from overflowing
+            minWidth: 0,
+            paddingTop: '16px'
           }}>
             <AnimatePresence mode="wait">
               {renderView()}

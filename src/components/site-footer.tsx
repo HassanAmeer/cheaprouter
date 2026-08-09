@@ -24,7 +24,7 @@ export function SiteFooter() {
               The unified API for every AI model. Build faster, cheaper, and more reliably with one key.
             </p>
             <div className={styles.socialLinks}>
-              {settings.footer.socialLinks.map(link => (
+              {settings.footer.socialLinks.filter(link => link.isEnabled !== false).map(link => (
                 <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={styles.socialIcon} title={link.platform}>
                   <img src={`https://cdn.simpleicons.org/${link.platform.toLowerCase()}/8b949e`} width="18" height="18" alt={link.platform} onError={(e) => { e.currentTarget.src = "https://cdn.simpleicons.org/internetarchive/8b949e" }} />
                 </a>

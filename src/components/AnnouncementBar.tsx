@@ -62,6 +62,18 @@ export default function AnnouncementBar() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <div className={styles.announcementStarsBg}>
+        <div className={`${styles.cardStar} ${styles.cardStar1}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar2}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar3}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar4}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar5}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar6}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar7}`}></div>
+        <div className={`${styles.cardStar} ${styles.cardStar8}`}></div>
+        <div className={`${styles.cardShootingStar} ${styles.cardShootingStar1}`}></div>
+        <div className={`${styles.cardShootingStar} ${styles.cardShootingStar2}`}></div>
+      </div>
       <div className={styles.announcementCubeContainer}>
         <motion.div 
           className={styles.announcementCube}

@@ -33,12 +33,12 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
 
   return (
     <div style={{
-      backgroundColor: '#0f172a', // Dark code block
+      backgroundColor: '#0a0a0a', // Dark neutral code block
       borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--color-border)',
+      border: '1px solid rgba(255,255,255,0.05)',
       overflow: 'hidden',
       marginBottom: '24px',
-      boxShadow: 'var(--shadow-md)'
+      boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
     }}>
       {/* Header Tabs */}
       <div style={{

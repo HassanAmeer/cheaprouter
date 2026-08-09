@@ -53,7 +53,7 @@ export interface SiteSettings {
   };
   footer: {
     copyrightText: string;
-    socialLinks: { id: string; platform: string; url: string }[];
+    socialLinks: { id: string; platform: string; url: string; isEnabled?: boolean }[];
   };
   featureSplit: {
     title: string;
@@ -202,9 +202,9 @@ const defaultSettings: SiteSettings = {
   footer: {
     copyrightText: '© 2026 CheapAgents Inc. All rights reserved.',
     socialLinks: [
-      { id: 'sl_1', platform: 'Twitter', url: 'https://twitter.com' },
-      { id: 'sl_2', platform: 'GitHub', url: 'https://github.com' },
-      { id: 'sl_3', platform: 'Discord', url: 'https://discord.com' },
+      { id: 'sl_1', platform: 'GitHub', url: 'https://github.com', isEnabled: true },
+      { id: 'sl_2', platform: 'WhatsApp', url: 'https://whatsapp.com', isEnabled: true },
+      { id: 'sl_3', platform: 'YouTube', url: 'https://youtube.com', isEnabled: true },
     ]
   },
   featureSplit: {

@@ -640,21 +640,28 @@ function SettingsContent() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Social Links</h3>
-                  <button onClick={() => setFormData({...formData, footer: {...formData.footer, socialLinks: [...formData.footer.socialLinks, { id: `sl_${Date.now()}`, platform: 'Platform', url: 'https://' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => setFormData({...formData, footer: {...formData.footer, socialLinks: [...formData.footer.socialLinks, { id: `sl_${Date.now()}`, platform: 'Platform', url: 'https://', isEnabled: true }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
                     <Plus size={16} /> Add Link
                   </button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {formData.footer.socialLinks.map((link, idx) => (
-                    <div key={link.id} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
+                    <div key={link.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 2fr auto', gap: '16px', alignItems: 'center', background: 'var(--color-bg-soft)', padding: '16px', borderRadius: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600 }}>
+                        <input type="checkbox" checked={link.isEnabled !== false} onChange={(e) => {
+                          const newLinks = [...formData.footer.socialLinks]; newLinks[idx].isEnabled = e.target.checked; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
+                        }} style={{ cursor: 'pointer' }} />
+                        Show
+                      </label>
+
                       <input type="text" value={link.platform} onChange={(e) => {
                         const newLinks = [...formData.footer.socialLinks]; newLinks[idx].platform = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
                       }} placeholder="Platform Name" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                       
                       <input type="text" value={link.url} onChange={(e) => {
                         const newLinks = [...formData.footer.socialLinks]; newLinks[idx].url = e.target.value; setFormData({...formData, footer: {...formData.footer, socialLinks: newLinks}});
-                      }} placeholder="URL" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      }} placeholder="URL or WhatsApp Number" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                       
                       <button onClick={() => {
                         setFormData({...formData, footer: {...formData.footer, socialLinks: formData.footer.socialLinks.filter(l => l.id !== link.id)}});
