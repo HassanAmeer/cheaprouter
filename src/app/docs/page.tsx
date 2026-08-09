@@ -38,7 +38,7 @@ export default function DocsPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="bg-grid-light" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--color-bg-soft)', color: 'var(--color-text-main)' }}>
       
       {/* Top Navigation - Default site theme */}
       <AnnouncementBar />
@@ -51,8 +51,8 @@ export default function DocsPage() {
         { href: '/compare', label: 'Compare' },
       ]} />
 
-      {/* Docs Layout Container - Full Dark Background as requested */}
-      <div style={{ backgroundColor: '#0A0A0A', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* Docs Layout Container - Light Theme Native */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <main style={{ 
           display: 'flex', 
           gap: '32px', 
@@ -84,9 +84,7 @@ export default function DocsPage() {
         </main>
       </div>
 
-      <div style={{ backgroundColor: '#0A0A0A' }}>
-        <SiteFooter />
-      </div>
+      <SiteFooter />
     </div>
   );
 }
