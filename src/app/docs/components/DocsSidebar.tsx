@@ -48,7 +48,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
             <span style={{ backgroundColor: 'var(--color-success)', color: '#000', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>API</span>
             <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.5px' }}>Reference</span>
           </div>
-          <div style={{ color: '#64748b', fontSize: '12px', marginTop: '8px' }}>CheapAgents REST endpoints</div>
+          <div style={{ color: '#64748b', fontSize: '12px', marginTop: '8px' }}>CheapRouter REST endpoints</div>
         </div>
 
         {navGroups.map((group, gIdx) => (

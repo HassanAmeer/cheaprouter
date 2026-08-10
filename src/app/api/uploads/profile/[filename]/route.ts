@@ -6,9 +6,9 @@ const UPLOAD_DIR = path.join(process.cwd(), 'storage', 'cheap_user_dashboard');
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: { params: { filename: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
-    const filename = params.filename;
+    const { filename } = await params;
     const filepath = path.join(UPLOAD_DIR, filename);
 
     if (!fs.existsSync(filepath)) {

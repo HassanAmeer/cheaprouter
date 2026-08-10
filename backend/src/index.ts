@@ -1081,7 +1081,87 @@ app.get('/api/admin/aimlapi/models', async (c) => {
   }
   return c.json({ data: MODEL_REGISTRY['aimlapi'] || [] });
 });
+app.get('/api/admin/tokenharbor', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_tokenharbor'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
 
+app.put('/api/admin/tokenharbor', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_tokenharbor', 'TokenHarbor', ${data.status}, ${data.key}, 16, 'https://api.tokenharbor.ai/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/tokenharbor/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.tokenharbor.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
+  return c.json({ data: MODEL_REGISTRY['tokenharbor'] || [] });
+});
+
+app.get('/api/admin/aiand', async (c) => {
+  const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_aiand'`;
+  if (result.length > 0) return c.json({
+    key: result[0].key,
+    status: result[0].status,
+    models: result[0].models || []
+  });
+  return c.json({ key: '', status: false, models: [] });
+});
+
+app.put('/api/admin/aiand', zValidator('json', z.any()), async (c) => {
+  const data = c.req.valid('json');
+  await db`
+    INSERT INTO admin_providers (id, name, status, key, priority, base_url, api_format, is_custom, models, headers)
+    VALUES ('ap_aiand', 'ai&', ${data.status}, ${data.key}, 17, 'https://api.aiand.com/v1', 'openai', true, ${db.json(data.models)}, ${db.json([])})
+    ON CONFLICT (id) DO UPDATE SET 
+      key = ${data.key},
+      status = ${data.status},
+      models = ${db.json(data.models)}
+  `;
+  return c.json({ success: true });
+});
+
+app.get('/api/admin/aiand/models', async (c) => {
+  const apiKey = c.req.query('key') || '';
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.aiand.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        if (data && (Array.isArray(data.data) || Array.isArray(data))) {
+          return c.json(data);
+        }
+      }
+    } catch (e) {}
+  }
+  return c.json({ data: MODEL_REGISTRY['aiand'] || [] });
+});
 
 app.get('/api/admin/mistral', async (c) => {
   const result = await db`SELECT * FROM admin_providers WHERE id = 'ap_mistral'`;
@@ -2420,6 +2500,52 @@ app.delete('/api/admin/seed', async (c) => {
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
+});
+
+// ---- Admin Raw Data ----
+app.get('/api/admin/raw-data', async (c) => {
+  const data = await db`SELECT * FROM admin_raw_data ORDER BY created_at DESC`;
+  return c.json({ data });
+});
+
+app.post('/api/admin/raw-data', zValidator('json', z.object({ title: z.string().optional().default('Untitled'), content: z.string() })), async (c) => {
+  const { title, content } = c.req.valid('json');
+  const id = crypto.randomUUID();
+  const [entry] = await db`
+    INSERT INTO admin_raw_data (id, title, content) 
+    VALUES (${id}, ${title}, ${content}) 
+    RETURNING *
+  `;
+  return c.json({ data: entry });
+});
+
+app.put('/api/admin/raw-data/:id', zValidator('json', z.object({ title: z.string().optional(), content: z.string().optional() })), async (c) => {
+  const id = c.req.param('id');
+  const { title, content } = c.req.valid('json');
+  
+  if (title !== undefined && content !== undefined) {
+    const [entry] = await db`
+      UPDATE admin_raw_data 
+      SET title = ${title}, content = ${content}, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
+    if (!entry) return c.json({ error: 'Not found' }, 404);
+    return c.json({ data: entry });
+  } else if (title !== undefined) {
+    const [entry] = await db`UPDATE admin_raw_data SET title = ${title}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id} RETURNING *`;
+    return c.json({ data: entry });
+  } else if (content !== undefined) {
+    const [entry] = await db`UPDATE admin_raw_data SET content = ${content}, updated_at = CURRENT_TIMESTAMP WHERE id = ${id} RETURNING *`;
+    return c.json({ data: entry });
+  }
+  return c.json({ error: 'No fields to update' }, 400);
+});
+
+app.delete('/api/admin/raw-data/:id', async (c) => {
+  const id = c.req.param('id');
+  await db`DELETE FROM admin_raw_data WHERE id = ${id}`;
+  return c.json({ ok: true });
 });
 
 const port = Number(process.env.PORT ?? 4000);

@@ -128,7 +128,7 @@ export default function ReferSettingsPage() {
                   onFocus={() => setFocusedField('alert')}
                   onBlur={() => setFocusedField(null)}
                   onChange={(e) => setFormData({...formData, referralSettings: {...(formData.referralSettings || { isEnabled: true, standardBonus: '$5.00', creatorBonus: '$20.00' }), alertMessage: e.target.value}})} 
-                  placeholder="Attention Content Creators! Make a video about CheapAgents on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!"
+                  placeholder="Attention Content Creators! Make a video about CheapRouter on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!"
                   style={{ 
                     width: '100%', background: 'var(--color-input-bg)', 
                     border: `1px solid ${focusedField === 'alert' ? 'var(--color-primary)' : 'var(--color-border)'}`, 

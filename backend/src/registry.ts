@@ -240,6 +240,26 @@ export const MODEL_REGISTRY: { [provider: string]: ModelInfo[] } = {
     { id: 'sonar-reasoning', name: 'Sonar Reasoning', provider: 'perplexity', contextWindow: 127000, maxTokens: 4096, features: ['search', 'reasoning'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
     { id: 'sonar-pro', name: 'Sonar Pro', provider: 'perplexity', contextWindow: 200000, maxTokens: 8192, features: ['search', 'pro'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
     { id: 'sonar', name: 'Sonar', provider: 'perplexity', contextWindow: 127000, maxTokens: 4096, features: ['search'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  tokenharbor: [
+    { id: 'claude-opus-5', name: 'Claude Opus 5', provider: 'tokenharbor', contextWindow: 200000, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', provider: 'tokenharbor', contextWindow: 128000, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'kimi-k3', name: 'Kimi K3', provider: 'tokenharbor', contextWindow: 128000, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'qwen3.8-max', name: 'Qwen3.8 Max', provider: 'tokenharbor', contextWindow: 32768, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'grok-4.5', name: 'Grok 4.5', provider: 'tokenharbor', contextWindow: 128000, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', provider: 'tokenharbor', contextWindow: 1000000, maxTokens: 8192, features: ['frontier'], freeTier: { limit: 'Standard', resetPeriod: 'none' } },
+    { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', provider: 'tokenharbor', contextWindow: 131000, maxTokens: 8192, features: ['value'], freeTier: { limit: 'Standard', resetPeriod: 'none' } }
+  ],
+  aiand: [
+    { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B', provider: 'aiand', contextWindow: 262000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], freeTier: { limit: 'Free', resetPeriod: 'none' } },
+    { id: 'deepseek-ai/deepseek-v4-flash', name: 'DeepSeek V4 Flash', provider: 'aiand', contextWindow: 1000000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], pricing: { input: 0.15, output: 0.25 } },
+    { id: 'google/gemma-4-31b-it', name: 'Gemma 4 31B IT', provider: 'aiand', contextWindow: 262000, maxTokens: 8192, features: ['reasoning', 'tool_calling', 'vision', 'video', 'document'], pricing: { input: 0.20, output: 0.50 } },
+    { id: 'openai/gpt-oss-120b', name: 'GPT OSS 120B', provider: 'aiand', contextWindow: 131000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], pricing: { input: 0.15, output: 0.60 } },
+    { id: 'deepseek-ai/deepseek-v4-pro', name: 'DeepSeek V4 Pro', provider: 'aiand', contextWindow: 1000000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], pricing: { input: 1.00, output: 2.50 } },
+    { id: 'moonshotai/kimi-k2.7-code', name: 'Kimi K2.7 Code', provider: 'aiand', contextWindow: 262000, maxTokens: 8192, features: ['reasoning', 'tool_calling', 'vision', 'document'], pricing: { input: 0.75, output: 3.50 } },
+    { id: 'moonshotai/kimi-k2.6', name: 'Kimi K2.6', provider: 'aiand', contextWindow: 262000, maxTokens: 8192, features: ['reasoning', 'tool_calling', 'vision', 'document'], pricing: { input: 0.85, output: 3.50 } },
+    { id: 'zai-org/glm-5.2', name: 'GLM 5.2', provider: 'aiand', contextWindow: 1000000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], pricing: { input: 1.00, output: 4.00 } },
+    { id: 'zai-org/glm-5.1', name: 'GLM 5.1', provider: 'aiand', contextWindow: 203000, maxTokens: 8192, features: ['reasoning', 'tool_calling'], pricing: { input: 1.40, output: 4.40 } }
   ]
 
 };

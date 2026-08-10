@@ -25,7 +25,7 @@ export default function BottomCtaCard() {
             <button className={styles.primaryBtn} onClick={handleCopy}>
               <Copy size={16} /> Copy curl
             </button>
-            <a href="https://github.com/cheapagents" target="_blank" rel="noopener noreferrer" className={styles.secondaryBtn}>
+            <a href="https://github.com/cheaprouter" target="_blank" rel="noopener noreferrer" className={styles.secondaryBtn}>
               <Star size={16} color="var(--color-primary)" fill="var(--color-primary)" /> Star on GitHub
             </a>
           </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, MessageSquare, Globe, Code2, Puzzle, Network } from 'lucide-react';
+import { Cpu, MessageSquare, Globe, Code2, Puzzle, Network, Terminal } from 'lucide-react';
 
 export default function IntroductionView() {
   const features = [
@@ -8,7 +8,8 @@ export default function IntroductionView() {
     { icon: <MessageSquare size={20} className="text-primary" />, title: 'Chat Capabilities', desc: 'Build engaging conversational agents and chatbots effortlessly.' },
     { icon: <Globe size={20} className="text-primary" />, title: 'Website Builder', desc: 'Generate and deploy complete websites with AI assistance.' },
     { icon: <Code2 size={20} className="text-primary" />, title: 'Robust APIs', desc: 'Integrate directly into your applications with our RESTful endpoints.' },
-    { icon: <Puzzle size={20} className="text-primary" />, title: 'Browser Extensions', desc: 'Enhance your daily workflow with our official browser extensions.' }
+    { icon: <Puzzle size={20} className="text-primary" />, title: 'Browser Extensions', desc: 'Enhance your daily workflow with our official browser extensions.' },
+    { icon: <Terminal size={20} className="text-primary" />, title: 'Cheap CLI Code Editor', desc: 'Edit and write code directly from your terminal using AI assistance.' }
   ];
 
   return (
@@ -27,7 +28,7 @@ export default function IntroductionView() {
         </div>
 
         <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px', letterSpacing: '-0.5px', color: '#f8fafc' }}>
-          Welcome to CheapAgents
+          Welcome to CheapRouter
         </h2>
         
         <p style={{ fontSize: '15px', color: '#94a3b8', maxWidth: '800px', lineHeight: '1.6', marginBottom: '24px' }}>
@@ -64,7 +65,7 @@ export default function IntroductionView() {
               color: '#cbd5e1',
               fontSize: '13px',
             }}>
-              https://api.cheapagents.com/v1
+              https://api.cheaprouter.com/v1
             </div>
           </div>
 
@@ -76,7 +77,7 @@ export default function IntroductionView() {
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', marginBottom: '12px' }}>Authentication</h3>
             <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px', lineHeight: '1.6' }}>
-              Authenticate your API requests using your CheapAgents API Key. Pass your API key in the <code>Authorization</code> HTTP header as a Bearer token. 
+              Authenticate your API requests using your CheapRouter API Key. Pass your API key in the <code>Authorization</code> HTTP header as a Bearer token. 
             </p>
             <div style={{
               backgroundColor: '#0a0a0a',

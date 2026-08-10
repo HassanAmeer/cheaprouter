@@ -18,7 +18,7 @@ export default function ModelsTable() {
       .then(data => {
         let models: any[] = [];
         if (Array.isArray(data)) {
-          const rawArray = data[0]?.id && !data[0]?.providers ? data : (data.providers || []);
+          const rawArray = data[0]?.id && !(data[0] as any)?.providers ? data : ((data as any).providers || []);
           models = rawArray.flatMap((p: any) => 
             (p.models || [])
               .filter((m: any) => m.showOnLandingPage)

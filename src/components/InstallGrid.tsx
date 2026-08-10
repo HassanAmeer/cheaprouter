@@ -86,7 +86,7 @@ export default function InstallGrid() {
                 </div>
                 <div className={styles.miniCodeBody}>
                   <div><span className={styles.kw}>const</span> ai = <span className={styles.kw}>new</span> OpenAI({'{'}</div>
-                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheapagents.io&quot;</span>,</div>
+                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheaprouter.io&quot;</span>,</div>
                   <div>&nbsp;&nbsp;apiKey: <span className={styles.str}>&quot;cm_***&quot;</span></div>
                   <div>{'}'});</div>
                 </div>
@@ -214,7 +214,7 @@ export default function InstallGrid() {
               <div className={styles.miniChat}>
                 <div className={styles.miniChatHeader}>
                   <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>chrome.cheapagents.io</div>
+                  <div className={styles.miniUrl}>chrome.cheaprouter.io</div>
                 </div>
                 <div className={styles.miniChatBody}>
                   <div className={styles.chatBubbleUser}>Summarize this page</div>

@@ -107,7 +107,7 @@ export interface SiteSettings {
 }
 
 const defaultSettings: SiteSettings = {
-  brandName: 'CheapAgents',
+  brandName: 'CheapRouter',
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
   heroAnimatedTexts: ['Free Coding', 'Free Chat', 'Cheap API', 'Cheap Agents'],
@@ -118,7 +118,7 @@ const defaultSettings: SiteSettings = {
   faviconUrl: '/favicon.ico',
   logoUrl: '',
   seo: {
-    metaTitle: 'CheapAgents - Unified AI Gateway',
+    metaTitle: 'CheapRouter - Unified AI Gateway',
     metaDescription: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
     ogImage: '',
   },
@@ -170,9 +170,9 @@ const defaultSettings: SiteSettings = {
     { id: 'mq_6', name: 'Meta', iconUrl: '/logos/meta.svg' },
   ],
   faqs: [
-    { id: 'faq_1', q: 'How does CheapAgents work?', a: 'CheapAgents is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },
+    { id: 'faq_1', q: 'How does CheapRouter work?', a: 'CheapRouter is a unified AI gateway. You get a single API key that routes requests to OpenAI, Anthropic, Google, Meta, DeepSeek and more through one OpenAI-compatible endpoint.' },
     { id: 'faq_2', q: 'How is it so cheap?', a: 'We aggregate volume, leverage bulk enterprise tiers, and use intelligent caching. For non-cached queries, you pay exactly the underlying cost—zero markup.' },
-    { id: 'faq_3', q: 'Is it really a drop-in replacement?', a: 'Yes! Just change the base URL to our endpoint and swap out your OpenAI key for your CheapAgents key. No new SDKs or libraries required.' },
+    { id: 'faq_3', q: 'Is it really a drop-in replacement?', a: 'Yes! Just change the base URL to our endpoint and swap out your OpenAI key for your CheapRouter key. No new SDKs or libraries required.' },
     { id: 'faq_4', q: 'What is BYOK?', a: 'Bring Your Own Key (BYOK) allows you to use your own provider API keys through our gateway. This gives you our unified logging and analytics for free.' },
     { id: 'faq_5', q: 'How secure is my data?', a: 'We never log or train on your prompts. All requests are securely proxied directly to the providers. We are SOC2 compliant.' }
   ],
@@ -187,10 +187,10 @@ const defaultSettings: SiteSettings = {
     ]
   },
   contactInfo: {
-    supportEmail: 'support@cheapagents.ai',
+    supportEmail: 'support@cheaprouter.ai',
     supportPhone: '+1 (800) 555-0199',
     officeAddress: '100 Tech Boulevard, Suite 400, San Francisco, CA 94107',
-    discordUrl: 'https://discord.gg/cheapagents',
+    discordUrl: 'https://discord.gg/cheaprouter',
     enableContactForm: true,
   },
   dashboardSettings: {
@@ -201,7 +201,7 @@ const defaultSettings: SiteSettings = {
     announcementBanner: '⚡ New DeepSeek-R1 and Claude 3.5 Sonnet v2 models are now live!',
   },
   footer: {
-    copyrightText: '© 2026 CheapAgents Inc. All rights reserved.',
+    copyrightText: '© 2026 CheapRouter Inc. All rights reserved.',
     socialLinks: [
       { id: 'sl_1', platform: 'GitHub', url: 'https://github.com', isEnabled: true },
       { id: 'sl_2', platform: 'WhatsApp', url: 'https://whatsapp.com', isEnabled: true },
@@ -210,7 +210,7 @@ const defaultSettings: SiteSettings = {
   },
   featureSplit: {
     title: 'Change one line.<br />Access every model.',
-    description: 'No new SDK. No new patterns. CheapAgents speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.',
+    description: 'No new SDK. No new patterns. CheapRouter speaks the exact same OpenAI API protocol, so your existing code works immediately — just point it at our endpoint.',
     checkList: [
       'SSE streaming — first token in <100ms',
       'Function calling & tool use, out of the box',
@@ -220,7 +220,7 @@ const defaultSettings: SiteSettings = {
     ],
     buttonText: 'Read the API Docs',
     buttonLink: '/docs',
-    codeSnippet: 'import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: "cm-xxxxxxxxxxxx",\n  baseURL: "https://api.cheapagents.com/v1",\n});\n\nconst response = await client.chat.completions.create({\n  model: "claude-3-5-sonnet",\n  messages: [\n    { role: "user", content: "Hello!" }\n  ],\n  stream: true,\n});'
+    codeSnippet: 'import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: "cm-xxxxxxxxxxxx",\n  baseURL: "https://api.cheaprouter.com/v1",\n});\n\nconst response = await client.chat.completions.create({\n  model: "claude-3-5-sonnet",\n  messages: [\n    { role: "user", content: "Hello!" }\n  ],\n  stream: true,\n});'
   },
   pricingSection: {
     title: 'Simple, honest pricing',
@@ -265,9 +265,9 @@ const defaultSettings: SiteSettings = {
     ]
   },
   comparisonSection: {
-    title: 'Stop managing providers.<br /><span style="background: linear-gradient(135deg, #7c3aed, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Start building.</span>',
+    title: 'Without <span class="text-gradient">Cheap Agents</span>',
     subtitle: 'See what changes when you unify your AI infrastructure.',
-    beforeLabel: 'Without CheapAgents',
+    beforeLabel: 'Without CheapRouter',
     beforeSubLabel: 'The painful way',
     beforePoints: [
       { id: 'bp_1', text: 'Separate API key for each provider', detail: 'OpenAI, Anthropic, Google, Meta…' },
@@ -277,7 +277,7 @@ const defaultSettings: SiteSettings = {
       { id: 'bp_5', text: 'Vendor lock-in on every integration', detail: 'Switching costs you weeks' },
       { id: 'bp_6', text: 'Multiple billing accounts to manage', detail: 'Finance team nightmare' },
     ],
-    afterLabel: 'With CheapAgents',
+    afterLabel: 'With CheapRouter',
     afterSubLabel: 'The smart way',
     afterPoints: [
       { id: 'ap_1', text: 'One key for every AI provider', detail: 'All models, one credential' },
@@ -307,7 +307,7 @@ const defaultSettings: SiteSettings = {
     isEnabled: true,
     standardBonus: '$5.00',
     creatorBonus: '$20.00',
-    alertMessage: 'Attention Content Creators! Make a video about CheapAgents on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
+    alertMessage: 'Attention Content Creators! Make a video about CheapRouter on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
   }
 };
 
@@ -339,7 +339,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             
             // Dynamically update document title / favicon if we are on client side
             if (typeof window !== 'undefined') {
-              document.title = (data.brandName || 'CheapAgents') + ' | Unified AI Gateway';
+              document.title = (data.brandName || 'CheapRouter') + ' | Unified AI Gateway';
               const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
               (link as any).type = 'image/x-icon';
               (link as any).rel = 'shortcut icon';

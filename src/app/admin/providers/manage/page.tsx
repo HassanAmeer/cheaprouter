@@ -16,6 +16,8 @@ import XAISetup, { XAISetupRef } from '../XAISetup';
 import NovitaSetup, { NovitaSetupRef } from '../NovitaSetup';
 import BytezSetup, { BytezSetupRef } from '../BytezSetup';
 import AIMLAPISetup, { AIMLAPISetupRef } from '../AIMLAPISetup';
+import TokenHarborSetup, { TokenHarborSetupRef } from '../TokenHarborSetup';
+import AIANDSetup, { AIANDSetupRef } from '../AIANDSetup';
 import MistralSetup, { MistralSetupRef } from '../MistralSetup';
 import TogetherSetup, { TogetherSetupRef } from '../TogetherSetup';
 import DeepSeekSetup, { DeepSeekSetupRef } from '../DeepSeekSetup';
@@ -69,6 +71,8 @@ export default function ManageProvidersPage() {
   const novitaRef = useRef<NovitaSetupRef>(null);
   const bytezRef = useRef<BytezSetupRef>(null);
   const aimlapiRef = useRef<AIMLAPISetupRef>(null);
+  const tokenharborRef = useRef<TokenHarborSetupRef>(null);
+  const aiandRef = useRef<AIANDSetupRef>(null);
   const mistralRef = useRef<MistralSetupRef>(null);
   const togetherRef = useRef<TogetherSetupRef>(null);
   const deepseekRef = useRef<DeepSeekSetupRef>(null);
@@ -189,13 +193,14 @@ export default function ManageProvidersPage() {
     const aimlapiPassed = aimlapiRef.current ? await aimlapiRef.current.testApi(true) : true;
     const mistralPassed = mistralRef.current ? await mistralRef.current.testApi(true) : true;
     const togetherPassed = togetherRef.current ? await togetherRef.current.testApi(true) : true;
+    const aiandPassed = aiandRef.current ? await aiandRef.current.testApi(true) : true;
     const deepseekPassed = deepseekRef.current ? await deepseekRef.current.testApi(true) : true;
     const fireworksPassed = fireworksRef.current ? await fireworksRef.current.testApi(true) : true;
     const perplexityPassed = perplexityRef.current ? await perplexityRef.current.testApi(true) : true;
 
     const allPassed = openRouterPassed && openCodePassed && openaiPassed && anthropicPassed && coherePassed &&
       groqPassed && googlePassed && cerebrasPassed && sambanovaPassed && xaiPassed && novitaPassed && bytezPassed && aimlapiPassed &&
-      mistralPassed && togetherPassed && deepseekPassed && fireworksPassed && perplexityPassed;
+      mistralPassed && togetherPassed && aiandPassed && deepseekPassed && fireworksPassed && perplexityPassed;
     
     setTestingAll(false);
   };
@@ -705,6 +710,8 @@ export default function ManageProvidersPage() {
               <NovitaSetup ref={novitaRef} index={11} onModelsUpdated={() => fetchProviders(true)} />
               <BytezSetup ref={bytezRef} index={12} onModelsUpdated={() => fetchProviders(true)} />
               <AIMLAPISetup ref={aimlapiRef} index={13} onModelsUpdated={() => fetchProviders(true)} />
+              <TokenHarborSetup ref={tokenharborRef} index={14} onModelsUpdated={() => fetchProviders(true)} />
+              <AIANDSetup ref={aiandRef} index={15} onModelsUpdated={() => fetchProviders(true)} />
               <MistralSetup ref={mistralRef} index={14} onModelsUpdated={() => fetchProviders(true)} />
               <TogetherSetup ref={togetherRef} index={15} onModelsUpdated={() => fetchProviders(true)} />
               <DeepSeekSetup ref={deepseekRef} index={16} onModelsUpdated={() => fetchProviders(true)} />

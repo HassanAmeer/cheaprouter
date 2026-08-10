@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -91,6 +91,9 @@ function SidebarNavContent() {
           </div>
         </div>
         <div className={styles.sectionItems}>
+          <Link href="/admin/raw-data" className={`${styles.navItem} ${pathname.startsWith('/admin/raw-data') ? styles.navItemActive : ''}`}>
+            <FileText size={17} /> Raw Data
+          </Link>
           <Link href="/admin/seeding" className={`${styles.navItem} ${pathname.startsWith('/admin/seeding') ? styles.navItemActive : ''}`}>
             <Database size={17} /> Database Seeding
           </Link>
@@ -133,6 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/dash-settings')) return 'User Dashboard Settings';
     if (pathname.startsWith('/admin/logs')) return 'System Logs';
     if (pathname.startsWith('/admin/seeding')) return 'Database Seeding';
+    if (pathname.startsWith('/admin/raw-data')) return 'Raw Data Storage';
     return 'Admin Panel';
   };
 

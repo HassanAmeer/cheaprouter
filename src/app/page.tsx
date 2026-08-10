@@ -126,10 +126,8 @@ export default function Home() {
         <InstallGrid />
       </div>
 
-      <div className="container">
-
         {/* ═══════════════ MODELS TABLE ═══════════════ */}
-        <section id="models" className={styles.section}>
+        <section id="models" className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{settings.modelsSection?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.modelsSection?.subtitle}</p>
@@ -141,7 +139,7 @@ export default function Home() {
         <StackSection title={settings.integrationsSection?.title} subtitle="Integrations" />
 
         {/* ═══════════════ SPLIT FEATURE ═══════════════ */}
-        <section className={styles.section}>
+        <section className={`container ${styles.section}`}>
           <div className={styles.apiSplit}>
             <div className={styles.apiText}>
               <h2 className={styles.apiTitle} dangerouslySetInnerHTML={{ __html: settings.featureSplit?.title || '' }} />
@@ -177,7 +175,7 @@ export default function Home() {
         {/* ═══════════════ PRICING ═══════════════ */}
         <PricingSection />
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}
-        <section className={styles.section}>
+        <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle} dangerouslySetInnerHTML={{ __html: settings.comparisonSection?.title || '' }} />
             <p className={styles.sectionSubtitle}>{settings.comparisonSection?.subtitle}</p>
@@ -247,7 +245,7 @@ export default function Home() {
 
 
         {/* ═══════════════ FEATURES GRID ═══════════════ */}
-        <section className={styles.section}>
+        <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{settings.featuresGrid?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.featuresGrid?.subtitle}</p>
@@ -270,7 +268,7 @@ export default function Home() {
 
 
         {/* ═══════════════ FAQ ═══════════════ */}
-        <section className={styles.section}>
+        <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{settings.faqSection?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.faqSection?.subtitle}</p>
@@ -288,7 +286,7 @@ export default function Home() {
           </div>
         </section>
         {/* ═══════════════ DEMAND SECTION (CLEAN PREMIUM) ═══════════════ */}
-        <section id="demand" className={styles.section}>
+        <section id="demand" className={`container ${styles.section}`}>
           <div className={styles.demandOuter}>
             <div className={styles.demandBgGlow} />
 
@@ -393,7 +391,7 @@ export default function Home() {
         </section>
 
         {/* ═══════════════ CTA ═══════════════ */}
-        <section id="contact" className={styles.section} style={{ paddingTop: '60px', paddingBottom: '80px' }}>
+        <section id="contact" className={`container ${styles.section}`} style={{ paddingTop: '60px', paddingBottom: '80px' }}>
           <div className={styles.ctaBlock}>
             {/* Glows */}
             <div className={styles.ctaGlow1} />
@@ -416,7 +414,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </div>
 
       {/* Footer */}
       <SiteFooter />

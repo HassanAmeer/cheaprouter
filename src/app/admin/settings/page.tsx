@@ -137,7 +137,7 @@ function SettingsContent() {
                     type="text" 
                     value={formData.brandName || ''} 
                     onChange={(e) => handleChange('brandName', e.target.value)} 
-                    placeholder="e.g. CheapAgents"
+                    placeholder="e.g. CheapRouter"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                   />
                 </div>
@@ -278,7 +278,7 @@ function SettingsContent() {
                     type="text" 
                     value={formData.seo?.metaTitle || ''} 
                     onChange={(e) => setFormData({...formData, seo: {...(formData.seo || { metaDescription: '', ogImage: '' }), metaTitle: e.target.value}})} 
-                    placeholder="e.g. CheapAgents - Unified AI Gateway"
+                    placeholder="e.g. CheapRouter - Unified AI Gateway"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                   />
                 </div>
@@ -451,7 +451,7 @@ function SettingsContent() {
                   {/* BEFORE SECTION */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#ef4444' }}>"Before" State (The Painful Way)</h4>
-                    <input type="text" value={formData.comparisonSection?.beforeLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforeLabel: e.target.value}})} placeholder="Label (e.g. Without CheapAgents)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    <input type="text" value={formData.comparisonSection?.beforeLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforeLabel: e.target.value}})} placeholder="Label (e.g. Without CheapRouter)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                     <input type="text" value={formData.comparisonSection?.beforeSubLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforeSubLabel: e.target.value}})} placeholder="SubLabel (e.g. The painful way)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                     
                     <button onClick={() => setFormData({...formData, comparisonSection: {...formData.comparisonSection, beforePoints: [...(formData.comparisonSection?.beforePoints || []), { id: `bp_${Date.now()}`, text: 'New Point', detail: 'Detail' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
@@ -477,7 +477,7 @@ function SettingsContent() {
                   {/* AFTER SECTION */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#10b981' }}>"After" State (The Smart Way)</h4>
-                    <input type="text" value={formData.comparisonSection?.afterLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterLabel: e.target.value}})} placeholder="Label (e.g. With CheapAgents)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                    <input type="text" value={formData.comparisonSection?.afterLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterLabel: e.target.value}})} placeholder="Label (e.g. With CheapRouter)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                     <input type="text" value={formData.comparisonSection?.afterSubLabel || ''} onChange={(e) => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterSubLabel: e.target.value}})} placeholder="SubLabel (e.g. The smart way)" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
                     
                     <button onClick={() => setFormData({...formData, comparisonSection: {...formData.comparisonSection, afterPoints: [...(formData.comparisonSection?.afterPoints || []), { id: `ap_${Date.now()}`, text: 'New Point', detail: 'Detail' }]}})} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
@@ -729,7 +729,7 @@ function SettingsContent() {
                   type="email" 
                   value={formData.contactInfo?.supportEmail || ''} 
                   onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportPhone: '', officeAddress: '', discordUrl: '', enableContactForm: true }), supportEmail: e.target.value}})} 
-                  placeholder="support@cheapagents.ai"
+                  placeholder="support@cheaprouter.ai"
                   style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                 />
               </div>
@@ -761,7 +761,7 @@ function SettingsContent() {
                   type="text" 
                   value={formData.contactInfo?.discordUrl || ''} 
                   onChange={(e) => setFormData({...formData, contactInfo: {...(formData.contactInfo || { supportEmail: '', supportPhone: '', officeAddress: '', enableContactForm: true }), discordUrl: e.target.value}})} 
-                  placeholder="https://discord.gg/cheapagents"
+                  placeholder="https://discord.gg/cheaprouter"
                   style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} 
                 />
               </div>

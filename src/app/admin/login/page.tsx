@@ -46,7 +46,7 @@ export default function AdminLogin() {
             <Zap size={28} color="var(--color-primary)" fill="var(--color-primary)" />
             Admin Panel
           </div>
-          <div className={styles.loginSubtitle}>Sign in to manage CheapAgents</div>
+          <div className={styles.loginSubtitle}>Sign in to manage CheapRouter</div>
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} autoComplete="off">

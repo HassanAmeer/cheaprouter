@@ -40,6 +40,16 @@ export async function initDb() {
   }
   
   await db`
+    CREATE TABLE IF NOT EXISTS admin_raw_data (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+  
+  await db`
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

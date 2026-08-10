@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const userName = user?.name ?? 'Developer';
-  const userEmail = user?.email ?? 'dev@cheapagents.com';
+  const userEmail = user?.email ?? 'dev@cheaprouter.com';
   const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.logo}>
-            <Zap size={20} fill="var(--color-primary)" color="var(--color-primary)" /> CheapAgents
+            <Zap size={20} fill="var(--color-primary)" color="var(--color-primary)" /> CheapRouter
           </Link>
         </div>
 

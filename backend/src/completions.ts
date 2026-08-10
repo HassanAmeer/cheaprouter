@@ -92,6 +92,12 @@ export async function getModelInstance(userId: string, model: string) {
   const aimlapiInst = checkProv('ap_aimlapi', (key) => createOpenAI({ baseURL: 'https://api.aimlapi.com/v1', apiKey: key }));
   if (aimlapiInst) return aimlapiInst;
 
+  const tokenharborInst = checkProv('ap_tokenharbor', (key) => createOpenAI({ baseURL: 'https://api.tokenharbor.ai/v1', apiKey: key }));
+  if (tokenharborInst) return tokenharborInst;
+
+  const aiandInst = checkProv('ap_aiand', (key) => createOpenAI({ baseURL: 'https://api.aiand.com/v1', apiKey: key }));
+  if (aiandInst) return aiandInst;
+
   const mistralInst = checkProv('ap_mistral', (key) => createOpenAI({ baseURL: 'https://api.mistral.ai/v1', apiKey: key }));
   if (mistralInst) return mistralInst;
 

@@ -15,7 +15,7 @@ export default function CompareSection() {
             <thead>
               <tr>
                 <th></th>
-                <th className={styles.highlightCol}>CheapAgents<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
+                <th className={styles.highlightCol}>CheapRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
                 <th>OpenRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PAYG</span></th>
                 <th>LiteLLM<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>OSS</span></th>
                 <th>Helicone<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
@@ -76,7 +76,7 @@ export default function CompareSection() {
             <thead>
               <tr>
                 <th>Feature</th>
-                <th className={styles.highlightCol}>CheapAgents</th>
+                <th className={styles.highlightCol}>CheapRouter</th>
                 <th>OpenRouter</th>
                 <th>LiteLLM</th>
                 <th>Helicone</th>
@@ -168,7 +168,7 @@ export default function CompareSection() {
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '5rem', maxWidth: '800px', margin: '0 auto 5rem' }}>
           {[
-            { name: 'CheapAgents', score: 11, total: 13 },
+            { name: 'CheapRouter', score: 11, total: 13 },
             { name: 'OpenRouter', score: 9, total: 13 },
             { name: 'LiteLLM', score: 8, total: 13 },
             { name: 'KPO Enhanced', score: 7, total: 13 },

@@ -23,7 +23,7 @@ export default function ReferAndEarnPage() {
     isEnabled: true,
     standardBonus: '$5.00',
     creatorBonus: '$20.00',
-    alertMessage: 'Attention Content Creators! Make a video about CheapAgents on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
+    alertMessage: 'Attention Content Creators! Make a video about CheapRouter on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
   };
 
   if (!referralSettings.isEnabled) {
@@ -39,7 +39,7 @@ export default function ReferAndEarnPage() {
     );
   }
 
-  const referralLink = `https://cheapagents.com/?ref=${user?.id || 'demo_123'}`;
+  const referralLink = `https://cheaprouter.com/?ref=${user?.id || 'demo_123'}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);

@@ -352,7 +352,7 @@
 /* ─── INSTALL CARDS (Space Hover Animation like SpaceButton) ─── */
 .installGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   padding: 40px 0;
 }
@@ -1239,7 +1239,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 28px;
-  max-width: 1060px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -1324,7 +1324,7 @@
   display: flex;
   align-items: center;
   gap: 64px;
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -1483,7 +1483,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 28px;
-  max-width: 960px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -1566,7 +1566,7 @@
   align-items: stretch;
   justify-content: center;
   gap: 32px;
-  max-width: 1100px;
+  width: 100% !important;
   margin: 0 auto 48px;
   position: relative;
 }
@@ -2317,10 +2317,11 @@
 
 /* ─── FAQ (ULTRA-MINIMAL PREMIUM) ─── */
 .faqList {
-  max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
 .faqItem {
@@ -3027,7 +3028,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  max-width: 900px;
+  width: 100%;
   margin: 0 auto;
 }
 

@@ -13,7 +13,7 @@ import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 
 export default function DocsPage() {
-  const [baseUrl, setBaseUrl] = useState('https://api.cheapagents.com');
+  const [baseUrl, setBaseUrl] = useState('https://api.cheaprouter.com');
   const [activeView, setActiveView] = useState<ViewType>('models');
 
   useEffect(() => {

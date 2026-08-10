@@ -79,7 +79,7 @@ export default function HeroTerminal() {
                 <span className={styles.prompt}>~/project$</span> <span className={styles.cliCmd}>cheap-cli init --framework=nextjs</span>
               </div>
               <div className={styles.cliOutput} style={{ animation: 'none', opacity: 1, marginBottom: '12px' }}>
-                <div className={styles.cliSuccess}>✔ Initialized cheapagents.json</div>
+                <div className={styles.cliSuccess}>✔ Initialized cheaprouter.json</div>
               </div>
               <div className={styles.cliLine}>
                 <span className={styles.prompt}>~/project$</span> <span className={styles.typingCmd}>cheap-cli route update --model=claude-3-5</span>
@@ -90,7 +90,7 @@ export default function HeroTerminal() {
                 <div className={styles.cliDiffBlock}>
                   <div className={styles.diffFilename}>src/api/openai.ts</div>
                   <div className={styles.diffMinus}><span>-</span> <span>&nbsp;&nbsp;baseURL: &apos;https://api.openai.com/v1&apos;,</span></div>
-                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: &apos;https://api.cheapagents.ai/v1&apos;,</span></div>
+                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: &apos;https://api.cheaprouter.ai/v1&apos;,</span></div>
                 </div>
                 <div className={styles.cliSuccess}>✔ Routing updated seamlessly! 🚀</div>
               </div>
@@ -124,7 +124,7 @@ export default function HeroTerminal() {
                   <div><span className={styles.keyword}>import</span> {'{'} OpenAI {'}'} <span className={styles.keyword}>from</span> <span className={styles.string}>&apos;openai&apos;</span>;</div>
                   <br />
                   <div><span className={styles.keyword}>const</span> openai = <span className={styles.keyword}>new</span> <span className={styles.function}>OpenAI</span>({'{'}</div>
-                  <div style={{ paddingLeft: '16px' }}>baseURL: <span className={styles.string}>&apos;https://api.cheapagents.ai/v1&apos;</span>,</div>
+                  <div style={{ paddingLeft: '16px' }}>baseURL: <span className={styles.string}>&apos;https://api.cheaprouter.ai/v1&apos;</span>,</div>
                   <div style={{ paddingLeft: '16px' }}>apiKey: process.env.CHEAPAGENTS_API_KEY,</div>
                   <div>{'}'});</div>
                   <br />
@@ -155,7 +155,7 @@ export default function HeroTerminal() {
           <div className={styles.cardHeader}>
             <div className={styles.browserHeader}>
               <div className={styles.browserDots}><span/><span/><span/></div>
-              <div className={styles.browserUrl}>chat.cheapagents.io</div>
+              <div className={styles.browserUrl}>chat.cheaprouter.io</div>
             </div>
           </div>
           <div className={styles.cardBody} style={{ padding: 0 }}>

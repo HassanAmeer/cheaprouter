@@ -8,7 +8,7 @@ interface LimitsViewProps {
   baseUrl: string;
 }
 
-export default function LimitsView({ baseUrl = 'https://api.cheapagents.com' }: Partial<LimitsViewProps>) {
+export default function LimitsView({ baseUrl = 'https://api.cheaprouter.com' }: Partial<LimitsViewProps>) {
   const curlCode = `curl -X GET "${baseUrl}/v1/account" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;

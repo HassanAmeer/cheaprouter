@@ -19,9 +19,9 @@ import { useSiteSettings } from '@/components/settings-provider';
 import styles from './cli.module.css';
 
 const COMMANDS: Record<string, { label: string, cmd: string, icon: React.ReactNode }> = {
-  Mac: { label: 'macOS', cmd: 'curl -fsSL https://cheapagents.ai/install.sh | bash', icon: <Command size={16} /> },
-  Windows: { label: 'Windows', cmd: 'iwr -useb https://cheapagents.ai/install.ps1 | iex', icon: <LayoutGrid size={16} /> },
-  Linux: { label: 'Linux', cmd: 'curl -fsSL https://cheapagents.ai/install.sh | bash', icon: <Terminal size={16} /> },
+  Mac: { label: 'macOS', cmd: 'curl -fsSL https://cheaprouter.ai/install.sh | bash', icon: <Command size={16} /> },
+  Windows: { label: 'Windows', cmd: 'iwr -useb https://cheaprouter.ai/install.ps1 | iex', icon: <LayoutGrid size={16} /> },
+  Linux: { label: 'Linux', cmd: 'curl -fsSL https://cheaprouter.ai/install.sh | bash', icon: <Terminal size={16} /> },
   npm: { label: 'npm', cmd: 'npm install -g cheap-cli', icon: <Package size={16} /> },
 };
 
@@ -166,7 +166,7 @@ export default function CliPage() {
           {[
             { icon: <Wand2 size={28} />, title: 'AI Scaffolding', desc: 'Initialize Next.js, Node, or Python environments fully configured with AI capabilities.' },
             { icon: <Boxes size={28} />, title: 'Component Generator', desc: 'Generate complete React, Vue, or Svelte components directly from the command line.' },
-            { icon: <Network size={28} />, title: 'Drop-in Routing', desc: 'Rewrite any OpenAI base URL to CheapAgents with a single command. Zero code changes.' },
+            { icon: <Network size={28} />, title: 'Drop-in Routing', desc: 'Rewrite any OpenAI base URL to CheapRouter with a single command. Zero code changes.' },
             { icon: <Settings2 size={28} />, title: 'Model Comparison', desc: 'Benchmark GPT-4o vs Claude 3.5 Sonnet side-by-side directly from your terminal.' },
             { icon: <Shield size={28} />, title: 'BYOK Secure Proxy', desc: 'Run a local proxy that injects your keys safely — never expose them in client code.' },
             { icon: <FileCode2 size={28} />, title: 'Code Refactoring', desc: 'Analyze and refactor large codebases seamlessly without leaving your terminal window.' },
@@ -200,7 +200,7 @@ export default function CliPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '5rem', width: '100%', margin: '0 auto 5rem' }}>
           {[
-            { name: 'CheapAgents CLI', score: 12, total: 13 },
+            { name: 'CheapRouter CLI', score: 12, total: 13 },
             { name: 'OpenCode', score: 8, total: 13 },
             { name: 'Aider', score: 8, total: 13 },
             { name: 'Kilo Code', score: 7, total: 13 },
@@ -228,7 +228,7 @@ export default function CliPage() {
             <thead>
               <tr>
                 <th>Feature</th>
-                <th className={styles.highlightCol}>CheapAgents CLI</th>
+                <th className={styles.highlightCol}>CheapRouter CLI</th>
                 <th>Claude Code</th>
                 <th>OpenCode</th>
                 <th>Aider</th>

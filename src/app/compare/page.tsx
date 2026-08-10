@@ -21,10 +21,10 @@ export default function ComparePage() {
 
       <div className={styles.container}>
         <div className={styles.header}>
-          <div className={styles.badge}>CheapAgents v2.4</div>
-          <h1 className={styles.title}>CheapAgents vs the rest</h1>
+          <div className={styles.badge}>CheapRouter v2.4</div>
+          <h1 className={styles.title}>CheapRouter vs the rest</h1>
           <p className={styles.subtitle}>
-            An honest comparison. CheapAgents is the only unified API and CLI that gives you access to 100+ premium AI models with a single key, unbeatable prices, and zero lock-in.
+            An honest comparison. CheapRouter is the only unified API and CLI that gives you access to 100+ premium AI models with a single key, unbeatable prices, and zero lock-in.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export default function ComparePage() {
             <thead>
               <tr>
                 <th></th>
-                <th className={styles.highlightCol}>CheapAgents<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
+                <th className={styles.highlightCol}>CheapRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
                 <th>OpenRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PAYG</span></th>
                 <th>LiteLLM<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>OSS</span></th>
                 <th>Helicone<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
@@ -120,7 +120,7 @@ export default function ComparePage() {
             <thead>
               <tr>
                 <th>Feature</th>
-                <th className={styles.highlightCol}>CheapAgents</th>
+                <th className={styles.highlightCol}>CheapRouter</th>
                 <th>OpenRouter</th>
                 <th>LiteLLM</th>
                 <th>Helicone</th>
@@ -212,7 +212,7 @@ export default function ComparePage() {
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '5rem', maxWidth: '800px', margin: '0 auto 5rem' }}>
           {[
-            { name: 'CheapAgents', score: 11, total: 13 },
+            { name: 'CheapRouter', score: 11, total: 13 },
             { name: 'OpenRouter', score: 9, total: 13 },
             { name: 'LiteLLM', score: 8, total: 13 },
             { name: 'KPO Enhanced', score: 7, total: 13 },
@@ -237,12 +237,12 @@ export default function ComparePage() {
           <div className={styles.diffCard}>
             <div className={styles.diffIcon}><Key size={28} /></div>
             <h3 className={styles.diffTitle}>One Key to Rule Them All</h3>
-            <p className={styles.diffDesc}>Stop juggling API keys and credit card charges across 5 different providers. Get one CheapAgents key and access every major model instantly.</p>
+            <p className={styles.diffDesc}>Stop juggling API keys and credit card charges across 5 different providers. Get one CheapRouter key and access every major model instantly.</p>
           </div>
           <div className={styles.diffCard}>
             <div className={styles.diffIcon}><Terminal size={28} /></div>
             <h3 className={styles.diffTitle}>Terminal Native</h3>
-            <p className={styles.diffDesc}>Not just an API. CheapAgents comes with a blazing-fast CLI tool so you can chat, code, and route models directly from your terminal.</p>
+            <p className={styles.diffDesc}>Not just an API. CheapRouter comes with a blazing-fast CLI tool so you can chat, code, and route models directly from your terminal.</p>
           </div>
           <div className={styles.diffCard}>
             <div className={styles.diffIcon}><Zap size={28} /></div>
@@ -252,7 +252,7 @@ export default function ComparePage() {
         </div>
 
         <div className={styles.cta}>
-          <h2 className={styles.ctaTitle}>Try CheapAgents Today</h2>
+          <h2 className={styles.ctaTitle}>Try CheapRouter Today</h2>
           <p className={styles.ctaDesc}>Get your single API key and start coding with 100+ models in seconds.</p>
           <div className={styles.ctaButtons}>
             <Link href="/signup" className={styles.btnPrimary}>
