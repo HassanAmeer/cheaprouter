@@ -38,7 +38,7 @@ export default function DocsPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#09090b', color: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--color-bg-base)', color: 'var(--color-text-main)' }}>
       
       {/* Top Navigation - Default site theme */}
       <AnnouncementBar />

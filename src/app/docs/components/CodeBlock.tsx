@@ -33,9 +33,9 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
 
   return (
     <div style={{
-      backgroundColor: '#0a0a0a', // Dark neutral code block
+      backgroundColor: 'var(--color-bg-card)', // Dark neutral code block
       borderRadius: 'var(--radius-lg)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      border: '1px solid var(--color-border)',
       overflow: 'hidden',
       marginBottom: '24px',
       boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
@@ -45,8 +45,8 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'var(--color-bg-muted)',
+        borderBottom: '1px solid var(--color-border)',
         padding: '12px 16px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -58,7 +58,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
           </div>
           
           {title ? (
-            <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
           ) : (
             <div style={{ display: 'flex', gap: '12px' }}>
               {snippets.map((snippet) => {
@@ -69,7 +69,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
                     onClick={() => setActiveTab(snippet.language)}
                     style={{
                       padding: '4px 10px',
-                      backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      backgroundColor: isActive ? 'var(--color-bg-base)' : 'transparent',
                       border: 'none',
                       borderRadius: '4px',
                       color: isActive ? '#f8fafc' : '#64748b',
@@ -95,15 +95,15 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
             gap: '6px',
             padding: '4px 8px',
             backgroundColor: 'transparent',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-sm)',
-            color: '#94a3b8',
+            color: 'var(--color-text-muted)',
             cursor: 'pointer',
             fontSize: '11px',
             transition: 'all 0.2s ease',
           }}
-          onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}
+          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--color-text-main)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
         >
           {copied ? <Check size={12} color="var(--color-success)" /> : <Copy size={12} />}
           {copied ? 'Copied' : 'Copy'}
@@ -119,16 +119,16 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+            style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-main)', lineHeight: '1.6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
           >
             <code>
               {/* Basic syntax coloring for dark theme */}
               {activeSnippet.split('\n').map((line, idx) => {
                 let htmlLine = line
-                  .replace(/(".*?")/g, '<span style="color:#fca5a5">$1</span>') // strings (red tint)
-                  .replace(/(fetch|requests\.get|requests\.post|curl|-X GET|-X POST)/g, '<span style="color:#7dd3fc">$1</span>') // keywords (blue)
-                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:#bae6fd">$1</span>') // urls
-                  .replace(/(true|false|null)/g, '<span style="color:#7dd3fc">$1</span>'); // booleans
+                  .replace(/(".*?")/g, '<span style="color:var(--color-primary)">$1</span>') // strings (red tint)
+                  .replace(/(fetch|requests\.get|requests\.post|curl|-X GET|-X POST)/g, '<span style="color:var(--color-success)">$1</span>') // keywords (blue)
+                  .replace(/(https?:\/\/[^\s"']+)/g, '<span style="color:var(--color-warning)">$1</span>') // urls
+                  .replace(/(true|false|null)/g, '<span style="color:var(--color-success)">$1</span>'); // booleans
                 return (
                   <div key={idx} dangerouslySetInnerHTML={{ __html: htmlLine || ' ' }} />
                 );

@@ -21,17 +21,17 @@ export default function IntroductionView() {
       style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
     >
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '11px', fontFamily: 'monospace', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '11px', fontFamily: 'monospace', marginBottom: '24px' }}>
           <span>API</span>
           <span>&gt;</span>
-          <span style={{ color: '#94a3b8' }}>Introduction</span>
+          <span style={{ color: 'var(--color-text-muted)' }}>Introduction</span>
         </div>
 
-        <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px', letterSpacing: '-0.5px', color: '#f8fafc' }}>
+        <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px', letterSpacing: '-0.5px', color: 'var(--color-text-main)' }}>
           Welcome to CheapRouter
         </h2>
         
-        <p style={{ fontSize: '15px', color: '#94a3b8', maxWidth: '800px', lineHeight: '1.6', marginBottom: '24px' }}>
+        <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', maxWidth: '800px', lineHeight: '1.6', marginBottom: '24px' }}>
           The ultimate platform for AI-powered development. Our API is organized around REST and is 100% compatible with the OpenAI specification. Use official SDKs by simply changing the Base URL and API Key to point to our endpoints.
         </p>
       </div>
@@ -43,26 +43,26 @@ export default function IntroductionView() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <Network size={20} color="#f8fafc" />
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc' }}>API Basics</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-main)' }}>API Basics</h3>
           </div>
 
           <div style={{
-            backgroundColor: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             padding: '24px'
           }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', marginBottom: '12px' }}>Base URL & Endpoints</h3>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px', lineHeight: '1.6' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '12px' }}>Base URL & Endpoints</h3>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '16px', lineHeight: '1.6' }}>
               All API requests must be prefixed with our Base URL. Endpoints represent the specific actions you can perform, such as listing models (<code>/v1/models</code>) or generating chat completions.
             </p>
             <div style={{
-              backgroundColor: '#0a0a0a',
+              backgroundColor: 'var(--color-bg-card)',
               padding: '12px',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid var(--color-border)',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              color: '#cbd5e1',
+              color: 'var(--color-text-main)',
               fontSize: '13px',
             }}>
               https://api.cheaprouter.com/v1
@@ -70,26 +70,26 @@ export default function IntroductionView() {
           </div>
 
           <div style={{
-            backgroundColor: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             padding: '24px'
           }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', marginBottom: '12px' }}>Authentication</h3>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px', lineHeight: '1.6' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '12px' }}>Authentication</h3>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '16px', lineHeight: '1.6' }}>
               Authenticate your API requests using your CheapRouter API Key. Pass your API key in the <code>Authorization</code> HTTP header as a Bearer token. 
             </p>
             <div style={{
-              backgroundColor: '#0a0a0a',
+              backgroundColor: 'var(--color-bg-card)',
               padding: '12px',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid var(--color-border)',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              color: '#cbd5e1',
+              color: 'var(--color-text-main)',
               fontSize: '13px',
             }}>
-              <span style={{ color: '#64748b' }}>// Example HTTP Header</span><br/>
-              <span style={{ color: '#fca5a5' }}>Authorization</span>: Bearer YOUR_API_KEY
+              <span style={{ color: 'var(--color-text-muted)' }}>// Example HTTP Header</span><br/>
+              <span style={{ color: 'var(--color-primary)' }}>Authorization</span>: Bearer YOUR_API_KEY
             </div>
           </div>
         </div>
@@ -99,20 +99,20 @@ export default function IntroductionView() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <Puzzle size={20} color="#f8fafc" />
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc' }}>What We Provide</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-text-main)' }}>What We Provide</h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {features.map((feature, idx) => (
               <motion.div 
                 key={idx}
-                whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.04)' }}
+                whileHover={{ scale: 1.02, backgroundColor: 'var(--color-bg-card)' }}
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '16px',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  backgroundColor: 'var(--color-bg-card)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 'var(--radius-lg)',
                   padding: '20px',
                   cursor: 'default',
@@ -128,8 +128,8 @@ export default function IntroductionView() {
                   {feature.icon}
                 </div>
                 <div>
-                  <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>{feature.title}</h4>
-                  <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>{feature.desc}</p>
+                  <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '6px' }}>{feature.title}</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>{feature.desc}</p>
                 </div>
               </motion.div>
             ))}

@@ -160,16 +160,16 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
               style={{ overflow: 'hidden', marginTop: '20px' }}
             >
               <div style={{
-                backgroundColor: '#0f172a', // Keep response dark for readability
+                backgroundColor: 'var(--color-bg-card)', // Dynamically matches light/dark theme
                 borderRadius: 'var(--radius-md)',
-                border: `1px solid ${error ? 'var(--color-danger)' : 'rgba(255,255,255,0.1)'}`,
+                border: `1px solid ${error ? 'var(--color-danger)' : 'var(--color-border)'}`,
                 padding: '16px',
                 maxHeight: '300px',
                 overflowY: 'auto',
                 boxShadow: 'var(--shadow-md)'
               }}>
                 <div style={{ 
-                  color: error ? '#fca5a5' : '#94a3b8', 
+                  color: error ? 'var(--color-primary)' : 'var(--color-text-muted)', 
                   fontSize: '10px', 
                   fontWeight: 700, 
                   textTransform: 'uppercase', 
@@ -177,7 +177,7 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
                 }}>
                   {error ? 'Error' : 'Live Response'}
                 </div>
-                <pre style={{ margin: 0, fontSize: '13px', color: error ? '#fca5a5' : '#f8fafc', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>
+                <pre style={{ margin: 0, fontSize: '13px', color: error ? 'var(--color-primary)' : 'var(--color-text-main)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>
                   <code>{error || response}</code>
                 </pre>
               </div>

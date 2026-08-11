@@ -35,7 +35,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
       top: '40px',
       height: 'max-content',
       padding: '0 16px 24px 0',
-      borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+      borderRight: '1px solid var(--color-border)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -43,12 +43,47 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
     }}>
       
       <div>
-        <div style={{ marginBottom: '40px', paddingLeft: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ backgroundColor: 'var(--color-success)', color: '#000', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>API</span>
-            <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.5px' }}>Reference</span>
+        <div style={{ 
+          marginBottom: '40px', 
+          padding: '16px', 
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, transparent 100%)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          {/* Subtle background glow */}
+          <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '50px', height: '50px', background: 'var(--color-success)', filter: 'blur(30px)', opacity: 0.15, borderRadius: '50%' }} />
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', position: 'relative', zIndex: 1 }}>
+            <span style={{ 
+              backgroundColor: 'var(--color-success)', 
+              color: '#fff', 
+              fontSize: '11px', 
+              fontWeight: 800, 
+              padding: '4px 8px', 
+              borderRadius: '6px',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+              letterSpacing: '0.5px'
+            }}>API</span>
+            <span style={{ 
+              color: 'var(--color-text-main)', 
+              fontWeight: 800, 
+              fontSize: '18px', 
+              letterSpacing: '-0.5px'
+            }}>Reference</span>
           </div>
-          <div style={{ color: '#64748b', fontSize: '12px', marginTop: '8px' }}>CheapRouter REST endpoints</div>
+          <div style={{ 
+            color: 'var(--color-text-muted)', 
+            fontSize: '12px', 
+            lineHeight: '1.5',
+            fontWeight: 500,
+            position: 'relative', 
+            zIndex: 1 
+          }}>
+            <span style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>CheapRouter</span> REST endpoints
+          </div>
         </div>
 
         {navGroups.map((group, gIdx) => (
@@ -56,7 +91,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
             <h3 style={{
               fontSize: '11px',
               fontWeight: 700,
-              color: '#475569',
+              color: 'var(--color-text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               marginBottom: '16px',
@@ -77,9 +112,9 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                       justifyContent: 'space-between',
                       padding: '10px 12px',
                       borderRadius: 'var(--radius-md)',
-                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backgroundColor: isActive ? 'var(--color-bg-card)' : 'transparent',
                       border: '1px solid',
-                      borderColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      borderColor: isActive ? 'var(--color-border)' : 'transparent',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       textAlign: 'left',
@@ -87,7 +122,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     }}
                     onMouseOver={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.backgroundColor = 'var(--color-bg-card)';
                       }
                     }}
                     onMouseOut={(e) => {
@@ -99,9 +134,9 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {/* Badge */}
                       <span style={{
-                        backgroundColor: isActive ? item.badgeColor : 'rgba(0,0,0,0.2)',
+                        backgroundColor: isActive ? item.badgeColor : 'var(--color-bg-card)',
                         color: isActive ? '#fff' : item.badgeColor,
-                        border: `1px solid ${isActive ? 'transparent' : 'rgba(255,255,255,0.1)'}`,
+                        border: `1px solid ${isActive ? 'transparent' : 'var(--color-border)'}`,
                         fontSize: '9px',
                         fontWeight: 800,
                         padding: '2px 6px',
@@ -114,7 +149,7 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
                       </span>
                       {/* Label */}
                       <span style={{
-                        color: isActive ? '#f8fafc' : '#94a3b8',
+                        color: isActive ? 'var(--color-text-main)' : 'var(--color-text-muted)',
                         fontSize: '13px',
                         fontWeight: isActive ? 600 : 500
                       }}>
@@ -139,13 +174,13 @@ export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarPr
         alignItems: 'center', 
         gap: '8px', 
         padding: '12px 16px', 
-        backgroundColor: 'rgba(255,255,255,0.02)', 
-        border: '1px solid rgba(255,255,255,0.05)',
+        backgroundColor: 'var(--color-bg-card)', 
+        border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-lg)',
         marginTop: '24px'
       }}>
         <div style={{ width: '8px', height: '8px', backgroundColor: 'var(--color-primary)', borderRadius: '50%', boxShadow: '0 0 8px var(--color-primary)' }} />
-        <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 600 }}>API Server</span>
+        <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: 600 }}>API Server</span>
         <code style={{ color: 'var(--color-primary)', fontSize: '11px', fontWeight: 700 }}>cheapapi.com</code>
       </div>
     </aside>
