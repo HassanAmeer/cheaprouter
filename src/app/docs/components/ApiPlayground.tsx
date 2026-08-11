@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { Play, Loader2, Key, Send } from 'lucide-react';
+import { Play, Loader2, Key, Send, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ApiPlaygroundProps {
@@ -46,6 +46,15 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
     }
   };
 
+  const getUrl = () => {
+    if (requiresAuth && apiKey) {
+      const url = new URL(endpoint, window.location.origin);
+      url.searchParams.append('key', apiKey);
+      return url.toString();
+    }
+    return endpoint;
+  };
+
   return (
     <div className="glass-card" style={{
       borderRadius: 'var(--radius-lg)',
@@ -60,6 +69,19 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Play size={16} color="var(--color-primary)" />
           <span style={{ color: 'var(--color-text-main)', fontSize: '14px', fontWeight: 700 }}>Live Tester</span>
+          {method === 'GET' && (
+            <a 
+              href={getUrl()} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              title="Open in new tab"
+              style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', marginLeft: '8px', padding: '4px', borderRadius: '4px', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+            >
+              <ExternalLink size={14} />
+            </a>
+          )}
         </div>
       </div>
 

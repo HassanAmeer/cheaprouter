@@ -27,6 +27,7 @@ const RoutewaySetup = forwardRef<RoutewaySetupRef, { onModelsUpdated?: () => voi
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Drawer state
@@ -172,6 +173,8 @@ const RoutewaySetup = forwardRef<RoutewaySetupRef, { onModelsUpdated?: () => voi
         body: JSON.stringify({ key: keyString, status: overrideStatus !== null ? overrideStatus : status, models: modelsToSave })
       });
       if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
         if (shouldNotify && onModelsUpdated) onModelsUpdated();
       }
     } catch (e) {
@@ -349,8 +352,8 @@ const RoutewaySetup = forwardRef<RoutewaySetupRef, { onModelsUpdated?: () => voi
             <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ flex: 1, justifyContent: 'center', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }}>
               <Plus size={12} /> Add Another API Key
             </button>
-            <button className="btn-secondary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }} title="Save All Keys">
-              {saving ? <RefreshCcw size={12} className={styles.spin} /> : <Save size={12} />} Save Keys
+            <button className="btn-secondary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px', color: saved ? '#10b981' : undefined, borderColor: saved ? '#10b981' : undefined }} title="Save All Keys">
+              {saving ? <RefreshCcw size={12} className={styles.spin} /> : (saved ? <Check size={12} /> : <Save size={12} />)} {saved ? 'Saved!' : 'Save Keys'}
             </button>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, Terminal, MessageSquare, Bot, Globe } from 'lucide-react';
+import { Zap, Terminal, MessageSquare, Bot, Globe, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button, Input } from '@/components/ui/primitives';
@@ -20,6 +20,8 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +90,23 @@ export default function Signup() {
           <form onSubmit={submit} autoComplete="off">
             <Input id="signupName" name="signupName" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
             <Input id="signupEmail" name="signupEmail" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
-            <Input id="signupPassword" name="signupPassword" label="Password" type="password" placeholder="••••••••" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+            <Input 
+              id="signupPassword" 
+              name="signupPassword" 
+              label="Password" 
+              type={showPassword ? "text" : "password"} 
+              placeholder="••••••••" 
+              required 
+              minLength={6} 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              autoComplete="new-password"
+              rightElement={
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              }
+            />
             <Button type="submit" fullWidth disabled={loading}>{loading ? 'Creating…' : 'Create Account'}</Button>
           </form>
 

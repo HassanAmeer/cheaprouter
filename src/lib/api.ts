@@ -24,7 +24,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(body.error ?? `Request failed (${res.status})`);
+    let errMsg = `Request failed (${res.status})`;
+    if (body.error) {
+      if (typeof body.error === 'string') {
+        errMsg = body.error;
+      } else if (body.error.issues && Array.isArray(body.error.issues)) {
+        errMsg = body.error.issues.map((i: any) => `${i.path.join('.')}: ${i.message}`).join(', ');
+      } else {
+        errMsg = body.message || JSON.stringify(body.error);
+      }
+    } else if (body.message) {
+      errMsg = body.message;
+    }
+    throw new Error(errMsg);
   }
   return body as T;
 }

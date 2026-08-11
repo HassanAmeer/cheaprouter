@@ -98,7 +98,7 @@ a {
   text-decoration: none;
 }
 
-button:not(.monaco-editor button) {
+button {
   cursor: pointer;
   border: none;
   background: none;
@@ -457,8 +457,12 @@ button:not(.monaco-editor button) {
 }
 
 /* Smooth transitions for all interactive elements */
-a, button:not(.monaco-editor button) {
+a, button {
   transition: all var(--transition-fast);
+}
+
+.monaco-editor button {
+  transition: none !important;
 }
 
 /* Scrollbar styling */

@@ -40,10 +40,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  rightElement?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, className, id, ...props },
+  { label, error, className, id, rightElement, ...props },
   ref
 ) {
   return (
@@ -53,12 +54,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </label>
       )}
-      <input
-        id={id}
-        ref={ref}
-        className={cn(styles.input, error && styles.input_error, className)}
-        {...props}
-      />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input
+          id={id}
+          ref={ref}
+          className={cn(styles.input, error && styles.input_error, className)}
+          style={{ width: '100%', paddingRight: rightElement ? '40px' : undefined }}
+          {...props}
+        />
+        {rightElement && (
+          <div style={{ position: 'absolute', right: '12px', display: 'flex', alignItems: 'center' }}>
+            {rightElement}
+          </div>
+        )}
+      </div>
       {error && <span className={styles.errorText}>{error}</span>}
     </div>
   );

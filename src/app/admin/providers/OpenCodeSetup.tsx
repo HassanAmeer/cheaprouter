@@ -27,6 +27,7 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [availableModels, setAvailableModels] = useState<any[]>([]);
@@ -65,8 +66,8 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
     setTesting(prev => { const n = [...prev]; n[index] = true; return n; });
     setTestSuccesses(prev => { const n = [...prev]; n[index] = null; return n; });
     try {
-      const res = await fetch('https://opencode.ai/api/v1/models?output_modalities=text,image', {
-        headers: { 'Authorization': `Bearer ${keyObj.key}` }
+      const res = await fetch(`/api/admin/opencode/models?key=${encodeURIComponent(keyObj.key)}`, {
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (res.ok && data && data.data) {
@@ -135,8 +136,8 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
     setFetchingModels(true);
     try {
       const validKey = apiKeys.find(k => k.active && k.key.trim() !== '')?.key || '';
-      const res = await fetch(`https://opencode.ai/api/v1/models`, {
-        headers: { 'Authorization': `Bearer ${validKey}` }
+      const res = await fetch(`/api/admin/opencode/models?key=${encodeURIComponent(validKey)}`, {
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data && Array.isArray(data.data)) {
@@ -163,6 +164,8 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
         body: JSON.stringify({ key: keyString, status: overrideStatus !== null ? overrideStatus : status, models: modelsToSave })
       });
       if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
         if (shouldNotify && onModelsUpdated) onModelsUpdated();
       }
     } catch (e) {
@@ -340,8 +343,8 @@ const OpenCodeSetup = forwardRef<OpenCodeSetupRef, { onModelsUpdated?: () => voi
             <button className="btn-secondary" onClick={() => setApiKeys([...apiKeys, {key: '', active: true}])} style={{ flex: 1, justifyContent: 'center', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }}>
               <Plus size={12} /> Add Another API Key
             </button>
-            <button className="btn-secondary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }} title="Save All Keys">
-              {saving ? <RefreshCcw size={12} className={styles.spin} /> : <Save size={12} />} Save Keys
+            <button className="btn-secondary" onClick={() => handleSave(selectedModels, apiKeys, true)} disabled={saving} style={{ flex: 1, justifyContent: 'center', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px', color: saved ? '#10b981' : undefined, borderColor: saved ? '#10b981' : undefined }} title="Save All Keys">
+              {saving ? <RefreshCcw size={12} className={styles.spin} /> : (saved ? <Check size={12} /> : <Save size={12} />)} {saved ? 'Saved!' : 'Save Keys'}
             </button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, ExternalLink, Copy, Upload, History, Check, Download, Edit, Search } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, ExternalLink, Copy, Upload, History, Check, Download, Edit, Search, Trash2 } from 'lucide-react';
 import { ALL_PROVIDERS_INFO } from './providersInfo';
 import Editor from '@monaco-editor/react';
 import Link from 'next/link';
@@ -379,6 +379,15 @@ export default function ManageProvidersPage() {
             <input type="checkbox" checked={provider.status} onChange={() => toggleProvider(provider.id)} />
             <span className={styles.toggleSlider}></span>
           </label>
+          {isCustomGroup && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to delete this custom provider?')) { setProviders(providers.filter(p => p.id !== provider.id)); setSaved(false); } }}
+              style={{ background: 'var(--color-primary-soft)', color: 'var(--color-danger)', border: 'none', padding: '6px', borderRadius: '6px', display: 'flex', cursor: 'pointer', transition: 'all 0.2s' }}
+              title="Delete Custom Provider"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -817,7 +826,7 @@ export default function ManageProvidersPage() {
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {providers.filter(p => !p.isCustom).map(provider => renderProviderTile(provider, false))}
+              {providers.filter(p => p.isCustom && !p.id.startsWith('ap_') && p.id !== 'openrouter' && p.id !== 'opencode').map(provider => renderProviderTile(provider, true))}
             </div>
           </div>
 
