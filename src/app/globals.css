@@ -545,6 +545,17 @@ a, button {
   }
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lucide-spin,
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 /* Fix Monaco Editor tooltips blocking clicks and causing hover flicker */
 .monaco-editor .monaco-hover,
 .monaco-editor .monaco-tooltip,

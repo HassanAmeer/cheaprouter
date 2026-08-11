@@ -73,7 +73,7 @@ export default function ManageProvidersPage() {
   const [importError, setImportError] = useState('');
   const [isSavingImport, setIsSavingImport] = useState(false);
   const [isLoadingBackup, setIsLoadingBackup] = useState(false);
-  
+
   const [displayVersion, setDisplayVersion] = useState<1 | 2>(1);
   const [backupData, setBackupData] = useState<any[] | null>(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -81,7 +81,7 @@ export default function ManageProvidersPage() {
   const [providersData, setProvidersData] = useState(ALL_PROVIDERS_INFO);
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const monacoEditorRef = useRef<any>(null);
 
   const showToast = (msg: string) => {
@@ -193,8 +193,8 @@ export default function ManageProvidersPage() {
           headers: p.headers || [],
           models: Array.isArray(p.models)
             ? p.models.map((m: any) => typeof m === 'string'
-                ? { id: m, name: m, originalId: m, reasoning: false, image: false, tokenLimit: 'Unlimited', access: 'Free' }
-                : { id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.reasoning ?? m.text ?? false, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' })
+              ? { id: m, name: m, originalId: m, reasoning: false, image: false, tokenLimit: 'Unlimited', access: 'Free' }
+              : { id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.reasoning ?? m.text ?? false, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' })
             : []
         }));
       }
@@ -246,13 +246,13 @@ export default function ManageProvidersPage() {
     const allPassed = openRouterPassed && openCodePassed && openaiPassed && anthropicPassed && coherePassed &&
       groqPassed && googlePassed && cerebrasPassed && sambanovaPassed && xaiPassed && novitaPassed && bytezPassed && aimlapiPassed &&
       mistralPassed && togetherPassed && aiandPassed && deepseekPassed && fireworksPassed && perplexityPassed;
-    
+
     setTestingAll(false);
   };
 
   const toggleProvider = (id: string) => { setProviders(providers.map(p => p.id === id ? { ...p, status: !p.status } : p)); setSaved(false); };
   const toggleExpanded = (id: string) => { const next = new Set(expandedProviders); if (next.has(id)) next.delete(id); else next.add(id); setExpandedProviders(next); };
-  
+
   const parseKeys = (keyStr: string): { key: string, active: boolean }[] => {
     try {
       const parsed = JSON.parse(keyStr || '[""]');
@@ -380,7 +380,7 @@ export default function ManageProvidersPage() {
             <span className={styles.toggleSlider}></span>
           </label>
           {isCustomGroup && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to delete this custom provider?')) { setProviders(providers.filter(p => p.id !== provider.id)); setSaved(false); } }}
               style={{ background: 'var(--color-primary-soft)', color: 'var(--color-danger)', border: 'none', padding: '6px', borderRadius: '6px', display: 'flex', cursor: 'pointer', transition: 'all 0.2s' }}
               title="Delete Custom Provider"
@@ -583,9 +583,9 @@ export default function ManageProvidersPage() {
     promptText += "10. If a provider genuinely has no free tier at all, ONLY THEN set \\\"hasFree\\\": false and leave \\\"models\\\": [].\\n";
     promptText += "11. Use the 'status' field for EVERY provider to provide a VERY SHORT but COMPREHENSIVE summary. You MUST include: whether it has a free tier, requests per minute (RPM), requests per day (RPD), context window size, tokens per minute/day, and whether the limits are daily or per minute. Give full details but keep it extremely concise and to the point (e.g., 'Free tier: 15 RPM, 200 RPD, 128k Ctx, 1M TPM' or 'Paid only, no free tier'). DO NOT write long paragraphs, use slashes/commas.\\n\\n";
     promptText += "Here is the current data to review and fix:\\n\\n";
-    
+
     promptText += JSON.stringify(providersData, null, 2);
-    
+
     // Convert literal \n strings to actual newlines for the clipboard
     const finalPrompt = promptText.replace(/\\n/g, '\n');
     navigator.clipboard.writeText(finalPrompt);
@@ -613,7 +613,7 @@ export default function ManageProvidersPage() {
       const res = await fetch('/api/admin/providers/get-backup');
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to load backup');
-      
+
       setImportJson(JSON.stringify(result.data, null, 2));
     } catch (e: any) {
       setImportError(e.message || 'Error loading backup');
@@ -635,18 +635,18 @@ export default function ManageProvidersPage() {
         cleanJson = cleanJson.substring(3);
         if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3);
       }
-      
+
       const parsedData = JSON.parse(cleanJson);
-      
+
       const res = await fetch('/api/admin/providers/update-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(parsedData)
       });
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save');
-      
+
       setProvidersData(parsedData);
       setShowImportModal(false);
       showToast('Providers updated successfully!');
@@ -804,7 +804,9 @@ export default function ManageProvidersPage() {
                     </div>
                   </div>
                 ))}
-                {newProvModels.length === 0 && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No initial models added.</span>}
+                {newProvModels.length === 0 && <span style={{
+                  fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic'
+                }}>No initial models added.</span>}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -839,16 +841,16 @@ export default function ManageProvidersPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)', margin: 0 }}>Prefix Providers</h3>
-                <button 
+                <button
                   onClick={() => setShowInfoSheet(true)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                 >
                   <Info size={14} /> Free Providers
                 </button>
               </div>
-              <button 
-                className="btn-secondary" 
-                onClick={handleTestAllPrefixProviders} 
+              <button
+                className="btn-secondary"
+                onClick={handleTestAllPrefixProviders}
                 disabled={testingAll}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '12px' }}
               >
@@ -905,7 +907,7 @@ export default function ManageProvidersPage() {
       )}
 
       {/* ===== INFO & LIMITS SIDE SHEET ===== */}
-      <div 
+      <div
         style={{
           position: 'fixed',
           top: 0,
@@ -926,7 +928,7 @@ export default function ManageProvidersPage() {
           <button onClick={() => setShowInfoSheet(false)} style={{ position: 'absolute', top: '50%', right: '16px', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}>
             <X size={20} />
           </button>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingRight: '28px' }}>
             <h2 style={{ fontSize: '12px', fontWeight: 600, margin: 0, color: 'var(--color-text-muted)' }}>
               Total: {displayVersion === 1 ? providersData.length : (backupData?.length || 0)}
@@ -934,39 +936,39 @@ export default function ManageProvidersPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Search size={14} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search providers..." 
+                <input
+                  type="text"
+                  placeholder="Search providers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{ background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '4px 10px 4px 28px', fontSize: '12px', color: 'var(--color-text)', width: '160px', outline: 'none' }}
                 />
               </div>
-            <button 
-              onClick={handleCopyPrompt} 
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isCopied ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-primary)', color: isCopied ? '#10b981' : 'white', border: isCopied ? '1px solid #10b981' : '1px solid transparent', cursor: 'pointer', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s' }}
-              title="Copy details as a prompt to verify with another AI"
-            >
-              {isCopied ? <Check size={14} /> : <Copy size={14} />} {isCopied ? 'Copied!' : 'Prompt'}
-            </button>
+              <button
+                onClick={handleCopyPrompt}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isCopied ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-primary)', color: isCopied ? '#10b981' : 'white', border: isCopied ? '1px solid #10b981' : '1px solid transparent', cursor: 'pointer', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s' }}
+                title="Copy details as a prompt to verify with another AI"
+              >
+                {isCopied ? <Check size={14} /> : <Copy size={14} />} {isCopied ? 'Copied!' : 'Prompt'}
+              </button>
+            </div>
           </div>
-        </div>
-          
+
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button 
+            <button
               onClick={() => handleToggleVersion(1)}
               style={{ background: displayVersion === 1 ? 'var(--color-primary)' : 'var(--color-bg-subtle)', color: displayVersion === 1 ? 'white' : 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
             >
               1 (New)
             </button>
-            <button 
+            <button
               onClick={() => handleToggleVersion(2)}
               style={{ background: displayVersion === 2 ? 'var(--color-primary)' : 'var(--color-bg-subtle)', color: displayVersion === 2 ? 'white' : 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
             >
               2 (Old)
             </button>
             <div style={{ width: '1px', height: '14px', background: 'var(--color-border)', margin: '0 4px' }}></div>
-            <button 
+            <button
               onClick={() => {
                 setImportJson(JSON.stringify(displayVersion === 1 ? providersData : (backupData || []), null, 2));
                 setShowImportModal(true);
@@ -976,18 +978,18 @@ export default function ManageProvidersPage() {
             >
               <Edit size={12} /> Edit
             </button>
-            <button 
+            <button
               onClick={() => {
                 setImportJson('');
                 setShowImportModal(true);
-              }} 
+              }}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
               title="Import verified data"
             >
               <Upload size={12} /> Import
             </button>
-            <button 
-              onClick={handleExportData} 
+            <button
+              onClick={handleExportData}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
               title="Export displayed data as JSON"
             >
@@ -995,7 +997,7 @@ export default function ManageProvidersPage() {
             </button>
           </div>
         </div>
-        
+
         <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {(() => {
             const currentList = displayVersion === 1 ? providersData : (backupData || []);
@@ -1005,11 +1007,11 @@ export default function ManageProvidersPage() {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '16px', color: 'var(--color-text-muted)', minHeight: '200px' }}>
                   <p style={{ margin: 0, fontSize: '13px' }}>No data available in this version.</p>
-                  <button 
+                  <button
                     onClick={() => {
                       setImportJson('');
                       setShowImportModal(true);
-                    }} 
+                    }}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s' }}
                   >
                     <Upload size={16} /> Import Data
@@ -1036,15 +1038,15 @@ export default function ManageProvidersPage() {
                     {provider.tag}
                   </span>
                   {(provider as any).website && (
-                    <a 
-                      href={(provider as any).website} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        color: 'var(--color-text-muted)', 
-                        textDecoration: 'none', 
+                    <a
+                      href={(provider as any).website}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: 'var(--color-text-muted)',
+                        textDecoration: 'none',
                         marginLeft: 'auto',
                         padding: '2px',
                         borderRadius: '4px'
@@ -1057,7 +1059,7 @@ export default function ManageProvidersPage() {
                     </a>
                   )}
                 </div>
-                
+
                 {provider.hasFree && provider.models.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px', paddingLeft: '8px' }}>
                     {provider.models.map((model: any, mIdx: number) => (
@@ -1078,13 +1080,13 @@ export default function ManageProvidersPage() {
                     ))}
                   </div>
                 )}
-                
+
                 {provider.status && (
                   <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', marginBottom: '8px' }}>
                     <span style={{ fontWeight: 600 }}>Status:</span> <span style={{ whiteSpace: 'pre-line' }}>{provider.status}</span>
                   </div>
                 )}
-                
+
                 {!provider.hasFree && !provider.status && (
                   <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', fontWeight: 600 }}>
                     No free models available
@@ -1103,8 +1105,8 @@ export default function ManageProvidersPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
               <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>Data Editor</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
-                  onClick={() => monacoEditorRef.current?.getAction('actions.find')?.run()} 
+                <button
+                  onClick={() => monacoEditorRef.current?.getAction('actions.find')?.run()}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600 }}
                   title="Search in editor (Ctrl+F)"
                 >
@@ -1116,7 +1118,7 @@ export default function ManageProvidersPage() {
                 </button>
               </div>
             </div>
-            
+
             <div style={{ flex: 1, width: '100%', position: 'relative' }}>
               <Editor
                 height="100%"
@@ -1130,15 +1132,15 @@ export default function ManageProvidersPage() {
                 options={editorOptions}
               />
             </div>
-            
+
             {importError && (
               <div style={{ padding: '6px 12px', background: '#3f1616', borderTop: '1px solid #ff6b6b', color: '#ff6b6b', fontSize: '11px' }}>
                 {importError}
               </div>
             )}
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
-              <button 
+              <button
                 onClick={handleLoadBackup}
                 disabled={isLoadingBackup}
                 style={{ background: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', cursor: isLoadingBackup ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -1147,16 +1149,16 @@ export default function ManageProvidersPage() {
                 {isLoadingBackup ? <RefreshCw size={12} className={styles.spin} /> : <History size={12} />}
                 Load Backup
               </button>
-              
+
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={() => setShowImportModal(false)} 
+                <button
+                  onClick={() => setShowImportModal(false)}
                   style={{ background: 'none', color: 'var(--color-text)', border: 'none', padding: '4px 8px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleImportSubmit} 
+                <button
+                  onClick={handleImportSubmit}
                   disabled={isSavingImport || !importJson.trim()}
                   style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: (isSavingImport || !importJson.trim()) ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 600, opacity: (isSavingImport || !importJson.trim()) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
@@ -1168,12 +1170,12 @@ export default function ManageProvidersPage() {
           </div>
         </div>
       )}
-      
+
       {/* Overlay for sheet */}
       {showInfoSheet && (
-        <div 
+        <div
           onClick={() => setShowInfoSheet(false)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9998, backdropFilter: 'blur(2px)' }} 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9998, backdropFilter: 'blur(2px)' }}
         />
       )}
 

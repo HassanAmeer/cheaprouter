@@ -36,13 +36,48 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
         headers,
         body: method === 'POST' ? payload : undefined,
       });
+      const contentType = res.headers.get('content-type') || '';
+      const isStream = payload.includes('"stream":true') || payload.includes('"stream": true') || contentType.includes('text/event-stream') || contentType.includes('text/plain');
+
+      if (!res.ok) {
+        const rawText = await res.text();
+        let errData: any;
+        try { errData = JSON.parse(rawText); } catch {}
+        throw new Error(errData?.error || `HTTP ${res.status}: ${rawText}`);
+      }
+
+      if (isStream && res.body) {
+        setLoading(false); // Stop loader immediately
+        let fullText = '';
+        setResponse('AI response streaming started...\n\n');
+        
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          setResponse('AI response streamed:\n\n' + fullText);
+        }
+        return;
+      }
       
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(rawText); // Server returned non-JSON 200 OK
+      }
+
       setResponse(JSON.stringify(data, null, 2));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch');
     } finally {
-      setLoading(false);
+      if (loading) setLoading(false);
     }
   };
 

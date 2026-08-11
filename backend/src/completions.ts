@@ -66,25 +66,7 @@ export async function getModelInstance(userId: string, model: string) {
     }
   }
 
-
-  let provider = 'OpenAI';
-  if (model.includes('claude')) provider = 'Anthropic';
-  if (model.includes('gemini')) provider = 'Google';
-
-  const userProviders = await db`SELECT masked_key FROM providers WHERE user_id = ${userId} AND provider = ${provider} AND status = 'active'`;
-  let apiKey = userProviders.length > 0 ? userProviders[0].masked_key : null;
-  
-  if (!apiKey) {
-    if (provider === 'OpenAI') apiKey = process.env.OPENAI_API_KEY;
-    if (provider === 'Anthropic') apiKey = process.env.ANTHROPIC_API_KEY;
-    if (provider === 'Google') apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  }
-  
-  if (!apiKey) throw new Error(`No API key found for provider ${provider}`);
-
-  if (provider === 'OpenAI') return createOpenAI({ apiKey })(model);
-  if (provider === 'Anthropic') return createAnthropic({ apiKey })(model);
-  return createGoogleGenerativeAI({ apiKey })(model);
+  throw new Error(`Model '${model}' not found or no active provider configured for it.`);
 }
 
 export async function handleCompletions(c: any) {
@@ -99,7 +81,7 @@ export async function handleCompletions(c: any) {
     // For now we accept it to find the user. 
     // We assume the user has a valid API key, or we just look up the user by key.
     const hashedKey = hashPassword(reqKey);
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 10)}`;
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
     
     // If no user found from API key, but we have a user logged in (frontend chat), we could use c.get('userId')
@@ -174,6 +156,19 @@ export async function handleCompletions(c: any) {
     }
   } catch (error: any) {
     console.error('Chat completions error:', error);
-    return c.json({ error: error.message || 'Error processing request' }, 500);
+    // AI SDK throws APICallError with a responseBody string — parse it for the real error
+    let msg = 'Error processing request';
+    try {
+      if (error?.responseBody) {
+        const parsed = JSON.parse(error.responseBody);
+        msg = parsed?.error?.message || parsed?.error || parsed?.message || error.responseBody;
+      } else {
+        msg = error?.message || error?.cause?.message || (typeof error === 'string' ? error : msg);
+      }
+    } catch {
+      msg = error?.message || 'Error processing request';
+    }
+    const status = msg.includes('not found') ? 400 : 500;
+    return c.json({ error: msg }, status);
   }
 }

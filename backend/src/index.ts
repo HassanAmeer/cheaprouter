@@ -49,6 +49,12 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+// ---- GLOBAL ERROR HANDLER — always return JSON ----
+app.onError((err, c) => {
+  console.error('Unhandled error:', err);
+  return c.json({ error: err.message || 'Internal server error' }, 500);
+});
+
 // Protect all /api routes except auth, models catalog
 app.use('/api/*', async (c, next) => {
   const p = c.req.path;
