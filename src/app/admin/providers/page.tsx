@@ -810,7 +810,7 @@ export default function ProvidersPage() {
           <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'visible', marginBottom: '32px' }}>
               <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', borderTopLeftRadius: '11px', borderTopRightRadius: '11px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600, flex: 1 }}>
-                  <Layers size={18} /> Cheap: All Selected Models <span style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '13px' }}>({allModelsList.length})</span>
+                  <Layers size={18} /> All Selected Models <span style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '13px' }}>({allModelsList.length})</span>
                 </div>
                 
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center', position: 'relative' }}>

@@ -98,7 +98,7 @@ a {
   text-decoration: none;
 }
 
-button {
+button:not(.monaco-editor button) {
   cursor: pointer;
   border: none;
   background: none;
@@ -457,7 +457,7 @@ button {
 }
 
 /* Smooth transitions for all interactive elements */
-a, button {
+a, button:not(.monaco-editor button) {
   transition: all var(--transition-fast);
 }
 
@@ -539,4 +539,12 @@ a, button {
   to {
     transform: translateX(0);
   }
+}
+
+/* Fix Monaco Editor tooltips blocking clicks and causing hover flicker */
+.monaco-editor .monaco-hover,
+.monaco-editor .monaco-tooltip,
+.monaco-editor .hover-widget,
+.monaco-editor-hover {
+  pointer-events: none !important;
 }

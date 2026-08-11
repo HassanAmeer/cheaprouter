@@ -43,6 +43,7 @@
     "@iconify-json/svg-spinners": "^1.2.1",
     "@libsql/client": "^0.17.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@monaco-editor/react": "^4.7.0",
     "@nanostores/react": "^0.7.3",
     "@octokit/rest": "^21.0.2",
     "@openrouter/ai-sdk-provider": "^0.0.5",

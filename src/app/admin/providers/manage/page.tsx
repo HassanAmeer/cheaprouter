@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, ExternalLink, Copy, Upload, History, Check, Download, Edit, Search } from 'lucide-react';
+import { ALL_PROVIDERS_INFO } from './providersInfo';
+import Editor from '@monaco-editor/react';
 import Link from 'next/link';
 import OpenRouterSetup, { OpenRouterSetupRef } from '../OpenRouterSetup';
 import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
@@ -51,12 +53,55 @@ type Model = { id: string; name: string; originalId?: string; text?: boolean; re
 type Header = { id: string; key: string; value: string };
 type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string };
 
+const editorOptions: any = {
+  minimap: { enabled: false },
+  fontSize: 12,
+  wordWrap: 'on',
+  formatOnPaste: true,
+  padding: { top: 12, bottom: 12 }
+};
+
 export default function ManageProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJson, setImportJson] = useState('');
+  const [importError, setImportError] = useState('');
+  const [isSavingImport, setIsSavingImport] = useState(false);
+  const [isLoadingBackup, setIsLoadingBackup] = useState(false);
+  
+  const [displayVersion, setDisplayVersion] = useState<1 | 2>(1);
+  const [backupData, setBackupData] = useState<any[] | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const [providersData, setProvidersData] = useState(ALL_PROVIDERS_INFO);
+  const [toastMessage, setToastMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const monacoEditorRef = useRef<any>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleToggleVersion = async (v: 1 | 2) => {
+    setDisplayVersion(v);
+    if (v === 2 && !backupData) {
+      try {
+        const res = await fetch('/api/admin/providers/get-backup');
+        const result = await res.json();
+        if (res.ok) setBackupData(result.data);
+        else setBackupData([]);
+      } catch {
+        setBackupData([]);
+      }
+    }
+  };
 
   const openRouterRef = useRef<OpenRouterSetupRef>(null);
   const openCodeRef = useRef<OpenCodeSetupRef>(null);
@@ -504,8 +549,105 @@ export default function ManageProvidersPage() {
           </div>
         </div>
       )}
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#10B981', color: 'white', padding: '10px 20px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100000, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px', animation: 'fadeInUp 0.3s ease' }}>
+          <Check size={16} />
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
+  const handleCopyPrompt = () => {
+    let promptText = "Please perform a deep, up-to-date research on the following AI providers to verify their FREE models, rate limits, and context windows.\\n\\n";
+    promptText += "CRITICAL INSTRUCTIONS FOR YOU:\\n";
+    promptText += "1. Make sure EVERY model has its exact technical 'id' (e.g. 'gemini-2.0-flash-exp'). Do not leave IDs blank or missing.\\n";
+    promptText += "2. Keep the 'limit' text extremely short and concise using slashes or dashes (e.g., '15 RPM / 200 RPD'). Do NOT write long paragraphs or sentences.\\n";
+    promptText += "3. Avoid vague terms like 'various free'. Specify the exact free models if they exist.\\n";
+    promptText += "4. Some providers still have free models that are missing from this list. Please do deep research to find and add any missing currently free models for these providers.\\n";
+    promptText += "5. You MUST actively read the official documentation and 'models' pages for each provider to verify this. Even if you have to process them in small batches, you must thoroughly complete the research.\\n";
+    promptText += "6. You MUST return your final response as a single, valid JSON array of objects. Do not use Markdown formatting for the JSON, or if you do, ensure it is a single ```json block.\\n";
+    promptText += "7. The JSON schema must exactly match: [{ \\\"name\\\": \\\"ProviderName\\\", \\\"tag\\\": \\\"TAG\\\", \\\"tagColor\\\": \\\"#HEX\\\", \\\"hasFree\\\": true/false, \\\"website\\\": \\\"url\\\", \\\"status\\\": \\\"string\\\", \\\"models\\\": [{ \\\"name\\\": \\\"Model Name\\\", \\\"id\\\": \\\"model-id\\\", \\\"badges\\\": [\\\"Text\\\"], \\\"limit\\\": \\\"limits text\\\" }] }]. Preserve all existing tagColors and tags.\\n";
+    promptText += "8. DO NOT SKIP ANY PROVIDERS. You must output the complete list of all providers provided to you, maintaining the exact same order.\\n";
+    promptText += "9. IF a provider is a free proxy or has a free tier (hasFree: true), you MUST list its actual free models. DO NOT leave the 'models' array empty for free providers. Dig deep and find them.\\n";
+    promptText += "10. If a provider genuinely has no free tier at all, ONLY THEN set \\\"hasFree\\\": false and leave \\\"models\\\": [].\\n";
+    promptText += "11. Use the 'status' field for EVERY provider to provide a VERY SHORT but COMPREHENSIVE summary. You MUST include: whether it has a free tier, requests per minute (RPM), requests per day (RPD), context window size, tokens per minute/day, and whether the limits are daily or per minute. Give full details but keep it extremely concise and to the point (e.g., 'Free tier: 15 RPM, 200 RPD, 128k Ctx, 1M TPM' or 'Paid only, no free tier'). DO NOT write long paragraphs, use slashes/commas.\\n\\n";
+    promptText += "Here is the current data to review and fix:\\n\\n";
+    
+    promptText += JSON.stringify(providersData, null, 2);
+    
+    // Convert literal \n strings to actual newlines for the clipboard
+    const finalPrompt = promptText.replace(/\\n/g, '\n');
+    navigator.clipboard.writeText(finalPrompt);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleExportData = () => {
+    const dataToExport = displayVersion === 1 ? providersData : (backupData || []);
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `providersInfo_v${displayVersion}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoadBackup = async () => {
+    setImportError('');
+    setIsLoadingBackup(true);
+    try {
+      const res = await fetch('/api/admin/providers/get-backup');
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to load backup');
+      
+      setImportJson(JSON.stringify(result.data, null, 2));
+    } catch (e: any) {
+      setImportError(e.message || 'Error loading backup');
+    } finally {
+      setIsLoadingBackup(false);
+    }
+  };
+
+  const handleImportSubmit = async () => {
+    setImportError('');
+    setIsSavingImport(true);
+    try {
+      // Try to parse the JSON first
+      let cleanJson = importJson.trim();
+      if (cleanJson.startsWith('```json')) {
+        cleanJson = cleanJson.substring(7);
+        if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3);
+      } else if (cleanJson.startsWith('```')) {
+        cleanJson = cleanJson.substring(3);
+        if (cleanJson.endsWith('```')) cleanJson = cleanJson.slice(0, -3);
+      }
+      
+      const parsedData = JSON.parse(cleanJson);
+      
+      const res = await fetch('/api/admin/providers/update-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsedData)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      
+      setProvidersData(parsedData);
+      setShowImportModal(false);
+      showToast('Providers updated successfully!');
+    } catch (e: any) {
+      setImportError(e.message || 'Invalid JSON format');
+    } finally {
+      setIsSavingImport(false);
+    }
+  };
+
 
   return (
     <div>
@@ -686,7 +828,15 @@ export default function ManageProvidersPage() {
           {/* ===== PREFIX PROVIDERS ===== */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>Prefix Providers</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)', margin: 0 }}>Prefix Providers</h3>
+                <button 
+                  onClick={() => setShowInfoSheet(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  <Info size={14} /> Info & Limits
+                </button>
+              </div>
               <button 
                 className="btn-secondary" 
                 onClick={handleTestAllPrefixProviders} 
@@ -744,6 +894,254 @@ export default function ManageProvidersPage() {
           </div>
         </>
       )}
+
+      {/* ===== INFO & LIMITS SIDE SHEET ===== */}
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: showInfoSheet ? 0 : '-420px',
+          width: '400px',
+          height: '100vh',
+          background: 'var(--color-card-bg)',
+          borderLeft: '1px solid var(--color-border)',
+          boxShadow: showInfoSheet ? '-5px 0 25px rgba(0,0,0,0.1)' : 'none',
+          transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)', position: 'relative' }}>
+          <button onClick={() => setShowInfoSheet(false)} style={{ position: 'absolute', top: '50%', right: '16px', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}>
+            <X size={20} />
+          </button>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingRight: '28px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Info size={18} color="var(--color-primary)" /> {displayVersion === 1 ? 'New' : 'Old'} ({displayVersion === 1 ? providersData.length : (backupData?.length || 0)})
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search providers..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '4px 10px 4px 28px', fontSize: '12px', color: 'var(--color-text)', width: '160px', outline: 'none' }}
+                />
+              </div>
+            <button 
+              onClick={handleCopyPrompt} 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isCopied ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-primary)', color: isCopied ? '#10b981' : 'white', border: isCopied ? '1px solid #10b981' : '1px solid transparent', cursor: 'pointer', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s' }}
+              title="Copy details as a prompt to verify with another AI"
+            >
+              {isCopied ? <Check size={14} /> : <Copy size={14} />} {isCopied ? 'Copied!' : 'Prompt'}
+            </button>
+          </div>
+        </div>
+          
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => handleToggleVersion(1)}
+              style={{ background: displayVersion === 1 ? 'var(--color-primary)' : 'var(--color-bg-subtle)', color: displayVersion === 1 ? 'white' : 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
+            >
+              1 (New)
+            </button>
+            <button 
+              onClick={() => handleToggleVersion(2)}
+              style={{ background: displayVersion === 2 ? 'var(--color-primary)' : 'var(--color-bg-subtle)', color: displayVersion === 2 ? 'white' : 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
+            >
+              2 (Old)
+            </button>
+            <div style={{ width: '1px', height: '14px', background: 'var(--color-border)', margin: '0 4px' }}></div>
+            <button 
+              onClick={() => {
+                setImportJson(JSON.stringify(displayVersion === 1 ? providersData : (backupData || []), null, 2));
+                setShowImportModal(true);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
+              title="Edit displayed data manually"
+            >
+              <Edit size={12} /> Edit
+            </button>
+            <button 
+              onClick={() => {
+                setImportJson('');
+                setShowImportModal(true);
+              }} 
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
+              title="Import verified data"
+            >
+              <Upload size={12} /> Import
+            </button>
+            <button 
+              onClick={handleExportData} 
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-subtle)', color: 'var(--color-text)', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}
+              title="Export displayed data as JSON"
+            >
+              <Download size={12} /> Export
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          
+          {(displayVersion === 1 ? providersData : (backupData || []))
+            .filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase())))
+            .map((provider, i) => (
+            <div key={i} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: provider.tagColor }}>
+                  {i + 1}. {provider.name}
+                </h4>
+                <span style={{ fontSize: '9px', background: `${provider.tagColor}1A`, color: provider.tagColor, padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>
+                  {provider.tag}
+                </span>
+                {(provider as any).website && (
+                  <a 
+                    href={(provider as any).website} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      color: 'var(--color-text-muted)', 
+                      textDecoration: 'none', 
+                      marginLeft: 'auto',
+                      padding: '2px',
+                      borderRadius: '4px'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.color = provider.tagColor}
+                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                    title={`Visit ${(provider as any).name} Website`}
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+              
+              {provider.hasFree && provider.models.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px', paddingLeft: '8px' }}>
+                  {provider.models.map((model: any, mIdx: number) => (
+                    <div key={mIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600 }}>{model.name}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>({model.id})</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {model.badges.map((badge: string, bIdx: number) => (
+                          <span key={bIdx} style={{ fontSize: '10px', color: 'var(--color-text-muted)', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '0 4px', borderRadius: '3px' }}>
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600, marginLeft: '4px' }}>
+                        Limits: <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>{model.limit}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {provider.status && (
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 600 }}>Status:</span> <span style={{ whiteSpace: 'pre-line' }}>{provider.status}</span>
+                </div>
+              )}
+              
+              {!provider.hasFree && !provider.status && (
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', fontWeight: 600 }}>
+                  No free models available
+                </div>
+              )}
+            </div>
+          ))}
+          
+        </div>
+      </div>
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 10000 }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, height: '100vh', width: '500px', maxWidth: '90vw', background: 'var(--color-bg-base)', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', boxShadow: '5px 0 25px rgba(0,0,0,0.2)', transition: 'left 0.3s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>Data Editor</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                  onClick={() => monacoEditorRef.current?.getAction('actions.find')?.run()} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600 }}
+                  title="Search in editor (Ctrl+F)"
+                >
+                  <Search size={14} /> Search
+                </button>
+                <div style={{ width: '1px', height: '14px', background: 'var(--color-border)' }}></div>
+                <button onClick={() => setShowImportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }} title="Close Editor">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, width: '100%', position: 'relative' }}>
+              <Editor
+                height="100%"
+                defaultLanguage="json"
+                theme="vs-dark"
+                value={importJson}
+                onChange={(value) => setImportJson(value || '')}
+                onMount={(editor) => {
+                  monacoEditorRef.current = editor;
+                }}
+                options={editorOptions}
+              />
+            </div>
+            
+            {importError && (
+              <div style={{ padding: '6px 12px', background: '#3f1616', borderTop: '1px solid #ff6b6b', color: '#ff6b6b', fontSize: '11px' }}>
+                {importError}
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+              <button 
+                onClick={handleLoadBackup}
+                disabled={isLoadingBackup}
+                style={{ background: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', cursor: isLoadingBackup ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Load the previously saved version"
+              >
+                {isLoadingBackup ? <RefreshCw size={12} className={styles.spin} /> : <History size={12} />}
+                Load Backup
+              </button>
+              
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setShowImportModal(false)} 
+                  style={{ background: 'none', color: 'var(--color-text)', border: 'none', padding: '4px 8px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleImportSubmit} 
+                  disabled={isSavingImport || !importJson.trim()}
+                  style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: (isSavingImport || !importJson.trim()) ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 600, opacity: (isSavingImport || !importJson.trim()) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {isSavingImport ? <RefreshCw size={12} className={styles.spin} /> : <Save size={12} />}
+                  {isSavingImport ? 'Saving...' : 'Save Data'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Overlay for sheet */}
+      {showInfoSheet && (
+        <div 
+          onClick={() => setShowInfoSheet(false)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9998, backdropFilter: 'blur(2px)' }} 
+        />
+      )}
+
     </div>
   );
 }
