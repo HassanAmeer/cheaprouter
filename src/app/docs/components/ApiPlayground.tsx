@@ -8,9 +8,10 @@ interface ApiPlaygroundProps {
   method: 'GET' | 'POST';
   defaultPayload?: string;
   requiresAuth?: boolean;
+  buttonText?: string;
 }
 
-export default function ApiPlayground({ endpoint, method, defaultPayload, requiresAuth = false }: ApiPlaygroundProps) {
+export default function ApiPlayground({ endpoint, method, defaultPayload, requiresAuth = false, buttonText }: ApiPlaygroundProps) {
   const [apiKey, setApiKey] = useState('');
   const [payload, setPayload] = useState(defaultPayload || '');
   const [response, setResponse] = useState<string | null>(null);
@@ -138,19 +139,45 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
               <p style={{ color: 'var(--color-text-muted)', fontSize: '12px', margin: '2px 0 0 0' }}>Execute real requests against the API</p>
             </div>
           </div>
-          {method === 'GET' && (
-            <a 
-              href={getUrl()} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              title="Open in new tab"
-              style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', padding: '8px', borderRadius: '8px', cursor: 'pointer', background: 'var(--color-bg-soft)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary)'; e.currentTarget.style.background = 'rgba(204,0,0,0.05)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'var(--color-bg-soft)'; }}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+            <button
+              onClick={handleTest}
+              disabled={loading || (requiresAuth && !apiKey.trim())}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '10px 24px', border: 'none', borderRadius: '10px',
+                background: 'linear-gradient(135deg, var(--color-primary), #ff4d4d)',
+                color: '#fff', fontSize: '13px', fontWeight: 800, letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                opacity: (loading || (requiresAuth && !apiKey.trim())) ? 0.5 : 1,
+                cursor: (loading || (requiresAuth && !apiKey.trim())) ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 16px rgba(204,0,0,0.25)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: 'translateY(0)',
+                marginLeft: '8px'
+              }}
+              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(204,0,0,0.35)'; } }}
+              onMouseLeave={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(204,0,0,0.25)'; } }}
             >
-              <ExternalLink size={16} />
-            </a>
-          )}
+              {loading ? <Loader2 size={16} className="lucide-spin" /> : <Send size={16} />}
+              {loading ? 'Executing...' : (buttonText || 'Execute Request')}
+            </button>
+
+            {method === 'GET' && (
+              <a 
+                href={getUrl()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="Open in new tab"
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)', padding: '10px', borderRadius: '10px', cursor: 'pointer', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary)'; e.currentTarget.style.borderColor = 'rgba(204,0,0,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+              >
+                <ExternalLink size={16} />
+              </a>
+            )}
+          </div>
         </div>
 
         <div style={{
@@ -161,6 +188,29 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
         }}>
           {/* Left Column: Inputs & Button */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* API Endpoint Visual */}
+            <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', flex: (method === 'GET' && !requiresAuth) ? 1 : 'unset' }}>
+               <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--color-text-main)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Target Endpoint
+               </label>
+               <div style={{ padding: '16px', backgroundColor: 'var(--color-bg-soft)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                 <span style={{ color: method === 'GET' ? '#4ade80' : 'var(--color-primary)', fontWeight: 900, fontSize: '13px' }}>{method}</span>
+                 <span style={{ color: 'var(--color-text-main)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{endpoint}</span>
+               </div>
+               
+               {method === 'GET' && !requiresAuth && (
+                 <div style={{ marginTop: '16px', padding: '12px 16px', backgroundColor: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                   <div style={{ color: '#38bdf8', marginTop: '2px' }}>
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                   </div>
+                   <div>
+                     <span style={{ display: 'block', color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 700, marginBottom: '2px' }}>Ready to Execute</span>
+                     <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', lineHeight: '1.5', display: 'block' }}>This endpoint requires no authentication or payload. Simply click "Execute Request" in the header to see the live response.</span>
+                   </div>
+                 </div>
+               )}
+            </div>
+
             {requiresAuth && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800, color: 'var(--color-text-main)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -207,33 +257,11 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
                 />
               </div>
             )}
-
-            <button
-              onClick={handleTest}
-              disabled={loading || (requiresAuth && !apiKey.trim())}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                width: '100%', padding: '16px', border: 'none', borderRadius: '12px',
-                background: 'linear-gradient(135deg, var(--color-primary), #ff4d4d)',
-                color: '#fff', fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-                opacity: (loading || (requiresAuth && !apiKey.trim())) ? 0.5 : 1,
-                cursor: (loading || (requiresAuth && !apiKey.trim())) ? 'not-allowed' : 'pointer',
-                boxShadow: '0 8px 24px rgba(204,0,0,0.25)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: 'translateY(0)',
-                marginTop: 'auto'
-              }}
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(204,0,0,0.35)'; } }}
-              onMouseLeave={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(204,0,0,0.25)'; } }}
-            >
-              {loading ? <Loader2 size={18} className="lucide-spin" /> : <Send size={18} />}
-              {loading ? 'Initializing Stream...' : 'Execute Request'}
-            </button>
+            
           </div>
 
           {/* Right Column: Terminal Output */}
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '350px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '350px', maxHeight: '450px' }}>
             <div style={{
               backgroundColor: 'var(--color-bg-card)',
               borderRadius: '12px',

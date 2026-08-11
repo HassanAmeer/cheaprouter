@@ -5,35 +5,36 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { providerId, originalId, key } = body;
+    const { providerId, originalId, key, baseUrl } = body;
 
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const authHeader = req.headers.get('authorization') || '';
 
-    // Fetch provider config from backend if key is not passed directly
-    let apiKey = key;
-    let baseUrl = '';
+    let apiKey = key || '';
+    let finalBaseUrl = baseUrl || '';
 
-    if (providerId === 'ap_openrouter' || providerId === 'openrouter') {
-      const res = await fetch(`${backendUrl}/api/admin/openrouter`, {
-        headers: { 'Authorization': authHeader }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        apiKey = apiKey || data.key;
-        baseUrl = 'https://openrouter.ai/api/v1';
-      }
-    } else {
-      const res = await fetch(`${backendUrl}/api/admin/providers`, {
-        headers: { 'Authorization': authHeader }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.providers || []);
-        const prov = list.find((p: any) => p.id === providerId);
-        if (prov) {
-          apiKey = apiKey || prov.key;
-          baseUrl = prov.base_url || prov.baseUrl || '';
+    if (!apiKey || apiKey.includes('••••')) {
+      if (providerId === 'ap_openrouter' || providerId === 'openrouter') {
+        const res = await fetch(`${backendUrl}/api/admin/openrouter`, {
+          headers: { 'Authorization': authHeader }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          apiKey = apiKey || data.key;
+          finalBaseUrl = finalBaseUrl || 'https://openrouter.ai/api/v1';
+        }
+      } else {
+        const res = await fetch(`${backendUrl}/api/admin/providers`, {
+          headers: { 'Authorization': authHeader }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (data.providers || []);
+          const prov = list.find((p: any) => p.id === providerId);
+          if (prov) {
+            apiKey = apiKey || prov.key;
+            finalBaseUrl = finalBaseUrl || prov.base_url || prov.baseUrl || '';
+          }
         }
       }
     }
@@ -46,16 +47,25 @@ export async function POST(req: Request) {
       });
     }
 
-    // Perform REAL test HTTP request to OpenRouter or OpenAI compatible endpoint
-    const targetUrl = baseUrl 
-      ? (baseUrl.endsWith('/') ? `${baseUrl}chat/completions` : `${baseUrl}/chat/completions`)
+    let actualKey = apiKey;
+    try {
+      const parsed = JSON.parse(apiKey);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        actualKey = parsed.find((k: any) => k.active !== false)?.key || parsed[0]?.key || apiKey;
+      }
+    } catch {
+      actualKey = apiKey;
+    }
+
+    const targetUrl = finalBaseUrl
+      ? (finalBaseUrl.endsWith('/') ? `${finalBaseUrl}chat/completions` : `${finalBaseUrl}/chat/completions`)
       : 'https://openrouter.ai/api/v1/chat/completions';
 
     const testRes = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${actualKey}`
       },
       body: JSON.stringify({
         model: originalId || 'gpt-3.5-turbo',

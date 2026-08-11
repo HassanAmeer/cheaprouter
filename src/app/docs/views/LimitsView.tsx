@@ -188,13 +188,27 @@ print(response.json())`;
               </pre>
             </div>
           </div>
-
-          <ApiPlayground 
-            endpoint={`${baseUrl}/v1/account`} 
-            method="GET" 
-            requiresAuth={true} 
-          />
         </div>
+      </div>
+
+      {/* Premium Half Horizontal Divider */}
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '48px 0 24px 0' }}>
+        <div style={{ width: '50%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(204,0,0,0.3), transparent)' }}></div>
+      </div>
+
+      {/* Enhanced Test Section */}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-text-main)', marginBottom: '8px', letterSpacing: '-0.5px' }}>Live API Tester</h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Send real requests to the endpoint and view the response instantly.</p>
+        </div>
+        
+        <ApiPlayground 
+          endpoint={`${baseUrl}/v1/account`} 
+          method="GET" 
+          requiresAuth={true} 
+          buttonText="Get Info"
+        />
       </div>
     </motion.div>
   );

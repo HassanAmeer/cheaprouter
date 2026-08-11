@@ -132,12 +132,15 @@ export default function ProvidersPage() {
     const key = `${providerId}-${model.id}`;
     setTestingModelId(key);
     try {
+      const provider = providers.find(p => p.id === providerId);
       const res = await fetch('/api/admin/providers/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           providerId,
-          originalId: model.originalId || model.id
+          originalId: model.originalId || model.id,
+          key: provider?.key || '',
+          baseUrl: provider?.baseUrl || ''
         })
       });
       const data = await res.json();

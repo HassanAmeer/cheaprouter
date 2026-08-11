@@ -69,10 +69,10 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
                     onClick={() => setActiveTab(snippet.language)}
                     style={{
                       padding: '4px 10px',
-                      backgroundColor: isActive ? 'var(--color-bg-base)' : 'transparent',
+                      backgroundColor: isActive ? 'var(--color-bg-card)' : 'transparent',
                       border: 'none',
                       borderRadius: '4px',
-                      color: isActive ? '#f8fafc' : '#64748b',
+                      color: isActive ? 'var(--color-text-main)' : 'var(--color-text-muted)',
                       cursor: 'pointer',
                       fontWeight: isActive ? 600 : 500,
                       fontSize: '11px',

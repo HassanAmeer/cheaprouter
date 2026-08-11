@@ -1,4 +1,4 @@
-import { db } from './backend/src/db.ts';
+import { db } from './backend/src/db';
 
 async function main() {
   const p = await db`SELECT id, name, status, key, models FROM admin_providers WHERE id = 'ap_opencode'`;
