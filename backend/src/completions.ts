@@ -43,141 +43,29 @@ export async function getSystemPromptForModel(model: string) {
 export async function getModelInstance(userId: string, model: string) {
   const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
   
-  // Helper to check a specific provider
-  const checkProv = (provId: string, factory: (key: string) => any) => {
-    const p = providersResult.find((r: any) => r.id === provId);
-    if (p && p.models) {
+  // Dynamic Provider Resolution
+  for (const p of providersResult) {
+    if (p.models && Array.isArray(p.models)) {
       const matched = p.models.find((m: any) => m.id === model);
       if (matched) {
         const apiKey = pickActiveKey(p.key);
-        if (apiKey) return factory(apiKey)(matched.originalId || matched.id);
+        if (apiKey) {
+          const modelId = matched.originalId || matched.id;
+          if (p.api_format === 'anthropic') {
+            return createAnthropic({ apiKey, baseURL: p.base_url || undefined })(modelId);
+          } else if (p.api_format === 'google') {
+            return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+          } else if (p.api_format === 'cohere') {
+            return createCohere({ apiKey, baseURL: p.base_url || undefined })(modelId);
+          } else {
+            // Default to OpenAI / Custom provider
+            return createOpenAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+          }
+        }
       }
     }
-    return null;
-  };
+  }
 
-  const orInst = checkProv('ap_openrouter', (key) => createOpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: key }));
-  if (orInst) return orInst;
-
-  const oaInst = checkProv('ap_openai', (key) => createOpenAI({ apiKey: key }));
-  if (oaInst) return oaInst;
-
-  const anthInst = checkProv('ap_anthropic', (key) => createAnthropic({ apiKey: key }));
-  if (anthInst) return anthInst;
-
-  const cohereInst = checkProv('ap_cohere', (key) => createCohere({ apiKey: key }));
-  if (cohereInst) return cohereInst;
-
-  const groqInst = checkProv('ap_groq', (key) => createOpenAI({ baseURL: 'https://api.groq.com/openai/v1', apiKey: key }));
-  if (groqInst) return groqInst;
-
-  const googleInst = checkProv('ap_google', (key) => createGoogleGenerativeAI({ apiKey: key }));
-  if (googleInst) return googleInst;
-
-  const cerebrasInst = checkProv('ap_cerebras', (key) => createOpenAI({ baseURL: 'https://api.cerebras.ai/v1', apiKey: key }));
-  if (cerebrasInst) return cerebrasInst;
-
-  const sambanovaInst = checkProv('ap_sambanova', (key) => createOpenAI({ baseURL: 'https://api.sambanova.ai/v1', apiKey: key }));
-  if (sambanovaInst) return sambanovaInst;
-
-  const xaiInst = checkProv('ap_xai', (key) => createOpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: key }));
-  if (xaiInst) return xaiInst;
-
-  const novitaInst = checkProv('ap_novita', (key) => createOpenAI({ baseURL: 'https://api.novita.ai/v3/openai', apiKey: key }));
-  if (novitaInst) return novitaInst;
-
-  const bytezInst = checkProv('ap_bytez', (key) => createOpenAI({ baseURL: 'https://api.bytez.com/v1', apiKey: key }));
-  if (bytezInst) return bytezInst;
-
-  const aimlapiInst = checkProv('ap_aimlapi', (key) => createOpenAI({ baseURL: 'https://api.aimlapi.com/v1', apiKey: key }));
-  if (aimlapiInst) return aimlapiInst;
-
-  const tokenharborInst = checkProv('ap_tokenharbor', (key) => createOpenAI({ baseURL: 'https://api.tokenharbor.ai/v1', apiKey: key }));
-  if (tokenharborInst) return tokenharborInst;
-
-  const aiandInst = checkProv('ap_aiand', (key) => createOpenAI({ baseURL: 'https://api.aiand.com/v1', apiKey: key }));
-  if (aiandInst) return aiandInst;
-
-  const mistralInst = checkProv('ap_mistral', (key) => createOpenAI({ baseURL: 'https://api.mistral.ai/v1', apiKey: key }));
-  if (mistralInst) return mistralInst;
-
-  const togetherInst = checkProv('ap_together', (key) => createOpenAI({ baseURL: 'https://api.together.xyz/v1', apiKey: key }));
-  if (togetherInst) return togetherInst;
-
-  const deepseekInst = checkProv('ap_deepseek', (key) => createOpenAI({ baseURL: 'https://api.deepseek.com/v1', apiKey: key }));
-  if (deepseekInst) return deepseekInst;
-
-  const fireworksInst = checkProv('ap_fireworks', (key) => createOpenAI({ baseURL: 'https://api.fireworks.ai/inference/v1', apiKey: key }));
-  if (fireworksInst) return fireworksInst;
-
-  const perplexityInst = checkProv('ap_perplexity', (key) => createOpenAI({ baseURL: 'https://api.perplexity.ai', apiKey: key }));
-  if (perplexityInst) return perplexityInst;
-
-  const amazonbedrockInst = checkProv('ap_amazonbedrock', (key) => createOpenAI({ baseURL: 'https://bedrock.proxy/v1', apiKey: key }));
-  if (amazonbedrockInst) return amazonbedrockInst;
-
-  const githubInst = checkProv('ap_github', (key) => createOpenAI({ baseURL: 'https://models.inference.ai.azure.com', apiKey: key }));
-  if (githubInst) return githubInst;
-
-  const huggingfaceInst = checkProv('ap_huggingface', (key) => createOpenAI({ baseURL: 'https://api-inference.huggingface.co/v1', apiKey: key }));
-  if (huggingfaceInst) return huggingfaceInst;
-
-  const hyperbolicInst = checkProv('ap_hyperbolic', (key) => createOpenAI({ baseURL: 'https://api.hyperbolic.ai/v1', apiKey: key }));
-  if (hyperbolicInst) return hyperbolicInst;
-
-  const moonshotInst = checkProv('ap_moonshot', (key) => createOpenAI({ baseURL: 'https://api.moonshot.cn/v1', apiKey: key }));
-  if (moonshotInst) return moonshotInst;
-
-  const zaiInst = checkProv('ap_zai', (key) => createOpenAI({ baseURL: 'https://api.z.ai/v1', apiKey: key }));
-  if (zaiInst) return zaiInst;
-
-  const nvidiaInst = checkProv('ap_nvidia', (key) => createOpenAI({ baseURL: 'https://integrate.api.nvidia.com/v1', apiKey: key }));
-  if (nvidiaInst) return nvidiaInst;
-
-  const kilocodeInst = checkProv('ap_kilocode', (key) => createOpenAI({ baseURL: 'https://api.kilocode.ai/v1', apiKey: key }));
-  if (kilocodeInst) return kilocodeInst;
-
-  const clinecodeInst = checkProv('ap_clinecode', (key) => createOpenAI({ baseURL: 'https://api.clinecode.ai/v1', apiKey: key }));
-  if (clinecodeInst) return clinecodeInst;
-
-  const poixeInst = checkProv('ap_poixe', (key) => createOpenAI({ baseURL: 'https://api.poixe.com/v1', apiKey: key }));
-  if (poixeInst) return poixeInst;
-
-  const siliconflowInst = checkProv('ap_siliconflow', (key) => createOpenAI({ baseURL: 'https://api.siliconflow.cn/v1', apiKey: key }));
-  if (siliconflowInst) return siliconflowInst;
-
-  const zenmuxInst = checkProv('ap_zenmux', (key) => createOpenAI({ baseURL: 'https://api.zenmux.ai/v1', apiKey: key }));
-  if (zenmuxInst) return zenmuxInst;
-
-  const unorouterInst = checkProv('ap_unorouter', (key) => createOpenAI({ baseURL: 'https://api.unorouter.com/v1', apiKey: key }));
-  if (unorouterInst) return unorouterInst;
-
-  const routewayInst = checkProv('ap_routeway', (key) => createOpenAI({ baseURL: 'https://api.routeway.ai/v1', apiKey: key }));
-  if (routewayInst) return routewayInst;
-
-  const stepfunInst = checkProv('ap_stepfun', (key) => createOpenAI({ baseURL: 'https://api.stepfun.com/v1', apiKey: key }));
-  if (stepfunInst) return stepfunInst;
-
-  const llm7Inst = checkProv('ap_llm7', (key) => createOpenAI({ baseURL: 'https://api.llm7.io/v1', apiKey: key }));
-  if (llm7Inst) return llm7Inst;
-
-  const modelscopeInst = checkProv('ap_modelscope', (key) => createOpenAI({ baseURL: 'https://api-inference.modelscope.cn/v1', apiKey: key }));
-  if (modelscopeInst) return modelscopeInst;
-
-  const aihordeInst = checkProv('ap_aihorde', (key) => createOpenAI({ baseURL: 'https://aihorde.net/api/v2', apiKey: key }));
-  if (aihordeInst) return aihordeInst;
-
-  const pollinationsInst = checkProv('ap_pollinations', (key) => createOpenAI({ baseURL: 'https://text.pollinations.ai/v1', apiKey: key }));
-  if (pollinationsInst) return pollinationsInst;
-
-  const anyrouterInst = checkProv('ap_anyrouter', (key) => createOpenAI({ baseURL: 'https://api.anyrouter.dev/v1', apiKey: key }));
-  if (anyrouterInst) return anyrouterInst;
-
-  const agnesaiInst = checkProv('ap_agnesai', (key) => createOpenAI({ baseURL: 'https://api.agnes-ai.com/v1', apiKey: key }));
-  if (agnesaiInst) return agnesaiInst;
-
-  const tokenrouterInst = checkProv('ap_tokenrouter', (key) => createOpenAI({ baseURL: 'https://api.tokenrouter.com/v1', apiKey: key }));
-  if (tokenrouterInst) return tokenrouterInst;
 
   let provider = 'OpenAI';
   if (model.includes('claude')) provider = 'Anthropic';
@@ -222,7 +110,12 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid API key or unauthorized' }, 401);
     }
 
-    const body = await c.req.valid('json');
+    let body;
+    try {
+      body = await c.req.json();
+    } catch (e) {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
     const { model = 'gpt-4o', messages, stream = false } = body;
 
     if (!messages || !Array.isArray(messages)) {
