@@ -8,20 +8,25 @@ export async function POST(req: Request) {
     const { providerId, originalId, key } = body;
 
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = req.headers.get('authorization') || '';
 
     // Fetch provider config from backend if key is not passed directly
     let apiKey = key;
     let baseUrl = '';
 
     if (providerId === 'ap_openrouter' || providerId === 'openrouter') {
-      const res = await fetch(`${backendUrl}/api/admin/openrouter`);
+      const res = await fetch(`${backendUrl}/api/admin/openrouter`, {
+        headers: { 'Authorization': authHeader }
+      });
       if (res.ok) {
         const data = await res.json();
         apiKey = apiKey || data.key;
         baseUrl = 'https://openrouter.ai/api/v1';
       }
     } else {
-      const res = await fetch(`${backendUrl}/api/admin/providers`);
+      const res = await fetch(`${backendUrl}/api/admin/providers`, {
+        headers: { 'Authorization': authHeader }
+      });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.providers || []);

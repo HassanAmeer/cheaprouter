@@ -59,17 +59,6 @@ print(response.json())`;
     { language: 'Python' as const, code: pyCode },
   ];
 
-  const payloadCode = `{
-  "model": "gpt-4o", // Required
-  "messages": [      // Required
-    {
-      "role": "user",
-      "content": "Hello!"
-    }
-  ],
-  "stream": false    // Optional (default: false)
-}`;
-
   const defaultPlaygroundPayload = `{
   "model": "gpt-4o",
   "messages": [
@@ -163,8 +152,6 @@ print(response.json())`;
         {/* Left Column (Requests) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <CodeBlock snippets={snippets} />
-          <CodeBlock snippets={[{ language: 'JavaScript' as const, code: payloadCode }]} title="JSON - PAYLOAD" />
-          
           {/* Headers table to keep existing documentation intact */}
           <div style={{ backgroundColor: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '12px' }}>Headers Required</span>
@@ -224,14 +211,47 @@ print(response.json())`;
               </pre>
             </div>
           </div>
-
-          <ApiPlayground 
-            endpoint={`${baseUrl}/v1/chat/completions`} 
-            method="POST" 
-            requiresAuth={true} 
-            defaultPayload={defaultPlaygroundPayload}
-          />
         </div>
+      </div>
+
+      {/* Premium Half Horizontal Divider */}
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '48px 0 24px 0' }}>
+        <div style={{ 
+          width: '50%', 
+          height: '1px', 
+          background: 'linear-gradient(90deg, transparent, var(--color-border), transparent)',
+          position: 'relative'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'var(--color-bg)',
+            padding: '0 16px',
+            color: 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Test Section */}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-text-main)', marginBottom: '8px', letterSpacing: '-0.5px' }}>Live API Tester</h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Send real requests to the endpoint and watch the AI response stream in real-time.</p>
+        </div>
+        
+        <ApiPlayground 
+          endpoint={`${baseUrl}/v1/chat/completions`} 
+          method="POST" 
+          requiresAuth={true} 
+          defaultPayload={defaultPlaygroundPayload}
+        />
       </div>
     </motion.div>
   );
