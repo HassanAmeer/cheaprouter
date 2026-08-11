@@ -834,7 +834,7 @@ export default function ManageProvidersPage() {
                   onClick={() => setShowInfoSheet(true)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                 >
-                  <Info size={14} /> Info & Limits
+                  <Info size={14} /> Free Providers
                 </button>
               </div>
               <button 
@@ -919,8 +919,8 @@ export default function ManageProvidersPage() {
           </button>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingRight: '28px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Info size={18} color="var(--color-primary)" /> {displayVersion === 1 ? 'New' : 'Old'} ({displayVersion === 1 ? providersData.length : (backupData?.length || 0)})
+            <h2 style={{ fontSize: '12px', fontWeight: 600, margin: 0, color: 'var(--color-text-muted)' }}>
+              Total: {displayVersion === 1 ? providersData.length : (backupData?.length || 0)}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -988,76 +988,102 @@ export default function ManageProvidersPage() {
         </div>
         
         <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          {(displayVersion === 1 ? providersData : (backupData || []))
-            .filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase())))
-            .map((provider, i) => (
-            <div key={i} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: provider.tagColor }}>
-                  {i + 1}. {provider.name}
-                </h4>
-                <span style={{ fontSize: '9px', background: `${provider.tagColor}1A`, color: provider.tagColor, padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>
-                  {provider.tag}
-                </span>
-                {(provider as any).website && (
-                  <a 
-                    href={(provider as any).website} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      color: 'var(--color-text-muted)', 
-                      textDecoration: 'none', 
-                      marginLeft: 'auto',
-                      padding: '2px',
-                      borderRadius: '4px'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.color = provider.tagColor}
-                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                    title={`Visit ${(provider as any).name} Website`}
+          {(() => {
+            const currentList = displayVersion === 1 ? providersData : (backupData || []);
+            const filteredList = currentList.filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase())));
+
+            if (currentList.length === 0) {
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '16px', color: 'var(--color-text-muted)', minHeight: '200px' }}>
+                  <p style={{ margin: 0, fontSize: '13px' }}>No data available in this version.</p>
+                  <button 
+                    onClick={() => {
+                      setImportJson('');
+                      setShowImportModal(true);
+                    }} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s' }}
                   >
-                    <ExternalLink size={14} />
-                  </a>
+                    <Upload size={16} /> Import Data
+                  </button>
+                </div>
+              );
+            }
+
+            if (filteredList.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                  No providers found matching "{searchQuery}"
+                </div>
+              );
+            }
+
+            return filteredList.map((provider, i) => (
+              <div key={i} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: provider.tagColor }}>
+                    {i + 1}. {provider.name}
+                  </h4>
+                  <span style={{ fontSize: '9px', background: `${provider.tagColor}1A`, color: provider.tagColor, padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>
+                    {provider.tag}
+                  </span>
+                  {(provider as any).website && (
+                    <a 
+                      href={(provider as any).website} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        color: 'var(--color-text-muted)', 
+                        textDecoration: 'none', 
+                        marginLeft: 'auto',
+                        padding: '2px',
+                        borderRadius: '4px'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.color = provider.tagColor}
+                      onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                      title={`Visit ${(provider as any).name} Website`}
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+                
+                {provider.hasFree && provider.models.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px', paddingLeft: '8px' }}>
+                    {provider.models.map((model: any, mIdx: number) => (
+                      <div key={mIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600 }}>{model.name}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>({model.id})</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {model.badges.map((badge: string, bIdx: number) => (
+                            <span key={bIdx} style={{ fontSize: '10px', color: 'var(--color-text-muted)', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '0 4px', borderRadius: '3px' }}>
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600, marginLeft: '4px' }}>
+                          Limits: <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>{model.limit}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {provider.status && (
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 600 }}>Status:</span> <span style={{ whiteSpace: 'pre-line' }}>{provider.status}</span>
+                  </div>
+                )}
+                
+                {!provider.hasFree && !provider.status && (
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', fontWeight: 600 }}>
+                    No free models available
+                  </div>
                 )}
               </div>
-              
-              {provider.hasFree && provider.models.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px', paddingLeft: '8px' }}>
-                  {provider.models.map((model: any, mIdx: number) => (
-                    <div key={mIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600 }}>{model.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>({model.id})</span>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {model.badges.map((badge: string, bIdx: number) => (
-                          <span key={bIdx} style={{ fontSize: '10px', color: 'var(--color-text-muted)', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '0 4px', borderRadius: '3px' }}>
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                      <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600, marginLeft: '4px' }}>
-                        Limits: <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>{model.limit}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {provider.status && (
-                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600 }}>Status:</span> <span style={{ whiteSpace: 'pre-line' }}>{provider.status}</span>
-                </div>
-              )}
-              
-              {!provider.hasFree && !provider.status && (
-                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', paddingLeft: '8px', fontWeight: 600 }}>
-                  No free models available
-                </div>
-              )}
-            </div>
-          ))}
-          
+            ));
+          })()}
         </div>
       </div>
 
