@@ -12,6 +12,7 @@ import {
   getAllUsers,
   updateUserLoginInfo,
   updateUserProfile,
+  saveOnboarding,
   adminUpdateUser,
   adminDeleteUser,
 } from './auth.ts';
@@ -144,6 +145,22 @@ app.put('/api/me/profile', zValidator('json', z.object({ name: z.string().min(1)
   const { name, profile_picture } = c.req.valid('json');
   const userId = c.get('userId');
   await updateUserProfile(userId, name, profile_picture);
+  const user = await getUserById(userId);
+  return c.json({ user });
+});
+
+// ---- Onboarding questionnaire (post-signup) ----
+const onboardingSchema = z.object({
+  isStudent: z.boolean(),
+  experienceLevel: z.string().min(1),
+  useCases: z.array(z.string()),
+  earningGoal: z.string().min(1),
+});
+
+app.put('/api/me/onboarding', zValidator('json', onboardingSchema), async (c) => {
+  const userId = c.get('userId');
+  const data = c.req.valid('json');
+  await saveOnboarding(userId, data);
   const user = await getUserById(userId);
   return c.json({ user });
 });

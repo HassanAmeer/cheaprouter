@@ -44,7 +44,7 @@ export default function DocsPage() {
       <AnnouncementBar />
       <SiteNav links={[
         { href: '/', label: 'Home' },
-        { href: '/#models', label: 'Models' },
+        { href: '/models', label: 'Models' },
         { href: '/#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/cli', label: 'Coding' },

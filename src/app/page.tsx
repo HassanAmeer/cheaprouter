@@ -58,7 +58,7 @@ export default function Home() {
 
       <SiteNav links={[
         { href: '/', label: 'Home' },
-        { href: '#models', label: 'Models' },
+        { href: '/models', label: 'Models' },
         { href: '#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/cli', label: 'Coding' },
@@ -128,12 +128,21 @@ export default function Home() {
 
         {/* ═══════════════ MODELS TABLE ═══════════════ */}
         <section id="models" className={`container ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>{settings.modelsSection?.title}</h2>
-            <p className={styles.sectionSubtitle}>{settings.modelsSection?.subtitle}</p>
+          <div className={styles.sectionHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px', textAlign: 'left' }}>
+            <div>
+              <h2 className={styles.sectionTitle}>{settings.modelsSection?.title}</h2>
+              <p className={styles.sectionSubtitle} style={{ margin: 0 }}>{settings.modelsSection?.subtitle}</p>
+            </div>
+            <Link href="/models" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary, #ef4444)', fontSize: '13px', fontWeight: 600, textDecoration: 'none', padding: '8px 16px', border: '1px solid var(--color-primary, #ef4444)', borderRadius: '8px', transition: 'background 0.15s, color 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--color-primary, #ef4444)'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = 'var(--color-primary, #ef4444)'; }}
+            >
+              View All Models <ArrowRight size={14} />
+            </Link>
           </div>
-          <ModelsTable />
+          <ModelsTable limit={15} />
         </section>
+
 
         {/* ═══════════════ WORKS WITH YOUR STACK ═══════════════ */}
         <StackSection title={settings.integrationsSection?.title} subtitle="Integrations" />

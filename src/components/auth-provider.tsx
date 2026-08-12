@@ -14,6 +14,11 @@ interface User {
   plan_agents?: string;
   profile_picture?: string | null;
   last_login?: string | null;
+  is_student?: boolean | null;
+  experience_level?: string | null;
+  use_cases?: string | null;
+  earning_goal?: string | null;
+  onboarding_completed?: boolean | null;
 }
 
 interface AuthValue {
@@ -22,10 +27,11 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   updateProfile: (name: string, profile_picture?: string | File) => Promise<void>;
+  completeOnboarding: (data: { isStudent: boolean; experienceLevel: string; useCases: string[]; earningGoal: string }) => Promise<void>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthValue>({ user: null, loading: true, login: async () => {}, signup: async () => {}, updateProfile: async () => {}, logout: () => {} });
+const AuthContext = createContext<AuthValue>({ user: null, loading: true, login: async () => {}, signup: async () => {}, updateProfile: async () => {}, completeOnboarding: async () => {}, logout: () => {} });
 
 function getHardwareSystemInfo() {
   if (typeof window === 'undefined') return {};
@@ -89,12 +95,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(r.user);
   };
 
+  const completeOnboarding = async (data: { isStudent: boolean; experienceLevel: string; useCases: string[]; earningGoal: string }) => {
+    const r = await api.saveOnboarding(data);
+    setUser(r.user);
+  };
+
   const logout = () => {
     localStorage.removeItem('cm_token');
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, signup, updateProfile, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, signup, updateProfile, completeOnboarding, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

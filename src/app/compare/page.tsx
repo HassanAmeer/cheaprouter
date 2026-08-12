@@ -12,7 +12,7 @@ export default function ComparePage() {
     <main className={styles.page}>
       <SiteNav links={[
         { href: '/', label: 'Home' },
-        { href: '/#models', label: 'Models' },
+        { href: '/models', label: 'Models' },
         { href: '/#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },
         { href: '/cli', label: 'Coding' },

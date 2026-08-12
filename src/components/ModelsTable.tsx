@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Type, Image as ImageIcon, Code, Mic, Eye, Layers } from 'lucide-react';
+import { Search, Type, Image as ImageIcon, Code, Mic, Eye, Layers, ArrowRight } from 'lucide-react';
 import styles from './ModelsTable.module.css';
+import Link from 'next/link';
 
+interface ModelsTableProps {
+  limit?: number;
+}
 
-
-export default function ModelsTable() {
+export default function ModelsTable({ limit }: ModelsTableProps = {}) {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   const [allModels, setAllModels] = useState<any[]>([]);
@@ -36,7 +39,7 @@ export default function ModelsTable() {
                   id: m.originalId || m.id,
                   name: m.name,
                   provider: p.name,
-                  icon: p.icon || iconMap[p.name] || 'https://cdn.simpleicons.org/openai/10A37F',
+                  icon: m.icon || p.icon || iconMap[p.name] || 'https://cdn.simpleicons.org/openai/10A37F',
                   context: m.contextWindow || '-',
                   latency: '-',
                   throughput: '-',
@@ -52,11 +55,13 @@ export default function ModelsTable() {
                     m.reasoning && 'reasoning',
                     m.embedding && 'embedding'
                   ].filter(Boolean),
-                  type: m.access || 'Standard'
+                  type: m.access || 'Standard',
+                  landingPagePriority: m.landingPagePriority ?? 9999
                 };
               })
           );
         }
+        models.sort((a, b) => (a.landingPagePriority ?? 9999) - (b.landingPagePriority ?? 9999));
         setAllModels(models);
         setLoading(false);
       })
@@ -72,12 +77,15 @@ export default function ModelsTable() {
     if (!matchesSearch) return false;
     
     if (activeTab === 'Text') return m.caps.includes('text');
-    if (activeTab === 'Code') return m.caps.includes('code');
+    if (activeTab === 'Code') return m.caps.includes('text');
     if (activeTab === 'Vision') return m.caps.includes('vision');
     if (activeTab === 'Audio/Video') return m.caps.includes('audio') || m.caps.includes('video');
     
     return true;
   });
+
+  const displayedModels = limit ? filteredModels.slice(0, limit) : filteredModels;
+  const hasMore = limit ? filteredModels.length > limit : false;
 
   return (
     <div className={styles.container}>
@@ -95,12 +103,6 @@ export default function ModelsTable() {
           ))}
         </div>
         <div className={styles.dropdowns}>
-          <select className={styles.dropdown}>
-            <option>All Providers</option>
-            <option>OpenAI</option>
-            <option>Anthropic</option>
-            <option>Google</option>
-          </select>
           <select className={styles.dropdown}>
             <option>Sort by Recommended</option>
             <option>Sort by Price (Low)</option>
@@ -140,7 +142,7 @@ export default function ModelsTable() {
                   Loading models...
                 </td>
               </tr>
-            ) : filteredModels.map((m, i) => (
+            ) : displayedModels.map((m, i) => (
               <tr key={i}>
                 <td>
                   <div className={styles.modelNameCol}>
@@ -170,7 +172,7 @@ export default function ModelsTable() {
                 </td>
               </tr>
             ))}
-            {!loading && filteredModels.length === 0 && (
+          {!loading && filteredModels.length === 0 && (
               <tr>
                 <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                   No models found matching your search.
@@ -180,6 +182,33 @@ export default function ModelsTable() {
           </tbody>
         </table>
       </div>
+
+      {/* View All Models button */}
+      {hasMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+          <Link
+            href="/models"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 28px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, var(--color-primary, #ef4444), #c00)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '14px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 20px rgba(239,68,68,0.35)',
+              transition: 'transform 0.15s, box-shadow 0.15s'
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 8px 28px rgba(239,68,68,0.45)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 20px rgba(239,68,68,0.35)'; }}
+          >
+            View All Models <ArrowRight size={16} />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

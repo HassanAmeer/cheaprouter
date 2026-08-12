@@ -126,7 +126,7 @@ const defaultSettings: SiteSettings = {
   ctaSubtitle: 'Join thousands of developers saving up to 80% on AI API costs. Get started in seconds with your existing OpenAI SDK.',
   modelsSection: {
     title: 'Every model. One endpoint.',
-    subtitle: 'Transparent per-token pricing with no hidden fees. Bring your own key for free routing, or use ours.',
+    subtitle: 'Transparent per-token pricing with no hidden fees.',
   },
   integrationsSection: {
     title: 'Connect with APIs',

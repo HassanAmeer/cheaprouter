@@ -50,6 +50,8 @@ export const api = {
   me: () => request<{ user: any }>('/api/me'),
   updateProfile: (name: string, profile_picture?: string) => 
     request<{ user: any }>('/api/me/profile', { method: 'PUT', body: JSON.stringify({ name, profile_picture }) }),
+  saveOnboarding: (data: { isStudent: boolean; experienceLevel: string; useCases: string[]; earningGoal: string }) =>
+    request<{ user: any }>('/api/me/onboarding', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Models
   models: () => request<{ models: any[] }>('/api/models'),
