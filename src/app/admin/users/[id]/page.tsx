@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Save, Ban, CheckCircle, Mail, Key, User, Calendar, Activity,
   Zap, HardDrive, Shield, AlertTriangle, Camera, Target, Globe, Clock, Cpu,
-  Fingerprint, Monitor, Wifi, Award, GraduationCap, Copy, Check,
+  Fingerprint, Monitor, Wifi, Award, GraduationCap, Copy, Check, Layout, Compass,
+  Languages, Maximize, Palette, Scan, Mouse, Signal, ArrowDown, Dot,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/components/ui/toast';
 
 const USECASE_LABELS: Record<string, string> = {
   'vibe-coding': 'Vibe Coding',
@@ -57,11 +59,21 @@ const DEVICE_LABELS: Record<string, string> = {
   saveData: 'Save Data',
 };
 
-const DEVICE_GROUPS: { label: string; icon: React.ReactNode; keys: string[] }[] = [
-  { label: 'System', icon: <Monitor size={13} />, keys: ['os', 'platform', 'browser', 'language', 'timeZone'] },
-  { label: 'Hardware', icon: <Cpu size={13} />, keys: ['cpuCores', 'deviceMemoryGB', 'screenResolution', 'screenColorDepth', 'devicePixelRatio', 'touchPoints'] },
-  { label: 'Network', icon: <Wifi size={13} />, keys: ['online', 'connectionType', 'connectionEffectiveType', 'downlinkMbps', 'rttMs', 'saveData'] },
+const DEVICE_GROUPS: { label: string; icon: React.ReactNode; accent: string; keys: string[] }[] = [
+  { label: 'System', icon: <Monitor size={13} />, accent: '#8B5CF6', keys: ['os', 'platform', 'browser', 'language', 'timeZone'] },
+  { label: 'Hardware', icon: <Cpu size={13} />, accent: '#0EA5E9', keys: ['cpuCores', 'deviceMemoryGB', 'screenResolution', 'screenColorDepth', 'devicePixelRatio', 'touchPoints'] },
+  { label: 'Network', icon: <Wifi size={13} />, accent: '#10B981', keys: ['online', 'connectionType', 'connectionEffectiveType', 'downlinkMbps', 'rttMs', 'saveData'] },
 ];
+
+const DEVICE_ICONS: Record<string, React.ReactNode> = {
+  os: <Monitor size={14} />, platform: <Layout size={14} />, browser: <Compass size={14} />,
+  language: <Languages size={14} />, timeZone: <Clock size={14} />,
+  cpuCores: <Cpu size={14} />, deviceMemoryGB: <HardDrive size={14} />, screenResolution: <Maximize size={14} />,
+  screenColorDepth: <Palette size={14} />, devicePixelRatio: <Scan size={14} />, touchPoints: <Mouse size={14} />,
+  online: <Zap size={14} />, connectionType: <Wifi size={14} />, connectionEffectiveType: <Signal size={14} />,
+  downlinkMbps: <ArrowDown size={14} />, rttMs: <Activity size={14} />, saveData: <Save size={14} />,
+  userAgent: <Globe size={14} />,
+};
 
 const TIER_RANK: Record<string, number> = { free: 0, starter: 1, pro: 2 };
 
@@ -95,22 +107,26 @@ function tierRank(plan?: string): number {
   return TIER_RANK[(plan || 'Free').toLowerCase()] ?? 0;
 }
 
-function SectionHead({ icon, title, subtitle, badge, badgeFg }: { icon: React.ReactNode; title: string; subtitle?: string; badge?: string; badgeFg?: string }) {
+function SectionHead({ icon, title, subtitle, badge, badgeIcon, badgeBg, badgeBorder, badgeFg }: { icon: React.ReactNode; title: string; subtitle?: string; badge?: string; badgeIcon?: React.ReactNode; badgeBg?: string; badgeBorder?: string; badgeFg?: string }) {
   return (
-    <div className="secHead">
-      <div className="secIcon">{icon}</div>
-      <div className="secHeadTxt">
-        <h3 className="secTitle">{title}</h3>
-        {subtitle && <div className="secSub">{subtitle}</div>}
+    <div className="secHead" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px dashed var(--color-border)' }}>
+      <div className="secIcon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 44, height: 44, borderRadius: 14 }}>{icon}</div>
+      <div className="secHeadTxt" style={{ flex: 1 }}>
+        <h3 className="secTitle" style={{ margin: 0 }}>{title}</h3>
+        {subtitle && <div className="secSub" style={{ marginTop: '4px' }}>{subtitle}</div>}
       </div>
       {badge && (
-        <span className="secBadge" style={{ background: 'var(--color-primary-soft)', color: badgeFg || 'var(--color-primary)' }}>{badge}</span>
+        <span className="secBadge" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginLeft: 'auto', padding: '5px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: badgeBg || 'var(--color-primary-soft)', color: badgeFg || 'var(--color-primary)', border: badgeBorder || '1px solid transparent' }}>
+          {badgeIcon}
+          {badge}
+        </span>
       )}
     </div>
   );
 }
 
 export default function UserDetailPage({ params }: { params: { id: string } }) {
+  const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -158,22 +174,27 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     });
   }, [params]);
 
-  const handleToggleBan = () => {
+  const handleToggleBan = async () => {
     if (!user) return;
     const updatedStatus = user.status === 'Active' ? 'Suspended' : 'Active';
-    Promise.resolve(params).then(p => {
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-      fetch(`/api/admin/users/${p.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-        body: JSON.stringify({ ...user, status: updatedStatus })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) setUser(data.user);
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    const action = updatedStatus === 'Suspended' ? 'suspended' : 'activated';
+    try {
+      const res = await Promise.resolve(params).then(p =>
+        fetch(`/api/admin/users/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ ...user, status: updatedStatus })
         })
-        .catch(err => console.error(err));
-    });
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      if (data.user) setUser(data.user);
+      toast(`User ${action} successfully`, 'success');
+    } catch (err: any) {
+      console.error(err);
+      toast(err.message ?? `Failed to ${action.replace('d', '')} user`, 'error');
+    }
   };
 
   const handleSave = async () => {
@@ -182,29 +203,37 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     try {
       let finalUser = { ...user };
       if (profileFile) {
-        const formData = new FormData();
-        formData.append('file', profileFile);
-        const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
-        if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
-        const uploadData = await uploadRes.json();
-        finalUser.profile_picture = uploadData.url;
+        try {
+          const formData = new FormData();
+          formData.append('file', profileFile);
+          const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
+          if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
+          const uploadData = await uploadRes.json();
+          finalUser.profile_picture = uploadData.url;
+        } catch (uploadErr: any) {
+          setSaving(false);
+          toast(uploadErr.message ?? 'Failed to upload profile picture', 'error');
+          return;
+        }
       }
-      await Promise.resolve(params).then(p => {
-        const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-        return fetch(`/api/admin/users/${p.id}`, {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const res = await Promise.resolve(params).then(p =>
+        fetch(`/api/admin/users/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
           body: JSON.stringify(finalUser)
-        });
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) setUser(data.user);
         })
-        .catch(err => console.error(err))
-        .finally(() => setSaving(false));
-    } catch (err) {
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Save failed (${res.status})`);
+      }
+      if (data.user) setUser(data.user);
+      toast('User details saved successfully', 'success');
+    } catch (err: any) {
       console.error(err);
+      toast(err.message ?? 'Failed to save user details', 'error');
+    } finally {
       setSaving(false);
     }
   };
@@ -292,6 +321,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .railName { margin: 14px 0 8px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--color-text-main); line-height: 1.15; }
         .statusPill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
         .statusPillDot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+        .obBadge { display: inline-flex; align-items: center; gap: 6px; align-self: flex-end; margin-top: 10px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 
         .railMeta { width: 100%; margin-top: 18px; border-top: 1px dashed var(--color-border); }
         .railMetaRow { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--color-border); background: none; border-left: none; border-right: none; border-top: none; cursor: default; font: inherit; text-align: left; color: inherit; }
@@ -337,7 +367,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .secHeadTxt { flex: 1; }
         .secTitle { font-size: 18px; font-weight: 700; color: var(--color-text-main); margin: 0; letter-spacing: -0.01em; }
         .secSub { font-size: 13px; color: var(--color-text-muted); margin-top: 4px; }
-        .secBadge { padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .secBadge { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
 
         /* ─── FIELDS ─── */
         .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -360,15 +390,34 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .emptyText { color: var(--color-text-muted); font-style: italic; }
         .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--color-primary-soft); border: 1px solid var(--color-border); font-size: 13px; font-weight: 600; color: var(--color-text-main); }
 
+        /* ─── PREFERENCES ─── */
+        .prefGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .prefCard { display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 14px; transition: all 0.2s ease; }
+        .prefCard:hover { border-color: var(--color-primary-soft); box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+        .prefSpan { grid-column: 1 / -1; }
+        .prefIcon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .prefTxt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .prefLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .prefValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .prefChips { display: flex; flex-wrap: wrap; gap: 8px; }
+
         /* ─── DEVICE ─── */
-        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
         .groupLabel:first-child { margin-top: 0; }
+        .groupChip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 8px; border: 1px solid; color: inherit; flex-shrink: 0; }
+        .groupCount { margin-left: auto; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 999px; background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text-muted); }
         .deviceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .deviceTile { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; }
-        .deviceTile:hover { border-color: var(--color-primary-soft); }
-        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .deviceTile { display: flex; flex-direction: column; gap: 7px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; position: relative; }
+        .deviceTile:hover { border-color: color-mix(in srgb, var(--tile-accent) 55%, transparent); box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--tile-accent) 35%, transparent); transform: translateY(-1px); }
+        .deviceTile .deviceIcon { width: 22px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--tile-accent) 14%, transparent); color: var(--tile-accent); display: inline-flex; align-items: center; justify-content: center; font-style: normal; flex-shrink: 0; }
+        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
         .deviceValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; word-break: break-word; }
         .deviceValueMono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--color-text-muted); font-weight: 500; word-break: break-word; }
+        .emptyState { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 34px 20px; border: 1px dashed var(--color-border); border-radius: 16px; }
+        .deviceEmpty { font-size: 13px; color: var(--color-text-muted); padding: 16px 18px; border: 1px dashed var(--color-border); border-radius: 12px; font-style: italic; }
+        .emptyStateIcon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+        .emptyStateTitle { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .emptyStateHint { font-size: 13px; color: var(--color-text-muted); max-width: 320px; line-height: 1.5; }
 
         /* ─── PLANS ─── */
         .planStack { display: flex; flex-direction: column; gap: 16px; }
@@ -395,6 +444,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .ovRow + .ovRow { border-top: 1px dashed var(--color-border); }
         .ovLabel { font-size: 13px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
         .ovValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .ovBadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 
         .metaRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
         .metaRow + .metaRow { border-top: 1px dashed var(--color-border); }
@@ -413,7 +463,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
           .railCard { max-width: 420px; }
         }
         @media (max-width: 768px) {
-          .formGrid, .deviceGrid, .planGrid { grid-template-columns: 1fr; }
+          .formGrid, .deviceGrid, .planGrid, .prefGrid { grid-template-columns: 1fr; }
           .pageHead { flex-direction: column; }
         }`}</style>
       </div>
@@ -445,7 +495,21 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Never';
   const device = parseHardwareInfo(user.hardware_info);
-  const deviceGet = (k: string) => device?.[k];
+  const DEVICE_ALIASES: Record<string, string> = {
+    'deviceMemoryGB': 'deviceMemory',
+    'cpuCores': 'hardwareConcurrency',
+    'screenColorDepth': 'colorDepth',
+  };
+  const deviceGet = (k: string) => {
+    const v = device?.[k];
+    if (v !== undefined && v !== null && v !== '') return v;
+    const alias = DEVICE_ALIASES[k];
+    if (alias) {
+      const av = device?.[alias];
+      if (av !== undefined && av !== null && av !== '') return av;
+    }
+    return undefined;
+  };
 
   const planDefs = [
     { key: 'cli', label: 'CLI', icon: <HardDrive size={15} />, plan: user.plan_cli || 'Free', start: user.plan_cli_start, expiry: user.plan_cli_expiry },
@@ -623,64 +687,110 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 title="Onboarding Preferences"
                 subtitle="Answered during onboarding after signup"
                 badge={user.onboarding_completed ? 'Completed' : 'Pending'}
-                badgeFg={user.onboarding_completed ? '#10B981' : 'var(--color-warning)'}
+                badgeIcon={user.onboarding_completed ? <Check size={11} strokeWidth={3} /> : <Clock size={11} strokeWidth={3} />}
+                badgeBg={user.onboarding_completed ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)'}
+                badgeBorder={user.onboarding_completed ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)'}
+                badgeFg={user.onboarding_completed ? '#10B981' : '#B45309'}
               />
-              <div className="formGrid">
-                <div className="field">
-                  <label className="fieldLabel">Student</label>
-                  <div className="readBox readBoxRow">
-                    <span className="dotGood" style={{ background: user.is_student ? '#10B981' : 'var(--color-text-muted)' }} />
-                    {user.is_student ? 'Yes, student discount applies' : 'No, standard account'}
+              <div className="prefGrid">
+                <div className="prefCard">
+                  <span className="prefIcon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}><GraduationCap size={16} /></span>
+                  <div className="prefTxt">
+                    <span className="prefLabel">Student</span>
+                    <span className="prefValue">
+                      <span className="dotGood" style={{ background: user.is_student ? '#10B981' : 'var(--color-text-muted)' }} />
+                      {user.is_student ? 'Yes, student discount applies' : 'No, standard account'}
+                    </span>
                   </div>
                 </div>
-                <div className="field">
-                  <label className="fieldLabel">Programmer Level</label>
-                  <div className="readBox">{EXPERIENCE_LABELS[user.experience_level] ?? user.experience_level ?? 'Not specified'}</div>
-                </div>
-                <div className="field fieldSpan">
-                  <label className="fieldLabel">Wants to use</label>
-                  <div className="readBox readBoxChips">
-                    {useCases.length > 0 ? (
-                      useCases.map((u: string) => (
-                        <span key={u} className="chip">{USECASE_LABELS[u] ?? u}</span>
-                      ))
-                    ) : (
-                      <span className="emptyText">Not specified</span>
-                    )}
+                <div className="prefCard">
+                  <span className="prefIcon" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6' }}><Cpu size={16} /></span>
+                  <div className="prefTxt">
+                    <span className="prefLabel">Programmer Level</span>
+                    <span className="prefValue">{EXPERIENCE_LABELS[user.experience_level] ?? user.experience_level ?? 'Not specified'}</span>
                   </div>
                 </div>
-                <div className="field">
-                  <label className="fieldLabel">Goal</label>
-                  <div className="readBox">{GOAL_LABELS[user.earning_goal] ?? user.earning_goal ?? 'Not specified'}</div>
+                <div className="prefCard prefSpan">
+                  <span className="prefIcon" style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}><Zap size={16} /></span>
+                  <div className="prefTxt">
+                    <span className="prefLabel">Wants to use</span>
+                    <span className="prefChips">
+                      {useCases.length > 0 ? (
+                        useCases.map((u: string) => (
+                          <span key={u} className="chip">{USECASE_LABELS[u] ?? u}</span>
+                        ))
+                      ) : (
+                        <span className="emptyText">Not specified</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="prefCard">
+                  <span className="prefIcon" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B' }}><Target size={16} /></span>
+                  <div className="prefTxt">
+                    <span className="prefLabel">Goal</span>
+                    <span className="prefValue">{GOAL_LABELS[user.earning_goal] ?? user.earning_goal ?? 'Not specified'}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* System & Hardware Info */}
             <section className="section">
-              <SectionHead icon={<Cpu size={17} />} title="System & Hardware" subtitle="Captured at signup · device, system & network details" />
+              <SectionHead
+                icon={<Cpu size={17} />}
+                title="System & Hardware"
+                subtitle="Captured at signup · device, system & network details"
+                badge={device ? 'Detected' : 'Not captured'}
+                badgeIcon={device ? <Check size={11} strokeWidth={3} /> : <AlertTriangle size={11} />}
+                badgeBg={device ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)'}
+                badgeBorder={device ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)'}
+                badgeFg={device ? '#10B981' : '#B45309'}
+              />
               {!device ? (
-                <div className="readBox" style={{ color: 'var(--color-text-muted)' }}>No device information was captured at signup.</div>
+                <div className="emptyState" style={{ color: 'var(--color-text-muted)' }}>
+                  <div className="emptyStateIcon" style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}><Cpu size={20} /></div>
+                  <div className="emptyStateTitle">No device information captured</div>
+                  <div className="emptyStateHint">This user signed up without fingerprint data, or the signal was too weak to record.</div>
+                </div>
               ) : (
                 <div>
-                  {DEVICE_GROUPS.map(g => (
-                    <div key={g.label}>
-                      <div className="groupLabel">{g.icon} {g.label}</div>
-                      <div className="deviceGrid">
-                        {g.keys.filter(k => deviceGet(k) !== undefined && deviceGet(k) !== null && deviceGet(k) !== '').map(k => (
-                          <div className="deviceTile" key={k}>
-                            <span className="deviceLabel">{DEVICE_LABELS[k]}</span>
-                            <span className="deviceValue">{formatDeviceValue(deviceGet(k))}</span>
+                  {DEVICE_GROUPS.map(g => {
+                    const rows = g.keys.filter(k => deviceGet(k) !== undefined && deviceGet(k) !== null && deviceGet(k) !== '');
+                    return (
+                      <div key={g.label}>
+                        <div className="groupLabel" style={{ color: g.accent }}>
+                          <span className="groupChip" style={{ background: `${g.accent}1a`, borderColor: `${g.accent}33` }}>{g.icon}</span>
+                          {g.label}
+                          <span className="groupCount">{rows.length > 0 ? `${rows.length} fields` : 'no data'}</span>
+                        </div>
+                        {rows.length > 0 ? (
+                          <div className="deviceGrid">
+                            {rows.map(k => (
+                              <div className="deviceTile" key={k} style={{ ['--tile-accent' as any]: g.accent }}>
+                                <span className="deviceLabel">
+                                  <i className="deviceIcon">{DEVICE_ICONS[k] ?? <Dot size={8} />}</i>
+                                  {DEVICE_LABELS[k] ?? k}
+                                </span>
+                                <span className={`deviceValue ${k === 'userAgent' ? 'deviceValueMono' : ''}`}>{formatDeviceValue(deviceGet(k))}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : (
+                          <div className="deviceEmpty">No {g.label.toLowerCase()} details were recorded for this user.</div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {deviceGet('userAgent') && (
                     <div>
-                      <div className="groupLabel"><Globe size={13} /> Browser</div>
-                      <div className="deviceTile">
-                        <span className="deviceLabel">User Agent</span>
+                      <div className="groupLabel" style={{ color: '#8B5CF6' }}>
+                        <span className="groupChip" style={{ background: '#8B5CF61a', borderColor: '#8B5CF633' }}><Globe size={12} /></span>
+                        Browser
+                        <span className="groupCount">detail</span>
+                      </div>
+                      <div className="deviceTile" style={{ ['--tile-accent' as any]: '#8B5CF6' }}>
+                        <span className="deviceLabel"><i className="deviceIcon"><Globe size={14} /></i>User Agent</span>
                         <span className="deviceValue deviceValueMono">{deviceGet('userAgent')}</span>
                       </div>
                     </div>
@@ -756,7 +866,14 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
               </div>
               <div className="ovRow">
                 <span className="ovLabel">Onboarding</span>
-                <span className="ovValue" style={{ color: user.onboarding_completed ? '#10B981' : 'var(--color-warning)' }}>{user.onboarding_completed ? 'Completed' : 'Pending'}</span>
+                <span className="ovBadge" style={{
+                  background: user.onboarding_completed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: user.onboarding_completed ? '#10B981' : 'var(--color-warning)',
+                  border: `1px solid ${user.onboarding_completed ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`
+                }}>
+                  <Check size={12} strokeWidth={3} />
+                  {user.onboarding_completed ? 'Completed' : 'Pending'}
+                </span>
               </div>
               <div className="ovRow">
                 <span className="ovLabel">Active products</span>
@@ -892,6 +1009,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .railName { margin: 14px 0 8px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--color-text-main); line-height: 1.15; }
         .statusPill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
         .statusPillDot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+        .obBadge { display: inline-flex; align-items: center; gap: 6px; align-self: flex-end; margin-top: 10px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 
         .railMeta { width: 100%; margin-top: 18px; border-top: 1px dashed var(--color-border); }
         .railMetaRow { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--color-border); background: none; border-left: none; border-right: none; border-top: none; cursor: default; font: inherit; text-align: left; color: inherit; }
@@ -937,7 +1055,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .secHeadTxt { flex: 1; }
         .secTitle { font-size: 18px; font-weight: 700; color: var(--color-text-main); margin: 0; letter-spacing: -0.01em; }
         .secSub { font-size: 13px; color: var(--color-text-muted); margin-top: 4px; }
-        .secBadge { padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .secBadge { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
 
         /* ─── FIELDS ─── */
         .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -960,15 +1078,34 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .emptyText { color: var(--color-text-muted); font-style: italic; }
         .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--color-primary-soft); border: 1px solid var(--color-border); font-size: 13px; font-weight: 600; color: var(--color-text-main); }
 
+        /* ─── PREFERENCES ─── */
+        .prefGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .prefCard { display: flex; align-items: flex-start; gap: 14px; padding: 18px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 14px; transition: all 0.2s ease; }
+        .prefCard:hover { border-color: var(--color-primary-soft); box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+        .prefSpan { grid-column: 1 / -1; }
+        .prefIcon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .prefTxt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .prefLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .prefValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .prefChips { display: flex; flex-wrap: wrap; gap: 8px; }
+
         /* ─── DEVICE ─── */
-        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
         .groupLabel:first-child { margin-top: 0; }
+        .groupChip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 8px; border: 1px solid; color: inherit; flex-shrink: 0; }
+        .groupCount { margin-left: auto; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 999px; background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text-muted); }
         .deviceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .deviceTile { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; }
-        .deviceTile:hover { border-color: var(--color-primary-soft); }
-        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .deviceTile { display: flex; flex-direction: column; gap: 7px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; position: relative; }
+        .deviceTile:hover { border-color: color-mix(in srgb, var(--tile-accent) 55%, transparent); box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--tile-accent) 35%, transparent); transform: translateY(-1px); }
+        .deviceTile .deviceIcon { width: 22px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--tile-accent) 14%, transparent); color: var(--tile-accent); display: inline-flex; align-items: center; justify-content: center; font-style: normal; flex-shrink: 0; }
+        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
         .deviceValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; word-break: break-word; }
         .deviceValueMono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--color-text-muted); font-weight: 500; word-break: break-word; }
+        .emptyState { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 34px 20px; border: 1px dashed var(--color-border); border-radius: 16px; }
+        .deviceEmpty { font-size: 13px; color: var(--color-text-muted); padding: 16px 18px; border: 1px dashed var(--color-border); border-radius: 12px; font-style: italic; }
+        .emptyStateIcon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+        .emptyStateTitle { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .emptyStateHint { font-size: 13px; color: var(--color-text-muted); max-width: 320px; line-height: 1.5; }
 
         /* ─── PLANS ─── */
         .planStack { display: flex; flex-direction: column; gap: 16px; }
@@ -995,6 +1132,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         .ovRow + .ovRow { border-top: 1px dashed var(--color-border); }
         .ovLabel { font-size: 13px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
         .ovValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .ovBadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 
         .metaRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
         .metaRow + .metaRow { border-top: 1px dashed var(--color-border); }
@@ -1013,7 +1151,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
           .railCard { max-width: 420px; }
         }
         @media (max-width: 768px) {
-          .formGrid, .deviceGrid, .planGrid { grid-template-columns: 1fr; }
+          .formGrid, .deviceGrid, .planGrid, .prefGrid { grid-template-columns: 1fr; }
           .pageHead { flex-direction: column; }
         }`}</style>
     </div>
