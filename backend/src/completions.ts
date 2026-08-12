@@ -5,10 +5,10 @@ import { createCohere } from '@ai-sdk/cohere';
 import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
-import { hashPassword } from './auth.ts';
+import { hashPassword, verifyToken } from './auth.ts';
 
-function pickActiveKey(keyStr: string): string | null {
-  if (!keyStr) return null;
+function getActiveKeys(keyStr: string): string[] {
+  if (!keyStr) return [];
   try {
     const parsed = JSON.parse(keyStr);
     if (Array.isArray(parsed)) {
@@ -16,14 +16,18 @@ function pickActiveKey(keyStr: string): string | null {
         if (typeof k === 'string') return true;
         return k.active !== false && k.key?.trim() !== '';
       }).map((k: any) => typeof k === 'string' ? k : k.key);
-      if (activeKeys.length > 0) {
-        return activeKeys[Math.floor(Math.random() * activeKeys.length)];
+      
+      // Shuffle the active keys array for load balancing
+      for (let i = activeKeys.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [activeKeys[i], activeKeys[j]] = [activeKeys[j], activeKeys[i]];
       }
-      return null;
+      
+      return activeKeys;
     }
-    return keyStr;
+    return [keyStr];
   } catch {
-    return keyStr;
+    return [keyStr];
   }
 }
 
@@ -40,27 +44,29 @@ export async function getSystemPromptForModel(model: string) {
   return null;
 }
 
-export async function getModelInstance(userId: string, model: string) {
+export async function getModelInstances(userId: string, model: string) {
   const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
-  
+
   // Dynamic Provider Resolution
   for (const p of providersResult) {
     if (p.models && Array.isArray(p.models)) {
       const matched = p.models.find((m: any) => m.id === model);
       if (matched) {
-        const apiKey = pickActiveKey(p.key);
-        if (apiKey) {
+        const apiKeys = getActiveKeys(p.key);
+        if (apiKeys.length > 0) {
           const modelId = matched.originalId || matched.id;
-          if (p.api_format === 'anthropic') {
-            return createAnthropic({ apiKey, baseURL: p.base_url || undefined })(modelId);
-          } else if (p.api_format === 'google') {
-            return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
-          } else if (p.api_format === 'cohere') {
-            return createCohere({ apiKey, baseURL: p.base_url || undefined })(modelId);
-          } else {
-            // Default to OpenAI / Custom provider
-            return createOpenAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
-          }
+          return apiKeys.map(apiKey => {
+            if (p.api_format === 'anthropic') {
+              return createAnthropic({ apiKey, baseURL: p.base_url || undefined })(modelId);
+            } else if (p.api_format === 'google') {
+              return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+            } else if (p.api_format === 'cohere') {
+              return createCohere({ apiKey, baseURL: p.base_url || undefined })(modelId);
+            } else {
+              // Default to OpenAI / Custom provider
+              return createOpenAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+            }
+          });
         }
       }
     }
@@ -84,9 +90,19 @@ export async function handleCompletions(c: any) {
     const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
     
+    // Admin test models flow: the admin token is a valid JWT, not an API key.
+    // Treat signed-in admins as the 'admin' test identity.
+    let adminUserId: string | null = null;
+    if (!userId) {
+      const payload = await verifyToken(reqKey);
+      if (payload && payload.role === 'admin') {
+        adminUserId = 'admin';
+      }
+    }
+    
     // If no user found from API key, but we have a user logged in (frontend chat), we could use c.get('userId')
     // We'll fall back to c.get('userId')
-    const finalUserId = userId || c.get('userId');
+    const finalUserId = userId || adminUserId || c.get('userId');
     
     if (!finalUserId) {
       return c.json({ error: 'Invalid API key or unauthorized' }, 401);
@@ -104,7 +120,10 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
-    const aiModel = await getModelInstance(finalUserId, model);
+    const aiModels = await getModelInstances(finalUserId, model);
+    if (!aiModels || aiModels.length === 0) {
+      return c.json({ error: 'Model not available or no active keys.' }, 500);
+    }
 
     // Check if user has disabled this model
     const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
@@ -120,6 +139,9 @@ export async function handleCompletions(c: any) {
 
     const systemPrompt = await getSystemPromptForModel(model);
 
+    // Admin test-identity must not be recorded against usage (no real user row).
+    const skipUsage = adminUserId === 'admin';
+
     // Convert messages
     const coreMessages: any[] = messages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
@@ -130,43 +152,60 @@ export async function handleCompletions(c: any) {
       coreMessages.unshift({ role: 'system', content: systemPrompt });
     }
 
-    if (stream) {
-      const result = await streamText({
-        model: aiModel,
-        messages: coreMessages,
-        async onFinish({ usage }) {
-          if (usage) {
-            await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
+    let lastError: any = null;
+    
+    for (const aiModel of aiModels) {
+      try {
+        if (stream) {
+          const result = await streamText({
+            model: aiModel,
+            maxRetries: 0,
+            messages: coreMessages,
+            async onFinish({ usage }) {
+              if (usage && !skipUsage) {
+                await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
+              }
+            },
+          });
+          return result.toTextStreamResponse();
+        } else {
+          const result = await generateText({
+            model: aiModel,
+            maxRetries: 0,
+            messages: coreMessages,
+          });
+
+          const tokens: number = result.usage?.totalTokens || 150;
+          if (!skipUsage) {
+            await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
           }
-        },
-      });
-      return result.toTextStreamResponse();
-    } else {
-      const result = await generateText({
-        model: aiModel,
-        messages: coreMessages,
-      });
-      
-      const tokens: number = result.usage?.totalTokens || 150;
-      await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
-      
-      return c.json({
-        id: `chatcmpl-${Date.now()}`,
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model,
-        choices: [{
-          index: 0,
-          message: { role: 'assistant', content: result.text },
-          finish_reason: 'stop'
-        }],
-        usage: {
-          prompt_tokens: (result.usage as any)?.promptTokens || 0,
-          completion_tokens: (result.usage as any)?.completionTokens || 0,
-          total_tokens: tokens
+
+          return c.json({
+            id: `chatcmpl-${Date.now()}`,
+            object: 'chat.completion',
+            created: Math.floor(Date.now() / 1000),
+            model,
+            choices: [{
+              index: 0,
+              message: { role: 'assistant', content: result.text },
+              finish_reason: 'stop'
+            }],
+            usage: {
+              prompt_tokens: (result.usage as any)?.promptTokens || 0,
+              completion_tokens: (result.usage as any)?.completionTokens || 0,
+              total_tokens: tokens
+            }
+          });
         }
-      });
+      } catch (err: any) {
+        lastError = err;
+        console.error(`[Fallback] AI request failed with a key. Trying next... Error:`, err?.message || err);
+        // Continue to the next aiModel in the array
+      }
     }
+    
+    // If all keys failed, throw the last error so it can be sent to the user
+    throw lastError;
   } catch (error: any) {
     console.error('Chat completions error:', error);
     // AI SDK throws APICallError with a responseBody string — parse it for the real error

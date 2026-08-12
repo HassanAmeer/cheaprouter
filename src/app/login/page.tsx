@@ -86,18 +86,18 @@ export default function Login() {
           <h1 className={styles.title}>Sign In</h1>
           <p className={styles.subtitle}>Enter your email and password to continue</p>
 
-          <form onSubmit={submit} autoComplete="off">
-            <Input id="userEmail" name="userEmail" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+          <form onSubmit={submit}>
+            <Input id="email" name="email" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             <Input 
-              id="userPassword" 
-              name="userPassword" 
+              id="password" 
+              name="password" 
               label="Password" 
               type={showPassword ? "text" : "password"} 
               placeholder="••••••••" 
               required 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              autoComplete="new-password"
+              autoComplete="current-password"
               rightElement={
                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

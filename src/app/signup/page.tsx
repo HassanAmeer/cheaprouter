@@ -87,12 +87,12 @@ export default function Signup() {
           <h1 className={styles.title}>Create Account</h1>
           <p className={styles.subtitle}>Get your free $5 welcome credits now</p>
 
-          <form onSubmit={submit} autoComplete="off">
-            <Input id="signupName" name="signupName" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
-            <Input id="signupEmail" name="signupEmail" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+          <form onSubmit={submit}>
+            <Input id="name" name="name" label="Full Name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+            <Input id="email" name="email" label="Email Address" type="email" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             <Input 
-              id="signupPassword" 
-              name="signupPassword" 
+              id="password" 
+              name="password" 
               label="Password" 
               type={showPassword ? "text" : "password"} 
               placeholder="••••••••" 

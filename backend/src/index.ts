@@ -546,6 +546,11 @@ async function handleListModels(c: any) {
            const modelId = isString ? m : (m.id || m.originalId);
            const modelName = isString ? m : (m.name || m.originalName);
            
+           // Only include models that are featured on the landing page
+           if (!isString && !m.showOnLandingPage) {
+             return;
+           }
+           
            // Skip if we already added a model with this custom ID to avoid duplicates
            if (modelId && !data.find(existing => existing.id === modelId)) {
              data.push({

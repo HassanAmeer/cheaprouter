@@ -35,6 +35,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [searchFocused]);
 
+  useEffect(() => {
+    const token = localStorage.getItem('cm_token');
+    if (!token) {
+      window.location.href = '/login';
+    }
+  }, []);
+
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
     { name: 'API Keys', path: '/dashboard/keys', icon: <Key size={18} />, badge: null },

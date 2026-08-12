@@ -26,7 +26,7 @@ export default function ApiKeysPage() {
   const [revealId, setRevealId] = useState<string | null>(null);
 
   const load = () => {
-    api.listKeys().then((r) => setKeys(r.keys.map((k: any) => ({ ...k, lastUsed: k.lastUsed ?? 'Never' })))).finally(() => setLoading(false));
+    api.listKeys().then((r) => setKeys(r.keys.map((k: any) => ({ ...k, lastUsed: k.lastUsed ?? 'Never' })))).catch(console.error).finally(() => setLoading(false));
   };
 
   useEffect(load, []);

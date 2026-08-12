@@ -97,6 +97,9 @@ function SidebarNavContent() {
           <Link href="/admin/seeding" className={`${styles.navItem} ${pathname.startsWith('/admin/seeding') ? styles.navItemActive : ''}`}>
             <Database size={17} /> Database Seeding
           </Link>
+          <Link href="/admin/test-models" className={`${styles.navItem} ${pathname.startsWith('/admin/test-models') ? styles.navItemActive : ''}`}>
+            <Sparkles size={17} /> Test Models
+          </Link>
         </div>
       </div>
     </nav>
@@ -137,6 +140,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/logs')) return 'System Logs';
     if (pathname.startsWith('/admin/seeding')) return 'Database Seeding';
     if (pathname.startsWith('/admin/raw-data')) return 'Raw Data Storage';
+    if (pathname.startsWith('/admin/test-models')) return 'Test Models';
     return 'Admin Panel';
   };
 

@@ -69,6 +69,7 @@ export default function ProvidersPage() {
 
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [landingSearchQuery, setLandingSearchQuery] = useState('');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
     capabilities: [] as string[],
@@ -1296,19 +1297,31 @@ export default function ProvidersPage() {
 
       {/* Landing Page Models Section */}
       <hr style={{ margin: '40px 0', borderColor: 'var(--color-border)', opacity: 0.5 }} />
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page Models</h2>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table.</p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '16px' }}>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page and API Models</h2>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table and available via the public API.</p>
         </div>
-        <button
-          onClick={handleRemoveAllLandingPage}
-          style={{ background: 'none', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', transition: 'color 0.2s, border-color 0.2s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'; }}
-        >
-          <Trash2 size={13} /> Delete All
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+            <input 
+              type="text" 
+              placeholder="Search API models..." 
+              value={landingSearchQuery}
+              onChange={e => setLandingSearchQuery(e.target.value)}
+              style={{ padding: '8px 12px 8px 32px', fontSize: '13px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)', color: 'var(--color-text)', width: '220px', outline: 'none' }}
+            />
+          </div>
+          <button
+            onClick={handleRemoveAllLandingPage}
+            style={{ background: 'none', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s, border-color 0.2s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'; }}
+          >
+            <Trash2 size={13} /> Delete All
+          </button>
+        </div>
       </div>
 
       <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -1329,6 +1342,11 @@ export default function ProvidersPage() {
                 const landingPageModels = providers
                   .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon, providerStatus: p.status })))
                   .filter(m => m.showOnLandingPage)
+                  .filter(m => {
+                    if (!landingSearchQuery.trim()) return true;
+                    const q = landingSearchQuery.toLowerCase();
+                    return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || (m.originalId && m.originalId.toLowerCase().includes(q));
+                  })
                   .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
                 
                 if (landingPageModels.length === 0) {
