@@ -1,16 +1,121 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, Save, Ban, CheckCircle, Mail, Key, User, Calendar, Activity, Zap, HardDrive, Shield, AlertTriangle, Camera } from 'lucide-react';
-import styles from '../../admin.module.css';
+import {
+  Save, Ban, CheckCircle, Mail, Key, User, Calendar, Activity,
+  Zap, HardDrive, Shield, AlertTriangle, Camera, Target, Globe, Clock, Cpu,
+  Fingerprint, Monitor, Wifi, Award, GraduationCap, Copy, Check,
+} from 'lucide-react';
 import Link from 'next/link';
 
+const USECASE_LABELS: Record<string, string> = {
+  'vibe-coding': 'Vibe Coding',
+  'website-builder': 'Website Builder',
+  agents: 'Chat agents',
+  chat: 'Chat',
+  api: 'API',
+  cli: 'CLI',
+  ide: 'IDE',
+  extension: 'Extension',
+};
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+  'not-programmer': 'Non-Developer',
+};
+
+const GOAL_LABELS: Record<string, string> = {
+  coding: 'Coding',
+  chats: 'Chats',
+  agents: 'Agents',
+  apis: 'APIs',
+  resellers: 'Reseller',
+  affiliate: 'Affiliate',
+  earn: 'Earning',
+  free: 'Free use',
+};
+
+const DEVICE_LABELS: Record<string, string> = {
+  os: 'Operating System',
+  platform: 'Platform',
+  browser: 'Browser',
+  userAgent: 'User Agent',
+  language: 'Language',
+  timeZone: 'Time Zone',
+  cpuCores: 'CPU Cores',
+  deviceMemoryGB: 'Memory (GB)',
+  screenResolution: 'Screen Resolution',
+  screenColorDepth: 'Color Depth',
+  devicePixelRatio: 'Pixel Ratio',
+  touchPoints: 'Touch Points',
+  online: 'Online',
+  connectionType: 'Connection Type',
+  connectionEffectiveType: 'Network (Effective)',
+  downlinkMbps: 'Downlink (Mbps)',
+  rttMs: 'Latency (RTT ms)',
+  saveData: 'Save Data',
+};
+
+const DEVICE_GROUPS: { label: string; icon: React.ReactNode; keys: string[] }[] = [
+  { label: 'System', icon: <Monitor size={13} />, keys: ['os', 'platform', 'browser', 'language', 'timeZone'] },
+  { label: 'Hardware', icon: <Cpu size={13} />, keys: ['cpuCores', 'deviceMemoryGB', 'screenResolution', 'screenColorDepth', 'devicePixelRatio', 'touchPoints'] },
+  { label: 'Network', icon: <Wifi size={13} />, keys: ['online', 'connectionType', 'connectionEffectiveType', 'downlinkMbps', 'rttMs', 'saveData'] },
+];
+
+const TIER_RANK: Record<string, number> = { free: 0, starter: 1, pro: 2 };
+
+function parseHardwareInfo(raw: any): Record<string, any> | null {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw;
+}
+
+function formatDeviceValue(value: any): string {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  if (value === null || value === undefined || value === '') return '—';
+  return String(value);
+}
+
+function tierMeta(plan?: string): { label: string; bg: string; fg: string } {
+  const p = (plan || 'Free').toLowerCase();
+  if (p === 'pro') return { label: 'Pro', bg: 'var(--color-primary)', fg: '#fff' };
+  if (p === 'starter') return { label: 'Starter', bg: 'rgba(217, 119, 6, 0.12)', fg: '#D97706' };
+  return { label: 'Free', bg: 'var(--color-bg-soft)', fg: 'var(--color-text-muted)' };
+}
+
+function tierRank(plan?: string): number {
+  return TIER_RANK[(plan || 'Free').toLowerCase()] ?? 0;
+}
+
+function SectionHead({ icon, title, subtitle, badge, badgeFg }: { icon: React.ReactNode; title: string; subtitle?: string; badge?: string; badgeFg?: string }) {
+  return (
+    <div className="secHead">
+      <div className="secIcon">{icon}</div>
+      <div className="secHeadTxt">
+        <h3 className="secTitle">{title}</h3>
+        {subtitle && <div className="secSub">{subtitle}</div>}
+      </div>
+      {badge && (
+        <span className="secBadge" style={{ background: 'var(--color-primary-soft)', color: badgeFg || 'var(--color-primary)' }}>{badge}</span>
+      )}
+    </div>
+  );
+}
+
 export default function UserDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -21,6 +126,14 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
       setUser({ ...user, profile_picture: ev.target?.result as string });
     };
     reader.readAsDataURL(file);
+  };
+
+  const copyId = () => {
+    if (!user) return;
+    navigator.clipboard?.writeText(user.id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -101,22 +214,219 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '40px', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
         <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         <span style={{ color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 500 }}>Loading User Details...</span>
-        <style jsx>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+                          <style jsx>{`.page { position: relative; padding-bottom: 80px; background: radial-gradient(1100px 520px at 78% -6%, var(--color-primary-soft), transparent 65%), radial-gradient(900px 480px at 2% -12%, rgba(139, 92, 246, 0.12), transparent 55%), var(--color-bg); min-height: 100vh; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .pageInner { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 28px 24px 0; }
+
+        /* ─── PAGE HEAD ─── */
+        .pageHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 28px; }
+        .crumb { font-size: 13px; font-weight: 500; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
+        .crumbLink { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+        .crumbLink:hover { text-decoration: underline; }
+        .crumb b { color: var(--color-text-main); font-weight: 600; }
+        .crumbSep { width: 4px; height: 4px; border-radius: 50%; background: var(--color-border); }
+        .pageTitle { font-size: 30px; font-weight: 800; color: var(--color-text-main); margin: 6px 0 4px; letter-spacing: -0.03em; }
+        .pageSub { font-size: 14px; color: var(--color-text-muted); }
+
+        .saveBtn {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 11px 22px; border-radius: 12px;
+          background: var(--color-primary); color: #ffffff;
+          border: 1px solid var(--color-primary);
+          font-weight: 700; font-size: 14px; cursor: pointer;
+          box-shadow: 0 4px 14px var(--color-primary-soft);
+          transition: all 0.2s ease;
+        }
+        .saveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px var(--color-primary-soft); filter: brightness(1.05); }
+        .saveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ─── PROFILE GRID ─── */
+        .profileGrid { display: grid; grid-template-columns: 320px 1fr; gap: 28px; align-items: start; }
+
+        /* ─── RAIL ─── */
+        .profileRail { display: flex; flex-direction: column; gap: 24px; position: sticky; top: 20px; }
+
+        .railCard {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-radius: 20px; overflow: hidden;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+        }
+        .railCover {
+          position: relative; height: 96px;
+          background: #EA580C;
+          opacity: 0.5;
+          overflow: hidden;
+        }
+        .railCover::after {
+          content: ''; position: absolute; inset: 0;
+          background-image: radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1.5px);
+          background-size: 22px 22px;
+          -webkit-mask-image: radial-gradient(circle at 60% 40%, black 0%, transparent 80%);
+          mask-image: radial-gradient(circle at 60% 40%, black 0%, transparent 80%);
+        }
+        .coverWatermark { position: absolute; right: 12px; bottom: -18px; font-size: 90px; font-weight: 900; line-height: 1; color: rgba(255,255,255,0.12); pointer-events: none; user-select: none; }
+        .coverPlan {
+          position: absolute; top: 14px; left: 16px; z-index: 3;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px; border-radius: 999px;
+          font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.2); backdrop-filter: blur(8px);
+        }
+
+        .railBody { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .avatarWrap { position: relative; margin-top: -52px; }
+        .avatarBox {
+          width: 104px; height: 104px; border-radius: 28px;
+          background: linear-gradient(135deg, var(--color-card-bg) 0%, var(--color-bg-soft) 100%); color: var(--color-primary);
+          border: 3px solid var(--color-card-bg);
+          box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 800; font-size: 38px; overflow: hidden; position: relative;
+          transition: all 0.3s ease;
+        }
+        .avatarBox::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, var(--color-primary-soft) 0%, transparent 55%); opacity: 0.4; }
+        .avatarBox:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(0,0,0,0.2); }
+        .statusDot { position: absolute; right: 2px; bottom: 2px; width: 20px; height: 20px; border-radius: 9px; border: 3px solid var(--color-card-bg); }
+        .cameraBtn { position: absolute; right: -4px; top: -4px; width: 32px; height: 32px; border-radius: 50%; background: var(--color-card-bg); color: var(--color-text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.12); border: 1px solid var(--color-border); transition: all 0.2s ease; }
+        .cameraBtn:hover { background: var(--color-bg-soft); transform: scale(1.05); }
+
+        .railName { margin: 14px 0 8px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--color-text-main); line-height: 1.15; }
+        .statusPill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .statusPillDot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+
+        .railMeta { width: 100%; margin-top: 18px; border-top: 1px dashed var(--color-border); }
+        .railMetaRow { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--color-border); background: none; border-left: none; border-right: none; border-top: none; cursor: default; font: inherit; text-align: left; color: inherit; }
+        .railMetaRow:last-child { border-bottom: none; }
+        .rMetaLabel { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
+        .rMetaValue { font-size: 13px; font-weight: 600; color: var(--color-text-main); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rMetaId { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+        .railIdRow { cursor: pointer; transition: all 0.2s ease; }
+        .railIdRow:hover .rMetaLabel { color: var(--color-primary); }
+
+        .railStats { width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 10px; }
+        .railStat { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; }
+        .railStatIcon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .railStatTxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+        .railStatVal { font-size: 19px; font-weight: 800; color: var(--color-text-main); line-height: 1.1; letter-spacing: -0.01em; }
+        .railStatLbl { font-size: 10px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+
+        .dangerCard {
+          background: linear-gradient(180deg, rgba(239,68,68,0.05), var(--color-card-bg) 40%);
+          border: 1px solid rgba(239, 68, 68, 0.25); border-top: 3px solid #ef4444;
+          border-radius: 20px; padding: 22px;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.05);
+        }
+        .dangerHead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed rgba(239, 68, 68, 0.2); }
+        .dangerHead .secIcon { color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
+        .dangerDesc { font-size: 13px; color: var(--color-text-muted); line-height: 1.55; margin-bottom: 18px; }
+        .dangerBtn { width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s ease; }
+        .dangerBtn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+        /* ─── MAIN ─── */
+        .profileMain { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+        /* ─── SECTIONS ─── */
+        .section {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-radius: 20px; padding: 26px 28px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
+        }
+        .section:hover { border-color: var(--color-primary-soft); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 18px 44px var(--color-primary-soft); }
+        .secHead { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--color-border); }
+        .secIcon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-primary-soft), var(--color-card-bg)); color: var(--color-primary); border: 1px solid var(--color-primary-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .secHeadTxt { flex: 1; }
+        .secTitle { font-size: 18px; font-weight: 700; color: var(--color-text-main); margin: 0; letter-spacing: -0.01em; }
+        .secSub { font-size: 13px; color: var(--color-text-muted); margin-top: 4px; }
+        .secBadge { padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+
+        /* ─── FIELDS ─── */
+        .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .fieldSpan { grid-column: 1 / -1; }
+        .fieldLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .input, .readBox {
+          width: 100%; background: var(--color-bg);
+          border: 1px solid var(--color-border); padding: 12px 16px;
+          border-radius: 12px; color: var(--color-text-main); font-size: 14px;
+          outline: none; transition: all 0.2s ease; box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+        }
+        .input:hover { border-color: var(--color-text-muted); }
+        .input:focus, select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft); background: var(--color-card-bg); }
+
+        .readBoxRow { display: flex; align-items: center; gap: 10px; }
+        .readBoxChips { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+        .readBoxMono { font-family: ui-monospace, monospace; font-size: 13px; }
+        .dotGood { width: 8px; height: 8px; border-radius: 50%; }
+        .emptyText { color: var(--color-text-muted); font-style: italic; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--color-primary-soft); border: 1px solid var(--color-border); font-size: 13px; font-weight: 600; color: var(--color-text-main); }
+
+        /* ─── DEVICE ─── */
+        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .groupLabel:first-child { margin-top: 0; }
+        .deviceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .deviceTile { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; }
+        .deviceTile:hover { border-color: var(--color-primary-soft); }
+        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .deviceValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; word-break: break-word; }
+        .deviceValueMono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--color-text-muted); font-weight: 500; word-break: break-word; }
+
+        /* ─── PLANS ─── */
+        .planStack { display: flex; flex-direction: column; gap: 16px; }
+        .planRow { border: 1px solid var(--color-border); border-radius: 16px; padding: 20px 22px; background: linear-gradient(180deg, var(--color-card-bg), var(--color-bg)); position: relative; }
+        .planRow::before { content: ''; position: absolute; left: -1px; top: 18px; bottom: 18px; width: 4px; border-radius: 4px; background: var(--plan-accent, var(--color-primary)); }
+        .planRowHead { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .planIcon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .planName { font-size: 16px; font-weight: 700; color: var(--color-text-main); }
+        .planBadge { margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .planGrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* ─── OVERVIEW ─── */
+        .overviewCard {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-top: 3px solid var(--color-primary);
+          border-radius: 20px; padding: 26px 28px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
+        }
+        .overviewCard:hover { border-color: var(--color-primary-soft); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 18px 44px var(--color-primary-soft); }
+        .overviewHead { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--color-border); }
+        .ovIcon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-primary-soft), var(--color-card-bg)); color: var(--color-primary); border: 1px solid var(--color-primary-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .ovRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
+        .ovRow + .ovRow { border-top: 1px dashed var(--color-border); }
+        .ovLabel { font-size: 13px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
+        .ovValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+
+        .metaRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
+        .metaRow + .metaRow { border-top: 1px dashed var(--color-border); }
+        .metaLabel { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-muted); }
+        .metaValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .metaField { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+        .copyRow { cursor: pointer; transition: all 0.2s ease; }
+        .copyRow:hover { border-color: var(--color-primary); }
+
+        select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto; appearance: none; }
+        select option { background-color: var(--color-card-bg) !important; color: var(--color-text-main) !important; }
+
+        @media (max-width: 1024px) {
+          .profileGrid { grid-template-columns: 1fr; }
+          .profileRail { position: static; }
+          .railCard { max-width: 420px; }
+        }
+        @media (max-width: 768px) {
+          .formGrid, .deviceGrid, .planGrid { grid-template-columns: 1fr; }
+          .pageHead { flex-direction: column; }
+        }`}</style>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div style={{ padding: '80px 20px', textAlign: 'center', background: 'var(--color-card-bg)', borderRadius: '24px', border: '1px solid var(--color-border)', margin: '40px 0' }}>
+      <div style={{ padding: '80px 20px', textAlign: 'center', background: 'var(--color-card-bg)', borderRadius: '20px', border: '1px solid var(--color-border)', margin: '40px 0' }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
           <User size={32} color="var(--color-text-muted)" />
         </div>
-        <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '12px' }}>User Not Found</h3>
+        <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '12px' }}>User Not Found</h3>
         <p style={{ color: 'var(--color-text-muted)', marginBottom: '32px' }}>The user profile you are trying to view does not exist or has been removed.</p>
         <Link href="/admin/users" className="btn-primary" style={{ display: 'inline-flex', padding: '12px 24px', borderRadius: '12px', fontWeight: 600 }}>
           Return to User Directory
@@ -125,353 +435,587 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     );
   }
 
+  const isActive = user.status === 'Active';
+  const paidCount = ['plan_cli', 'plan_api', 'plan_chat', 'plan_agents'].filter(k => (user[k] || 'Free').toLowerCase() !== 'free').length;
+  const joinedStr = user.joined
+    || (user.created_at
+      ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '—');
+  const lastLoginStr = user.last_login
+    ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Never';
+  const device = parseHardwareInfo(user.hardware_info);
+  const deviceGet = (k: string) => device?.[k];
+
+  const planDefs = [
+    { key: 'cli', label: 'CLI', icon: <HardDrive size={15} />, plan: user.plan_cli || 'Free', start: user.plan_cli_start, expiry: user.plan_cli_expiry },
+    { key: 'api', label: 'API', icon: <Zap size={15} />, plan: user.plan_api || 'Free', start: user.plan_api_start, expiry: user.plan_api_expiry },
+    { key: 'chat', label: 'Chat', icon: <Mail size={15} />, plan: user.plan_chat || 'Free', start: user.plan_chat_start, expiry: user.plan_chat_expiry },
+    { key: 'agents', label: 'Websites', icon: <Shield size={15} />, plan: user.plan_agents || 'Free', start: user.plan_agents_start, expiry: user.plan_agents_expiry },
+  ];
+  const overallPlan = planDefs.reduce((best, p) => (tierRank(p.plan) > tierRank(best.plan) ? p : best), { plan: 'Free' }).plan;
+  const overallTier = tierMeta(overallPlan);
+  const initial = (user.name || '?')[0]?.toUpperCase() || '?';
+  const osLabel = deviceGet('os');
+  const useCases = (user.use_cases || '').split(',').map((u: string) => u.trim()).filter(Boolean);
+
+  const STAT_TONES = {
+    calls: { color: 'var(--color-primary)', bg: 'var(--color-primary-soft)' },
+    plans: { color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' },
+    onboarding: { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+    lastLogin: { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+  };
+
   return (
-    <div style={{ paddingBottom: '60px' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-        <Link href="/admin/users" style={{ color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', fontWeight: 600, padding: '8px 12px', background: 'var(--color-card-bg)', borderRadius: '8px', border: '1px solid var(--color-border)', transition: 'all 0.2s' }} className="hover-lift">
-          <ChevronLeft size={16} /> Directory
-        </Link>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>User Profile</h2>
-      </div>
+    <div className="page">
+      <div className="pageInner">
 
-      {/* Hero Header */}
-      <div style={{ 
-        position: 'relative', 
-        background: 'var(--color-card-bg)', 
-        borderRadius: '24px', 
-        border: '1px solid var(--color-border)', 
-        overflow: 'hidden',
-        marginBottom: '24px'
-      }}>
-        {/* Abstract Background */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '120px', background: 'linear-gradient(135deg, var(--color-primary-soft), var(--color-bg-main))', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', right: '10%', top: '-50%', width: '300px', height: '300px', background: 'var(--color-primary)', filter: 'blur(80px)', opacity: 0.15, borderRadius: '50%' }} />
-        </div>
-
-        <div style={{ position: 'relative', padding: '32px', paddingTop: '80px', display: 'flex', alignItems: 'flex-end', gap: '24px', flexWrap: 'wrap' }}>
-          
-          {/* Avatar with Upload */}
-          <div style={{ position: 'relative' }}>
-            <div style={{ 
-              width: 100, height: 100, borderRadius: '24px', 
-              background: 'var(--color-bg-main)', 
-              border: '4px solid var(--color-card-bg)',
-              boxShadow: 'var(--shadow-md)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              color: 'var(--color-primary)', fontWeight: 800, fontSize: 36,
-              overflow: 'hidden',
-              position: 'relative'
-            }}>
-              {user.profile_picture ? (
-                <img src={user.profile_picture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                user.name?.[0]?.toUpperCase() || '?'
-              )}
-            </div>
-            <label style={{ 
-              position: 'absolute', bottom: -8, right: -8, 
-              width: 36, height: 36, borderRadius: '50%', 
-              background: 'var(--color-primary)', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
-              border: '3px solid var(--color-card-bg)', transition: 'transform 0.2s'
-            }} className="hover-scale">
-              <Camera size={16} />
-              <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
-            </label>
+        {/* ─── PAGE HEADER ─── */}
+        <header className="pageHead">
+          <div>
+            <div className="crumb"><Link href="/admin/users" className="crumbLink">Users</Link><span className="crumbSep">/</span><b>Profile</b></div>
+            <h1 className="pageTitle">{user.name}</h1>
+            <div className="pageSub">Review and manage this account's details</div>
           </div>
-
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{user.name}</h1>
-              <span style={{ 
-                padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase',
-                background: user.status === 'Active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                color: user.status === 'Active' ? '#10B981' : '#EF4444',
-                border: `1px solid ${user.status === 'Active' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-              }}>
-                {user.status}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 500 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> {user.email}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> Joined {user.joined}</div>
-            </div>
-          </div>
-          
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '12px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px' }}>
-            <Save size={18} /> {saving ? 'Saving...' : 'Save Changes'}
+          <button className="saveBtn" onClick={handleSave} disabled={saving}>
+            <Save size={16} /> {saving ? 'Saving…' : 'Save Changes'}
           </button>
-        </div>
-      </div>
+        </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
-        
-        {/* Left Column: Form Details */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Identity Section */}
-          <div className="card glass-card" style={{ padding: '32px', borderRadius: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--color-primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
-                <User size={20} />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Identity Details</h3>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Name</label>
-                <input
-                  type="text"
-                  value={user.name}
-                  onChange={e => setUser({ ...user, name: e.target.value })}
-                  className="modern-input"
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', transition: 'border 0.2s', width: '100%' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Address</label>
-                <input
-                  type="email"
-                  value={user.email}
-                  onChange={e => setUser({ ...user, email: e.target.value })}
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px', color: 'var(--color-text-main)', fontSize: '15px', outline: 'none', transition: 'border 0.2s', width: '100%' }}
-                />
-              </div>
-            </div>
-          </div>
+        <div className="profileGrid">
 
-          {/* Subscriptions / Plans */}
-          <div className="card glass-card" style={{ padding: '32px', borderRadius: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--color-primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
-                <Zap size={20} />
+          {/* ─── PROFILE RAIL ─── */}
+          <aside className="profileRail">
+
+            <div className="railCard">
+              <div className="railCover">
+                <span className="coverPlan" style={{ background: overallTier.bg, color: overallTier.fg }}>
+                  <Award size={14} /> {overallTier.label} Plan
+                </span>
+                <span className="coverWatermark">{initial}</span>
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Active Subscriptions</h3>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-              
-              {/* CLI Plan */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <HardDrive size={12} /> CLI Plan
+              <div className="railBody">
+                <div className="avatarWrap">
+                  <div className="avatarBox">
+                    {user.profile_picture ? (
+                      <img src={user.profile_picture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : initial}
+                  </div>
+                  <span className="statusDot" style={{ background: isActive ? '#10B981' : '#EF4444' }} />
+                  <label className="cameraBtn">
+                    <Camera size={14} />
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
                   </label>
-                  <select 
-                    value={(user.plan_cli || 'Free').toLowerCase()} 
-                    onChange={e => setUser({ ...user, plan_cli: e.target.value })} 
-                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                  >
-                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                  </select>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
-                  <input type="datetime-local" value={user.plan_cli_start ? user.plan_cli_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_cli_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+
+                <h2 className="railName">{user.name}</h2>
+                <span className="statusPill" style={{
+                  background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: isActive ? '#10B981' : '#EF4444',
+                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`
+                }}>
+                  <span className="statusPillDot" style={{ background: isActive ? '#10B981' : '#EF4444' }} />
+                  {user.status}
+                </span>
+
+                <div className="railMeta">
+                  <div className="railMetaRow">
+                    <span className="rMetaLabel"><Mail size={14} /> Email</span>
+                    <span className="rMetaValue">{user.email}</span>
+                  </div>
+                  <div className="railMetaRow">
+                    <span className="rMetaLabel"><Calendar size={14} /> Joined</span>
+                    <span className="rMetaValue">{joinedStr}</span>
+                  </div>
+                  {osLabel && osLabel !== 'Unknown' && (
+                    <div className="railMetaRow">
+                      <span className="rMetaLabel"><Monitor size={14} /> Device</span>
+                      <span className="rMetaValue">{osLabel}</span>
+                    </div>
+                  )}
+                  <button className="railMetaRow railIdRow" onClick={copyId} title="Copy user ID">
+                    <span className="rMetaLabel"><Key size={14} /> User ID</span>
+                    <span className="rMetaValue rMetaId">{user.id} {copied ? <Check size={13} style={{ color: '#10B981' }} /> : <Copy size={13} />}</span>
+                  </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
-                  <input type="datetime-local" value={user.plan_cli_expiry ? user.plan_cli_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_cli_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
+
+                <div className="railStats">
+                  <div className="railStat">
+                    <span className="railStatIcon" style={{ background: STAT_TONES.calls.bg, color: STAT_TONES.calls.color }}><Activity size={15} /></span>
+                    <div className="railStatTxt">
+                      <span className="railStatVal">{(user.calls || 0).toLocaleString()}</span>
+                      <span className="railStatLbl">API Calls</span>
+                    </div>
+                  </div>
+                  <div className="railStat">
+                    <span className="railStatIcon" style={{ background: STAT_TONES.plans.bg, color: STAT_TONES.plans.color }}><Zap size={15} /></span>
+                    <div className="railStatTxt">
+                      <span className="railStatVal">{paidCount}</span>
+                      <span className="railStatLbl">Active Plans</span>
+                    </div>
+                  </div>
+                  <div className="railStat">
+                    <span className="railStatIcon" style={{ background: STAT_TONES.onboarding.bg, color: STAT_TONES.onboarding.color }}><Target size={15} /></span>
+                    <div className="railStatTxt">
+                      <span className="railStatVal">{user.onboarding_completed ? 'Done' : 'Pending'}</span>
+                      <span className="railStatLbl">Onboarding</span>
+                    </div>
+                  </div>
+                  <div className="railStat">
+                    <span className="railStatIcon" style={{ background: STAT_TONES.lastLogin.bg, color: STAT_TONES.lastLogin.color }}><Clock size={15} /></span>
+                    <div className="railStatTxt">
+                      <span className="railStatVal">{lastLoginStr}</span>
+                      <span className="railStatLbl">Last Login</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* API Plan */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Zap size={12} /> API Plan
-                  </label>
-                  <select 
-                    value={(user.plan_api || 'Free').toLowerCase()} 
-                    onChange={e => setUser({ ...user, plan_api: e.target.value })} 
-                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                  >
-                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
-                  <input type="datetime-local" value={user.plan_api_start ? user.plan_api_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_api_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
-                  <input type="datetime-local" value={user.plan_api_expiry ? user.plan_api_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_api_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-              </div>
-
-              {/* Chat Plan */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Mail size={12} /> Chat Plan
-                  </label>
-                  <select 
-                    value={(user.plan_chat || 'Free').toLowerCase()} 
-                    onChange={e => setUser({ ...user, plan_chat: e.target.value })} 
-                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                  >
-                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
-                  <input type="datetime-local" value={user.plan_chat_start ? user.plan_chat_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_chat_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
-                  <input type="datetime-local" value={user.plan_chat_expiry ? user.plan_chat_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_chat_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-              </div>
-
-              {/* Websites Plan */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', alignItems: 'end' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Shield size={12} /> Websites Plan
-                  </label>
-                  <select 
-                    value={(user.plan_agents || 'Free').toLowerCase()} 
-                    onChange={e => setUser({ ...user, plan_agents: e.target.value })} 
-                    style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%', cursor: 'pointer', appearance: 'none' }}
-                  >
-                    <option value="free" style={{ background: '#1a1a1a', color: '#fff' }}>Free</option>
-                    <option value="starter" style={{ background: '#1a1a1a', color: '#fff' }}>Starter</option>
-                    <option value="pro" style={{ background: '#1a1a1a', color: '#fff' }}>Pro</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</label>
-                  <input type="datetime-local" value={user.plan_agents_start ? user.plan_agents_start.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_agents_start: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiry Date</label>
-                  <input type="datetime-local" value={user.plan_agents_expiry ? user.plan_agents_expiry.slice(0, 16) : ''} onChange={e => setUser({ ...user, plan_agents_expiry: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', width: '100%' }} />
-                </div>
-              </div>
-
             </div>
-          </div>
 
-        </div>
-
-        {/* Right Column: Meta & Danger Zone */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          <div className="card glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meta Data</h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '14px', fontWeight: 600 }}>
-                  <Activity size={16} /> Total Calls
+            <div className="dangerCard">
+              <div className="dangerHead">
+                <div className="secIcon dangerIcon"><AlertTriangle size={18} /></div>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, letterSpacing: '-0.2px' }}>Danger Zone</h3>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>Irreversible account actions</div>
                 </div>
-                <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>{(user.calls || 0).toLocaleString()}</div>
               </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar size={14} /> Joined / Signup Date
-                </label>
+
+              <p className="dangerDesc">
+                Suspending this user will instantly revoke their API access and lock them out of the platform.
+              </p>
+
+              <button
+                onClick={handleToggleBan}
+                className="dangerBtn"
+                style={{
+                  background: isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                  color: isActive ? '#ef4444' : '#10B981',
+                  border: isActive ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(16, 185, 129, 0.25)',
+                }}
+              >
+                {isActive ? <><Ban size={16} /> Suspend Account</> : <><CheckCircle size={16} /> Reactivate Account</>}
+              </button>
+            </div>
+
+          </aside>
+
+          {/* ─── PROFILE MAIN ─── */}
+          <main className="profileMain">
+            <section className="section">
+              <SectionHead icon={<User size={17} />} title="Identity Details" subtitle="Core account identity fields" />
+              <div className="formGrid">
+                <div className="field">
+                  <label className="fieldLabel">Full Name</label>
+                  <input type="text" className="input" value={user.name} onChange={e => setUser({ ...user, name: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Email Address</label>
+                  <input type="email" className="input" value={user.email} onChange={e => setUser({ ...user, email: e.target.value })} />
+                </div>
+              </div>
+            </section>
+
+            {/* Onboarding / Preferences */}
+            <section className="section">
+              <SectionHead
+                icon={<Target size={17} />}
+                title="Onboarding Preferences"
+                subtitle="Answered during onboarding after signup"
+                badge={user.onboarding_completed ? 'Completed' : 'Pending'}
+                badgeFg={user.onboarding_completed ? '#10B981' : 'var(--color-warning)'}
+              />
+              <div className="formGrid">
+                <div className="field">
+                  <label className="fieldLabel">Student</label>
+                  <div className="readBox readBoxRow">
+                    <span className="dotGood" style={{ background: user.is_student ? '#10B981' : 'var(--color-text-muted)' }} />
+                    {user.is_student ? 'Yes, student discount applies' : 'No, standard account'}
+                  </div>
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Programmer Level</label>
+                  <div className="readBox">{EXPERIENCE_LABELS[user.experience_level] ?? user.experience_level ?? 'Not specified'}</div>
+                </div>
+                <div className="field fieldSpan">
+                  <label className="fieldLabel">Wants to use</label>
+                  <div className="readBox readBoxChips">
+                    {useCases.length > 0 ? (
+                      useCases.map((u: string) => (
+                        <span key={u} className="chip">{USECASE_LABELS[u] ?? u}</span>
+                      ))
+                    ) : (
+                      <span className="emptyText">Not specified</span>
+                    )}
+                  </div>
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Goal</label>
+                  <div className="readBox">{GOAL_LABELS[user.earning_goal] ?? user.earning_goal ?? 'Not specified'}</div>
+                </div>
+              </div>
+            </section>
+
+            {/* System & Hardware Info */}
+            <section className="section">
+              <SectionHead icon={<Cpu size={17} />} title="System & Hardware" subtitle="Captured at signup · device, system & network details" />
+              {!device ? (
+                <div className="readBox" style={{ color: 'var(--color-text-muted)' }}>No device information was captured at signup.</div>
+              ) : (
+                <div>
+                  {DEVICE_GROUPS.map(g => (
+                    <div key={g.label}>
+                      <div className="groupLabel">{g.icon} {g.label}</div>
+                      <div className="deviceGrid">
+                        {g.keys.filter(k => deviceGet(k) !== undefined && deviceGet(k) !== null && deviceGet(k) !== '').map(k => (
+                          <div className="deviceTile" key={k}>
+                            <span className="deviceLabel">{DEVICE_LABELS[k]}</span>
+                            <span className="deviceValue">{formatDeviceValue(deviceGet(k))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {deviceGet('userAgent') && (
+                    <div>
+                      <div className="groupLabel"><Globe size={13} /> Browser</div>
+                      <div className="deviceTile">
+                        <span className="deviceLabel">User Agent</span>
+                        <span className="deviceValue deviceValueMono">{deviceGet('userAgent')}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* Active Subscriptions */}
+            <section className="section">
+              <SectionHead icon={<Zap size={17} />} title="Active Subscriptions" subtitle="Plan tiers and access windows per product" />
+              <div className="planStack">
+                {planDefs.map(p => {
+                  const tier = tierMeta(p.plan);
+                  return (
+                    <div className="planRow" key={p.key} style={{ ['--plan-accent' as any]: tier.fg }}>
+                      <div className="planRowHead">
+                        <span className="planIcon" style={{ background: tier.bg, color: tier.fg }}>{p.icon}</span>
+                        <span className="planName">{p.label} Plan</span>
+                        <span className="planBadge" style={{ background: tier.bg, color: tier.fg }}>{tier.label}</span>
+                      </div>
+                      <div className="planGrid">
+                        <div className="field">
+                          <label className="fieldLabel">Plan</label>
+                          <select className="input" value={(p.plan || 'Free').toLowerCase()} onChange={e => setUser((prev: any) => ({ ...prev, [`plan_${p.key}`]: e.target.value }))}>
+                            <option value="free">Free</option>
+                            <option value="starter">Starter</option>
+                            <option value="pro">Pro</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label className="fieldLabel">Start Date</label>
+                          <input type="datetime-local" className="input" value={p.start ? p.start.slice(0, 16) : ''} onChange={e => setUser((prev: any) => ({ ...prev, [`plan_${p.key}_start`]: e.target.value ? new Date(e.target.value).toISOString() : null }))} />
+                        </div>
+                        <div className="field">
+                          <label className="fieldLabel">Expiry Date</label>
+                          <input type="datetime-local" className="input" value={p.expiry ? p.expiry.slice(0, 16) : ''} onChange={e => setUser((prev: any) => ({ ...prev, [`plan_${p.key}_expiry`]: e.target.value ? new Date(e.target.value).toISOString() : null }))} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+          {/* Access Overview */}
+            <div className="overviewCard">
+              <div className="overviewHead">
+                <div className="ovIcon"><Award size={17} /></div>
+                <div>
+                  <h3 className="secTitle">Account Overview</h3>
+                  <div className="secSub">Standing at a glance</div>
+                </div>
+              </div>
+              <div className="ovRow">
+                <span className="ovLabel">Status</span>
+                <span className="statusPill" style={{
+                  background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: isActive ? '#10B981' : '#EF4444',
+                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`
+                }}>
+                  <span className="statusPillDot" style={{ background: isActive ? '#10B981' : '#EF4444' }} />
+                  {user.status}
+                </span>
+              </div>
+              <div className="ovRow">
+                <span className="ovLabel">Highest plan</span>
+                <span className="planBadge" style={{ background: overallTier.bg, color: overallTier.fg }}>{overallTier.label}</span>
+              </div>
+              <div className="ovRow">
+                <span className="ovLabel"><GraduationCap size={13} /> Student</span>
+                <span className="ovValue" style={{ color: user.is_student ? '#10B981' : 'var(--color-text-muted)' }}>{user.is_student ? 'Discount' : 'No'}</span>
+              </div>
+              <div className="ovRow">
+                <span className="ovLabel">Onboarding</span>
+                <span className="ovValue" style={{ color: user.onboarding_completed ? '#10B981' : 'var(--color-warning)' }}>{user.onboarding_completed ? 'Completed' : 'Pending'}</span>
+              </div>
+              <div className="ovRow">
+                <span className="ovLabel">Active products</span>
+                <span className="ovValue">{paidCount} of {planDefs.length}</span>
+              </div>
+            </div>
+
+            {/* Account Meta */}
+            <section className="section">
+              <SectionHead icon={<Fingerprint size={17} />} title="Account Meta" subtitle="Timestamps and access details" />
+
+              <div className="metaRow">
+                <span className="metaLabel"><Activity size={15} /> API Calls</span>
+                <span className="metaValue" style={{ color: 'var(--color-primary)' }}>{(user.calls || 0).toLocaleString()}</span>
+              </div>
+              <div className="metaRow">
+                <span className="metaLabel"><Key size={15} /> Member Since</span>
+                <span className="metaValue">{joinedStr}</span>
+              </div>
+
+              <div className="metaField">
+                <label className="fieldLabel"><Calendar size={12} /> Signup Date</label>
                 <input
                   type="datetime-local"
+                  className="input"
                   value={user.created_at ? user.created_at.slice(0, 16) : ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setUser({ ...user, created_at: val ? new Date(val).toISOString() : null });
-                  }}
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%' }}
+                  onChange={e => setUser({ ...user, created_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
                 />
               </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Activity size={14} /> Last Login
-                </label>
+
+              <div className="metaField">
+                <label className="fieldLabel"><Clock size={12} /> Last Login</label>
                 <input
                   type="datetime-local"
+                  className="input"
                   value={user.last_login ? user.last_login.slice(0, 16) : ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setUser({ ...user, last_login: val ? new Date(val).toISOString() : null });
-                  }}
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%' }}
+                  onChange={e => setUser({ ...user, last_login: e.target.value ? new Date(e.target.value).toISOString() : null })}
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Edit Calls</label>
-                <input
-                  type="number"
-                  value={user.calls || 0}
-                  onChange={e => setUser({ ...user, calls: parseInt(e.target.value) || 0 })}
-                  style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', width: '100%' }}
-                />
+              <div className="metaField">
+                <label className="fieldLabel"><Globe size={12} /> Signup IP Address</label>
+                <div className="readBox readBoxMono">{user.last_ip || '—'}</div>
               </div>
-            </div>
-          </div>
 
-          <div className="card" style={{ 
-            padding: '24px', borderRadius: '24px', 
-            background: 'var(--color-card-bg)', 
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            position: 'relative', overflow: 'hidden'
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: '#EF4444' }} />
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', color: '#EF4444' }}>
-              <AlertTriangle size={20} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Danger Zone</h3>
-            </div>
-            
-            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
-              Suspending this user will instantly revoke their API access and lock them out of the platform.
-            </p>
-            
-            <button
-              onClick={handleToggleBan}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: user.status === 'Active' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                color: user.status === 'Active' ? '#ef4444' : '#10B981',
-                border: user.status === 'Active' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'all 0.2s'
-              }}
-              className="hover-scale"
-            >
-              {user.status === 'Active' ? <><Ban size={16} /> Suspend Account</> : <><CheckCircle size={16} /> Reactivate Account</>}
-            </button>
-          </div>
+              <div className="metaField">
+                <label className="fieldLabel"><Fingerprint size={12} /> User ID</label>
+                <button className="readBox readBoxMono copyRow" onClick={copyId} title="Click to copy">
+                  {user.id} {copied ? <Check size={13} style={{ color: '#10B981', flexShrink: 0 }} /> : <Copy size={13} style={{ opacity: 0.5, flexShrink: 0 }} />}
+                </button>
+              </div>
+            </section>
 
+          </main>
         </div>
       </div>
-      
-      <style jsx>{`
-        .hover-scale:hover { transform: scale(1.02); }
-        .hover-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-        select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto; }
-        select option {
-          background-color: #1a1a1a !important;
-          color: #ffffff !important;
+
+                        <style jsx>{`.page { position: relative; padding-bottom: 80px; background: radial-gradient(1100px 520px at 78% -6%, var(--color-primary-soft), transparent 65%), radial-gradient(900px 480px at 2% -12%, rgba(139, 92, 246, 0.12), transparent 55%), var(--color-bg); min-height: 100vh; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .pageInner { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 28px 24px 0; }
+
+        /* ─── PAGE HEAD ─── */
+        .pageHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 28px; }
+        .crumb { font-size: 13px; font-weight: 500; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
+        .crumbLink { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+        .crumbLink:hover { text-decoration: underline; }
+        .crumb b { color: var(--color-text-main); font-weight: 600; }
+        .crumbSep { width: 4px; height: 4px; border-radius: 50%; background: var(--color-border); }
+        .pageTitle { font-size: 30px; font-weight: 800; color: var(--color-text-main); margin: 6px 0 4px; letter-spacing: -0.03em; }
+        .pageSub { font-size: 14px; color: var(--color-text-muted); }
+
+        .saveBtn {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 11px 22px; border-radius: 12px;
+          background: var(--color-primary); color: #ffffff;
+          border: 1px solid var(--color-primary);
+          font-weight: 700; font-size: 14px; cursor: pointer;
+          box-shadow: 0 4px 14px var(--color-primary-soft);
+          transition: all 0.2s ease;
         }
-      `}</style>
+        .saveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px var(--color-primary-soft); filter: brightness(1.05); }
+        .saveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ─── PROFILE GRID ─── */
+        .profileGrid { display: grid; grid-template-columns: 320px 1fr; gap: 28px; align-items: start; }
+
+        /* ─── RAIL ─── */
+        .profileRail { display: flex; flex-direction: column; gap: 24px; position: sticky; top: 20px; }
+
+        .railCard {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-radius: 20px; overflow: hidden;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+        }
+        .railCover {
+          position: relative; height: 96px;
+          background: #EA580C;
+          opacity: 0.5;
+          overflow: hidden;
+        }
+        .railCover::after {
+          content: ''; position: absolute; inset: 0;
+          background-image: radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1.5px);
+          background-size: 22px 22px;
+          -webkit-mask-image: radial-gradient(circle at 60% 40%, black 0%, transparent 80%);
+          mask-image: radial-gradient(circle at 60% 40%, black 0%, transparent 80%);
+        }
+        .coverWatermark { position: absolute; right: 12px; bottom: -18px; font-size: 90px; font-weight: 900; line-height: 1; color: rgba(255,255,255,0.12); pointer-events: none; user-select: none; }
+        .coverPlan {
+          position: absolute; top: 14px; left: 16px; z-index: 3;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px; border-radius: 999px;
+          font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.2); backdrop-filter: blur(8px);
+        }
+
+        .railBody { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .avatarWrap { position: relative; margin-top: -52px; }
+        .avatarBox {
+          width: 104px; height: 104px; border-radius: 28px;
+          background: linear-gradient(135deg, var(--color-card-bg) 0%, var(--color-bg-soft) 100%); color: var(--color-primary);
+          border: 3px solid var(--color-card-bg);
+          box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 800; font-size: 38px; overflow: hidden; position: relative;
+          transition: all 0.3s ease;
+        }
+        .avatarBox::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, var(--color-primary-soft) 0%, transparent 55%); opacity: 0.4; }
+        .avatarBox:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(0,0,0,0.2); }
+        .statusDot { position: absolute; right: 2px; bottom: 2px; width: 20px; height: 20px; border-radius: 9px; border: 3px solid var(--color-card-bg); }
+        .cameraBtn { position: absolute; right: -4px; top: -4px; width: 32px; height: 32px; border-radius: 50%; background: var(--color-card-bg); color: var(--color-text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.12); border: 1px solid var(--color-border); transition: all 0.2s ease; }
+        .cameraBtn:hover { background: var(--color-bg-soft); transform: scale(1.05); }
+
+        .railName { margin: 14px 0 8px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--color-text-main); line-height: 1.15; }
+        .statusPill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .statusPillDot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+
+        .railMeta { width: 100%; margin-top: 18px; border-top: 1px dashed var(--color-border); }
+        .railMetaRow { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--color-border); background: none; border-left: none; border-right: none; border-top: none; cursor: default; font: inherit; text-align: left; color: inherit; }
+        .railMetaRow:last-child { border-bottom: none; }
+        .rMetaLabel { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
+        .rMetaValue { font-size: 13px; font-weight: 600; color: var(--color-text-main); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rMetaId { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+        .railIdRow { cursor: pointer; transition: all 0.2s ease; }
+        .railIdRow:hover .rMetaLabel { color: var(--color-primary); }
+
+        .railStats { width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 10px; }
+        .railStat { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; }
+        .railStatIcon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .railStatTxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+        .railStatVal { font-size: 19px; font-weight: 800; color: var(--color-text-main); line-height: 1.1; letter-spacing: -0.01em; }
+        .railStatLbl { font-size: 10px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+
+        .dangerCard {
+          background: linear-gradient(180deg, rgba(239,68,68,0.05), var(--color-card-bg) 40%);
+          border: 1px solid rgba(239, 68, 68, 0.25); border-top: 3px solid #ef4444;
+          border-radius: 20px; padding: 22px;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.05);
+        }
+        .dangerHead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed rgba(239, 68, 68, 0.2); }
+        .dangerHead .secIcon { color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
+        .dangerDesc { font-size: 13px; color: var(--color-text-muted); line-height: 1.55; margin-bottom: 18px; }
+        .dangerBtn { width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s ease; }
+        .dangerBtn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+        /* ─── MAIN ─── */
+        .profileMain { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+        /* ─── SECTIONS ─── */
+        .section {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-radius: 20px; padding: 26px 28px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
+        }
+        .section:hover { border-color: var(--color-primary-soft); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 18px 44px var(--color-primary-soft); }
+        .secHead { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--color-border); }
+        .secIcon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-primary-soft), var(--color-card-bg)); color: var(--color-primary); border: 1px solid var(--color-primary-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .secHeadTxt { flex: 1; }
+        .secTitle { font-size: 18px; font-weight: 700; color: var(--color-text-main); margin: 0; letter-spacing: -0.01em; }
+        .secSub { font-size: 13px; color: var(--color-text-muted); margin-top: 4px; }
+        .secBadge { padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+
+        /* ─── FIELDS ─── */
+        .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .fieldSpan { grid-column: 1 / -1; }
+        .fieldLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+        .input, .readBox {
+          width: 100%; background: var(--color-bg);
+          border: 1px solid var(--color-border); padding: 12px 16px;
+          border-radius: 12px; color: var(--color-text-main); font-size: 14px;
+          outline: none; transition: all 0.2s ease; box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+        }
+        .input:hover { border-color: var(--color-text-muted); }
+        .input:focus, select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-soft); background: var(--color-card-bg); }
+
+        .readBoxRow { display: flex; align-items: center; gap: 10px; }
+        .readBoxChips { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+        .readBoxMono { font-family: ui-monospace, monospace; font-size: 13px; }
+        .dotGood { width: 8px; height: 8px; border-radius: 50%; }
+        .emptyText { color: var(--color-text-muted); font-style: italic; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--color-primary-soft); border: 1px solid var(--color-border); font-size: 13px; font-weight: 600; color: var(--color-text-main); }
+
+        /* ─── DEVICE ─── */
+        .groupLabel { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .groupLabel:first-child { margin-top: 0; }
+        .deviceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .deviceTile { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; }
+        .deviceTile:hover { border-color: var(--color-primary-soft); }
+        .deviceLabel { font-size: 11px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .deviceValue { font-size: 14px; color: var(--color-text-main); font-weight: 600; word-break: break-word; }
+        .deviceValueMono { font-family: ui-monospace, monospace; font-size: 12px; color: var(--color-text-muted); font-weight: 500; word-break: break-word; }
+
+        /* ─── PLANS ─── */
+        .planStack { display: flex; flex-direction: column; gap: 16px; }
+        .planRow { border: 1px solid var(--color-border); border-radius: 16px; padding: 20px 22px; background: linear-gradient(180deg, var(--color-card-bg), var(--color-bg)); position: relative; }
+        .planRow::before { content: ''; position: absolute; left: -1px; top: 18px; bottom: 18px; width: 4px; border-radius: 4px; background: var(--plan-accent, var(--color-primary)); }
+        .planRowHead { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .planIcon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .planName { font-size: 16px; font-weight: 700; color: var(--color-text-main); }
+        .planBadge { margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); }
+        .planGrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* ─── OVERVIEW ─── */
+        .overviewCard {
+          background: var(--color-card-bg); border: 1px solid var(--color-border);
+          border-top: 3px solid var(--color-primary);
+          border-radius: 20px; padding: 26px 28px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
+        }
+        .overviewCard:hover { border-color: var(--color-primary-soft); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 18px 44px var(--color-primary-soft); }
+        .overviewHead { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--color-border); }
+        .ovIcon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-primary-soft), var(--color-card-bg)); color: var(--color-primary); border: 1px solid var(--color-primary-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+        .ovRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
+        .ovRow + .ovRow { border-top: 1px dashed var(--color-border); }
+        .ovLabel { font-size: 13px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; }
+        .ovValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+
+        .metaRow { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; }
+        .metaRow + .metaRow { border-top: 1px dashed var(--color-border); }
+        .metaLabel { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-muted); }
+        .metaValue { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .metaField { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+        .copyRow { cursor: pointer; transition: all 0.2s ease; }
+        .copyRow:hover { border-color: var(--color-primary); }
+
+        select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 1rem top 50%; background-size: 0.65rem auto; appearance: none; }
+        select option { background-color: var(--color-card-bg) !important; color: var(--color-text-main) !important; }
+
+        @media (max-width: 1024px) {
+          .profileGrid { grid-template-columns: 1fr; }
+          .profileRail { position: static; }
+          .railCard { max-width: 420px; }
+        }
+        @media (max-width: 768px) {
+          .formGrid, .deviceGrid, .planGrid { grid-template-columns: 1fr; }
+          .pageHead { flex-direction: column; }
+        }`}</style>
     </div>
   );
 }

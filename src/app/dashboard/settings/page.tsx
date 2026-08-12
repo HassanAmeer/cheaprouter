@@ -5,7 +5,36 @@ import { Button, Input, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/components/auth-provider';
 import styles from '../dashboard.module.css';
-import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2, GraduationCap, Code2, Target, Compass, Cpu, Pencil } from 'lucide-react';
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: 'New / Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Pro / Expert',
+  'not-programmer': 'Not a programmer',
+};
+
+const USECASE_LABELS: Record<string, string> = {
+  'vibe-coding': 'Vibe Coding',
+  'website-builder': 'Website Builder',
+  agents: 'Chat agents',
+  chat: 'Chat',
+  api: 'API',
+  cli: 'CLI',
+  ide: 'IDE',
+  extension: 'Extension',
+};
+
+const GOAL_LABELS: Record<string, string> = {
+  coding: 'Coding',
+  chats: 'Chats',
+  agents: 'Agents',
+  apis: 'APIs',
+  resellers: 'Reseller',
+  affiliate: 'Earn with Affiliate',
+  earn: 'Earn / Build products',
+  free: 'Use models for free',
+};
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -139,6 +168,81 @@ export default function SettingsPage() {
             {saving ? 'Saving…' : <><CheckCircle2 size={18} style={{ marginRight: 8 }} /> Save Changes</>}
           </Button>
         </div>
+      </div>
+
+      {/* Onboarding Preferences Section */}
+      <div className="card glass-card" style={{ marginBottom: 32, padding: '40px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ background: 'var(--color-primary-soft)', padding: 12, borderRadius: 14, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)' }}>
+              <Target size={24} color="var(--color-primary)" />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--color-text-main)' }}>Your Preferences</h2>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                The answers you gave when you signed up — these help us tailor your experience.
+              </p>
+            </div>
+          </div>
+          <Button variant="secondary" onClick={() => (window.location.href = '/onboarding')} style={{ borderRadius: 12, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-bg-soft)' }}>
+            <Pencil size={15} /> Edit
+          </Button>
+        </div>
+
+        {!user?.onboarding_completed ? (
+          <div style={{ padding: '20px 24px', background: 'var(--color-bg-soft)', borderRadius: 16, border: '1px dashed var(--color-border)', color: 'var(--color-text-muted)', fontSize: '14px' }}>
+            You haven't completed the onboarding questions yet.{' '}
+            <a href="/onboarding" style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>Answer them now</a>.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+            <div style={{ padding: '20px', background: 'var(--color-bg-soft)', borderRadius: 16, border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+                  <GraduationCap size={17} />
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Student</div>
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-text-main)' }}>{user?.is_student ? 'Yes, I am a student' : 'No, I am not a student'}</div>
+            </div>
+
+            <div style={{ padding: '20px', background: 'var(--color-bg-soft)', borderRadius: 16, border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+                  <Code2 size={17} />
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Programmer</div>
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-text-main)' }}>{EXPERIENCE_LABELS[user?.experience_level ?? ''] ?? (user?.experience_level || 'Not specified')}</div>
+            </div>
+
+            <div style={{ padding: '20px', background: 'var(--color-bg-soft)', borderRadius: 16, border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+                  <Cpu size={17} />
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Wants to use</div>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {(user?.use_cases || '').split(',').map((u: string) => u.trim()).filter(Boolean).map((u: string) => (
+                  <span key={u} style={{ fontSize: '13px', fontWeight: 700, padding: '5px 12px', borderRadius: 999, background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+                    {USECASE_LABELS[u] ?? u}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding: '20px', background: 'var(--color-bg-soft)', borderRadius: 16, border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+                  <Compass size={17} />
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Goal</div>
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-text-main)' }}>{GOAL_LABELS[user?.earning_goal ?? ''] ?? (user?.earning_goal || 'Not specified')}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>

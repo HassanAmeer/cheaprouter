@@ -97,7 +97,7 @@ const authSchema = z.object({
 
 app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
   const { email, password, name, hardwareInfo } = c.req.valid('json');
-  const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+  const ip = (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '').split(',')[0].trim();
   const userAgent = c.req.header('user-agent') || '';
   const hwInfoStr = hardwareInfo ? JSON.stringify(hardwareInfo) : undefined;
   
@@ -110,7 +110,7 @@ app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
 
 app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
   const { email, password, hardwareInfo } = c.req.valid('json');
-  const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+  const ip = (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '').split(',')[0].trim();
   const userAgent = c.req.header('user-agent') || '';
   const hwInfoStr = hardwareInfo ? JSON.stringify(hardwareInfo) : undefined;
 
@@ -477,6 +477,26 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   await addMessage(convId, 'assistant', replyText);
   await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003);
   return c.json({ message: { role: 'assistant', content: replyText } });
+});
+
+// ---- User Model Preferences ----
+app.get('/api/user/model-prefs', async (c) => {
+  const userId = c.get('userId');
+  const rows = await db`SELECT model_id, enabled FROM user_model_prefs WHERE user_id = ${userId}`;
+  const prefs: Record<string, boolean> = {};
+  for (const r of rows) prefs[r.model_id] = r.enabled;
+  return c.json({ prefs });
+});
+
+app.put('/api/user/model-prefs', zValidator('json', z.object({ modelId: z.string(), enabled: z.boolean() })), async (c) => {
+  const userId = c.get('userId');
+  const { modelId, enabled } = c.req.valid('json');
+  await db`
+    INSERT INTO user_model_prefs (user_id, model_id, enabled)
+    VALUES (${userId}, ${modelId}, ${enabled})
+    ON CONFLICT (user_id, model_id) DO UPDATE SET enabled = ${enabled}
+  `;
+  return c.json({ ok: true });
 });
 
 app.post('/api/v1/chat/completions', handleCompletions);

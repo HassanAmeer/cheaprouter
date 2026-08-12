@@ -153,6 +153,17 @@
   text-overflow: ellipsis;
 }
 
+.sidebarPrefChip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-soft);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  line-height: 1.4;
+}
+
 /* ---- Main Content ---- */
 .mainContent {
   flex: 1;

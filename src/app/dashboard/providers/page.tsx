@@ -6,6 +6,7 @@ import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
 import { useSiteSettings } from '@/components/settings-provider';
+import ModelsTable from '@/components/ModelsTable';
 
 type Provider = {
   id: string;
@@ -210,7 +211,7 @@ export default function ProvidersPage() {
             <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Our Model Catalog</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>These models are managed by CheapRouter. No setup needed — just use our unified API.</p>
           </div>
-          <ProvidersModelsTable />
+          <ModelsTable showToggle={true} />
         </div>
       )}
 
@@ -428,34 +429,6 @@ export default function ProvidersPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function ProvidersModelsTable() {
-  const [models, setModels] = useState<any[] | null>(null);
-  useEffect(() => { api.models().then((r) => setModels(r.models)).catch(() => setModels([])); }, []);
-  if (!models) return <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading models…</div>;
-  return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <table className={styles.dataTable}>
-        <thead>
-          <tr>
-            <th>Model</th><th>Provider</th><th>Context</th><th>Input / 1M</th><th style={{ textAlign: 'right' }}>Output / 1M</th>
-          </tr>
-        </thead>
-        <tbody>
-          {models.map((m) => (
-            <tr key={m.id}>
-              <td><strong>{m.name}</strong></td>
-              <td style={{ color: 'var(--color-text-muted)' }}>{m.provider}</td>
-              <td><Badge tone="neutral">{m.context}</Badge></td>
-              <td style={{ color: 'var(--color-text-muted)' }}>{m.input}</td>
-              <td style={{ textAlign: 'right', fontWeight: 600 }}>{m.output}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

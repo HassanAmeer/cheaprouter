@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AreaChart } from '@/components/ui/charts';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
@@ -12,6 +13,7 @@ import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare,
 
 export default function DashboardOverview() {
   const { user } = useAuth();
+  const router = useRouter();
   const { settings } = useSiteSettings();
   const [summary, setSummary] = useState<any>(null);
   const [usage, setUsage] = useState<any>(null);
@@ -19,6 +21,13 @@ export default function DashboardOverview() {
   const [timeFilter, setTimeFilter] = useState('7D');
   const [hideWelcome, setHideWelcome] = useState(false);
   const [recentNotify, setRecentNotify] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user && user.onboarding_completed === false && !localStorage.getItem('cm_onboarding_skipped')) {
+      router.replace('/onboarding');
+      return;
+    }
+  }, [user, router]);
 
   useEffect(() => {
     api.summary().then(setSummary).catch(() => setSummary({ limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 }));

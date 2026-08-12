@@ -36,15 +36,46 @@ const AuthContext = createContext<AuthValue>({ user: null, loading: true, login:
 function getHardwareSystemInfo() {
   if (typeof window === 'undefined') return {};
   try {
+    const nav = navigator as any;
+    const uaData = nav.userAgentData;
+    const ua = nav.userAgent || '';
+    const platform = uaData?.platform || nav.platform || '';
+
+    let os = 'Unknown';
+    if (/Windows/i.test(ua)) os = 'Windows';
+    else if (/Mac OS|Macintosh/i.test(ua)) os = 'macOS';
+    else if (/Android/i.test(ua)) os = 'Android';
+    else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+    else if (/Linux/i.test(ua)) os = 'Linux';
+
+    let browser = 'Unknown';
+    if (/Edg\//i.test(ua)) browser = 'Edge';
+    else if (/OPR\/|Opera/i.test(ua)) browser = 'Opera';
+    else if (/Chrome\//i.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+    else if (/Safari\//i.test(ua)) browser = 'Safari';
+
+    const conn = nav.connection;
+
     return {
-      screenResolution: `${window.screen.width}x${window.screen.height}`,
-      deviceMemory: (navigator as any).deviceMemory || 'Unknown',
-      hardwareConcurrency: navigator.hardwareConcurrency || 'Unknown',
-      platform: navigator.platform || 'Unknown',
-      language: navigator.language || 'Unknown',
-      userAgent: navigator.userAgent,
+      os,
+      platform,
+      browser,
+      userAgent: ua,
+      language: nav.language || 'Unknown',
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
-      colorDepth: window.screen.colorDepth || 'Unknown',
+      cpuCores: nav.hardwareConcurrency || 'Unknown',
+      deviceMemoryGB: nav.deviceMemory || 'Unknown',
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      screenColorDepth: window.screen.colorDepth || 'Unknown',
+      devicePixelRatio: window.devicePixelRatio || 1,
+      touchPoints: nav.maxTouchPoints || 0,
+      online: nav.onLine,
+      connectionType: conn?.type || 'Unknown',
+      connectionEffectiveType: conn?.effectiveType || 'Unknown',
+      downlinkMbps: conn?.downlink ?? 'Unknown',
+      rttMs: conn?.rtt ?? 'Unknown',
+      saveData: conn?.saveData ?? false,
     };
   } catch (e) {
     return { error: 'Failed to collect hardware info' };

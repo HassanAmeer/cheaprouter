@@ -55,6 +55,9 @@ export const api = {
 
   // Models
   models: () => request<{ models: any[] }>('/api/models'),
+  getModelPrefs: () => request<{ prefs: Record<string, boolean> }>('/api/user/model-prefs'),
+  updateModelPref: (modelId: string, enabled: boolean) => 
+    request<{ ok: true }>('/api/user/model-prefs', { method: 'PUT', body: JSON.stringify({ modelId, enabled }) }),
 
   // API Keys
   listKeys: () => request<{ keys: any[] }>('/api/keys'),

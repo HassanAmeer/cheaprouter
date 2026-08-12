@@ -100,6 +100,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={styles.sidebarUserInfo}>
             <div className={styles.sidebarUserName}>{userName}</div>
             <div className={styles.sidebarUserEmail}>{userEmail}</div>
+            {user?.onboarding_completed && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: 6 }} title="Your onboarding preferences">
+                {user?.is_student && <span className={styles.sidebarPrefChip} style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>Student</span>}
+                {['beginner', 'advanced', 'intermediate', 'not-programmer'].includes(user?.experience_level ?? '') && (
+                  <span className={styles.sidebarPrefChip}>
+                    {user?.experience_level === 'beginner' ? 'New' : user?.experience_level === 'intermediate' ? 'Intermediate' : user?.experience_level === 'advanced' ? 'Pro' : 'Non-dev'}
+                  </span>
+                )}
+                {['coding', 'chats', 'agents', 'apis', 'resellers', 'affiliate', 'earn', 'free'].includes(user?.earning_goal ?? '') && (
+                  <span className={styles.sidebarPrefChip}>
+                    {user?.earning_goal === 'affiliate' ? 'Affiliate' : user?.earning_goal === 'earn' ? 'Earning' : user?.earning_goal === 'free' ? 'Free use' : user?.earning_goal === 'resellers' ? 'Reseller' : (user?.earning_goal ?? '') === 'coding' ? 'Coding' : user?.earning_goal === 'chats' ? 'Chats' : user?.earning_goal === 'agents' ? 'Agents' : 'APIs'}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={logout}

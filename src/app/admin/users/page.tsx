@@ -3,9 +3,36 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from '../admin.module.css';
-import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Edit3, Users, UserPlus, Calendar, Filter } from 'lucide-react';
+import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Edit3, Users, UserPlus, Calendar, Filter, Monitor, Apple, Smartphone, Terminal, Globe } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 50;
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: 'New',
+  intermediate: 'Intermediate',
+  advanced: 'Pro',
+  'not-programmer': 'Non-dev',
+};
+
+const GOAL_LABELS: Record<string, string> = {
+  coding: 'Coding',
+  chats: 'Chats',
+  agents: 'Agents',
+  apis: 'APIs',
+  resellers: 'Reseller',
+  affiliate: 'Affiliate',
+  earn: 'Earning',
+  free: 'Free use',
+};
+
+const OS_META: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  Windows: { icon: <Monitor size={10} />, color: '#38BDF8', bg: 'rgba(56,189,248,0.12)' },
+  macOS: { icon: <Apple size={10} />, color: '#E2E8F0', bg: 'rgba(226,232,240,0.12)' },
+  Android: { icon: <Smartphone size={10} />, color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
+  iOS: { icon: <Smartphone size={10} />, color: '#CBD5E1', bg: 'rgba(203,213,225,0.12)' },
+  Linux: { icon: <Terminal size={10} />, color: '#FACC15', bg: 'rgba(250,204,21,0.12)' },
+  Unknown: { icon: <Globe size={10} />, color: 'var(--color-text-muted)', bg: 'rgba(150,150,150,0.1)' },
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -287,8 +314,9 @@ export default function UsersPage() {
             </div>
           </div>
         )}
-        <table className={styles.dataTable}>
-          <thead>
+        <div className={styles.tableScroll}>
+          <table className={styles.dataTable}>
+            <thead>
             <tr>
               <th style={{ width: 40, paddingLeft: '24px' }}>
                 <input 
@@ -311,7 +339,9 @@ export default function UsersPage() {
               <th>User ID</th>
               <th>Name / Email</th>
               <th>Registered Date</th>
+              <th>IP Address</th>
               <th>Active Plans</th>
+              <th>Onboarding</th>
               <th>API Calls</th>
               <th>Banned</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -328,6 +358,7 @@ export default function UsersPage() {
                     <div style={{ height: '10px', width: '160px', background: 'var(--color-border)', borderRadius: '4px' }}></div>
                   </td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '90px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
+                  <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '80px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '20px', width: '150px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '60px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '20px', width: '50px', background: 'var(--color-border)', borderRadius: '12px' }}></div></td>
@@ -354,29 +385,50 @@ export default function UsersPage() {
                   <div style={{ fontWeight: 600 }}>{user.name}</div>
                   <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{user.email}</div>
                 </td>
-                <td style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                  <div style={{ color: 'var(--color-text-main)' }}>Signup: {user.joined}</div>
-                  <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>Last Login: {user.last_login}</div>
-                </td>
+                  <td style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                    <div style={{ color: 'var(--color-text-main)' }}>Signup: {user.joined}</div>
+                    <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>Last Login: {user.last_login}</div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span title={user.os || 'Unknown device'} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '5px', lineHeight: 1.4, whiteSpace: 'nowrap', background: (OS_META[user.os] || OS_META.Unknown).bg, color: (OS_META[user.os] || OS_META.Unknown).color, border: '1px solid rgba(150,150,150,0.2)' }}>
+                        {(OS_META[user.os] || OS_META.Unknown).icon} {user.os || 'Unknown'}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-muted)' }}>{user.last_ip || '—'}</span>
+                    </div>
+                  </td>
                 <td>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 6px', width: 'fit-content', maxWidth: '100%' }}>
                     {[
                       { name: 'CLI', val: user.plan_cli || 'Free' },
                       { name: 'API', val: user.plan_api || 'Free' },
                       { name: 'Chat', val: user.plan_chat || 'Free' },
-                      { name: 'Websites', val: user.plan_agents || 'Free' }
+                      { name: 'Web', val: user.plan_agents || 'Free' }
                     ].map(p => {
                       const isFree = p.val.toLowerCase() === 'free';
                       const bg = isFree ? 'rgba(150,150,150,0.1)' : 'var(--color-primary-soft)';
                       const color = isFree ? 'var(--color-text-muted)' : 'var(--color-primary)';
                       const border = isFree ? '1px solid rgba(150,150,150,0.2)' : '1px solid var(--color-primary)';
                       return (
-                        <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: bg, padding: '2px 8px', borderRadius: '12px', border: border }}>
+                        <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '9px', lineHeight: 1.3, background: bg, padding: '1px 5px', borderRadius: '5px', border: border, whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: 500, opacity: 0.8 }}>{p.name}:</span>
                           <span style={{ fontWeight: 700, color: color }}>{p.val}</span>
                         </div>
                       );
                     })}
+                  </div>
+                </td>
+                <td>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 6px', width: 'fit-content', maxWidth: '100%' }} title={`Student: ${user.is_student ? 'Yes' : 'No'} · Level: ${user.experience_level || '—'} · Uses: ${user.use_cases || '—'} · Goal: ${user.earning_goal || '—'}`}>
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '5px', lineHeight: 1.3, whiteSpace: 'nowrap', textDecoration: user.is_student ? 'none' : 'line-through', background: user.is_student ? 'transparent' : 'rgba(150,150,150,0.1)', color: user.is_student ? 'var(--color-text-main)' : 'var(--color-text-muted)', border: `1px solid ${user.is_student ? 'rgba(255,255,255,0.5)' : 'rgba(150,150,150,0.2)'}` }}>
+                      Student
+                    </span>
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '5px', lineHeight: 1.3, whiteSpace: 'nowrap', background: user.experience_level ? 'var(--color-primary-soft)' : 'rgba(150,150,150,0.1)', color: user.experience_level ? 'var(--color-primary)' : 'var(--color-text-muted)', border: user.experience_level ? '1px solid var(--color-primary)' : '1px solid rgba(150,150,150,0.2)' }}>
+                      {EXPERIENCE_LABELS[user.experience_level] ?? (user.experience_level || 'Empty')}
+                    </span>
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 4px', borderRadius: '5px', lineHeight: 1.3, whiteSpace: 'nowrap', background: user.earning_goal ? 'rgba(245, 158, 11, 0.12)' : 'rgba(150,150,150,0.1)', color: user.earning_goal ? '#F59E0B' : 'var(--color-text-muted)', border: user.earning_goal ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(150,150,150,0.2)' }}>
+                      {GOAL_LABELS[user.earning_goal] ?? (user.earning_goal || 'Empty')}
+                    </span>
                   </div>
                 </td>
                 <td>{user.calls.toLocaleString()}</td>
@@ -412,13 +464,14 @@ export default function UsersPage() {
             ))}
             {paginatedUsers.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
                   No users found matching search or filter criteria.
                 </td>
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
 
         
         {totalPages > 1 && (

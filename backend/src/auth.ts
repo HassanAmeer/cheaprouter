@@ -57,7 +57,7 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export async function getUserById(id: string) {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users WHERE id = ${id}`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users WHERE id = ${id}`;
   return result[0] as any;
 }
 
@@ -101,8 +101,24 @@ export async function updateUserLoginInfo(
   `;
 }
 
+function detectOs(hwInfo: any, userAgent?: string): string {
+  if (hwInfo) {
+    try {
+      const parsed = typeof hwInfo === 'string' ? JSON.parse(hwInfo) : hwInfo;
+      if (parsed?.os && parsed.os !== 'Unknown') return parsed.os;
+    } catch {}
+  }
+  const ua = userAgent || '';
+  if (/Windows/i.test(ua)) return 'Windows';
+  if (/Mac OS|Macintosh/i.test(ua)) return 'macOS';
+  if (/Android/i.test(ua)) return 'Android';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS';
+  if (/Linux/i.test(ua)) return 'Linux';
+  return 'Unknown';
+}
+
 export async function getAllUsers() {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users ORDER BY created_at DESC`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users ORDER BY created_at DESC`;
   return result.map(row => ({
     id: row.id,
     name: row.name,
@@ -123,6 +139,8 @@ export async function getAllUsers() {
     created_at: new Date(row.created_at).toISOString(),
     joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
+    last_ip: row.last_ip ?? null,
+    os: detectOs(row.hardware_info, row.user_agent),
     calls: 0,
     status: row.status || 'Active',
     profile_picture: row.profile_picture,

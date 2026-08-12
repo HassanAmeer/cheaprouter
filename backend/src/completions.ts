@@ -105,6 +105,19 @@ export async function handleCompletions(c: any) {
     }
 
     const aiModel = await getModelInstance(finalUserId, model);
+
+    // Check if user has disabled this model
+    const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
+    if (prefRows.length > 0 && prefRows[0].enabled === false) {
+      return c.json({
+        error: {
+          message: `Model '${model}' is disabled for your account. Enable it in your dashboard under Providers > Model Catalog.`,
+          type: 'invalid_request_error',
+          code: 'model_disabled'
+        }
+      }, 403);
+    }
+
     const systemPrompt = await getSystemPromptForModel(model);
 
     // Convert messages

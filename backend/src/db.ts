@@ -152,6 +152,15 @@ export async function initDb() {
       icon TEXT
     );
   `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS user_model_prefs (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      model_id TEXT NOT NULL,
+      enabled BOOLEAN NOT NULL DEFAULT true,
+      PRIMARY KEY (user_id, model_id)
+    );
+  `;
 }
 
 export function genId(prefix: string) {

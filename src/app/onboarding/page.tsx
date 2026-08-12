@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, Code2, Cpu, Target, ChevronRight, ChevronLeft, ArrowRight, Compass } from 'lucide-react';
+import { GraduationCap, Code2, Cpu, Target, ChevronRight, ChevronLeft, ArrowRight, Compass, Sparkles, Globe, MessageSquare } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/primitives';
@@ -20,26 +20,32 @@ const EXPERIENCE_OPTIONS = [
   { id: 'advanced', label: 'Pro / Expert', desc: "I ship production code regularly.", icon: Code2 },
   { id: 'not-programmer', label: 'Not a programmer', desc: "I mostly use tools and apps, not write code.", icon: Compass },
 ];
-
 const USECASE_OPTIONS = [
+  { id: 'vibe-coding', label: 'Vibe Coding', desc: 'Describe it, AI builds it', icon: Sparkles },
+  { id: 'website-builder', label: 'Website Builder', desc: 'Build websites visually', icon: Globe },
+  { id: 'agents', label: 'Chat agents', desc: 'Build intelligent AI agents', icon: Target },
+  { id: 'chat', label: 'Chat', desc: 'Chat directly with any model', icon: MessageSquare },
   { id: 'api', label: 'API', desc: 'Call models from your own code', icon: Cpu },
   { id: 'cli', label: 'CLI', desc: 'Use models in your terminal', icon: Code2 },
-  { id: 'chat', label: 'Chat', desc: 'Chat directly with any model', icon: Cpu },
   { id: 'ide', label: 'IDE', desc: 'AI inside your code editor', icon: Code2 },
   { id: 'extension', label: 'Extension', desc: 'Browser or editor extensions', icon: Compass },
-  { id: 'agents', label: 'Agents', desc: 'Build intelligent AI agents', icon: Target },
 ];
 
 const GOAL_OPTIONS = [
+  { id: 'coding', label: 'Coding', desc: 'Build and ship software', icon: Code2 },
+  { id: 'chats', label: 'Chats', desc: 'Chat with AI models', icon: MessageSquare },
+  { id: 'agents', label: 'Agents', desc: 'Build AI agents', icon: Target },
+  { id: 'apis', label: 'APIs', desc: 'Use models via API', icon: Cpu },
+  { id: 'resellers', label: 'Reseller', desc: 'Resell access to others', icon: Globe },
   { id: 'affiliate', label: 'Earn with Affiliate', desc: 'Promote CheapRouter and earn commissions.', icon: Target },
   { id: 'earn', label: 'Earn / Build products', desc: "I want to build apps, freelancing, or make money from my skills.", icon: Code2 },
   { id: 'free', label: 'Use models for free', desc: "I mostly want a free way to use great AI models.", icon: GraduationCap },
 ];
 
 const steps = [
-  { key: 'student', title: 'Are you a student?', subtitle: 'This helps us set up your account experience.' },
-  { key: 'experience', title: 'What kind of developer are you?', subtitle: 'Tell us your experience level so we can tailor recommendations.' },
-  { key: 'useCases', title: 'What do you want to use?', subtitle: 'Pick all that apply — you can change this later.' },
+  { key: 'student', title: 'Are you a student?', subtitle: 'Students often get extra perks and free credits — tell us so we can set up your account experience.' },
+  { key: 'useCases', title: 'What do you want to use?', subtitle: 'Pick all that apply: vibe coding, website builder, agents, chat, API, CLI, IDE or extensions. You can change this later.' },
+  { key: 'experience', title: 'Are you a programmer?', subtitle: 'What kind of developer are you — new, intermediate, or pro? This helps us tailor recommendations.' },
   { key: 'goal', title: 'What is your goal?', subtitle: 'Choose what matters most to you on CheapRouter.' },
 ];
 
@@ -93,6 +99,7 @@ export default function OnboardingPage() {
         useCases,
         earningGoal: goal,
       });
+      localStorage.removeItem('cm_onboarding_skipped');
       toast('Your preferences are saved. Welcome!', 'success');
       router.push('/dashboard');
     } catch (err: any) {
@@ -186,6 +193,15 @@ export default function OnboardingPage() {
             <Logo />
           </div>
 
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <h1 style={{ fontSize: '30px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', color: 'var(--color-text-main)' }}>
+              Welcome, {user?.name?.split(' ')[0] ?? 'there'}! 👋
+            </h1>
+            <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', marginTop: 8 }}>
+              A few quick questions so we can personalize your CheapRouter experience.
+            </p>
+          </div>
+
           {/* Progress bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: 24 }}>
             {steps.map((s, i) => (
@@ -241,11 +257,17 @@ export default function OnboardingPage() {
 
           <div style={{ textAlign: 'center', marginTop: 20 }}>
             <button
-              onClick={() => router.push(user?.onboarding_completed ? '/dashboard' : '/dashboard')}
+              onClick={() => {
+                localStorage.setItem('cm_onboarding_skipped', '1');
+                router.push('/dashboard');
+              }}
               style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              Skip for now — go to dashboard
+              Skip for now — I'll finish this later
             </button>
+            <div style={{ marginTop: 6, fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              You can update these answers anytime from your profile settings.
+            </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: 12, fontSize: '12px', color: 'var(--color-text-muted)' }}>
             {user ? `${user.name} (${user.email})` : ''}
