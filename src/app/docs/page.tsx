@@ -31,7 +31,7 @@ export default function DocsPage() {
       case 'chat-completions':
         return <ChatCompletionsView key="chat" baseUrl={baseUrl} />;
       case 'limits':
-        return <LimitsView key="limits" />;
+        return <LimitsView key="limits" baseUrl={baseUrl} />;
       default:
         return <ModelsView key="models-default" baseUrl={baseUrl} />;
     }

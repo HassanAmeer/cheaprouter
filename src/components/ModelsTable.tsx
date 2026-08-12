@@ -13,7 +13,7 @@ export default function ModelsTable() {
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    fetch('/api/admin/providers')
+    fetch('/api/public/providers')
       .then(res => res.json())
       .then(data => {
         let models: any[] = [];
@@ -36,7 +36,7 @@ export default function ModelsTable() {
                   id: m.originalId || m.id,
                   name: m.name,
                   provider: p.name,
-                  icon: iconMap[p.name] || 'https://cdn.simpleicons.org/openai/10A37F',
+                  icon: p.icon || iconMap[p.name] || 'https://cdn.simpleicons.org/openai/10A37F',
                   context: m.contextWindow || '-',
                   latency: '-',
                   throughput: '-',
@@ -128,19 +128,15 @@ export default function ModelsTable() {
             <tr>
               <th>Model</th>
               <th>Context</th>
-              <th>Latency</th>
-              <th>Throughput</th>
               <th>Input</th>
               <th>Output</th>
-              <th>Cache</th>
               <th>Capabilities</th>
-              <th>Providers</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '60px', color: '#666' }}>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '60px', color: '#666' }}>
                   Loading models...
                 </td>
               </tr>
@@ -161,11 +157,8 @@ export default function ModelsTable() {
                   </div>
                 </td>
                 <td style={{ fontWeight: 600 }}>{m.context}</td>
-                <td>{m.latency}</td>
-                <td>{m.throughput}</td>
                 <td className={styles.costCol}>{m.input}</td>
                 <td className={styles.costCol}>{m.output}</td>
-                <td className={styles.costCol} style={{ color: '#888', fontSize: '12px' }}>{m.cache}</td>
                 <td>
                   <div className={styles.capabilities}>
                     {m.caps.includes('text') && <span data-tooltip="Text"><Type size={16} /></span>}
@@ -174,9 +167,6 @@ export default function ModelsTable() {
                     {m.caps.includes('audio') && <span data-tooltip="Audio"><Mic size={16} /></span>}
                     {m.caps.includes('video') && <span data-tooltip="Video"><Layers size={16} /></span>}
                   </div>
-                </td>
-                <td>
-                  <img src={m.icon} width="16" height="16" alt={m.provider} style={{ opacity: 0.8, borderRadius: m.provider === 'DeepSeek' ? '2px' : '0' }} />
                 </td>
               </tr>
             ))}

@@ -57,7 +57,7 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export async function getUserById(id: string) {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry FROM users WHERE id = ${id}`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users WHERE id = ${id}`;
   return result[0] as any;
 }
 
@@ -102,7 +102,7 @@ export async function updateUserLoginInfo(
 }
 
 export async function getAllUsers() {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry FROM users ORDER BY created_at DESC`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users ORDER BY created_at DESC`;
   return result.map(row => ({
     id: row.id,
     name: row.name,
@@ -125,7 +125,12 @@ export async function getAllUsers() {
     last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
     calls: 0,
     status: row.status || 'Active',
-    profile_picture: row.profile_picture
+    profile_picture: row.profile_picture,
+    is_student: row.is_student ?? false,
+    experience_level: row.experience_level ?? null,
+    use_cases: row.use_cases ?? null,
+    earning_goal: row.earning_goal ?? null,
+    onboarding_completed: row.onboarding_completed ?? false
   }));
 }
 
@@ -137,6 +142,24 @@ export async function updateUserProfile(id: string, name: string, profile_pictur
   }
 }
 
+export async function saveOnboarding(id: string, data: {
+  isStudent: boolean;
+  experienceLevel: string;
+  useCases: string[];
+  earningGoal: string;
+}) {
+  const useCasesJoined = Array.isArray(data.useCases) ? data.useCases.join(',') : null;
+  await db`
+    UPDATE users SET
+      is_student = ${data.isStudent ?? false},
+      experience_level = ${data.experienceLevel ?? null},
+      use_cases = ${useCasesJoined},
+      earning_goal = ${data.earningGoal ?? null},
+      onboarding_completed = TRUE
+    WHERE id = ${id}
+  `;
+}
+
 export async function adminUpdateUser(id: string, data: any) {
   const allowedFields = [
     'name', 'email', 'plan', 'status', 'profile_picture', 
@@ -145,7 +168,8 @@ export async function adminUpdateUser(id: string, data: any) {
     'plan_api_start', 'plan_api_expiry',
     'plan_chat_start', 'plan_chat_expiry',
     'plan_agents_start', 'plan_agents_expiry',
-    'created_at', 'last_login'
+    'created_at', 'last_login',
+    'is_student', 'experience_level', 'use_cases', 'earning_goal', 'onboarding_completed'
   ];
   const updates = Object.keys(data).filter(k => allowedFields.includes(k) && data[k] !== undefined);
   if (updates.length === 0) return;

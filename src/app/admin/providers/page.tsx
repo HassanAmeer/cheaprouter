@@ -1,13 +1,61 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2 } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
 
-type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
+type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; icon?: string; landingPagePriority?: number; };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string };
+type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
+
+const PRESET_ICONS = [
+  { name: 'Google Gemini', url: 'https://cdn.simpleicons.org/google/4285F4' },
+  { name: 'Groq', url: 'https://cdn.simpleicons.org/groq/F55036' },
+  { name: 'OpenRouter', url: 'https://api.iconify.design/lucide:router.svg' },
+  { name: 'Mistral AI', url: 'https://cdn.simpleicons.org/mistral/F26625' },
+  { name: 'Nvidia NIM', url: 'https://cdn.simpleicons.org/nvidia/76B900' },
+  { name: 'SiliconFlow', url: 'https://api.iconify.design/lucide:cpu.svg' },
+  { name: 'ModelScope', url: 'https://api.iconify.design/lucide:microscope.svg' },
+  { name: 'HuggingFace', url: 'https://cdn.simpleicons.org/huggingface/FFD21E' },
+  { name: 'GitHub Models', url: 'https://cdn.simpleicons.org/github/181717' },
+  { name: 'OpenCode', url: 'https://api.iconify.design/lucide:code.svg' },
+  { name: 'Cohere', url: 'https://cdn.simpleicons.org/cohere/39594D' },
+  { name: 'Cerebras', url: 'https://api.iconify.design/lucide:brain.svg' },
+  { name: 'SambaNova', url: 'https://api.iconify.design/lucide:server.svg' },
+  { name: 'AI Horde', url: 'https://api.iconify.design/lucide:users.svg' },
+  { name: 'Pollinations', url: 'https://api.iconify.design/lucide:flower.svg' },
+  { name: 'Bytez', url: 'https://api.iconify.design/lucide:zap.svg' },
+  { name: 'TokenRouter', url: 'https://api.iconify.design/lucide:network.svg' },
+  { name: 'Zai', url: 'https://api.iconify.design/lucide:box.svg' },
+  { name: 'KiloCode', url: 'https://api.iconify.design/lucide:code-2.svg' },
+  { name: 'UnoRouter', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'LLM7', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Poixe', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Zenmux', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Routeway', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'AgnesAI', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'TokenHarbor', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'OpenAI', url: 'https://cdn.simpleicons.org/openai/10A37F' },
+  { name: 'Anthropic', url: 'https://cdn.simpleicons.org/anthropic/D97757' },
+  { name: 'DeepSeek', url: 'https://cdn.simpleicons.org/deepseek/4D6BFE' },
+  { name: 'Perplexity', url: 'https://cdn.simpleicons.org/perplexity/22B8CD' },
+  { name: 'Together', url: 'https://cdn.simpleicons.org/togetherai/0A66C2' },
+  { name: 'Fireworks', url: 'https://cdn.simpleicons.org/fireworks/000000' },
+  { name: 'XAI', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Novita', url: 'https://api.iconify.design/lucide:sparkles.svg' },
+  { name: 'AIMLAPI', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'AmazonBedrock', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Hyperbolic', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Moonshot', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'ai&', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'ClineCode', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'StepFun', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'AnyRouter', url: 'https://api.iconify.design/lucide:bot.svg' },
+  { name: 'Meta', url: 'https://cdn.simpleicons.org/meta/0467DF' },
+  { name: 'xAI', url: 'https://cdn.simpleicons.org/x/000000' },
+  { name: 'Generic AI', url: 'https://api.iconify.design/lucide:bot.svg' }
+];
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -17,6 +65,7 @@ export default function ProvidersPage() {
   const [showGlobalModels, setShowGlobalModels] = useState(true);
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [iconPickerOpenFor, setIconPickerOpenFor] = useState<string | null>(null);
 
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,11 +125,18 @@ export default function ProvidersPage() {
   };
 
   const handleRemoveLandingPage = (providerId: string, modelId: string) => {
-    if (!confirm('Remove this model from the landing page?')) return;
     setProviders(prevProviders => prevProviders.map(p => p.id === providerId ? {
       ...p,
       models: p.models.map(m => m.id === modelId ? { ...m, showOnLandingPage: false } : m)
     } : p));
+    setSaved(false);
+  };
+
+  const handleRemoveAllLandingPage = () => {
+    setProviders(prevProviders => prevProviders.map(p => ({
+      ...p,
+      models: p.models.map(m => ({ ...m, showOnLandingPage: false }))
+    })));
     setSaved(false);
   };
 
@@ -175,11 +231,96 @@ export default function ProvidersPage() {
       return p;
     }));
   };
+  const handleUpdateProviderIcon = async (providerId: string, iconUrl: string) => {
+    const nextProviders = providers.map(p => p.id === providerId ? { ...p, icon: iconUrl } : p);
+    setProviders(nextProviders);
+    try {
+      await fetch('/api/admin/providers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(nextProviders)
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: any) {
+      console.error('Failed to save icon:', e);
+    }
+  };
+
+  const handleUpdateModelIcon = async (providerId: string, modelId: string, iconUrl: string) => {
+    const nextProviders = providers.map(p => {
+      if (p.id !== providerId) return p;
+      return {
+        ...p,
+        models: p.models.map(m => m.id === modelId ? { ...m, icon: iconUrl } : m)
+      };
+    });
+    setProviders(nextProviders);
+    try {
+      await fetch('/api/admin/providers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(nextProviders)
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: any) {
+      console.error('Failed to save icon:', e);
+    }
+  };
+  
+  const handleMoveLandingPageModel = async (currentIndex: number, direction: 'up' | 'down') => {
+    const lpModels = providers
+      .flatMap(p => p.models.map(m => ({ ...m, providerId: p.id })))
+      .filter(m => m.showOnLandingPage)
+      .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
+
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === lpModels.length - 1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    const reordered = [...lpModels];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const priorityUpdates: Record<string, { modelId: string, priority: number }[]> = {};
+    
+    reordered.forEach((m, idx) => {
+      if (!priorityUpdates[m.providerId]) priorityUpdates[m.providerId] = [];
+      priorityUpdates[m.providerId].push({ modelId: m.id, priority: idx + 1 });
+    });
+
+    const nextProviders = providers.map(p => {
+      if (!priorityUpdates[p.id]) return p;
+      return {
+        ...p,
+        models: p.models.map(m => {
+          const update = priorityUpdates[p.id].find(u => u.modelId === m.id);
+          return update ? { ...m, landingPagePriority: update.priority } : m;
+        })
+      };
+    });
+    setProviders(nextProviders);
+
+    try {
+      await fetch('/api/admin/providers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(nextProviders)
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: any) {
+      console.error('Failed to update priority', e);
+    }
+  };
   
   // State for Add Provider Modal
   const [showAddProvider, setShowAddProvider] = useState(false);
   const [newProvId, setNewProvId] = useState('');
   const [newProvName, setNewProvName] = useState('');
+  const [newProvIcon, setNewProvIcon] = useState('');
   const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
   const [newProvApiFormat, setNewProvApiFormat] = useState('OpenAI Compatible');
   const [newProvUseModelsApi, setNewProvUseModelsApi] = useState(false);
@@ -221,6 +362,7 @@ export default function ProvidersPage() {
         list = rawArray.map((p: any) => ({
           id: p.id,
           name: p.name,
+          icon: p.icon || '',
           status: p.status ?? true,
           key: p.key || '',
           priority: p.priority ?? 0,
@@ -235,13 +377,15 @@ export default function ProvidersPage() {
                 typeof m === 'string'
                   ? { id: m, name: m, originalId: m, reasoning: false, image: false, tokenLimit: 'Unlimited', access: 'Free' }
                   : {
+                      ...m,
                       id: m.id || m.originalId || '',
                       name: m.name || m.originalName || m.id || '',
                       originalId: m.originalId || m.id || '',
                       reasoning: m.reasoning ?? m.text ?? false,
                       image: m.image || m.vision || false,
                       tokenLimit: m.tokenLimit || 'Unlimited',
-                      access: m.access || 'Free'
+                      access: m.access || 'Free',
+                      showOnLandingPage: m.showOnLandingPage || false
                     }
               )
             : []
@@ -257,6 +401,7 @@ export default function ProvidersPage() {
             typeof m === 'string'
               ? { id: m, name: m, originalId: m, reasoning: true, image: false, tokenLimit: 'Unlimited', access: 'Free' }
               : {
+                  ...m,
                   id: m.id || m.originalId || '',
                   name: m.name || m.originalName || m.id || '',
                   originalId: m.originalId || m.id || '',
@@ -370,6 +515,7 @@ export default function ProvidersPage() {
     setProviders([...providers, {
       id: providerId,
       name: newProvName,
+      icon: newProvIcon.trim() || undefined,
       status: false,
       key: newProvKey.trim(),
       priority: providers.length + 1,
@@ -383,6 +529,7 @@ export default function ProvidersPage() {
     }]);
     setNewProvId('');
     setNewProvName('');
+    setNewProvIcon('');
     setNewProvBaseUrl('');
     setNewProvApiFormat('OpenAI Compatible');
     setNewProvKey('');
@@ -881,21 +1028,6 @@ export default function ProvidersPage() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Access Level</span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                          {['Free', 'Pro'].map(acc => (
-                            <label key={acc} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={activeFilters.access.includes(acc)} onChange={(e) => {
-                                const next = e.target.checked ? [...activeFilters.access, acc] : activeFilters.access.filter(a => a !== acc);
-                                setActiveFilters({...activeFilters, access: next});
-                                setCurrentPage(1);
-                              }} style={{ cursor: 'pointer' }} />
-                              {acc}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -970,10 +1102,8 @@ export default function ProvidersPage() {
                           <th style={{ padding: '10px 16px', fontWeight: 600, width: '15%' }}>Original Model ID</th>
                           <th style={{ padding: '10px 12px', fontWeight: 600, width: '18%' }}>Custom Names</th>
                           <th style={{ padding: '10px 12px', fontWeight: 600, width: '9%' }}>Context</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '10%' }}>Token Limit</th>
                           <th style={{ padding: '10px 12px', fontWeight: 600, width: '12%' }}>Pricing (1M)</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '9%' }}>Access Level</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '16%' }}>Capabilities</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '25%' }}>Capabilities</th>
                           <th style={{ padding: '10px 16px', fontWeight: 600, width: '7%', textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
@@ -982,7 +1112,7 @@ export default function ProvidersPage() {
                           <React.Fragment key={pId}>
                             {/* Provider Section Row */}
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <td colSpan={9} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+                              <td colSpan={7} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ 
                                     color: 'var(--color-primary, #ef4444)', 
@@ -1059,29 +1189,6 @@ export default function ProvidersPage() {
                                   </div>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        checked={!m.tokenLimit || m.tokenLimit === 'Unlimited'}
-                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'tokenLimit', e.target.checked ? 'Unlimited' : '')}
-                                      />
-                                      Unlimited
-                                    </label>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: (!m.tokenLimit || m.tokenLimit === 'Unlimited') ? 0.5 : 1 }}>
-                                      <input 
-                                        type="number"
-                                        value={(m.tokenLimit && m.tokenLimit !== 'Unlimited') ? m.tokenLimit.replace('M', '') : ''}
-                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'tokenLimit', e.target.value ? `${e.target.value}M` : '')}
-                                        disabled={!m.tokenLimit || m.tokenLimit === 'Unlimited'}
-                                        placeholder="0"
-                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
-                                      />
-                                      <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>M</span>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td style={{ padding: '4px 12px' }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>In:</span>
@@ -1108,16 +1215,6 @@ export default function ProvidersPage() {
                                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>$</span>
                                     </div>
                                   </div>
-                                </td>
-                                <td style={{ padding: '4px 12px' }}>
-                                  <select 
-                                    value={m.access || 'Free'}
-                                    onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'access', e.target.value)}
-                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 8px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none', width: '100%', cursor: 'pointer' }}
-                                  >
-                                    <option value="Free">Free</option>
-                                    <option value="Pro">Pro</option>
-                                  </select>
                                 </td>
                                 <td style={{ padding: '4px 12px' }}>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', width: '100%', minWidth: '150px' }}>
@@ -1199,9 +1296,19 @@ export default function ProvidersPage() {
 
       {/* Landing Page Models Section */}
       <hr style={{ margin: '40px 0', borderColor: 'var(--color-border)', opacity: 0.5 }} />
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page Models</h2>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table.</p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page Models</h2>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table.</p>
+        </div>
+        <button
+          onClick={handleRemoveAllLandingPage}
+          style={{ background: 'none', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', transition: 'color 0.2s, border-color 0.2s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'; }}
+        >
+          <Trash2 size={13} /> Delete All
+        </button>
       </div>
 
       <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -1209,53 +1316,165 @@ export default function ProvidersPage() {
           <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Provider</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '25%' }}>Model Name</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Model ID</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Hidden Provider</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '30%' }}>Model</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%' }}>Context</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%' }}>Token Limit</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Pricing (In / Out)</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%', textAlign: 'right' }}>Action</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Capabilities</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%', textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {providers.flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id }))).filter(m => m.showOnLandingPage).length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-                    No models selected for landing page. Select models from the list above and click "Add to Landing Page".
-                  </td>
-                </tr>
-              ) : (
-                providers.flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id }))).filter(m => m.showOnLandingPage).map(m => (
+              {(() => {
+                const landingPageModels = providers
+                  .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon })))
+                  .filter(m => m.showOnLandingPage)
+                  .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
+                
+                if (landingPageModels.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                        No models selected for landing page. Select models from the list above and click "Add to Landing Page".
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return landingPageModels.map((m, index) => (
                   <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)' }}>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
-                        {m.providerName}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
+                          {m.providerName}
+                        </span>
+                        <code style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--color-text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)', width: 'max-content' }} title="Original Model ID">
+                          {m.originalId || m.id}
+                        </code>
+                      </div>
                     </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--color-text-main)' }}>{m.name}</td>
                     <td style={{ padding: '12px 16px' }}>
-                      <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
-                        {m.id}
-                      </code>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{ position: 'relative', marginTop: '2px' }}>
+                            <button 
+                              onClick={() => setIconPickerOpenFor(iconPickerOpenFor === `${m.providerId}-${m.id}` ? null : `${m.providerId}-${m.id}`)}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '6px', cursor: 'pointer', outline: 'none' }}
+                              title="Select Icon"
+                            >
+                              {m.icon ? <img src={m.icon} width={16} height={16} alt="" style={{ borderRadius: '2px' }} /> : <ImageIcon size={14} color="var(--color-text-muted)" />}
+                            </button>
+
+                            {iconPickerOpenFor === `${m.providerId}-${m.id}` && (
+                              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px', width: '280px', zIndex: 50, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', marginBottom: '12px' }}>
+                                    <label title="Upload image from computer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '4px' }}>
+                                      <Upload size={14} color="var(--color-text-muted)" />
+                                      <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        style={{ display: 'none' }} 
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const reader = new FileReader();
+                                            reader.onload = (evt) => {
+                                              const base64 = evt.target?.result;
+                                              if (typeof base64 === 'string') {
+                                                handleUpdateModelIcon(m.providerId, m.id, base64);
+                                              }
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                    <input 
+                                      type="text" 
+                                      value={m.icon || ''}
+                                      onChange={(e) => handleUpdateModelIcon(m.providerId, m.id, e.target.value)}
+                                      placeholder="Paste Image URL..." 
+                                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '11px' }} 
+                                    />
+                                    <button onClick={() => setIconPickerOpenFor(null)} title="Close" style={{ background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '4px', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <X size={14} color="var(--color-text-muted)" />
+                                    </button>
+                                 </div>
+                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                                   {PRESET_ICONS.map(icon => (
+                                      <button 
+                                        key={icon.name}
+                                        onClick={() => {
+                                          handleUpdateModelIcon(m.providerId, m.id, icon.url);
+                                          setIconPickerOpenFor(null);
+                                        }}
+                                        title={icon.name}
+                                        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '8px', background: m.icon === icon.url ? 'rgba(59, 130, 246, 0.15)' : 'var(--color-bg-soft)', border: `1px solid ${m.icon === icon.url ? 'var(--color-primary)' : 'var(--color-border)'}`, borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                      >
+                                        <img src={icon.url} width={20} height={20} alt={icon.name} />
+                                      </button>
+                                   ))}
+                                 </div>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontWeight: 500, color: 'var(--color-text-main)' }}>{m.name}</span>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <code style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--color-primary, #3b82f6)', background: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                {m.id}
+                              </code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>{m.contextWindow || 'N/A'}</td>
-                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>{m.tokenLimit || 'Unlimited'}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>
                       ${m.inputPrice || '0'} / ${m.outputPrice || '0'}
                     </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--color-text-muted)' }}>
+                        {m.text && <span title="Text"><Type size={14} /></span>}
+                        {m.reasoning && <span title="Reasoning"><Brain size={14} /></span>}
+                        {m.vision && <span title="Vision"><Eye size={14} /></span>}
+                        {m.image && <span title="Image Gen"><ImageIcon size={14} /></span>}
+                        {m.video && <span title="Video"><Video size={14} /></span>}
+                        {m.audio && <span title="Audio"><Mic size={14} /></span>}
+                        {m.embedding && <span title="Embedding"><Database size={14} /></span>}
+                        {(!m.text && !m.reasoning && !m.vision && !m.image && !m.video && !m.audio && !m.embedding) && <span style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.5 }}>None</span>}
+                      </div>
+                    </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => handleRemoveLandingPage(m.providerId, m.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-danger, #ef4444)', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center' }}
-                        title="Remove from Landing Page"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <button 
+                          onClick={() => handleMoveLandingPageModel(index, 'up')}
+                          disabled={index === 0}
+                          style={{ background: 'none', border: 'none', color: index === 0 ? 'var(--color-text-muted)' : 'var(--color-text-main)', cursor: index === 0 ? 'not-allowed' : 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', opacity: index === 0 ? 0.3 : 1 }}
+                          title="Move Up"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleMoveLandingPageModel(index, 'down')}
+                          disabled={index === landingPageModels.length - 1}
+                          style={{ background: 'none', border: 'none', color: index === landingPageModels.length - 1 ? 'var(--color-text-muted)' : 'var(--color-text-main)', cursor: index === landingPageModels.length - 1 ? 'not-allowed' : 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', opacity: index === landingPageModels.length - 1 ? 0.3 : 1 }}
+                          title="Move Down"
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveLandingPage(m.providerId, m.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-danger, #ef4444)', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}
+                          title="Remove from Landing Page"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
@@ -1319,25 +1538,13 @@ export default function ProvidersPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Token Limit</label>
-                  <input type="text" value={customModelTokenLimit} onChange={e => setCustomModelTokenLimit(e.target.value)} placeholder="e.g. 128000" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context Window</label>
                   <input type="text" value={customModelContextWindow} onChange={e => setCustomModelContextWindow(e.target.value)} placeholder="e.g. 128K" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Access Level</label>
-                <select value={customModelAccess} onChange={e => setCustomModelAccess(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
-                  <option value="Free">Free</option>
-                  <option value="Pro">Pro</option>
-                  <option value="Enterprise">Enterprise</option>
-                </select>
-              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

@@ -10,8 +10,8 @@ function hashKey(key: string): string {
 }
 
 export function generateApiKey(): { full: string; prefix: string; hash: string } {
-  const rand = crypto.randomUUID().replace(/-/g, '') + Math.random().toString(36).slice(2, 10);
-  const full = `cm_live_${rand}`;
+  const rand = crypto.randomUUID().replace(/-/g, '') + Math.random().toString(36).slice(2, 12);
+  const full = `sk-${rand}`;
   return { full, prefix: full.slice(0, 16), hash: hashKey(full) };
 }
 

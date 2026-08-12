@@ -7,7 +7,8 @@ export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization') || '';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const response = await fetch(`${backendUrl}/api/admin/providers`, {
-      headers: { 'Authorization': authHeader }
+      headers: { 'Authorization': authHeader },
+      cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json([], { status: response.status });
     const data = await response.json();
@@ -28,9 +29,15 @@ export async function PUT(req: Request) {
         'Content-Type': 'application/json',
         'Authorization': authHeader
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Backend returned an error:', response.status, errorText);
+      require('fs').appendFileSync('backend_error.log', `Status: ${response.status} Body: ${errorText}\n`);
+      return NextResponse.json({ error: 'Failed', details: errorText }, { status: response.status });
+    }
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {

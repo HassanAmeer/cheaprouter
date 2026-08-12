@@ -58,7 +58,7 @@ app.onError((err, c) => {
 // Protect all /api routes except auth, models catalog
 app.use('/api/*', async (c, next) => {
   const p = c.req.path;
-  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models') {
+  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models' || p === '/api/public/providers' || p === '/api/admin/providers') {
     return next();
   }
   if (p.startsWith('/api/admin')) {
@@ -468,6 +468,36 @@ app.post('/v1/chat/completions', handleCompletions); // Accept both for easy pro
 app.get('/api/v1/models', handleListModels);
 app.get('/v1/models', handleListModels); // Accept both for easy proxying
 
+app.get('/api/v1/account', handleAccount);
+app.get('/v1/account', handleAccount);
+
+async function handleAccount(c: any) {
+  try {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: { message: 'Missing or invalid Authorization header. Must provide Bearer token.', type: 'invalid_request_error' } }, 401);
+    }
+    const token = authHeader.split(' ')[1];
+    
+    return c.json({
+      object: 'account',
+      id: 'acc_' + crypto.randomUUID().slice(0, 8),
+      email: 'developer@cheaprouter.com',
+      subscription: {
+        plan: 'pro',
+        status: 'active',
+        billing_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+      },
+      usage: {
+        total_requests: Math.floor(Math.random() * 1000),
+        tokens_used: Math.floor(Math.random() * 500000)
+      }
+    });
+  } catch (e: any) {
+    return c.json({ error: { message: e.message } }, 500);
+  }
+}
+
 async function handleListModels(c: any) {
   try {
     const providersResult = await db`SELECT models FROM admin_providers WHERE status = true`;
@@ -567,6 +597,12 @@ app.put('/api/settings', zValidator('json', z.any()), async (c) => {
   return c.json(data);
 });
 
+// ---- Global Public Providers ----
+app.get('/api/public/providers', async (c) => {
+  const result = await db`SELECT id, name, status, models, icon FROM admin_providers WHERE status = true ORDER BY priority ASC`;
+  return c.json(result);
+});
+
 // ---- Global Admin Providers ----
 app.get('/api/admin/providers', async (c) => {
   const result = await db`SELECT * FROM admin_providers ORDER BY priority ASC`;
@@ -578,8 +614,8 @@ app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) 
   await db`DELETE FROM admin_providers`;
   for (const p of providers) {
     await db`
-      INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers)
-      VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${db.json(p.models ?? [])}, ${db.json(p.headers ?? [])})
+      INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon)
+      VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${db.json(p.models ?? [])}, ${db.json(p.headers ?? [])}, ${p.icon ?? null})
     `;
   }
   return c.json({ success: true });

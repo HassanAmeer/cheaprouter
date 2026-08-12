@@ -51,7 +51,7 @@ import TokenRouterSetup, { TokenRouterSetupRef } from '../TokenRouterSetup';
 
 type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string };
+type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
 const editorOptions: any = {
   minimap: { enabled: false },
@@ -152,6 +152,7 @@ export default function ManageProvidersPage() {
   const [showAddProvider, setShowAddProvider] = useState(true);
   const [newProvId, setNewProvId] = useState('');
   const [newProvName, setNewProvName] = useState('');
+  const [newProvIcon, setNewProvIcon] = useState('');
   const [newProvBaseUrl, setNewProvBaseUrl] = useState('');
   const [newProvApiFormat, setNewProvApiFormat] = useState('');
   const [newProvUseModelsApi, setNewProvUseModelsApi] = useState(false);
@@ -183,7 +184,7 @@ export default function ManageProvidersPage() {
         const data = await res.json();
         const rawArray = Array.isArray(data) ? data : (data && Array.isArray(data.providers) ? data.providers : []);
         list = rawArray.map((p: any) => ({
-          id: p.id, name: p.name, status: p.status ?? true,
+          id: p.id, name: p.name, icon: p.icon || '', status: p.status ?? true,
           key: p.key || '', priority: p.priority ?? 0,
           baseUrl: p.base_url ?? p.baseUrl,
           useModelsApi: p.use_models_api ?? p.useModelsApi ?? false,
@@ -332,8 +333,8 @@ export default function ManageProvidersPage() {
       initialModels = newProvModels.filter(m => m.name.trim() && m.id.trim()).map(m => ({ ...m, id: m.id.trim(), name: m.name.trim(), originalId: m.originalId?.trim() || m.id.trim() }));
     }
     const providerId = newProvId.trim() ? newProvId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '') : `prov_${Date.now()}`;
-    setProviders([...providers, { id: providerId, name: newProvName, status: false, key: newProvKey.trim(), priority: providers.length + 1, models: initialModels, baseUrl: newProvBaseUrl.trim() || undefined, apiFormat: newProvApiFormat, useModelsApi: newProvUseModelsApi, modelsApiLink: newProvModelsApiLink.trim() || undefined, headers: newProvHeaders, isCustom: true }]);
-    setNewProvId(''); setNewProvName(''); setNewProvBaseUrl(''); setNewProvApiFormat('OpenAI Compatible');
+    setProviders([...providers, { id: providerId, name: newProvName, icon: newProvIcon.trim() || undefined, status: false, key: newProvKey.trim(), priority: providers.length + 1, models: initialModels, baseUrl: newProvBaseUrl.trim() || undefined, apiFormat: newProvApiFormat, useModelsApi: newProvUseModelsApi, modelsApiLink: newProvModelsApiLink.trim() || undefined, headers: newProvHeaders, isCustom: true }]);
+    setNewProvId(''); setNewProvName(''); setNewProvIcon(''); setNewProvBaseUrl(''); setNewProvApiFormat('OpenAI Compatible');
     setNewProvKey(''); setNewProvHeaders([]); setNewProvUseModelsApi(false); setNewProvModelsApiLink(''); setNewProvModels([]);
     setShowAddProvider(false); setSaved(false);
   };
@@ -434,6 +435,26 @@ export default function ManageProvidersPage() {
                 <input type="text" value={provider.baseUrl || ''} onChange={(e) => updateBaseUrl(provider.id, e.target.value)}
                   placeholder="e.g. https://api.openai.com/v1" disabled={!provider.status}
                   style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }} />
+              </div>
+
+              {/* Provider Icon */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Icon URL</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="text" value={provider.icon || ''} onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, icon: e.target.value } : p)); setSaved(false); }}
+                    placeholder="e.g. https://cdn.simpleicons.org/openai/10A37F" disabled={!provider.status}
+                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }} />
+                  <select value={provider.icon || ''} onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, icon: e.target.value } : p)); setSaved(false); }} disabled={!provider.status}
+                    style={{ width: '130px', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }}>
+                    <option value="">Custom...</option>
+                    <option value="https://cdn.simpleicons.org/openai/10A37F">OpenAI</option>
+                    <option value="https://cdn.simpleicons.org/anthropic/D97757">Anthropic</option>
+                    <option value="https://cdn.simpleicons.org/google/4285F4">Google</option>
+                    <option value="https://cdn.simpleicons.org/meta/0668E1">Meta</option>
+                    <option value="https://cdn.simpleicons.org/x/000000">X.AI</option>
+                    <option value="https://cdn.simpleicons.org/deepseek/4D8B3D">DeepSeek</option>
+                  </select>
+                </div>
               </div>
 
               {/* Headers */}
@@ -705,6 +726,27 @@ export default function ManageProvidersPage() {
                   <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Name</label>
                   <input type="text" value={newProvName} onChange={(e) => setNewProvName(e.target.value)} placeholder="e.g. My Custom Provider"
                     style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Icon URL</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="text" value={newProvIcon} onChange={(e) => setNewProvIcon(e.target.value)} placeholder="e.g. https://cdn.simpleicons.org/openai/10A37F"
+                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                    <select value={newProvIcon} onChange={(e) => setNewProvIcon(e.target.value)}
+                      style={{ width: '130px', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}>
+                      <option value="">Custom...</option>
+                      <option value="https://cdn.simpleicons.org/openai/10A37F">OpenAI / Generic AI</option>
+                      <option value="https://cdn.simpleicons.org/anthropic/D97757">Anthropic</option>
+                      <option value="https://cdn.simpleicons.org/google/4285F4">Google</option>
+                      <option value="https://cdn.simpleicons.org/meta/0668E1">Meta</option>
+                      <option value="https://cdn.simpleicons.org/x/000000">X.AI</option>
+                      <option value="https://cdn.simpleicons.org/deepseek/4D8B3D">DeepSeek</option>
+                    </select>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Paste an image URL or pick from presets</span>
                 </div>
               </div>
 

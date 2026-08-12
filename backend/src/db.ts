@@ -35,6 +35,11 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_chat_expiry TIMESTAMP;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_agents_start TIMESTAMP;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_agents_expiry TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_student BOOLEAN DEFAULT FALSE;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS experience_level TEXT;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS use_cases TEXT;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS earning_goal TEXT;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;`;
   } catch (e) {
     console.error('Migration error:', e);
   }
@@ -143,7 +148,8 @@ export async function initDb() {
       api_format TEXT,
       is_custom BOOLEAN DEFAULT false,
       models JSON,
-      headers JSON
+      headers JSON,
+      icon TEXT
     );
   `;
 }
