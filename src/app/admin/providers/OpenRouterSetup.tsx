@@ -241,7 +241,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
             onClick={() => {
               const newStatus = !status;
               setStatus(newStatus);
-              handleSave(selectedModels, apiKeys, true, newStatus);
+              handleSave(selectedModels, apiKeys, true, newStatus, false);
             }}
             style={{
               display: 'flex',

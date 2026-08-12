@@ -245,7 +245,7 @@ const AgnesAISetup = forwardRef<AgnesAISetupRef, { onModelsUpdated?: () => void,
             onClick={() => {
               const newStatus = !status;
               setStatus(newStatus);
-              handleSave(selectedModels, apiKeys, true, newStatus);
+              handleSave(selectedModels, apiKeys, true, newStatus, false);
             }}
             style={{
               display: 'flex',

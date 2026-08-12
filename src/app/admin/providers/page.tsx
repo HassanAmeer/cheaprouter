@@ -1327,7 +1327,7 @@ export default function ProvidersPage() {
             <tbody>
               {(() => {
                 const landingPageModels = providers
-                  .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon })))
+                  .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon, providerStatus: p.status })))
                   .filter(m => m.showOnLandingPage)
                   .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
                 
@@ -1342,12 +1342,17 @@ export default function ProvidersPage() {
                 }
 
                 return landingPageModels.map((m, index) => (
-                  <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)' }}>
+                  <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)', opacity: m.providerStatus === false ? 0.5 : 1 }}>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
-                          {m.providerName}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
+                            {m.providerName}
+                          </span>
+                          {m.providerStatus === false && (
+                            <span style={{ fontSize: '9px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '2px 4px', borderRadius: '4px', border: '1px solid rgba(239,68,68,0.2)' }}>Disabled</span>
+                          )}
+                        </div>
                         <code style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--color-text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)', width: 'max-content' }} title="Original Model ID">
                           {m.originalId || m.id}
                         </code>

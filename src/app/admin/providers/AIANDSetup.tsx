@@ -245,7 +245,7 @@ const AIANDSetup = forwardRef<AIANDSetupRef, { onModelsUpdated?: () => void, ind
             onClick={() => {
               const newStatus = !status;
               setStatus(newStatus);
-              handleSave(selectedModels, apiKeys, true, newStatus);
+              handleSave(selectedModels, apiKeys, true, newStatus, false);
             }}
             style={{
               display: 'flex',

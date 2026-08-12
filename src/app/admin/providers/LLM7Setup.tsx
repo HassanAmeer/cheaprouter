@@ -245,7 +245,7 @@ const LLM7Setup = forwardRef<LLM7SetupRef, { onModelsUpdated?: () => void, index
             onClick={() => {
               const newStatus = !status;
               setStatus(newStatus);
-              handleSave(selectedModels, apiKeys, true, newStatus);
+              handleSave(selectedModels, apiKeys, true, newStatus, false);
             }}
             style={{
               display: 'flex',
