@@ -114,7 +114,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
             typeof m === 'string'
               ? { originalId: m, originalName: m, name: m, id: m, text: true, image: false, vision: false }
               : {
-                  originalId: m.originalId || m.id || '',
+                  ...m, originalId: m.originalId || m.id || '',
                   originalName: m.originalName || m.name || m.id || '',
                   name: m.name || m.id || '',
                   id: m.id || m.originalId || '',
@@ -158,8 +158,8 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
     }
   };
 
-  const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false, overrideStatus: boolean | null = null) => {
-    setSaving(true);
+  const handleSave = async (modelsToSave = selectedModels, keysToSave = apiKeys, shouldNotify = false, overrideStatus: boolean | null = null, showUiFeedback = shouldNotify) => {
+    if (showUiFeedback) setSaving(true);
     try {
       const validKeys = keysToSave.filter(k => k.key.trim() !== '');
       const keyString = JSON.stringify(validKeys.length > 0 ? validKeys : [{key: '', active: true}]);
@@ -169,14 +169,14 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
         body: JSON.stringify({ key: keyString, status: overrideStatus !== null ? overrideStatus : status, models: modelsToSave })
       });
       if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        if (showUiFeedback) { setSaved(true);
+        setTimeout(() => setSaved(false), 2000); }
         if (shouldNotify && onModelsUpdated) onModelsUpdated();
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setSaving(false);
+      if (showUiFeedback) setSaving(false);
     }
   };
 
@@ -210,7 +210,7 @@ const OpenRouterSetup = forwardRef<OpenRouterSetupRef, { onModelsUpdated?: () =>
   };
 
   const handleDrawerClose = () => {
-    handleSave(selectedModels, apiKeys, true);
+    handleSave(selectedModels, apiKeys, true, null, false);
     setIsDrawerOpen(false);
   };
 

@@ -195,7 +195,7 @@ export default function ManageProvidersPage() {
           models: Array.isArray(p.models)
             ? p.models.map((m: any) => typeof m === 'string'
               ? { id: m, name: m, originalId: m, reasoning: false, image: false, tokenLimit: 'Unlimited', access: 'Free' }
-              : { id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.reasoning ?? m.text ?? false, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' })
+              : { ...m, id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.reasoning ?? m.text ?? false, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' })
             : []
         }));
       }
@@ -206,7 +206,7 @@ export default function ManageProvidersPage() {
         if (openRouterData && Array.isArray(openRouterData.models)) {
           const openRouterModels = openRouterData.models.map((m: any) => typeof m === 'string'
             ? { id: m, name: m, originalId: m, reasoning: true, image: false, tokenLimit: 'Unlimited', access: 'Free' }
-            : { id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.text ?? m.reasoning ?? true, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' });
+            : { ...m, id: m.id || m.originalId || '', name: m.name || m.originalName || m.id || '', originalId: m.originalId || m.id || '', reasoning: m.text ?? m.reasoning ?? true, image: m.image || m.vision || false, tokenLimit: m.tokenLimit || 'Unlimited', access: m.access || 'Free' });
           const idx = list.findIndex(p => p.id === 'ap_openrouter' || p.id === 'openrouter');
           if (idx >= 0) { list[idx].models = openRouterModels; if (openRouterData.key) list[idx].key = openRouterData.key; if (openRouterData.status !== undefined) list[idx].status = openRouterData.status; }
           else list.push({ id: 'ap_openrouter', name: 'OpenRouter', status: openRouterData.status ?? true, key: openRouterData.key || '', priority: 10, models: openRouterModels, isCustom: true });
