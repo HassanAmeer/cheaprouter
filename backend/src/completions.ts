@@ -45,7 +45,7 @@ export async function getSystemPromptForModel(model: string) {
   return null;
 }
 
-export async function getModelInstances(userId: string, model: string) {
+export async function getModelInstances(userId: string, model: string, sessionId?: string) {
   const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
 
   // Dynamic Provider Resolution
@@ -56,16 +56,33 @@ export async function getModelInstances(userId: string, model: string) {
         const apiKeys = getActiveKeys(p.key);
         if (apiKeys.length > 0) {
           const modelId = matched.originalId || matched.id;
+          const customHeaders: Record<string, string> = sessionId ? { 'x-session-id': sessionId } : {};
+          
+          const customFetch = async (url: any, options?: any) => {
+            const fs = require('fs');
+            fs.appendFileSync('fetch_debug.log', `customFetch called, body type: ${options?.body ? typeof options.body : 'undefined'} isBuffer: ${Buffer.isBuffer(options?.body)} constructor: ${options?.body?.constructor?.name}\n`);
+            if (options && options.body && typeof options.body === 'string' && sessionId) {
+              try {
+                const parsedBody = JSON.parse(options.body);
+                parsedBody.sessionId = sessionId;
+                options.body = JSON.stringify(parsedBody);
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+            return fetch(url, options);
+          };
+
           return apiKeys.map(apiKey => {
             if (p.api_format === 'anthropic') {
-              return createAnthropic({ apiKey, baseURL: p.base_url || undefined })(modelId);
+              return createAnthropic({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
             } else if (p.api_format === 'google') {
-              return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+              return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
             } else if (p.api_format === 'cohere') {
-              return createCohere({ apiKey, baseURL: p.base_url || undefined })(modelId);
+              return createCohere({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
             } else {
               // Default to OpenAI / Custom provider
-              return createOpenAI({ apiKey, baseURL: p.base_url || undefined })(modelId);
+              return createOpenAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
             }
           });
         }
@@ -77,8 +94,12 @@ export async function getModelInstances(userId: string, model: string) {
 }
 
 export async function handleCompletions(c: any) {
+  let auth = '';
+  let sessionId = '';
   try {
-    const auth = c.req.header('authorization');
+    auth = c.req.header('authorization') || '';
+    sessionId = c.req.header('x-session-id') || '';
+    
     if (!auth || !auth.startsWith('Bearer ')) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
@@ -118,7 +139,7 @@ export async function handleCompletions(c: any) {
     const { model = 'gpt-4o', messages, stream = false } = body;
 
     if (!messages || !Array.isArray(messages)) {
-      addDevLog('ERROR', 'Completions', 'Invalid messages format');
+      addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, sessionId);
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
@@ -138,15 +159,15 @@ export async function handleCompletions(c: any) {
       userId: finalUserId, 
       messageCount: messages.length,
       payload: coreMessages
-    });
+    }, sessionId);
 
-    const aiModels = await getModelInstances(finalUserId, model);
+    const aiModels = await getModelInstances(finalUserId, model, sessionId);
     if (!aiModels || aiModels.length === 0) {
-      addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`);
+      addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`, undefined, sessionId);
       return c.json({ error: 'Model not available or no active keys.' }, 500);
     }
     
-    addDevLog('INFO', 'Model Selection', `Found ${aiModels.length} active keys/instances for fallback loop`);
+    addDevLog('INFO', 'Model Selection', `Found ${aiModels.length} active keys/instances for fallback loop`, undefined, sessionId);
 
     // Check if user has disabled this model
     const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
@@ -169,7 +190,7 @@ export async function handleCompletions(c: any) {
     for (const aiModel of aiModels) {
       attempt++;
       try {
-        addDevLog('INFO', 'AI Request', `Attempt ${attempt}/${aiModels.length} starting with selected key...`);
+        addDevLog('INFO', 'AI Request', `Attempt ${attempt}/${aiModels.length} starting with selected key...`, undefined, sessionId);
         if (stream) {
           const result = await streamText({
             model: aiModel,
@@ -182,7 +203,7 @@ export async function handleCompletions(c: any) {
               addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
                 usage,
                 responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
-              });
+              }, sessionId);
             },
           });
           return result.toTextStreamResponse();
@@ -198,7 +219,7 @@ export async function handleCompletions(c: any) {
             await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
           }
           
-          addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens });
+          addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
 
           return c.json({
             id: `chatcmpl-${Date.now()}`,
@@ -219,17 +240,42 @@ export async function handleCompletions(c: any) {
         }
       } catch (err: any) {
         lastError = err;
-        addDevLog('WARNING', 'AI Request', `Attempt ${attempt} failed: ${err?.message || 'Unknown error'}`, { error: err });
-        console.error(`[Fallback] AI request failed with a key. Trying next... Error:`, err?.message || err);
-        // Continue to the next aiModel in the array
+        
+        // Extract status code from Vercel AI SDK error objects
+        const statusCode = err?.statusCode || (err as any)?.response?.status || 500;
+        
+        let parsedResponse = err?.responseBody;
+        if (typeof parsedResponse === 'string') {
+          try { parsedResponse = JSON.parse(parsedResponse); } catch {}
+        }
+
+        const formattedLogDetails = {
+          "1. Error Message": err?.message || 'Unknown error',
+          "2. Status Code": statusCode,
+          "3. Provider Response (Actual Error)": parsedResponse || err?.response || 'No response body',
+          "4. Request Payload (What we sent)": err?.requestBodyValues || 'N/A',
+          "5. Raw Error Object": err
+        };
+        
+        addDevLog('WARNING', 'AI Request', `Attempt ${attempt} failed: ${err?.message || 'Unknown error'} (Status: ${statusCode})`, formattedLogDetails, sessionId);
+        console.error(`[Fallback] AI request failed with a key (Status: ${statusCode}). Error:`, err?.message || err);
+        
+        // If it's a "Hard Error" (e.g. 400 Bad Request, 401, 403) and NOT a 429 Rate Limit, we abort fallback.
+        // This prevents trying the same invalid prompt on all keys.
+        if (statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+          console.error(`[Fallback] Hard error detected (${statusCode}), aborting fallback.`);
+          throw err; // Break loop and send to user
+        }
+        
+        // Continue to the next aiModel in the array for 429 or 5xx errors
       }
     }
     
     // If all keys failed, throw the last error so it can be sent to the user
-    addDevLog('ERROR', 'Completions', `All fallback attempts failed.`);
+    addDevLog('ERROR', 'Completions', `All fallback attempts failed.`, undefined, sessionId);
     throw lastError;
   } catch (error: any) {
-    addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error });
+    addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error }, sessionId);
     console.error('Chat completions error:', error);
     // AI SDK throws APICallError with a responseBody string — parse it for the real error
     let msg = 'Error processing request';
@@ -248,7 +294,7 @@ export async function handleCompletions(c: any) {
   }
 }
 
-export async function getModelInstance(userId: string, model: string) {
-  const instances = await getModelInstances(userId, model);
+export async function getModelInstance(userId: string, model: string, sessionId?: string) {
+  const instances = await getModelInstances(userId, model, sessionId);
   return instances[0];
 }

@@ -53,6 +53,7 @@ app.use('*', async (c, next) => {
 
 // ---- GLOBAL ERROR HANDLER — always return JSON ----
 app.onError((err, c) => {
+  require('fs').appendFileSync('error_stack.log', err.stack + '\n');
   console.error('Unhandled error:', err);
   return c.json({ error: err.message || 'Internal server error' }, 500);
 });
@@ -513,10 +514,11 @@ app.post('/api/admin/dev-logs', zValidator('json', z.object({
   type: z.enum(['INFO', 'SUCCESS', 'ERROR', 'WARNING']),
   component: z.string(),
   message: z.string(),
-  details: z.any().optional()
+  details: z.any().optional(),
+  sessionId: z.string().optional()
 })), (c) => {
   const body = c.req.valid('json');
-  addDevLog(body.type, body.component, body.message, body.details);
+  addDevLog(body.type, body.component, body.message, body.details, body.sessionId);
   return c.json({ ok: true });
 });
 

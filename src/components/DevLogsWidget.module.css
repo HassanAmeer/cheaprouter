@@ -41,8 +41,13 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .header {
@@ -68,8 +73,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .actions {
@@ -90,6 +102,7 @@
 .iconBtn:hover {
   color: var(--color-text-main);
 }
+
 .iconBtn.danger:hover {
   color: var(--color-primary);
 }
@@ -97,10 +110,11 @@
 .logsContainer {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  min-height: 0;
 }
 
 .emptyState {
@@ -144,10 +158,29 @@
   text-transform: uppercase;
 }
 
-.badge.SUCCESS { color: #10B981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); }
-.badge.ERROR { color: #EF4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
-.badge.WARNING { color: #F59E0B; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1); }
-.badge.INFO { color: #3B82F6; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); }
+.badge.SUCCESS {
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.badge.ERROR {
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.badge.WARNING {
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.badge.INFO {
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+}
 
 .componentName {
   font-weight: 600;
@@ -172,13 +205,14 @@
   background: none;
   border: none;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 10px;
   font-family: monospace;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 2px;
   padding: 0;
   transition: color 0.2s;
 }
+
 .detailsBtn:hover {
   color: var(--color-primary);
 }
@@ -192,4 +226,259 @@
   font-size: 11px;
   overflow-x: auto;
   border: 1px solid #262C34;
+}
+
+/* Session Accordion Styles */
+.sessionCard {
+  background: transparent;
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sessionCard:last-child {
+  border-bottom: none;
+}
+
+.sessionOpen {
+  background: var(--color-bg-soft);
+}
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 8px 0; /* No left padding */
+  cursor: pointer;
+  background: transparent;
+  user-select: none;
+}
+
+.sessionHeader:hover {
+  background: var(--color-bg-soft);
+}
+
+.sessionHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* Reduced gap between chevron and title */
+}
+
+.sessionIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  width: 16px; /* Reduced width */
+  height: 20px;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.indicatorError {
+  color: #EF4444;
+}
+
+.indicatorSuccess {
+  color: #10B981;
+}
+
+.sessionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 2px;
+}
+
+.sessionTime {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logCountDot {
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+.sessionIdBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--color-text-muted);
+  background: var(--color-bg-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.sessionBody {
+  background: transparent;
+  padding: 0 16px 8px 24px; /* Text starts at 24px */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Clean Log Entries (No block, just lines) */
+.cleanLogEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding: 6px 0;
+}
+
+/* Vertical line for the tree */
+.cleanLogEntry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px; /* 24px padding - 16px = 8px (center of chevron) */
+  border-left: 1px solid var(--color-border);
+}
+
+/* Connect first item to the header */
+.cleanLogEntry:first-child::before {
+  top: -8px;
+}
+
+/* Stop vertical line at the last item's horizontal branch */
+.cleanLogEntry:last-child::before {
+  bottom: auto;
+  height: 12px;
+}
+
+/* Horizontal line for the tree */
+.cleanLogEntry::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: -16px;
+  width: 10px; /* Extends from 8px to 18px (leaving 6px gap to text at 24px) */
+  border-top: 1px solid var(--color-border);
+}
+
+.cleanLogLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.cleanLogLineContent {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+}
+
+.clickableLine {
+  cursor: pointer;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.clickableLine:hover {
+  background: var(--color-bg);
+}
+
+.lineChevron {
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cleanLogTime {
+  font-family: monospace;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  min-width: 55px;
+}
+
+.cleanBadge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.cleanBadge.SUCCESS {
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.cleanBadge.ERROR {
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.cleanBadge.WARNING {
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.cleanBadge.INFO {
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.cleanComponent {
+  font-size: 11px;
+  font-family: monospace;
+  color: #888;
+  white-space: nowrap;
+}
+
+.cleanMessage {
+  color: var(--color-text-main);
+}
+
+.detailsContainer {
+  padding-left: 0;
+  margin-top: 4px;
+}
+/* Copy Button */
+.detailsContainer {
+  position: relative;
+}
+
+.copyBtn {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.copyBtn:hover {
+  background: rgba(50, 50, 50, 0.9);
+  color: var(--color-text-main);
 }

@@ -43,11 +43,15 @@ export default function TestModelsPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
-  const pushLog = (type: string, message: string, details?: any) => {
+  const pushLog = (type: string, message: string, details?: any, sessionId?: string) => {
+    const token = localStorage.getItem('admin_token');
     fetch('/api/admin/dev-logs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, component: 'Frontend UI', message, details })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token || ''}`
+      },
+      body: JSON.stringify({ type, component: 'Frontend UI', message, details, sessionId })
     }).catch(() => {});
   };
 
@@ -76,7 +80,7 @@ export default function TestModelsPage() {
         setModels(all);
         if (all.length > 0) {
           setSelectedModel(all[0].id);
-          pushLog('INFO', `Initialized with ${all.length} models`, { models: all });
+          pushLog('INFO', `AI models fetched (${all.length})`, { models: all });
         }
         setLoadingModels(false);
       })
@@ -101,7 +105,9 @@ export default function TestModelsPage() {
     setSending(true);
     setLatency(null);
 
-    pushLog('INFO', `Sending chat request to model: ${selectedModel}`, { model: selectedModel, payload: convo });
+    const sessionId = crypto.randomUUID();
+
+    pushLog('INFO', `Sending chat request to model: ${selectedModel}`, { model: selectedModel, payload: convo }, sessionId);
 
     const started = performance.now();
     try {
@@ -114,6 +120,7 @@ export default function TestModelsPage() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token || ''}`,
+          'x-session-id': sessionId
         },
         body: JSON.stringify({ model: selectedModel, messages: convo, stream: false }),
       });
@@ -127,7 +134,7 @@ export default function TestModelsPage() {
         setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
         setLatency(elapsed);
         setError(msg);
-        pushLog('ERROR', `Request failed with status ${res.status}`, { error: data?.error || data, status: res.status, elapsedMs: elapsed });
+        pushLog('ERROR', `Request failed with status ${res.status}`, { error: data?.error || data, status: res.status, elapsedMs: elapsed }, sessionId);
         return;
       }
 
@@ -140,14 +147,14 @@ export default function TestModelsPage() {
 
       setMessages(prev => [...prev, { role: 'assistant', content: String(content) }]);
       setLatency(elapsed);
-      pushLog('SUCCESS', `Received successful response in ${elapsed}ms`, { data, elapsedMs: elapsed });
+      pushLog('SUCCESS', `Received successful response in ${elapsed}ms`, { data, elapsedMs: elapsed }, sessionId);
     } catch (err: any) {
       const msg = err?.name === 'AbortError'
         ? 'Request timed out after 90s — the provider may be slow or rate-limited. Try another model.'
         : (err?.message || 'Network error — could not reach the backend.');
       setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
       setError(msg);
-      pushLog('ERROR', `Network error or timeout`, { message: msg, error: err?.message });
+      pushLog('ERROR', `Network error or timeout`, { message: msg, error: err?.message }, sessionId);
     } finally {
       setSending(false);
     }

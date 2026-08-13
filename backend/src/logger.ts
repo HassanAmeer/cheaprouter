@@ -5,18 +5,20 @@ type LogEntry = {
   component: string;
   message: string;
   details?: any;
+  sessionId?: string;
 };
 
 const logs: LogEntry[] = [];
 
-export function addDevLog(type: LogEntry['type'], component: string, message: string, details?: any) {
+export function addDevLog(type: LogEntry['type'], component: string, message: string, details?: any, sessionId?: string) {
   logs.push({
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
     type,
     component,
     message,
-    details
+    details,
+    sessionId
   });
   
   if (logs.length > 300) {

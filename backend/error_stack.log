@@ -1,0 +1,7 @@
+ReferenceError: sessionId is not defined
+    at handleCompletions (/home/hasan/Documents/reactjs/cheaprouter/backend/src/completions.ts:277:120)
+    at async dispatch (/home/hasan/Documents/reactjs/cheaprouter/backend/node_modules/hono/dist/compose.js:22:23)
+    at async <anonymous> (/home/hasan/Documents/reactjs/cheaprouter/backend/src/index.ts:51:9)
+    at async dispatch (/home/hasan/Documents/reactjs/cheaprouter/backend/node_modules/hono/dist/compose.js:22:23)
+    at async <anonymous> (/home/hasan/Documents/reactjs/cheaprouter/backend/node_modules/hono/dist/hono-base.js:306:31)
+    at processTicksAndRejections (native:7:39)

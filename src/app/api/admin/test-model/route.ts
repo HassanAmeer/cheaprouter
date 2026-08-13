@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const authHeader = request.headers.get('Authorization') || '';
+    const sessionIdHeader = request.headers.get('x-session-id') || '';
     const body = await request.json();
 
     const response = await fetch(`${backendUrl}/v1/chat/completions`, {
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authHeader,
+        ...(sessionIdHeader ? { 'x-session-id': sessionIdHeader } : {}),
       },
       body: JSON.stringify(body),
     });
