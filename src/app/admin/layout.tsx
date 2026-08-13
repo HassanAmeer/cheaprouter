@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { DevLogsWidget } from '@/components/DevLogsWidget';
 
 function SidebarNavContent() {
   const pathname = usePathname();
@@ -174,6 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className={styles.topbar}>
           <div className={styles.pageTitle}>{getPageTitle()}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <DevLogsWidget />
             <ThemeToggle />
           </div>
         </header>

@@ -22,6 +22,7 @@ import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
 import { handleCompletions, getModelInstance, getSystemPromptForModel } from './completions.ts';
+import { getDevLogs, clearDevLogs, addDevLog } from './logger.ts';
 import { generateText, streamText } from 'ai';
 import { db, initDb, DB_URL } from './db.ts';
 
@@ -504,6 +505,20 @@ app.post('/v1/chat/completions', handleCompletions); // Accept both for easy pro
 
 app.get('/api/v1/models', handleListModels);
 app.get('/v1/models', handleListModels); // Accept both for easy proxying
+
+// Dev Logs Endpoints
+app.get('/api/admin/dev-logs', (c) => c.json(getDevLogs()));
+app.delete('/api/admin/dev-logs', (c) => { clearDevLogs(); return c.json({ ok: true }); });
+app.post('/api/admin/dev-logs', zValidator('json', z.object({
+  type: z.enum(['INFO', 'SUCCESS', 'ERROR', 'WARNING']),
+  component: z.string(),
+  message: z.string(),
+  details: z.any().optional()
+})), (c) => {
+  const body = c.req.valid('json');
+  addDevLog(body.type, body.component, body.message, body.details);
+  return c.json({ ok: true });
+});
 
 app.get('/api/v1/account', handleAccount);
 app.get('/v1/account', handleAccount);

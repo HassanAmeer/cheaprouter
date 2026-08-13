@@ -6,6 +6,7 @@ import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
 import { hashPassword, verifyToken } from './auth.ts';
+import { addDevLog } from './logger.ts';
 
 function getActiveKeys(keyStr: string): string[] {
   if (!keyStr) return [];
@@ -117,13 +118,35 @@ export async function handleCompletions(c: any) {
     const { model = 'gpt-4o', messages, stream = false } = body;
 
     if (!messages || !Array.isArray(messages)) {
+      addDevLog('ERROR', 'Completions', 'Invalid messages format');
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
+    const systemPrompt = await getSystemPromptForModel(model);
+
+    // Convert messages
+    const coreMessages: any[] = messages.map((m: any) => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+
+    if (systemPrompt) {
+      coreMessages.unshift({ role: 'system', content: systemPrompt });
+    }
+
+    addDevLog('INFO', 'Completions', `Incoming request for model: ${model}`, { 
+      userId: finalUserId, 
+      messageCount: messages.length,
+      payload: coreMessages
+    });
+
     const aiModels = await getModelInstances(finalUserId, model);
     if (!aiModels || aiModels.length === 0) {
+      addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`);
       return c.json({ error: 'Model not available or no active keys.' }, 500);
     }
+    
+    addDevLog('INFO', 'Model Selection', `Found ${aiModels.length} active keys/instances for fallback loop`);
 
     // Check if user has disabled this model
     const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
@@ -137,34 +160,29 @@ export async function handleCompletions(c: any) {
       }, 403);
     }
 
-    const systemPrompt = await getSystemPromptForModel(model);
-
     // Admin test-identity must not be recorded against usage (no real user row).
     const skipUsage = adminUserId === 'admin';
 
-    // Convert messages
-    const coreMessages: any[] = messages.map((m: any) => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content
-    }));
-
-    if (systemPrompt) {
-      coreMessages.unshift({ role: 'system', content: systemPrompt });
-    }
-
     let lastError: any = null;
+    let attempt = 0;
     
     for (const aiModel of aiModels) {
+      attempt++;
       try {
+        addDevLog('INFO', 'AI Request', `Attempt ${attempt}/${aiModels.length} starting with selected key...`);
         if (stream) {
           const result = await streamText({
             model: aiModel,
             maxRetries: 0,
             messages: coreMessages,
-            async onFinish({ usage }) {
+            async onFinish({ usage, text }) {
               if (usage && !skipUsage) {
                 await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
               }
+              addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
+                usage,
+                responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
+              });
             },
           });
           return result.toTextStreamResponse();
@@ -179,6 +197,8 @@ export async function handleCompletions(c: any) {
           if (!skipUsage) {
             await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
           }
+          
+          addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens });
 
           return c.json({
             id: `chatcmpl-${Date.now()}`,
@@ -199,14 +219,17 @@ export async function handleCompletions(c: any) {
         }
       } catch (err: any) {
         lastError = err;
+        addDevLog('WARNING', 'AI Request', `Attempt ${attempt} failed: ${err?.message || 'Unknown error'}`, { error: err });
         console.error(`[Fallback] AI request failed with a key. Trying next... Error:`, err?.message || err);
         // Continue to the next aiModel in the array
       }
     }
     
     // If all keys failed, throw the last error so it can be sent to the user
+    addDevLog('ERROR', 'Completions', `All fallback attempts failed.`);
     throw lastError;
   } catch (error: any) {
+    addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error });
     console.error('Chat completions error:', error);
     // AI SDK throws APICallError with a responseBody string — parse it for the real error
     let msg = 'Error processing request';
@@ -223,4 +246,9 @@ export async function handleCompletions(c: any) {
     const status = msg.includes('not found') ? 400 : 500;
     return c.json({ error: msg }, status);
   }
+}
+
+export async function getModelInstance(userId: string, model: string) {
+  const instances = await getModelInstances(userId, model);
+  return instances[0];
 }

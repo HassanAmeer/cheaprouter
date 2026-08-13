@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User as UserIcon, Loader2, Sparkles, RefreshCw, Trash2, Copy, Check, Cpu, Key, Info, ArrowDownRight, TerminalSquare } from 'lucide-react';
 
+
 interface TestModel {
   id: string;
   name: string;
@@ -42,6 +43,14 @@ export default function TestModelsPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
+  const pushLog = (type: string, message: string, details?: any) => {
+    fetch('/api/admin/dev-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, component: 'Frontend UI', message, details })
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     fetch('/api/public/providers')
       .then(res => res.json())
@@ -65,7 +74,10 @@ export default function TestModelsPage() {
           }
         }
         setModels(all);
-        if (all.length > 0) setSelectedModel(all[0].id);
+        if (all.length > 0) {
+          setSelectedModel(all[0].id);
+          pushLog('INFO', `Initialized with ${all.length} models`, { models: all });
+        }
         setLoadingModels(false);
       })
       .catch(() => setLoadingModels(false));
@@ -87,8 +99,9 @@ export default function TestModelsPage() {
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setUserMessage('');
     setSending(true);
-    setError('');
     setLatency(null);
+
+    pushLog('INFO', `Sending chat request to model: ${selectedModel}`, { model: selectedModel, payload: convo });
 
     const started = performance.now();
     try {
@@ -114,6 +127,7 @@ export default function TestModelsPage() {
         setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
         setLatency(elapsed);
         setError(msg);
+        pushLog('ERROR', `Request failed with status ${res.status}`, { error: data?.error || data, status: res.status, elapsedMs: elapsed });
         return;
       }
 
@@ -126,12 +140,14 @@ export default function TestModelsPage() {
 
       setMessages(prev => [...prev, { role: 'assistant', content: String(content) }]);
       setLatency(elapsed);
+      pushLog('SUCCESS', `Received successful response in ${elapsed}ms`, { data, elapsedMs: elapsed });
     } catch (err: any) {
       const msg = err?.name === 'AbortError'
         ? 'Request timed out after 90s — the provider may be slow or rate-limited. Try another model.'
         : (err?.message || 'Network error — could not reach the backend.');
       setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
       setError(msg);
+      pushLog('ERROR', `Network error or timeout`, { message: msg, error: err?.message });
     } finally {
       setSending(false);
     }
@@ -227,7 +243,12 @@ export default function TestModelsPage() {
           <label className="fieldLabel">AI Model</label>
           <div className="selectWrap">
             <span className="selIcon"><Sparkles size={16} /></span>
-            <select className="select" value={selectedModel} onChange={e => { setSelectedModel(e.target.value); setLatency(null); setError(''); }}>
+            <select className="select" value={selectedModel} onChange={e => { 
+              setSelectedModel(e.target.value); 
+              setLatency(null); 
+              setError(''); 
+              pushLog('INFO', `User changed model selection to: ${e.target.value}`, { newModel: e.target.value });
+            }}>
               {loadingModels ? (
                 <option>Loading models…</option>
               ) : models.length === 0 ? (
@@ -382,6 +403,8 @@ export default function TestModelsPage() {
           </div>
         </div>
       </div>
+      
+      
     </div>
   );
 }
