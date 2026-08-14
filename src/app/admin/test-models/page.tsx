@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Send,
   Bot,
@@ -29,7 +31,13 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  Wand2
+  Sliders,
+  Swords,
+  Code,
+  Download,
+  Terminal,
+  RotateCcw,
+  CheckCheck
 } from 'lucide-react';
 
 interface TestModel {
@@ -56,38 +64,68 @@ interface ChatMessage {
   images?: string[];
   thinking?: string;
   error?: boolean;
+  latency?: number;
+  modelId?: string;
 }
 
 type CapabilityType = 'all' | 'text' | 'reasoning' | 'vision' | 'audio' | 'image' | 'video';
+type ViewMode = 'chat' | 'arena';
 
 const PRESET_SYSTEM_MESSAGES = [
   { label: 'General', text: 'You are a helpful AI assistant. Respond as clearly and concisely as possible.' },
-  { label: 'Code Expert', text: 'You are a senior software architect. Provide clean, secure, and production-ready code with concise explanations.' },
-  { label: 'Deep Reasoning', text: 'You are an advanced analytical reasoner. Carefully think step-by-step, verify edge cases, and show your structured reasoning.' },
-  { label: 'Vision / Image Analyst', text: 'You are an expert visual analysis assistant. Describe images accurately, detect subtle details, and interpret visual context thoroughly.' },
-  { label: 'Creative Writer', text: 'You are a creative writer. Write vivid, engaging, and expressive content with natural flow.' },
+  { label: 'Code', text: 'You are a senior software engineer. Provide clean, production-ready code with concise explanations.' },
+  { label: 'Reasoning', text: 'You are an advanced analytical reasoner. Carefully think step-by-step, verify edge cases, and show your structured reasoning.' },
+  { label: 'Vision', text: 'You are an expert visual analysis assistant. Describe images accurately, detect subtle details, and interpret visual context thoroughly.' },
+  { label: 'Urdu', text: 'Aap ek behtareen aur madadgar AI assistant hain. Roman Urdu aur Urdu mein asan aur wazeh jawab dein.' },
+];
+
+const BENCHMARK_PROMPTS = [
+  { label: '🧮 9.11 vs 9.9', prompt: 'Which is bigger: 9.11 or 9.9? Think step by step and explain why.' },
+  { label: '💻 TS Debounce', prompt: 'Write a clean TypeScript debounce function with generic types and cancellation support.' },
+  { label: '🌐 Roman Urdu', prompt: 'Mujhe AI aur insani mustaqbil par ek sabaq aamoz mukhtasar kahani sunao.' },
 ];
 
 export default function TestModelsPage() {
   const [models, setModels] = useState<TestModel[]>([]);
   const [loadingModels, setLoadingModels] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('chat');
+
+  // Primary model selection
   const [selectedModel, setSelectedModel] = useState<string>('');
+  // Arena secondary model
+  const [arenaModelB, setArenaModelB] = useState<string>('');
+
   const [activeCapFilter, setActiveCapFilter] = useState<CapabilityType>('all');
   const [systemMessage, setSystemMessage] = useState(PRESET_SYSTEM_MESSAGES[0].text);
   const [userMessage, setUserMessage] = useState('');
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [arenaMessagesB, setArenaMessagesB] = useState<ChatMessage[]>([]);
+
+  // Hyperparameters
+  const [showParams, setShowParams] = useState(false);
+  const [temperature, setTemperature] = useState<number>(0.7);
+  const [topP, setTopP] = useState<number>(1.0);
+  const [maxTokens, setMaxTokens] = useState<number>(2048);
+
+  // Inspector & Modals
+  const [showInspector, setShowInspector] = useState(false);
+  const [lastRawPayload, setLastRawPayload] = useState<any>(null);
+  const [lastRawResponse, setLastRawResponse] = useState<any>(null);
+
+  // State flags
   const [sending, setSending] = useState(false);
+  const [sendingArenaB, setSendingArenaB] = useState(false);
   const [error, setError] = useState('');
   const [latency, setLatency] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number>(-1);
+  const [copiedCurl, setCopiedCurl] = useState(false);
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const chatBoxRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const pushLog = (type: string, message: string, details?: any, sessionId?: string) => {
@@ -143,6 +181,7 @@ export default function TestModelsPage() {
         setModels(all);
         if (all.length > 0) {
           setSelectedModel(all[0].id);
+          if (all.length > 1) setArenaModelB(all[1].id);
           pushLog('INFO', `AI models fetched (${all.length})`, { models: all });
         }
         setLoadingModels(false);
@@ -154,19 +193,41 @@ export default function TestModelsPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
+  // Handle clipboard paste for images (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (reader.result) {
+                setAttachedImages(prev => [...prev, String(reader.result)]);
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
   // Voice Input Speech Recognition Setup
   const toggleRecording = () => {
     if (isRecording) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
       setIsRecording(false);
       return;
     }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please try Google Chrome or MS Edge.');
+      alert('Speech recognition is not supported in this browser. Please use Google Chrome or Edge.');
       return;
     }
 
@@ -176,10 +237,7 @@ export default function TestModelsPage() {
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
+      recognition.onstart = () => setIsRecording(true);
       recognition.onresult = (event: any) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -190,20 +248,12 @@ export default function TestModelsPage() {
           return base ? `${base} ${transcript}` : transcript;
         });
       };
-
-      recognition.onerror = (event: any) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
+      recognition.onerror = () => setIsRecording(false);
+      recognition.onend = () => setIsRecording(false);
 
       recognitionRef.current = recognition;
       recognition.start();
-    } catch (e) {
-      console.error('Failed to start speech recognition:', e);
+    } catch {
       setIsRecording(false);
     }
   };
@@ -214,20 +264,15 @@ export default function TestModelsPage() {
       alert('Text-to-speech is not supported in this browser.');
       return;
     }
-
     if (speakingIndex === index) {
       window.speechSynthesis.cancel();
       setSpeakingIndex(null);
       return;
     }
-
     window.speechSynthesis.cancel();
-    // Clean thinking tags if present
     const cleanText = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
     utterance.onend = () => setSpeakingIndex(null);
     utterance.onerror = () => setSpeakingIndex(null);
 
@@ -235,18 +280,14 @@ export default function TestModelsPage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Image Upload Handling
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = () => {
-        if (reader.result) {
-          setAttachedImages(prev => [...prev, String(reader.result)]);
-        }
+        if (reader.result) setAttachedImages(prev => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
     });
@@ -257,7 +298,6 @@ export default function TestModelsPage() {
     setAttachedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Parse Thinking Tags for Reasoning Models
   const parseThinkingAndContent = (rawContent: string): { thinking?: string; cleanContent: string } => {
     const thinkMatch = rawContent.match(/<think>([\s\S]*?)<\/think>/);
     if (thinkMatch) {
@@ -268,25 +308,70 @@ export default function TestModelsPage() {
     return { cleanContent: rawContent };
   };
 
+  // Single model execution helper
+  const executeModelRequest = async (targetModel: string, customMessages: any[]) => {
+    const token = localStorage.getItem('admin_token');
+    const sessionId = crypto.randomUUID();
+    const payload = {
+      model: targetModel,
+      messages: customMessages,
+      temperature,
+      top_p: topP,
+      max_tokens: maxTokens,
+      stream: false,
+    };
+    setLastRawPayload(payload);
+
+    const started = performance.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+    const res = await fetch('/api/admin/test-model', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token || ''}`,
+        'x-session-id': sessionId,
+      },
+      body: JSON.stringify(payload),
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    const elapsed = Math.round(performance.now() - started);
+    setLastRawResponse(data);
+
+    if (!res.ok) {
+      const raw = data?.error?.message || data?.error?.message === '' ? data?.error?.message : data?.error;
+      const msg = typeof raw === 'string' ? raw : `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+
+    const content = data?.choices?.[0]?.message?.content;
+    if (content === undefined || content === null) {
+      throw new Error('Model returned an empty response.');
+    }
+
+    return { content: String(content), elapsed, rawData: data };
+  };
+
+  // Send message handler (Single & Arena battle)
   const sendMessage = async (retryText?: string) => {
     const textToSend = (retryText !== undefined ? retryText : userMessage).trim();
     if ((!textToSend && attachedImages.length === 0) || !selectedModel || sending) return;
 
-    // Filter out previous errored messages from history
-    const validHistory = messages.filter(m => !m.error && m.role !== 'system');
-    const convo: any[] = [
+    const validHistoryA = messages.filter(m => !m.error && m.role !== 'system');
+    const convoA: any[] = [
       ...(systemMessage.trim() ? [{ role: 'system' as const, content: systemMessage.trim() }] : []),
-      ...validHistory.map(m => {
-        if (m.images && m.images.length > 0) {
-          return { role: m.role, content: m.content, images: m.images };
-        }
-        return { role: m.role, content: m.content };
-      }),
+      ...validHistoryA.map(m => (m.images?.length ? { role: m.role, content: m.content, images: m.images } : { role: m.role, content: m.content })),
       { role: 'user' as const, content: textToSend, ...(attachedImages.length > 0 ? { images: attachedImages } : {}) },
     ];
 
     if (retryText === undefined) {
       setMessages(prev => [...prev, { role: 'user', content: textToSend, images: attachedImages.length > 0 ? [...attachedImages] : undefined }]);
+      if (viewMode === 'arena') {
+        setArenaMessagesB(prev => [...prev, { role: 'user', content: textToSend, images: attachedImages.length > 0 ? [...attachedImages] : undefined }]);
+      }
       setUserMessage('');
       setAttachedImages([]);
     }
@@ -295,58 +380,39 @@ export default function TestModelsPage() {
     setLatency(null);
     setError('');
 
-    const sessionId = crypto.randomUUID();
-    pushLog('INFO', `Sending request to model: ${selectedModel}`, { model: selectedModel, payload: convo }, sessionId);
-
-    const started = performance.now();
-    try {
-      const token = localStorage.getItem('admin_token');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000);
-      const res = await fetch('/api/admin/test-model', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`,
-          'x-session-id': sessionId,
-        },
-        body: JSON.stringify({ model: selectedModel, messages: convo, stream: false }),
-      });
-      clearTimeout(timeoutId);
-      const data = await res.json();
-      const elapsed = Math.round(performance.now() - started);
-
-      if (!res.ok) {
-        const raw = data?.error?.message || data?.error?.message === '' ? data?.error?.message : data?.error;
-        const msg = typeof raw === 'string' ? raw : `Request failed (${res.status})`;
-        setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
+    // Model A Request
+    executeModelRequest(selectedModel, convoA)
+      .then(({ content, elapsed }) => {
+        const { thinking, cleanContent } = parseThinkingAndContent(content);
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanContent || content, thinking, latency: elapsed, modelId: selectedModel }]);
         setLatency(elapsed);
+      })
+      .catch(err => {
+        const msg = err.message || 'Request failed';
+        setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true, modelId: selectedModel }]);
         setError(msg);
-        pushLog('ERROR', `Request failed with status ${res.status}`, { error: data?.error || data, status: res.status, elapsedMs: elapsed }, sessionId);
-        return;
-      }
+      })
+      .finally(() => setSending(false));
 
-      const content = data?.choices?.[0]?.message?.content;
-      if (content === undefined || content === null) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Model returned an empty response.', error: true }]);
-        setLatency(elapsed);
-        return;
-      }
+    // Arena Model B Request (if in Arena mode)
+    if (viewMode === 'arena' && arenaModelB) {
+      setSendingArenaB(true);
+      const validHistoryB = arenaMessagesB.filter(m => !m.error && m.role !== 'system');
+      const convoB: any[] = [
+        ...(systemMessage.trim() ? [{ role: 'system' as const, content: systemMessage.trim() }] : []),
+        ...validHistoryB.map(m => (m.images?.length ? { role: m.role, content: m.content, images: m.images } : { role: m.role, content: m.content })),
+        { role: 'user' as const, content: textToSend, ...(attachedImages.length > 0 ? { images: attachedImages } : {}) },
+      ];
 
-      const { thinking, cleanContent } = parseThinkingAndContent(String(content));
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanContent || String(content), thinking }]);
-      setLatency(elapsed);
-      pushLog('SUCCESS', `Received successful response in ${elapsed}ms`, { data, elapsedMs: elapsed }, sessionId);
-    } catch (err: any) {
-      const msg = err?.name === 'AbortError'
-        ? 'Request timed out after 90s — the provider may be slow or rate-limited. Try another model.'
-        : (err?.message || 'Network error — could not reach the backend.');
-      setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
-      setError(msg);
-      pushLog('ERROR', `Network error or timeout`, { message: msg, error: err?.message }, sessionId);
-    } finally {
-      setSending(false);
+      executeModelRequest(arenaModelB, convoB)
+        .then(({ content, elapsed }) => {
+          const { thinking, cleanContent } = parseThinkingAndContent(content);
+          setArenaMessagesB(prev => [...prev, { role: 'assistant', content: cleanContent || content, thinking, latency: elapsed, modelId: arenaModelB }]);
+        })
+        .catch(err => {
+          setArenaMessagesB(prev => [...prev, { role: 'assistant', content: err.message || 'Error', error: true, modelId: arenaModelB }]);
+        })
+        .finally(() => setSendingArenaB(false));
     }
   };
 
@@ -356,6 +422,7 @@ export default function TestModelsPage() {
       setSpeakingIndex(null);
     }
     setMessages([]);
+    setArenaMessagesB([]);
     setError('');
     setLatency(null);
     setAttachedImages([]);
@@ -368,11 +435,45 @@ export default function TestModelsPage() {
     }).catch(() => {});
   };
 
+  const copyAsCurl = () => {
+    const token = localStorage.getItem('admin_token') || '<YOUR_API_KEY>';
+    const payload = {
+      model: selectedModel,
+      messages: [
+        ...(systemMessage.trim() ? [{ role: 'system', content: systemMessage.trim() }] : []),
+        { role: 'user', content: userMessage || 'Hello, world!' },
+      ],
+      temperature,
+      top_p: topP,
+      max_tokens: maxTokens,
+    };
+
+    const curl = `curl https://api.cheaprouter.com/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(payload, null, 2)}'`;
+
+    navigator.clipboard.writeText(curl).then(() => {
+      setCopiedCurl(true);
+      setTimeout(() => setCopiedCurl(false), 2000);
+    });
+  };
+
+  const exportChat = () => {
+    const data = JSON.stringify({ model: selectedModel, parameters: { temperature, topP, maxTokens }, messages }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `test-models-transcript-${selectedModel}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const toggleThinking = (index: number) => {
     setExpandedThinking(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
-  // Filtered models based on active capability tab
   const filteredModels = models.filter(m => {
     if (activeCapFilter === 'all') return true;
     if (activeCapFilter === 'text') return m.text;
@@ -385,497 +486,1049 @@ export default function TestModelsPage() {
   });
 
   const currentModel = models.find(m => m.id === selectedModel);
+  const currentModelB = models.find(m => m.id === arenaModelB);
 
   const inputLen = String(userMessage || '').length;
-  const totalLen = inputLen + (systemMessage?.length || 0);
+  const userChatCount = messages.filter(m => m.role === 'user').length;
+  const responseCount = messages.filter(m => m.role === 'assistant' && !m.error).length;
+  const userChatCountB = arenaMessagesB.filter(m => m.role === 'user').length;
+  const responseCountB = arenaMessagesB.filter(m => m.role === 'assistant' && !m.error).length;
 
   return (
-    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: 'var(--color-text-main)', background: 'transparent' }}>
+    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: 'var(--color-text-main, #F2F4F7)', background: 'transparent' }}>
       <style>{`
-        .testGrid { display: grid; grid-template-columns: 360px 1fr; gap: 22px; align-items: start; }
-        .testCard { background: var(--color-card-bg, #15191E); border: 1px solid var(--color-border, #262C34); border-radius: 18px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.05); }
-        .testHead { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-        .testHeadIcon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-soft, #1F2733); color: var(--color-primary, #EF4444); border: 1px solid rgba(239,68,68,0.2); }
-        .testHead h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-        .testHead p { margin: 2px 0 0; font-size: 12px; color: var(--color-text-muted, #9AA3AF); }
-        .fieldLabel { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-muted, #9AA3AF); margin-bottom: 7px; }
+        .pgLayout { display: flex; flex-direction: column; gap: 10px; height: calc(100vh - 84px); min-height: 540px; box-sizing: border-box; }
         
-        .capTabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-        .capTab { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted, #9AA3AF); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s; }
+        .topControlsBar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 8px;
+          background: var(--color-card-bg, #15191E);
+          border: 1px solid var(--color-border, #262C34);
+          border-radius: 12px;
+          padding: 6px 12px;
+          flex-shrink: 0;
+        }
+        .modeToggle { display: inline-flex; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 8px; padding: 2px; gap: 3px; }
+        .modeBtn { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: none; background: transparent; color: var(--color-text-muted, #9AA3AF); cursor: pointer; transition: all 0.2s; }
+        .modeBtn.active { background: var(--color-primary, #EF4444); color: #fff; box-shadow: 0 2px 6px rgba(239,68,68,0.25); }
+
+        .testGrid { display: grid; grid-template-columns: 310px 1fr; gap: 10px; flex: 1; min-height: 0; }
+        .testGrid.arena { grid-template-columns: 280px 1fr 1fr; }
+
+        .testCard {
+          background: var(--color-card-bg, #15191E);
+          border: 1px solid var(--color-border, #262C34);
+          border-radius: 14px;
+          padding: 12px 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          overflow: hidden;
+        }
+        .configScroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+        .fieldLabel { display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #9AA3AF); margin-bottom: 4px; }
+
+        .capTabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+        .capTab { font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted, #9AA3AF); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s; }
         .capTab:hover { border-color: rgba(239,68,68,0.4); color: var(--color-text-main); }
         .capTab.active { background: rgba(239,68,68,0.12); color: #EF4444; border-color: #EF4444; }
 
-        .select, .textarea { width: 100%; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 11px; color: var(--color-text-main, #F2F4F7); font-size: 13.5px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-        .select { padding: 11px 14px; cursor: pointer; }
-        .textarea { padding: 12px 14px; resize: vertical; line-height: 1.5; min-height: 88px; }
-        .select:focus, .textarea:focus { border-color: var(--color-primary, #EF4444); box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+        .select, .textarea { width: 100%; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 9px; color: var(--color-text-main, #F2F4F7); font-size: 12.5px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .select { padding: 7px 10px; cursor: pointer; }
+        .textarea { padding: 7px 10px; resize: none; line-height: 1.45; }
+        .select:focus, .textarea:focus { border-color: var(--color-primary, #EF4444); box-shadow: 0 0 0 2px rgba(239,68,68,0.12); }
         .selectWrap { position: relative; display: flex; align-items: center; }
-        .selectWrap .selIcon { position: absolute; left: 12px; pointer-events: none; color: var(--color-text-muted); display: flex; }
-        .selectWrap .select { padding-left: 42px; }
+        .selectWrap .selIcon { position: absolute; left: 10px; pointer-events: none; color: var(--color-text-muted); display: flex; }
+        .selectWrap .select { padding-left: 32px; }
 
-        .modelHeroBanner { background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(31,39,51,0.4) 100%); border: 1px solid rgba(239,68,68,0.25); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
-        .modelHeroTitle { font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .modelHeroSub { font-size: 11.5px; color: var(--color-text-muted); margin-top: 3px; font-family: monospace; }
-        
-        .capsRow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .capBadge { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .capBadge.text { background: rgba(59,130,246,0.14); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
-        .capBadge.reasoning { background: rgba(168,85,247,0.14); color: #C084FC; border: 1px solid rgba(168,85,247,0.35); }
-        .capBadge.vision { background: rgba(16,185,129,0.14); color: #34D399; border: 1px solid rgba(16,185,129,0.3); }
-        .capBadge.audio { background: rgba(245,158,11,0.14); color: #FBBF24; border: 1px solid rgba(245,158,11,0.3); }
-        .capBadge.image { background: rgba(236,72,153,0.14); color: #F472B6; border: 1px solid rgba(236,72,153,0.3); }
-        .capBadge.video { background: rgba(244,63,94,0.14); color: #FB7185; border: 1px solid rgba(244,63,94,0.3); }
+        /* ── MODEL HERO BANNER (Enhanced for Light & Dark Mode) ── */
+        .modelHeroBanner {
+          background: var(--color-bg-soft, #F8FAFC);
+          border: 1px solid var(--color-border, #E2E8F0);
+          border-left: 3px solid var(--color-primary, #EF4444);
+          border-radius: 9px;
+          padding: 8px 10px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          transition: all 0.2s ease;
+        }
+        .modelHeroBanner.arenaB {
+          border-left-color: #0284C7;
+          background: rgba(2,132,199,0.04);
+          border-color: rgba(2,132,199,0.2);
+        }
+        .modelHeroTitle {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: var(--color-text-main, #0F172A);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+        }
+        .modelHeroSub { font-size: 10.5px; color: var(--color-text-muted, #64748B); margin-top: 2px; font-family: monospace; }
 
-        .modelInfo { margin-top: 14px; padding: 12px 14px; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 12px; }
-        .modelInfoRow { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; padding: 4px 0; }
-        .modelInfoLabel { display: flex; align-items: center; gap: 6px; color: var(--color-text-muted, #9AA3AF); }
-        .modelInfoVal { font-weight: 600; color: var(--color-text-main, #F2F4F7); }
+        .capsRow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .capBadge {
+          font-size: 9.5px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 5px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        /* High-contrast crisp Light Mode Badges */
+        .capBadge.text { background: rgba(37,99,235,0.08); color: #1D4ED8; border: 1px solid rgba(37,99,235,0.22); }
+        .capBadge.reasoning { background: rgba(124,58,237,0.08); color: #6D28D9; border: 1px solid rgba(124,58,237,0.22); }
+        .capBadge.vision { background: rgba(5,150,105,0.08); color: #047857; border: 1px solid rgba(5,150,105,0.22); }
+        .capBadge.audio { background: rgba(217,119,6,0.08); color: #B45309; border: 1px solid rgba(217,119,6,0.22); }
+        .capBadge.image { background: rgba(219,39,119,0.08); color: #BE185D; border: 1px solid rgba(219,39,119,0.22); }
+        .capBadge.video { background: rgba(225,29,72,0.08); color: #BE123C; border: 1px solid rgba(225,29,72,0.22); }
 
-        .presetBtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .presetBtn { font-size: 11px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--color-border, #262C34); background: transparent; color: var(--color-text-muted, #9AA3AF); cursor: pointer; transition: all 0.15s; }
-        .presetBtn:hover, .presetBtn.active { border-color: var(--color-primary, #EF4444); color: var(--color-primary, #EF4444); background: rgba(239,68,68,0.07); }
+        /* Dark Theme overrides for Model Hero Card */
+        [data-theme="dark"] .modelHeroBanner {
+          background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(31,39,51,0.4) 100%);
+          border: 1px solid rgba(239,68,68,0.22);
+          border-left: 3px solid var(--color-primary, #EF4444);
+          box-shadow: none;
+        }
+        [data-theme="dark"] .modelHeroBanner.arenaB {
+          background: linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(31,39,51,0.4) 100%);
+          border: 1px solid rgba(56,189,248,0.25);
+          border-left-color: #38BDF8;
+        }
+        [data-theme="dark"] .modelHeroTitle { color: #F2F4F7; }
+        [data-theme="dark"] .capBadge.text { background: rgba(59,130,246,0.14); color: #60A5FA; border-color: rgba(59,130,246,0.3); }
+        [data-theme="dark"] .capBadge.reasoning { background: rgba(168,85,247,0.14); color: #C084FC; border-color: rgba(168,85,247,0.35); }
+        [data-theme="dark"] .capBadge.vision { background: rgba(16,185,129,0.14); color: #34D399; border-color: rgba(16,185,129,0.3); }
+        [data-theme="dark"] .capBadge.audio { background: rgba(245,158,11,0.14); color: #FBBF24; border-color: rgba(245,158,11,0.3); }
+        [data-theme="dark"] .capBadge.image { background: rgba(244,114,182,0.14); color: #F472B6; border-color: rgba(244,114,182,0.3); }
+        [data-theme="dark"] .capBadge.video { background: rgba(251,113,133,0.14); color: #FB7185; border-color: rgba(251,113,133,0.3); }
 
-        .chatCard { display: flex; flex-direction: column; min-height: 640px; }
-        .chatScroll { flex: 1; overflow-y: auto; min-height: 380px; max-height: 560px; display: flex; flex-direction: column; gap: 14px; padding-right: 4px; }
-        .bubble { display: flex; gap: 10px; align-items: flex-start; max-width: 92%; animation: rise 0.22s ease; }
+        .quickChips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+        .quickChip { font-size: 10.5px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted); cursor: pointer; transition: all 0.15s; }
+        .quickChip:hover { border-color: var(--color-primary, #EF4444); color: var(--color-primary, #EF4444); background: rgba(239,68,68,0.08); }
+
+        .chatCard { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+        .chatScroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; min-height: 0; }
+        .bubble { display: flex; gap: 8px; align-items: flex-start; max-width: 94%; animation: rise 0.2s ease; }
         .bubble.user { align-self: flex-end; flex-direction: row-reverse; }
-        .bubbleAvatar { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted); }
+        .bubbleAvatar { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted); }
         .bubble.user .bubbleAvatar { background: var(--color-primary-soft, #1F2733); color: var(--color-primary, #EF4444); border-color: rgba(239,68,68,0.25); }
-        .bubbleBody { background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 14px; padding: 12px 14px; font-size: 13.5px; line-height: 1.6; word-break: break-word; white-space: pre-wrap; }
+        .bubbleBody { background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 12px; padding: 9px 12px; font-size: 13px; line-height: 1.5; word-break: break-word; }
         .bubble.user .bubbleBody { background: var(--color-primary-soft, #1F2733); border-color: rgba(239,68,68,0.22); }
         .bubbleBody.error { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); color: #F87171; }
-        
-        .thinkingBox { margin-bottom: 8px; border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.05); border-radius: 10px; overflow: hidden; font-size: 12.5px; }
-        .thinkingHeader { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(168,85,247,0.1); color: #C084FC; font-weight: 600; cursor: pointer; }
-        .thinkingContent { padding: 10px; color: #D8B4FE; border-top: 1px dashed rgba(168,85,247,0.2); font-size: 12px; font-family: monospace; white-space: pre-wrap; line-height: 1.5; max-height: 220px; overflow-y: auto; }
 
-        .bubbleImgs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-        .bubbleImg { max-width: 180px; max-height: 140px; border-radius: 8px; border: 1px solid var(--color-border); object-fit: cover; }
+        .markdownContent pre { background: #07080A; border: 1px solid #1F242C; border-radius: 7px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; font-family: monospace; font-size: 11.5px; }
+        .markdownContent code { background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 4px; font-family: monospace; font-size: 11.5px; }
+        .markdownContent p { margin: 0 0 6px 0; }
+        .markdownContent p:last-child { margin-bottom: 0; }
+        .markdownContent ul, .markdownContent ol { margin: 3px 0 6px 16px; padding: 0; }
 
-        .bubbleMeta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .bubbleRole { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-muted, #9AA3AF); }
-        .iconActionBtn { background: transparent; border: none; color: var(--color-text-muted, #9AA3AF); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; border-radius: 6px; transition: all 0.15s; }
+        .thinkingBox { margin-bottom: 6px; border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.05); border-radius: 8px; overflow: hidden; font-size: 11.5px; }
+        .thinkingHeader { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: rgba(168,85,247,0.1); color: #C084FC; font-weight: 600; cursor: pointer; }
+        .thinkingContent { padding: 8px; color: #D8B4FE; border-top: 1px dashed rgba(168,85,247,0.2); font-size: 11.5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4; max-height: 160px; overflow-y: auto; }
+
+        .bubbleImgs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+        .bubbleImg { max-width: 140px; max-height: 100px; border-radius: 7px; border: 1px solid var(--color-border); object-fit: cover; }
+
+        .bubbleMeta { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+        .bubbleRole { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #9AA3AF); }
+        .iconActionBtn { background: transparent; border: none; color: var(--color-text-muted, #9AA3AF); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; border-radius: 5px; transition: all 0.15s; }
         .iconActionBtn:hover { color: var(--color-primary, #EF4444); background: rgba(239,68,68,0.08); }
         .iconActionBtn.active { color: #10B981; }
 
-        .composer { border-top: 1px dashed var(--color-border, #262C34); padding-top: 16px; margin-top: 16px; }
-        .attachedPreviews { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .attachedItem { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-primary); }
+        /* ── UNIFIED COMPACT INTEGRATED INPUT BOX ── */
+        .composer { border-top: 1px dashed var(--color-border, #262C34); padding-top: 8px; margin-top: 8px; flex-shrink: 0; }
+        .unifiedInputBox {
+          position: relative;
+          background: var(--color-bg, #0B0D10);
+          border: 1px solid var(--color-border, #262C34);
+          border-radius: 12px;
+          padding: 8px 10px 6px 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .unifiedInputBox:focus-within {
+          border-color: var(--color-primary, #EF4444);
+          box-shadow: 0 0 0 2px rgba(239,68,68,0.14), 0 4px 16px rgba(0,0,0,0.25);
+        }
+        .unifiedTextarea {
+          width: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: var(--color-text-main, #F2F4F7);
+          font-size: 13px;
+          line-height: 1.45;
+          resize: none;
+          min-height: 38px;
+          max-height: 120px;
+          padding: 0;
+          font-family: inherit;
+        }
+        .unifiedTextarea::placeholder {
+          color: #6B7280;
+        }
+        .attachedPreviews { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+        .attachedItem { position: relative; width: 42px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-primary); }
         .attachedItem img { width: 100%; height: 100%; object-fit: cover; }
-        .removeImgBtn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .removeImgBtn { position: absolute; top: 1px; right: 1px; background: rgba(0,0,0,0.7); color: #fff; border: none; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        .toolbarRow { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 10px; }
-        .toolBtns { display: flex; align-items: center; gap: 8px; }
-        .toolBtn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 10px; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); color: var(--color-text-muted); cursor: pointer; transition: all 0.15s; }
-        .toolBtn:hover { border-color: rgba(239,68,68,0.5); color: var(--color-text-main); }
-        .toolBtn.recording { background: rgba(239,68,68,0.18); border-color: #EF4444; color: #EF4444; animation: pulseRed 1.5s infinite; }
-        .toolBtn.hasVision { border-color: rgba(52,211,153,0.4); color: #34D399; }
-        
-        .sendBtn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 12px; background: var(--color-primary, #EF4444); color: #fff; border: 1px solid var(--color-primary); font-weight: 700; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(239,68,68,0.28); transition: all 0.2s; flex-shrink: 0; }
-        .sendBtn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 6px 18px rgba(239,68,68,0.34); }
-        .sendBtn:disabled { opacity: 0.55; cursor: not-allowed; }
-        .clearBtn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 12px; background: transparent; color: var(--color-text-muted); border: 1px solid var(--color-border, #262C34); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.15s; }
-        .clearBtn:hover { color: #F87171; border-color: rgba(239,68,68,0.4); }
+        .inputBottomBar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-top: 4px;
+          border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .inputIconBtns {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .inputIconBtn {
+          position: relative;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid transparent;
+          color: var(--color-text-muted, #9AA3AF);
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .inputIconBtn:hover {
+          background: rgba(255,255,255,0.08);
+          color: #fff;
+        }
+        .inputIconBtn.recording {
+          background: rgba(239,68,68,0.22);
+          border-color: #EF4444;
+          color: #EF4444;
+          animation: pulseRed 1.4s infinite;
+        }
+        .inputIconBtn.hasVision {
+          color: #34D399;
+        }
+        .badgeCount {
+          position: absolute;
+          top: -3px;
+          right: -3px;
+          background: var(--color-primary, #EF4444);
+          color: #fff;
+          font-size: 8.5px;
+          font-weight: 700;
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .inputRightGroup {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .inputCharCount {
+          font-size: 10.5px;
+          color: var(--color-text-muted, #9AA3AF);
+          user-select: none;
+        }
+        .inputSendBtn {
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-primary, #EF4444);
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+          flex-shrink: 0;
+        }
+        .inputSendBtn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          filter: brightness(1.1);
+        }
+        .inputSendBtn:disabled {
+          background: #1B1F26;
+          color: #4B5565;
+          box-shadow: none;
+          cursor: not-allowed;
+        }
 
-        .statusChip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px; margin-top: 12px; }
-        .statusChip.ok { background: rgba(16,185,129,0.12); color: #10B981; border: 1px solid rgba(16,185,129,0.3); }
-        .statusChip.err { background: rgba(239,68,68,0.12); color: #F87171; border: 1px solid rgba(239,68,68,0.3); }
-        .statusChip.idle { background: var(--color-bg, #0B0D10); color: var(--color-text-muted); border: 1px solid var(--color-border, #262C34); }
+        .headerToolBtn { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 7px; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); color: var(--color-text-muted); cursor: pointer; transition: all 0.15s; }
+        .headerToolBtn:hover { color: #fff; border-color: var(--color-primary, #EF4444); }
 
-        @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+        .sliderRow { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+        .sliderHead { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 600; color: var(--color-text-muted); }
+        .sliderInput { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px; background: var(--color-border, #262C34); outline: none; cursor: pointer; accent-color: var(--color-primary, #EF4444); }
+
+        @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
         @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
-        .typing { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; }
-        .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); animation: blink 1.2s infinite; }
+        .typing { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0; }
+        .typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--color-text-muted); animation: blink 1.2s infinite; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
 
-        @media (max-width: 960px) { .testGrid { grid-template-columns: 1fr; } }
+        @media (max-width: 1080px) { .testGrid { grid-template-columns: 1fr; } .testGrid.arena { grid-template-columns: 1fr; } }
       `}</style>
 
-      <div className="testGrid">
-        {/* ── LEFT: Model Config & Capabilities ── */}
-        <div className="testCard">
-          <div className="testHead">
-            <div className="testHeadIcon"><Cpu size={18} /></div>
-            <div>
-              <h3>Model Capabilities & Config</h3>
-              <p>Filter by modality and tune model settings</p>
+      <div className="pgLayout">
+        {/* ── TOP CONTROL BAR ── */}
+        <div className="topControlsBar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div className="modeToggle">
+              <button
+                className={`modeBtn ${viewMode === 'chat' ? 'active' : ''}`}
+                onClick={() => setViewMode('chat')}
+              >
+                <MessageSquare size={12} /> Single Model
+              </button>
+              <button
+                className={`modeBtn ${viewMode === 'arena' ? 'active' : ''}`}
+                onClick={() => setViewMode('arena')}
+              >
+                <Swords size={12} /> Arena Battle
+              </button>
             </div>
-          </div>
 
-          {/* Capabilities Filter Tabs */}
-          <label className="fieldLabel">Filter by Capability</label>
-          <div className="capTabs">
             <button
-              className={`capTab ${activeCapFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('all')}
+              className={`headerToolBtn ${showParams ? 'active' : ''}`}
+              onClick={() => setShowParams(prev => !prev)}
             >
-              <Layers size={12} /> All ({models.length})
+              <Sliders size={12} />
+              <span>Params ({temperature}T · {maxTokens} tok)</span>
+              {showParams ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
             </button>
+
             <button
-              className={`capTab ${activeCapFilter === 'text' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('text')}
+              className={`headerToolBtn ${showInspector ? 'active' : ''}`}
+              onClick={() => setShowInspector(prev => !prev)}
             >
-              <MessageSquare size={12} /> Text ({models.filter(m => m.text).length})
-            </button>
-            <button
-              className={`capTab ${activeCapFilter === 'reasoning' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('reasoning')}
-            >
-              <Brain size={12} /> Reasoning ({models.filter(m => m.reasoning).length})
-            </button>
-            <button
-              className={`capTab ${activeCapFilter === 'vision' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('vision')}
-            >
-              <Eye size={12} /> Vision ({models.filter(m => m.vision).length})
-            </button>
-            <button
-              className={`capTab ${activeCapFilter === 'audio' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('audio')}
-            >
-              <Mic size={12} /> Audio ({models.filter(m => m.audio).length})
-            </button>
-            <button
-              className={`capTab ${activeCapFilter === 'image' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('image')}
-            >
-              <ImageIcon size={12} /> Image Gen ({models.filter(m => m.image).length})
-            </button>
-            <button
-              className={`capTab ${activeCapFilter === 'video' ? 'active' : ''}`}
-              onClick={() => setActiveCapFilter('video')}
-            >
-              <Film size={12} /> Video ({models.filter(m => m.video).length})
+              <Terminal size={12} />
+              <span>Inspector</span>
             </button>
           </div>
 
-          <label className="fieldLabel">Select AI Model</label>
-          <div className="selectWrap">
-            <span className="selIcon"><Sparkles size={16} /></span>
-            <select
-              className="select"
-              value={selectedModel}
-              onChange={e => {
-                setSelectedModel(e.target.value);
-                setLatency(null);
-                setError('');
-                pushLog('INFO', `User changed model selection to: ${e.target.value}`, { newModel: e.target.value });
-              }}
-            >
-              {loadingModels ? (
-                <option>Loading models…</option>
-              ) : filteredModels.length === 0 ? (
-                <option>No models found for this capability filter</option>
-              ) : (
-                filteredModels.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} — {m.provider}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="headerToolBtn" onClick={copyAsCurl} title="Copy working cURL command">
+              {copiedCurl ? <CheckCheck size={12} color="#10B981" /> : <Code size={12} />}
+              <span>{copiedCurl ? 'Copied cURL!' : 'cURL'}</span>
+            </button>
 
-          {currentModel && (
-            <div style={{ marginTop: 14 }}>
-              {/* Model Capability Badges Highlight */}
-              <div className="modelHeroBanner">
-                <div className="modelHeroTitle">
-                  <span>{currentModel.name}</span>
-                  <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.2)', color: '#EF4444', padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.3)' }}>
-                    {currentModel.provider}
-                  </span>
-                </div>
-                <div className="modelHeroSub">{currentModel.id}</div>
+            <button className="headerToolBtn" onClick={exportChat} disabled={messages.length === 0} title="Export transcript as JSON">
+              <Download size={12} />
+              <span>Export</span>
+            </button>
 
-                <div className="capsRow">
-                  {currentModel.text && <span className="capBadge text"><MessageSquare size={10} /> Text</span>}
-                  {currentModel.reasoning && <span className="capBadge reasoning"><Brain size={10} /> Reasoning</span>}
-                  {currentModel.vision && <span className="capBadge vision"><Eye size={10} /> Vision</span>}
-                  {currentModel.audio && <span className="capBadge audio"><Mic size={10} /> Voice / Audio</span>}
-                  {currentModel.image && <span className="capBadge image"><ImageIcon size={10} /> Image Gen</span>}
-                  {currentModel.video && <span className="capBadge video"><Film size={10} /> Video</span>}
-                </div>
-              </div>
-
-              <div className="modelInfo">
-                <div className="modelInfoRow">
-                  <span className="modelInfoLabel"><Bot size={13} /> Model ID</span>
-                  <span className="modelInfoVal">{currentModel.id}</span>
-                </div>
-                <div className="modelInfoRow">
-                  <span className="modelInfoLabel"><Key size={13} /> Provider</span>
-                  <span className="modelInfoVal">{currentModel.provider}</span>
-                </div>
-                <div className="modelInfoRow">
-                  <span className="modelInfoLabel"><ArrowDownRight size={13} /> Context</span>
-                  <span className="modelInfoVal">
-                    {currentModel.contextWindow
-                      ? (currentModel.contextWindow.includes('k') || currentModel.contextWindow.includes('M') ? currentModel.contextWindow : `${currentModel.contextWindow} tokens`)
-                      : '—'}
-                  </span>
-                </div>
-                <div className="modelInfoRow">
-                  <span className="modelInfoLabel"><TerminalSquare size={13} /> Access</span>
-                  <span className="modelInfoVal">{currentModel.access || 'Standard'}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginTop: 18 }}>
-            <label className="fieldLabel">System Prompt Preset</label>
-            <textarea
-              className="textarea"
-              rows={3}
-              value={systemMessage}
-              onChange={e => setSystemMessage(e.target.value)}
-              placeholder="Set instructions for model behavior…"
-            />
-            <div className="presetBtns">
-              {PRESET_SYSTEM_MESSAGES.map((p, i) => (
-                <button
-                  key={i}
-                  className={`presetBtn ${systemMessage === p.text ? 'active' : ''}`}
-                  onClick={() => setSystemMessage(p.text)}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            <button className="headerToolBtn" onClick={clearChat} disabled={messages.length === 0} title="Clear conversation history">
+              <Trash2 size={12} />
+              <span>Clear</span>
+            </button>
           </div>
         </div>
 
-        {/* ── RIGHT: Chat & Testing Interactive Section ── */}
-        <div className="testCard chatCard">
-          {/* Header showing Selected Model & Active Modalities */}
-          <div className="testHead" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div className="testHeadIcon"><Bot size={18} /></div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <h3 style={{ fontSize: 16 }}>{currentModel ? currentModel.name : 'Model Chat'}</h3>
-                  {currentModel && (
-                    <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '1px 8px', borderRadius: 999, border: '1px solid rgba(239,68,68,0.3)', fontWeight: 600 }}>
-                      {currentModel.provider}
-                    </span>
-                  )}
+        {/* ── COLLAPSIBLE HYPERPARAMETERS DRAWER ── */}
+        {showParams && (
+          <div className="testCard" style={{ background: '#0F1318', border: '1px solid rgba(239,68,68,0.25)', flexShrink: 0, padding: '10px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sliders size={14} color="#EF4444" />
+                <h4 style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>Sampling Parameters</h4>
+              </div>
+              <button
+                className="iconActionBtn"
+                onClick={() => { setTemperature(0.7); setTopP(1.0); setMaxTokens(2048); }}
+              >
+                <RotateCcw size={11} /> Reset
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div className="sliderRow">
+                <div className="sliderHead">
+                  <span>Temp: <strong style={{ color: '#fff' }}>{temperature}</strong></span>
+                  <span style={{ fontSize: 10 }}>{temperature < 0.3 ? '🎯 Precise' : temperature > 1.0 ? '🎨 Creative' : '⚖️ Balanced'}</span>
                 </div>
-                {currentModel && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{messages.length} messages ·</span>
-                    {currentModel.text && <span className="capBadge text" style={{ fontSize: 9.5, padding: '1px 6px' }}><MessageSquare size={9} /> Text</span>}
-                    {currentModel.reasoning && <span className="capBadge reasoning" style={{ fontSize: 9.5, padding: '1px 6px' }}><Brain size={9} /> Reasoning</span>}
-                    {currentModel.vision && <span className="capBadge vision" style={{ fontSize: 9.5, padding: '1px 6px' }}><Eye size={9} /> Vision</span>}
-                    {currentModel.audio && <span className="capBadge audio" style={{ fontSize: 9.5, padding: '1px 6px' }}><Mic size={9} /> Voice</span>}
-                    {currentModel.image && <span className="capBadge image" style={{ fontSize: 9.5, padding: '1px 6px' }}><ImageIcon size={9} /> Image Gen</span>}
-                  </div>
-                )}
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                  className="sliderInput"
+                  value={temperature}
+                  onChange={e => setTemperature(parseFloat(e.target.value))}
+                />
+              </div>
+
+              <div className="sliderRow">
+                <div className="sliderHead">
+                  <span>Top-P: <strong style={{ color: '#fff' }}>{topP}</strong></span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  className="sliderInput"
+                  value={topP}
+                  onChange={e => setTopP(parseFloat(e.target.value))}
+                />
+              </div>
+
+              <div className="sliderRow">
+                <div className="sliderHead">
+                  <span>Max Tokens: <strong style={{ color: '#fff' }}>{maxTokens}</strong></span>
+                </div>
+                <input
+                  type="range"
+                  min="128"
+                  max="8192"
+                  step="128"
+                  className="sliderInput"
+                  value={maxTokens}
+                  onChange={e => setMaxTokens(parseInt(e.target.value))}
+                />
               </div>
             </div>
-            <button className="clearBtn" onClick={clearChat} disabled={messages.length === 0}>
-              <Trash2 size={14} /> Clear Chat
-            </button>
+          </div>
+        )}
+
+        {/* ── COLLAPSIBLE PAYLOAD INSPECTOR ── */}
+        {showInspector && (
+          <div className="testCard" style={{ background: '#090B0E', border: '1px solid #262C34', flexShrink: 0, padding: '10px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <TerminalSquare size={14} color="#38BDF8" />
+                <h4 style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>Request & Response Raw Payload Inspector</h4>
+              </div>
+              <button className="iconActionBtn" onClick={() => setShowInspector(false)}><X size={12} /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="fieldLabel">Last Request JSON</label>
+                <pre style={{ background: '#07080A', border: '1px solid #1F242C', borderRadius: 6, padding: 8, margin: 0, fontSize: 10.5, maxHeight: 110, overflowY: 'auto' }}>
+                  {lastRawPayload ? JSON.stringify(lastRawPayload, null, 2) : '// No request sent yet'}
+                </pre>
+              </div>
+              <div>
+                <label className="fieldLabel">Last Response JSON</label>
+                <pre style={{ background: '#07080A', border: '1px solid #1F242C', borderRadius: 6, padding: 8, margin: 0, fontSize: 10.5, maxHeight: 110, overflowY: 'auto' }}>
+                  {lastRawResponse ? JSON.stringify(lastRawResponse, null, 2) : '// No response received yet'}
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MAIN TESTING GRID ── */}
+        <div className={`testGrid ${viewMode === 'arena' ? 'arena' : ''}`}>
+          {/* ── LEFT CONFIG PANEL ── */}
+          <div className="testCard">
+            <div className="configScroll">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <div style={{ width: 26, height: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-soft, #1F2733)', color: 'var(--color-primary, #EF4444)' }}>
+                  <Cpu size={14} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Model Selection</h3>
+                </div>
+              </div>
+
+              {/* Capability filter tabs */}
+              <div>
+                <label className="fieldLabel">Modality</label>
+                <div className="capTabs">
+                  <button className={`capTab ${activeCapFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveCapFilter('all')}>
+                    <Layers size={10} /> All ({models.length})
+                  </button>
+                  <button className={`capTab ${activeCapFilter === 'text' ? 'active' : ''}`} onClick={() => setActiveCapFilter('text')}>
+                    <MessageSquare size={10} /> Text
+                  </button>
+                  <button className={`capTab ${activeCapFilter === 'reasoning' ? 'active' : ''}`} onClick={() => setActiveCapFilter('reasoning')}>
+                    <Brain size={10} /> Reasoning
+                  </button>
+                  <button className={`capTab ${activeCapFilter === 'vision' ? 'active' : ''}`} onClick={() => setActiveCapFilter('vision')}>
+                    <Eye size={10} /> Vision
+                  </button>
+                  <button className={`capTab ${activeCapFilter === 'audio' ? 'active' : ''}`} onClick={() => setActiveCapFilter('audio')}>
+                    <Mic size={10} /> Audio
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="fieldLabel">{viewMode === 'arena' ? 'Model A' : 'AI Model'}</label>
+                <div className="selectWrap">
+                  <span className="selIcon"><Sparkles size={13} /></span>
+                  <select
+                    className="select"
+                    value={selectedModel}
+                    onChange={e => {
+                      setSelectedModel(e.target.value);
+                      setLatency(null);
+                      setError('');
+                    }}
+                  >
+                    {loadingModels ? (
+                      <option>Loading models…</option>
+                    ) : filteredModels.length === 0 ? (
+                      <option>No models for this filter</option>
+                    ) : (
+                      filteredModels.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} — {m.provider}</option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* Model A hero banner */}
+              {currentModel && (
+                <div className="modelHeroBanner">
+                  <div className="modelHeroTitle">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Sparkles size={12} color="var(--color-primary, #EF4444)" />
+                      <span>{currentModel.name}</span>
+                    </span>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, background: 'var(--color-primary-soft, rgba(239,68,68,0.1))', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239,68,68,0.22)', padding: '1.5px 6px', borderRadius: 4 }}>
+                      {currentModel.provider}
+                    </span>
+                  </div>
+                  <div className="capsRow">
+                    {currentModel.text && <span className="capBadge text"><MessageSquare size={8.5} /> Text</span>}
+                    {currentModel.reasoning && <span className="capBadge reasoning"><Brain size={8.5} /> Reasoning</span>}
+                    {currentModel.vision && <span className="capBadge vision"><Eye size={8.5} /> Vision</span>}
+                    {currentModel.audio && <span className="capBadge audio"><Mic size={8.5} /> Voice</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Arena Model B Selector */}
+              {viewMode === 'arena' && (
+                <div>
+                  <label className="fieldLabel">Model B (Opponent)</label>
+                  <div className="selectWrap">
+                    <span className="selIcon"><Swords size={13} /></span>
+                    <select
+                      className="select"
+                      value={arenaModelB}
+                      onChange={e => setArenaModelB(e.target.value)}
+                    >
+                      {models.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} — {m.provider}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {currentModelB && (
+                    <div className="modelHeroBanner arenaB" style={{ marginTop: 6 }}>
+                      <div className="modelHeroTitle">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Swords size={12} color="#0284C7" />
+                          <span>{currentModelB.name}</span>
+                        </span>
+                        <span style={{ fontSize: 9.5, fontWeight: 700, background: 'rgba(56,189,248,0.12)', color: '#0284C7', border: '1px solid rgba(56,189,248,0.25)', padding: '1.5px 6px', borderRadius: 4 }}>
+                          {currentModelB.provider}
+                        </span>
+                      </div>
+                      <div className="capsRow">
+                        {currentModelB.text && <span className="capBadge text"><MessageSquare size={8.5} /> Text</span>}
+                        {currentModelB.reasoning && <span className="capBadge reasoning"><Brain size={8.5} /> Reasoning</span>}
+                        {currentModelB.vision && <span className="capBadge vision"><Eye size={8.5} /> Vision</span>}
+                        {currentModelB.audio && <span className="capBadge audio"><Mic size={8.5} /> Voice</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* System Message */}
+              <div>
+                <label className="fieldLabel">System Prompt</label>
+                <textarea
+                  className="textarea"
+                  style={{ minHeight: 68, resize: 'vertical' }}
+                  rows={3}
+                  value={systemMessage}
+                  onChange={e => setSystemMessage(e.target.value)}
+                  placeholder="Set system instructions and behavior for this model…"
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  {PRESET_SYSTEM_MESSAGES.map((p, i) => (
+                    <button
+                      key={i}
+                      className="quickChip"
+                      style={{ fontSize: 10, padding: '2px 6px', borderColor: systemMessage === p.text ? '#EF4444' : undefined, color: systemMessage === p.text ? '#EF4444' : undefined }}
+                      onClick={() => setSystemMessage(p.text)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="chatScroll" ref={chatBoxRef}>
-            {messages.length === 0 && !sending && (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-muted)' }}>
-                <div style={{ width: 58, height: 58, borderRadius: 18, background: 'var(--color-primary-soft, #1F2733)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <Sparkles size={26} style={{ color: 'var(--color-primary, #EF4444)' }} />
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-main)', marginBottom: 6 }}>
-                  Test {currentModel ? currentModel.name : 'AI Models'}
-                </div>
-                <div style={{ fontSize: 13, maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
-                  Type a message, test speech-to-text with your microphone, attach images for vision analysis, or test multi-turn conversations.
-                </div>
+          {/* ── CHAT PANEL (OR MODEL A CHAT IN ARENA) ── */}
+          <div className="testCard chatCard">
+            {/* Header (Only in Arena Mode to distinguish Model A) */}
+            {viewMode === 'arena' && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 5, marginBottom: 5, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, background: '#EF4444', color: '#fff', padding: '1.5px 6px', borderRadius: 4, fontWeight: 700 }}>
+                  Model A: {currentModel?.name}
+                </span>
+                {latency !== null && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: latency < 3500 ? '#10B981' : '#F59E0B' }}>
+                    ⚡ {latency}ms
+                  </span>
+                )}
               </div>
             )}
 
-            {messages.map((m, i) => (
-              <div key={i} className={`bubble ${m.role === 'user' ? 'user' : ''}`}>
-                <div className="bubbleAvatar">
-                  {m.role === 'user' ? <UserIcon size={15} /> : <Bot size={15} />}
+            {/* Chat message stream */}
+            <div className="chatScroll">
+              {messages.length === 0 && !sending && (
+                <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--color-text-muted)' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--color-primary-soft, #1F2733)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <Sparkles size={18} color="#EF4444" />
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#fff', marginBottom: 2 }}>
+                    Ready to Test {currentModel?.name}
+                  </div>
+                  <div style={{ fontSize: 11.5, maxWidth: 300, margin: '0 auto', lineHeight: 1.4 }}>
+                    Pick a benchmark prompt below or start typing.
+                  </div>
                 </div>
-                <div style={{ maxWidth: '100%' }}>
-                  {/* User Images attached */}
-                  {m.images && m.images.length > 0 && (
-                    <div className="bubbleImgs">
-                      {m.images.map((img, imgIdx) => (
-                        <img key={imgIdx} src={img} alt="Attached input" className="bubbleImg" />
+              )}
+
+              {messages.map((m, i) => (
+                <div key={i} className={`bubble ${m.role === 'user' ? 'user' : ''}`}>
+                  <div className="bubbleAvatar">
+                    {m.role === 'user' ? <UserIcon size={12} /> : <Bot size={12} />}
+                  </div>
+                  <div style={{ maxWidth: '100%' }}>
+                    {m.images && m.images.length > 0 && (
+                      <div className="bubbleImgs">
+                        {m.images.map((img, idx) => (
+                          <img key={idx} src={img} alt="Attached" className="bubbleImg" />
+                        ))}
+                      </div>
+                    )}
+
+                    {m.thinking && (
+                      <div className="thinkingBox">
+                        <div className="thinkingHeader" onClick={() => toggleThinking(i)}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Brain size={11} /> Thinking Process
+                          </span>
+                          {expandedThinking[i] ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        </div>
+                        {expandedThinking[i] && (
+                          <div className="thinkingContent">{m.thinking}</div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={`bubbleBody ${m.error ? 'error' : ''}`}>
+                      {m.role === 'assistant' && !m.error ? (
+                        <div className="markdownContent">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {m.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        m.content
+                      )}
+                    </div>
+
+                    <div className="bubbleMeta">
+                      <span className="bubbleRole">{m.role}</span>
+                      {m.latency && <span className="bubbleRole" style={{ color: '#10B981' }}>{m.latency}ms</span>}
+
+                      {m.error && i > 0 && messages[i - 1]?.role === 'user' && (
+                        <button className="iconActionBtn" onClick={() => sendMessage(messages[i - 1].content)} style={{ color: '#F87171' }}>
+                          <RefreshCw size={10} /> Retry
+                        </button>
+                      )}
+
+                      {!m.error && m.role === 'assistant' && (
+                        <button className={`iconActionBtn ${speakingIndex === i ? 'active' : ''}`} onClick={() => speakText(i, m.content)}>
+                          {speakingIndex === i ? <VolumeX size={11} color="#EF4444" /> : <Volume2 size={11} />}
+                          <span>{speakingIndex === i ? 'Stop' : 'Listen'}</span>
+                        </button>
+                      )}
+
+                      {!m.error && (
+                        <button className={`iconActionBtn ${copiedIndex === i ? 'active' : ''}`} onClick={() => copyMessage(i, m.content)}>
+                          {copiedIndex === i ? <Check size={11} /> : <Copy size={11} />}
+                          <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {sending && (
+                <div className="bubble">
+                  <div className="bubbleAvatar"><Bot size={12} /></div>
+                  <div className="bubbleBody">
+                    <div className="typing"><span /><span /><span /></div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* ── COMPOSER (Single Model Mode) ── */}
+            {viewMode === 'chat' && (
+              <div className="composer">
+                {/* Top Row: Model dropdown on far left, then User Chats, Responses, Latency, Char count on left; Benchmark chips on right */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                    {/* Compact Model Selector Dropdown on the far left */}
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                      <Sparkles size={11} color="var(--color-primary, #EF4444)" style={{ position: 'absolute', left: 7, pointerEvents: 'none' }} />
+                      <select
+                        value={selectedModel}
+                        onChange={e => {
+                          setSelectedModel(e.target.value);
+                          setLatency(null);
+                          setError('');
+                        }}
+                        style={{
+                          background: 'var(--color-bg, #0B0D10)',
+                          border: '1px solid rgba(239,68,68,0.4)',
+                          borderRadius: 6,
+                          color: '#fff',
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          padding: '2.5px 18px 2.5px 22px',
+                          maxWidth: 155,
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                        }}
+                        title={`Selected: ${currentModel?.name} (${currentModel?.provider})`}
+                      >
+                        {filteredModels.map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} — {m.provider}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={10} color="var(--color-text-muted)" style={{ position: 'absolute', right: 5, pointerEvents: 'none' }} />
+                    </div>
+
+                    {/* User Chats Icon + Count (with tooltip) */}
+                    <div
+                      title={`User Chats: ${userChatCount} message${userChatCount === 1 ? '' : 's'} sent`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                    >
+                      <UserIcon size={11} color="var(--color-primary, #EF4444)" />
+                      <strong style={{ color: '#fff' }}>{userChatCount}</strong>
+                    </div>
+
+                    {/* AI Responses Icon + Count (with tooltip) */}
+                    <div
+                      title={`AI Responses: ${responseCount} response${responseCount === 1 ? '' : 's'} received`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                    >
+                      <Bot size={11} color="#10B981" />
+                      <strong style={{ color: '#fff' }}>{responseCount}</strong>
+                    </div>
+
+                    {/* Latency (with tooltip) */}
+                    {latency !== null && (
+                      <span
+                        title={`Model Latency: ${latency}ms`}
+                        style={{ fontSize: 10.5, fontWeight: 700, color: latency < 3500 ? '#10B981' : '#F59E0B', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '2.5px 6px', borderRadius: 6, cursor: 'help' }}
+                      >
+                        ⚡ {latency}ms
+                      </span>
+                    )}
+
+                    {/* Char count & Enter hint */}
+                    <span
+                      title="Characters entered (Press Enter to send, Shift+Enter for newline)"
+                      style={{ fontSize: 10.5, color: 'var(--color-text-muted)', background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
+                    >
+                      {inputLen}c · Enter ↵
+                    </span>
+                  </div>
+
+                  {/* Right Side: Benchmark Prompts + Action Icons (Voice, Image, Send) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <div className="quickChips" style={{ marginBottom: 0 }}>
+                      {BENCHMARK_PROMPTS.map((bp, i) => (
+                        <button key={i} className="quickChip" onClick={() => setUserMessage(bp.prompt)}>
+                          {bp.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Voice Input Button */}
+                    <button
+                      type="button"
+                      className={`inputIconBtn ${isRecording ? 'recording' : ''}`}
+                      onClick={toggleRecording}
+                      title={isRecording ? 'Stop voice recording' : 'Voice Input (Speech-to-Text)'}
+                      style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                    >
+                      {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
+                    </button>
+
+                    {/* Attach Image Button */}
+                    <button
+                      type="button"
+                      className={`inputIconBtn ${currentModel?.vision ? 'hasVision' : ''}`}
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Attach Image (or press Ctrl+V to paste)"
+                      style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                    >
+                      <ImageIcon size={13} />
+                      {attachedImages.length > 0 && (
+                        <span className="badgeCount">{attachedImages.length}</span>
+                      )}
+                    </button>
+
+                    {/* Send Button */}
+                    <button
+                      type="button"
+                      className="inputSendBtn"
+                      onClick={() => sendMessage()}
+                      disabled={sending || !selectedModel || (!userMessage.trim() && attachedImages.length === 0)}
+                      title="Send Message (Enter ↵)"
+                      style={{ width: 28, height: 26, borderRadius: 6 }}
+                    >
+                      {sending ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={13} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── UNIFIED COMPACT INTEGRATED INPUT BOX ── */}
+                <div className="unifiedInputBox" style={{ padding: '7px 10px' }}>
+                  {attachedImages.length > 0 && (
+                    <div className="attachedPreviews">
+                      {attachedImages.map((img, idx) => (
+                        <div key={idx} className="attachedItem">
+                          <img src={img} alt="Preview" />
+                          <button type="button" className="removeImgBtn" onClick={() => removeAttachedImage(idx)}>
+                            <X size={9} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Thinking Process Accordion for Reasoning Models */}
-                  {m.thinking && (
-                    <div className="thinkingBox">
-                      <div className="thinkingHeader" onClick={() => toggleThinking(i)}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Brain size={13} /> Thinking Process
-                        </span>
-                        {expandedThinking[i] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </div>
-                      {expandedThinking[i] && (
-                        <div className="thinkingContent">{m.thinking}</div>
-                      )}
-                    </div>
-                  )}
+                  <textarea
+                    className="unifiedTextarea"
+                    rows={1}
+                    value={userMessage}
+                    onChange={e => setUserMessage(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    }}
+                    placeholder={
+                      isRecording
+                        ? '🎙️ Listening to your mic…'
+                        : currentModel?.vision
+                        ? `Ask or paste/attach image for ${currentModel.name}…`
+                        : `Type a message for ${currentModel ? currentModel.name : 'the model'}…`
+                    }
+                    disabled={sending}
+                  />
 
-                  <div className={`bubbleBody ${m.error ? 'error' : ''}`}>{m.content}</div>
-
-                  <div className="bubbleMeta">
-                    <span className="bubbleRole">{m.role === 'user' ? 'user' : m.error ? 'model error' : 'model'}</span>
-                    {i === messages.length - 1 && latency !== null && (
-                      <span className="bubbleRole" style={{ color: latency < 4000 ? '#10B981' : '#F59E0B' }}>{latency}ms</span>
-                    )}
-
-                    {/* Retry button on error */}
-                    {m.error && i > 0 && messages[i - 1]?.role === 'user' && (
-                      <button
-                        className="iconActionBtn"
-                        onClick={() => sendMessage(messages[i - 1].content)}
-                        title="Retry this message"
-                        style={{ color: '#F87171' }}
-                      >
-                        <RefreshCw size={12} /> Retry
-                      </button>
-                    )}
-
-                    {/* Speech / Audio output button */}
-                    {!m.error && m.role === 'assistant' && (
-                      <button
-                        className={`iconActionBtn ${speakingIndex === i ? 'active' : ''}`}
-                        onClick={() => speakText(i, m.content)}
-                        title={speakingIndex === i ? 'Stop speaking' : 'Listen with Voice / Text-to-Speech'}
-                      >
-                        {speakingIndex === i ? <VolumeX size={13} color="#EF4444" /> : <Volume2 size={13} />}
-                        <span>{speakingIndex === i ? 'Stop' : 'Listen'}</span>
-                      </button>
-                    )}
-
-                    {!m.error && (
-                      <button
-                        className={`iconActionBtn ${copiedIndex === i ? 'active' : ''}`}
-                        onClick={() => copyMessage(i, m.content)}
-                        title="Copy"
-                      >
-                        {copiedIndex === i ? <Check size={13} /> : <Copy size={13} />}
-                        <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {sending && (
-              <div className="bubble">
-                <div className="bubbleAvatar"><Bot size={15} /></div>
-                <div className="bubbleBody">
-                  <div className="typing"><span /><span /><span /></div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                  />
                 </div>
               </div>
             )}
-
-            <div ref={bottomRef} />
           </div>
 
-          {/* ── COMPOSER & MULTIMODAL CONTROLS ── */}
-          <div className="composer">
-            {/* Attached Image Previews */}
-            {attachedImages.length > 0 && (
-              <div className="attachedPreviews">
-                {attachedImages.map((img, idx) => (
-                  <div key={idx} className="attachedItem">
-                    <img src={img} alt="Preview" />
-                    <button className="removeImgBtn" onClick={() => removeAttachedImage(idx)} title="Remove">
-                      <X size={12} />
-                    </button>
+          {/* ── ARENA MODEL B PANEL (Arena Comparison Mode) ── */}
+          {viewMode === 'arena' && (
+            <div className="testCard chatCard">
+              {/* Header (Arena Mode Model B indicator) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 5, marginBottom: 5, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, background: '#38BDF8', color: '#000', padding: '1.5px 6px', borderRadius: 4, fontWeight: 700 }}>
+                  Model B: {currentModelB?.name}
+                </span>
+              </div>
+
+              <div className="chatScroll">
+                {arenaMessagesB.length === 0 && !sendingArenaB && (
+                  <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--color-text-muted)' }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(56,189,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                      <Swords size={18} color="#38BDF8" />
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: '#fff', marginBottom: 2 }}>
+                      Model B: {currentModelB?.name}
+                    </div>
+                    <div style={{ fontSize: 11.5, maxWidth: 280, margin: '0 auto', lineHeight: 1.4 }}>
+                      Send a prompt below to see both models battle side-by-side!
+                    </div>
+                  </div>
+                )}
+
+                {arenaMessagesB.map((m, i) => (
+                  <div key={i} className={`bubble ${m.role === 'user' ? 'user' : ''}`}>
+                    <div className="bubbleAvatar">
+                      {m.role === 'user' ? <UserIcon size={12} /> : <Bot size={12} />}
+                    </div>
+                    <div style={{ maxWidth: '100%' }}>
+                      <div className={`bubbleBody ${m.error ? 'error' : ''}`}>
+                        {m.role === 'assistant' && !m.error ? (
+                          <div className="markdownContent">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {m.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          m.content
+                        )}
+                      </div>
+                      <div className="bubbleMeta">
+                        <span className="bubbleRole">{m.role}</span>
+                        {m.latency && <span className="bubbleRole" style={{ color: '#38BDF8' }}>{m.latency}ms</span>}
+                      </div>
+                    </div>
                   </div>
                 ))}
+
+                {sendingArenaB && (
+                  <div className="bubble">
+                    <div className="bubbleAvatar"><Bot size={12} /></div>
+                    <div className="bubbleBody">
+                      <div className="typing"><span /><span /><span /></div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            <textarea
-              className="textarea"
-              rows={3}
-              value={userMessage}
-              onChange={e => setUserMessage(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-              }}
-              placeholder={
-                isRecording
-                  ? 'Listening to your voice… speak now…'
-                  : currentModel?.vision
-                  ? `Type a prompt or attach an image to test vision with ${currentModel.name}…`
-                  : `Type a message to test ${currentModel ? currentModel.name : 'the model'}…`
-              }
-              disabled={sending}
-            />
-
-            {/* Hidden Image Input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-            />
-
-            <div className="toolbarRow">
-              <div className="toolBtns">
-                {/* Voice / Mic Testing Button */}
-                <button
-                  type="button"
-                  className={`toolBtn ${isRecording ? 'recording' : ''}`}
-                  onClick={toggleRecording}
-                  title="Test Voice Input (Speech-to-Text)"
+        {/* ── ARENA SHARED COMPOSER (When in Arena Mode) ── */}
+        {viewMode === 'arena' && (
+          <div className="testCard" style={{ background: '#0D1117', border: '1px solid rgba(239,68,68,0.3)', padding: '8px 12px', flexShrink: 0 }}>
+            {/* Top Row: User Chats, Responses, Char count on left; Benchmark chips on right */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                {/* User Chats Icon + Count (with tooltip) */}
+                <div
+                  title={`User Chats: ${userChatCount} messages`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                 >
-                  {isRecording ? <MicOff size={14} /> : <Mic size={14} />}
-                  <span>{isRecording ? 'Recording…' : 'Voice Input'}</span>
-                </button>
-
-                {/* Vision / Image Attachment Button */}
-                <button
-                  type="button"
-                  className={`toolBtn ${currentModel?.vision ? 'hasVision' : ''}`}
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Attach image to test vision"
-                >
-                  <ImageIcon size={14} />
-                  <span>Attach Image {attachedImages.length > 0 ? `(${attachedImages.length})` : ''}</span>
-                </button>
-
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: 11.5, color: 'var(--color-text-muted)', gap: 8, marginLeft: 6 }}>
-                  <span>{inputLen} chars</span>
-                  <span>·</span>
-                  <span>Enter ↵ send · Shift+Enter newline</span>
+                  <UserIcon size={11} color="#EF4444" />
+                  <strong style={{ color: '#fff' }}>{userChatCount}</strong>
                 </div>
+
+                {/* Model A Responses Icon + Count (with tooltip) */}
+                <div
+                  title={`Model A Responses: ${responseCount}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                >
+                  <Bot size={11} color="#10B981" />
+                  <span style={{ fontSize: 9.5, color: '#10B981', fontWeight: 700 }}>A:</span>
+                  <strong style={{ color: '#fff' }}>{responseCount}</strong>
+                </div>
+
+                {/* Model B Responses Icon + Count (with tooltip) */}
+                <div
+                  title={`Model B Responses: ${responseCountB}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                >
+                  <Bot size={11} color="#38BDF8" />
+                  <span style={{ fontSize: 9.5, color: '#38BDF8', fontWeight: 700 }}>B:</span>
+                  <strong style={{ color: '#fff' }}>{responseCountB}</strong>
+                </div>
+
+                <span
+                  title="Characters entered (Press Enter to send)"
+                  style={{ fontSize: 10.5, color: 'var(--color-text-muted)', background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
+                >
+                  {inputLen}c · Enter ↵
+                </span>
               </div>
 
-              <button
-                className="sendBtn"
-                onClick={() => sendMessage()}
-                disabled={sending || !selectedModel || (!userMessage.trim() && attachedImages.length === 0)}
-              >
-                {sending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
-                <span>{sending ? 'Streaming…' : 'Send Request'}</span>
-              </button>
+              {/* Right Side: Benchmark Prompts + Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <div className="quickChips" style={{ marginBottom: 0 }}>
+                  {BENCHMARK_PROMPTS.map((bp, i) => (
+                    <button key={i} className="quickChip" onClick={() => setUserMessage(bp.prompt)}>
+                      {bp.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className={`inputIconBtn ${isRecording ? 'recording' : ''}`}
+                  onClick={toggleRecording}
+                  title={isRecording ? 'Stop voice recording' : 'Voice Input'}
+                  style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                >
+                  {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
+                </button>
+
+                <button
+                  type="button"
+                  className="inputSendBtn"
+                  onClick={() => sendMessage()}
+                  disabled={sending || sendingArenaB || !selectedModel || !arenaModelB || !userMessage.trim()}
+                  title="Launch Arena Battle"
+                  style={{ width: 28, height: 26, borderRadius: 6 }}
+                >
+                  {sending || sendingArenaB ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Swords size={13} />}
+                </button>
+              </div>
             </div>
 
-            {!sending && (error || latency !== null) && (
-              <div className={`statusChip ${error ? 'err' : 'ok'}`}>
-                {error ? <><Info size={13} /> {typeof error === 'string' ? error.slice(0, 90) : 'Request failed'}</> : <><Check size={13} /> Completed in {latency}ms</>}
-              </div>
-            )}
+            <div className="unifiedInputBox" style={{ padding: '7px 10px' }}>
+              <textarea
+                className="unifiedTextarea"
+                rows={1}
+                value={userMessage}
+                onChange={e => setUserMessage(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                }}
+                placeholder={`Send prompt to both ${currentModel?.name || 'Model A'} and ${currentModelB?.name || 'Model B'}…`}
+                disabled={sending || sendingArenaB}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

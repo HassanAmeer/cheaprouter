@@ -280,31 +280,149 @@ export default function BillingPage() {
               </p>
             </div>
           )}
-          {!showAddFunds && (
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Your funds pay for upgrades deduct from this balance.
-            </div>
-          )}
+          <div style={{ height: 1, background: 'var(--color-border)', margin: '20px 0', opacity: 0.6 }} />
+
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: 2 }}>Withdraw Funds</h3>
+            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+              Withdraw your unused balance back to your payment method.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast('Withdrawal request submitted — refund will be processed in 2–3 business days (simulated).', 'info')}
+            >
+              <ArrowDownCircle size={15} /> Withdraw
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 6 }}>Billing & Subscriptions</h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
-            Manage active plans, view usage hits, and select subscriptions for each service.
-          </p>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 6 }}>Current Plan</h1>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
+          Manage active plans, view usage hits, and select subscriptions for each service.
+        </p>
+      </div>
+
+      {/* Active Plans Overview — all categories at once */}
+      <div className="card" style={{
+        marginBottom: 28,
+        position: 'relative',
+        overflow: 'hidden',
+        border: '1px solid var(--color-primary)',
+        padding: '24px',
+        background: 'linear-gradient(135deg, var(--color-card-bg) 0%, rgba(124, 58, 237, 0.03) 100%)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <Crown size={20} color="var(--color-primary)" />
+          <h2 style={{ fontSize: '18px', fontWeight: 700 }}>Your Active Plans</h2>
         </div>
 
-        {/* Top Category Tabs Bar */}
-        {tabs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {tabs.map((tab, tabIdx) => {
+            const mInfo = getMetricInfo(tab.name);
+            const TabIcon = mInfo.icon;
+            const aState = activePlans[tab.id] || { planId: tab.plans?.[0]?.id || '', used: 120, limit: 1000 };
+            const planObj = tab.plans?.find(p => p.id === aState.planId) || tab.plans?.[0] || {
+              id: 'default', name: 'Free', price: '$0', period: '', desc: 'Basic Plan', features: [], cta: 'Select Plan', ctaLink: '', featured: false
+            };
+            const pct = Math.min(100, Math.round((aState.used / aState.limit) * 100));
+            const isLastRow = tabIdx === tabs.length - 1;
+            const curIdx = tab.plans?.findIndex((p: any) => p.id === aState.planId) ?? -1;
+            return (
+              <div key={tab.id}>
+                {/* Row 1: tab name left, horizontal tier dots right */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <TabIcon size={16} color="var(--color-primary)" />
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-main)' }}>{tab.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        {planObj.name} Plan · {planObj.price}{planObj.period || '/mo'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal tier dots: Free → Starter → Pro */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1, maxWidth: 360, minWidth: 220 }}>
+                    {tab.plans?.map((plan: any, idx: number) => {
+                      const isCurrent = idx === curIdx;
+                      const isReached = idx <= curIdx;
+                      const isLast = idx === (tab.plans?.length || 0) - 1;
+                      return (
+                        <div key={plan.id} style={{ display: 'flex', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{
+                              width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
+                              background: isReached ? 'var(--color-primary)' : 'var(--color-bg-soft)',
+                              border: isReached ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                              boxShadow: isCurrent ? '0 0 0 3px rgba(124, 58, 237, 0.18)' : 'none',
+                              opacity: isCurrent ? 1 : isReached ? 0.55 : 1
+                            }} />
+                            <div style={{
+                              fontSize: '10px', marginTop: 5, textAlign: 'center',
+                              fontWeight: isCurrent ? 700 : 500,
+                              color: isCurrent ? 'var(--color-text-main)' : isReached ? 'var(--color-text-main)' : 'var(--color-text-muted)',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%'
+                            }}>
+                              {plan.name}
+                            </div>
+                          </div>
+                          {!isLast && (
+                            <div style={{
+                              flex: 1, height: 2, marginTop: 5, alignSelf: 'flex-start',
+                              background: idx + 1 <= curIdx ? 'var(--color-primary)' : 'var(--color-border)'
+                            }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Usage progress bar (horizontal line) */}
+                <div style={{ marginTop: 14 }}>
+                  <div className={styles.progressBar} style={{ height: 6, borderRadius: 3, background: 'var(--color-bg-soft)' }}>
+                    <div className={styles.progressFill} style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--color-primary), #ff6b6b)', borderRadius: 3 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 6 }}>
+                    <span>
+                      <strong style={{ color: 'var(--color-text-main)' }}>{aState.used.toLocaleString()}</strong> / {aState.limit.toLocaleString()} {mInfo.unit}
+                    </span>
+                    <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{pct}%</span>
+                  </div>
+                </div>
+
+                {/* Starting / expiry dates on bottom */}
+                <div style={{ display: 'flex', gap: 18, fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 10, flexWrap: 'wrap' }}>
+                  <span><strong style={{ color: 'var(--color-text-main)' }}>Start:</strong> Jul 15, 2026</span>
+                  <span><strong style={{ color: 'var(--color-text-main)' }}>Expires:</strong> Aug 15, 2026</span>
+                </div>
+
+                {/* Half centered divider line before next plan details */}
+                {!isLastRow && (
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '22px 0' }}>
+                    <div style={{ width: '50%', height: 1, background: 'var(--color-border)', opacity: 0.7 }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Top Category Tabs Bar */}
+      {tabs.length > 0 && (
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div style={{
             display: 'flex', gap: '6px',
             background: 'var(--color-card-bg)',
             border: '1px solid var(--color-border)',
             padding: '6px',
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            width: 'fit-content'
           }}>
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
@@ -330,100 +448,8 @@ export default function BillingPage() {
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* Active Plan Card for Selected Category */}
-      <div className="card" style={{
-        marginBottom: 28,
-        position: 'relative',
-        overflow: 'hidden',
-        border: '1px solid var(--color-primary)',
-        padding: '28px',
-        background: 'linear-gradient(135deg, var(--color-card-bg) 0%, rgba(124, 58, 237, 0.03) 100%)'
-      }}>
-        <div style={{
-          position: 'absolute', top: 0, right: 0,
-          background: 'var(--color-primary)', color: '#fff', fontSize: '11px', fontWeight: 700,
-          padding: '6px 18px', borderBottomLeftRadius: '8px', letterSpacing: '0.8px'
-        }}>
-          {currentTabObj?.name?.toUpperCase()}
         </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
-          <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <Crown size={22} color="var(--color-primary)" />
-              <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{activePlanObj.name} Plan</h2>
-              <Badge tone={!activePlanObj.price || activePlanObj.price === '$0' ? "neutral" : "primary"}>
-                {!activePlanObj.price || activePlanObj.price === '$0' ? "Free Tier" : "Active"}
-              </Badge>
-            </div>
-
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', marginBottom: 16 }}>
-              <span style={{ fontWeight: 700, color: 'var(--color-text-main)', fontSize: '15px' }}>
-                {activePlanObj.price}{activePlanObj.period || '/mo'}
-              </span>
-              {' · '}
-              Duration: <strong style={{ color: 'var(--color-text-main)' }}>{activePlanObj.durationDays ? `${activePlanObj.durationDays} Days` : 'Monthly (30 Days)'}</strong>
-            </p>
-
-            <div style={{ maxWidth: 500 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, marginBottom: 6 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-main)' }}>
-                  <MetricIcon size={14} color="var(--color-primary)" /> {metricInfo.label} Usage
-                </span>
-                <span style={{ color: 'var(--color-primary)' }}>{usagePercent}%</span>
-              </div>
-
-              <div className={styles.progressBar} style={{ height: 8, borderRadius: 4, background: 'var(--color-bg-soft)' }}>
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${usagePercent}%`, background: 'linear-gradient(90deg, var(--color-primary), #ff6b6b)', borderRadius: 4 }}
-                />
-              </div>
-
-              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 8 }}>
-                <strong>{activeState.used.toLocaleString()}</strong> / {activeState.limit.toLocaleString()} {metricInfo.unit} this cycle
-              </p>
-
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, paddingTop: 12,
-                borderTop: '1px stroke var(--color-border)', fontSize: '12px',
-                color: 'var(--color-text-muted)', flexWrap: 'wrap'
-              }}>
-                <div>Starting Date: <strong style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>Jul 15, 2026</strong></div>
-                <div style={{ width: '1px', height: '14px', background: 'var(--color-border)' }} />
-                <div>Expiry Date: <strong style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>Aug 15, 2026</strong></div>
-                <div style={{ width: '1px', height: '14px', background: 'var(--color-border)' }} />
-                <div>Billing Cycle: <strong style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>Monthly</strong></div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', alignSelf: 'center' }}>
-            {!activePlanObj.price || activePlanObj.price === '$0' ? (
-              <Button
-                variant="primary"
-                onClick={() => {
-                  document.getElementById('available-plans-section')?.scrollIntoView({ behavior: 'smooth' });
-                  toast(`Choose a plan below to upgrade your ${currentTabObj?.name} tier!`, 'info');
-                }}
-              >
-                Upgrade Plan
-              </Button>
-            ) : (
-              <Button variant="secondary" disabled style={{ opacity: 0.95, cursor: 'default', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                <Check size={16} color="var(--color-success)" /> Upgraded
-              </Button>
-            )}
-
-            <Button variant="ghost" size="sm" onClick={() => toast(`Opening subscription portal for ${currentTabObj?.name}…`, 'info')}>
-              Manage Subscription
-            </Button>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Plan Comparison Section */}
       <div id="available-plans-section" style={{ marginBottom: 36 }}>

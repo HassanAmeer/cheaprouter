@@ -142,7 +142,7 @@ export async function handleCompletions(c: any) {
     } catch (e) {
       return c.json({ error: 'Invalid JSON body' }, 400);
     }
-    const { model = 'gpt-4o', messages, stream = false } = body;
+    const { model = 'gpt-4o', messages, stream = false, temperature, max_tokens, top_p } = body;
 
     if (!messages || !Array.isArray(messages)) {
       addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, sessionId);
@@ -184,8 +184,12 @@ export async function handleCompletions(c: any) {
 
     addDevLog('INFO', 'Completions', `Incoming request for model: ${model}`, { 
       userId: finalUserId, 
-      messageCount: messages.length,
-      payload: coreMessages
+      stream, 
+      temperature, 
+      max_tokens, 
+      top_p,
+      messageCount: coreMessages.length,
+      sessionId
     }, sessionId);
 
     const aiModelItems = await getModelInstances(finalUserId, model, sessionId);
@@ -226,6 +230,9 @@ export async function handleCompletions(c: any) {
               model: item.instance,
               maxRetries: 0,
               messages: coreMessages,
+              ...(typeof temperature === 'number' ? { temperature } : {}),
+              ...(typeof max_tokens === 'number' ? { maxTokens: max_tokens } : {}),
+              ...(typeof top_p === 'number' ? { topP: top_p } : {}),
               async onFinish({ usage, text }) {
                 if (usage && !skipUsage) {
                   await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
@@ -242,6 +249,9 @@ export async function handleCompletions(c: any) {
               model: item.instance,
               maxRetries: 0,
               messages: coreMessages,
+              ...(typeof temperature === 'number' ? { temperature } : {}),
+              ...(typeof max_tokens === 'number' ? { maxTokens: max_tokens } : {}),
+              ...(typeof top_p === 'number' ? { topP: top_p } : {}),
             });
 
             const tokens: number = result.usage?.totalTokens || 150;
