@@ -1539,7 +1539,16 @@ export default function ProvidersPage() {
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', background: m.isWhiteTheme ? '#FFFFFF' : 'var(--color-bg-soft)', border: m.themeColor && !m.themeColor.includes('gradient') ? `1px solid ${m.themeColor}` : '1px solid var(--color-border)', borderRadius: '6px', cursor: 'pointer', outline: 'none', boxShadow: m.shimmerEffect ? '0 0 8px rgba(139, 92, 246, 0.3)' : 'none' }}
                               title="Select Icon"
                             >
-                              {m.icon ? <img src={m.icon} width={16} height={16} alt="" style={{ borderRadius: '2px' }} /> : <ImageIcon size={14} color="var(--color-text-muted)" />}
+                              <img 
+                                src={m.icon || 'https://api.iconify.design/lucide:bot.svg'} 
+                                width={16} 
+                                height={16} 
+                                alt="" 
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://api.iconify.design/lucide:bot.svg';
+                                }}
+                                style={{ borderRadius: '2px', objectFit: 'contain' }} 
+                              />
                             </button>
 
                             {iconPickerOpenFor === `${m.providerId}-${m.id}` && (

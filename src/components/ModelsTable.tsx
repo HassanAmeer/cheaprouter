@@ -1,10 +1,47 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Type, Image as ImageIcon, Code, Mic, Eye, Layers, ArrowRight } from 'lucide-react';
+import { Search, Type, Image as ImageIcon, Code, Mic, Eye, Layers, ArrowRight, Bot } from 'lucide-react';
 import styles from './ModelsTable.module.css';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+
+function ModelAvatar({ icon, isWhiteTheme, themeColor, shimmerEffect }: { icon?: string; isWhiteTheme?: boolean; themeColor?: string; shimmerEffect?: boolean }) {
+  const [imgError, setImgError] = useState(false);
+
+  const showBot = !icon || imgError || icon.includes('undefined') || icon.includes('null');
+
+  return (
+    <div 
+      style={{ 
+        width: '34px',
+        height: '34px',
+        padding: '6px', 
+        backgroundColor: isWhiteTheme ? '#FFFFFF' : 'var(--color-bg-soft)', 
+        borderRadius: '8px', 
+        border: themeColor && !themeColor.includes('gradient') ? `1px solid ${themeColor}` : '1px solid var(--color-border)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        boxShadow: shimmerEffect ? '0 0 10px rgba(139, 92, 246, 0.3)' : 'var(--shadow-sm)',
+        flexShrink: 0
+      }}
+    >
+      {showBot ? (
+        <Bot size={18} color="var(--color-text-muted, #94a3b8)" />
+      ) : (
+        <img 
+          src={icon} 
+          width="20" 
+          height="20" 
+          alt="" 
+          onError={() => setImgError(true)}
+          style={{ borderRadius: '2px', objectFit: 'contain' }} 
+        />
+      )}
+    </div>
+  );
+}
 
 interface ModelsTableProps {
   limit?: number;
@@ -100,9 +137,9 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
     // If only Our Price is provided or Others Price is not set / identical
     if (!hasOff || (hasCurrent && numOff === numCurrent)) {
       if (!hasCurrent || numCurrent === 0) {
-        return <span style={{ fontWeight: 700, color: '#10B981', fontSize: '13px' }}>Free</span>;
+        return <span style={{ fontWeight: 700, color: '#10B981', fontSize: '15px' }}>Free</span>;
       }
-      return <span style={{ fontWeight: 600, fontSize: '13px' }}>${numCurrent}</span>;
+      return <span style={{ fontWeight: 600, fontSize: '15px' }}>${numCurrent}</span>;
     }
 
     // Both prices available: numCurrent is Our Price (green), numOff is Others Price (struck-through)
@@ -110,7 +147,7 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <span style={{ fontWeight: 700, color: '#10B981', fontSize: '13px', lineHeight: '1.25' }}>
+        <span style={{ fontWeight: 700, color: '#10B981', fontSize: '15px', lineHeight: '1.2' }}>
           {ourPriceFormatted}
         </span>
         <span 
@@ -118,9 +155,9 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
             textDecoration: 'line-through', 
             textDecorationColor: '#94A3B8',
             color: '#94A3B8', 
-            fontSize: '13px', 
+            fontSize: '13.5px', 
             fontWeight: 500,
-            lineHeight: '1.25'
+            lineHeight: '1.2'
           }}
           title={`Others Price: $${numOff}`}
         >
@@ -239,21 +276,12 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
                   <td style={{ verticalAlign: 'top', padding: '14px 20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
                       <div className={styles.modelNameCol}>
-                        <div 
-                          style={{ 
-                            padding: '6px', 
-                            backgroundColor: m.isWhiteTheme ? '#FFFFFF' : 'var(--color-bg-soft)', 
-                            borderRadius: '8px', 
-                            border: m.themeColor && !m.themeColor.includes('gradient') ? `1px solid ${m.themeColor}` : '1px solid var(--color-border)', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            boxShadow: m.shimmerEffect ? '0 0 10px rgba(139, 92, 246, 0.3)' : 'var(--shadow-sm)',
-                            flexShrink: 0
-                          }}
-                        >
-                          <img src={m.icon} width="22" height="22" alt={m.provider} style={{ borderRadius: '2px' }} />
-                        </div>
+                        <ModelAvatar 
+                          icon={m.icon} 
+                          isWhiteTheme={m.isWhiteTheme} 
+                          themeColor={m.themeColor} 
+                          shimmerEffect={m.shimmerEffect} 
+                        />
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>{m.name}</span>
