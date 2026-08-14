@@ -76,6 +76,12 @@ export const api = {
   analytics: () => request<any>('/api/analytics'),
   summary: () => request<any>('/api/summary'),
 
+  // Billing / Account Balance
+  getBilling: () => request<any>('/api/billing'),
+  topUp: (amount: number) => request<any>('/api/billing/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
+  upgradePlan: (data: { planField: string; planId: string; planName: string; price: number; durationDays?: number }) =>
+    request<any>('/api/billing/upgrade', { method: 'POST', body: JSON.stringify(data) }),
+
   // Notifications
   getNotifications: () => request<any>('/api/notifications'),
 

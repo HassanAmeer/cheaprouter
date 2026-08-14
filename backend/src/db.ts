@@ -40,6 +40,7 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS use_cases TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS earning_goal TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance REAL DEFAULT 0;`;
   } catch (e) {
     console.error('Migration error:', e);
   }
@@ -159,6 +160,17 @@ export async function initDb() {
       model_id TEXT NOT NULL,
       enabled BOOLEAN NOT NULL DEFAULT true,
       PRIMARY KEY (user_id, model_id)
+    );
+  `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      amount REAL NOT NULL DEFAULT 0,
+      description TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `;
 }

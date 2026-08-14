@@ -15,10 +15,12 @@ import {
   saveOnboarding,
   adminUpdateUser,
   adminDeleteUser,
+  hashPassword,
 } from './auth.ts';
 import { listKeys, createKey, deleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
+import { getBilling, topUp, upgradePlan, seedWelcomeBalance } from './billing.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
 import { handleCompletions, getModelInstance, getSystemPromptForModel } from './completions.ts';
@@ -64,6 +66,10 @@ app.use('/api/*', async (c, next) => {
   if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models' || p === '/api/public/providers' || p === '/api/admin/providers') {
     return next();
   }
+  // OpenAI-compatible endpoints authenticate via API key internally (not JWT).
+  if (p.startsWith('/api/v1/')) {
+    return next();
+  }
   if (p.startsWith('/api/admin')) {
     return requireAdminAuth(c, next);
   }
@@ -106,6 +112,7 @@ app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
   if (await getUserByEmail(email)) return c.json({ error: 'Email already registered' }, 409);
   
   const user = await createUser(name ?? email.split('@')[0], email, password, ip, userAgent, hwInfoStr);
+  await seedWelcomeBalance(user.id);
   const token = await signToken({ sub: user.id, email: user.email });
   return c.json({ token, user });
 });
@@ -207,6 +214,30 @@ app.delete('/api/providers/:id', async (c) => {
 // ---- Analytics & Summary ----
 app.get('/api/analytics', async (c) => c.json(await getAnalytics(c.get('userId'))));
 app.get('/api/summary', async (c) => c.json(await getSummary(c.get('userId'))));
+
+// ---- Billing / Account Balance ----
+app.get('/api/billing', async (c) => c.json(await getBilling(c.get('userId'))));
+
+app.post('/api/billing/topup', zValidator('json', z.object({ amount: z.number().positive() })), async (c) => {
+  const { amount } = c.req.valid('json');
+  return c.json(await topUp(c.get('userId'), amount));
+});
+
+app.post('/api/billing/upgrade', zValidator('json', z.object({
+  planField: z.string(),
+  planId: z.string(),
+  planName: z.string(),
+  price: z.number(),
+  durationDays: z.number().optional(),
+})), async (c) => {
+  const body = c.req.valid('json');
+  const result = await upgradePlan(c.get('userId'), body);
+  if (!result.ok) {
+    const status = result.error === 'Insufficient balance' ? 402 : 400;
+    return c.json({ error: result.error, balance: result.balance }, status);
+  }
+  return c.json(result);
+});
 
 // ---- Admin System & Logs ----
 app.get('/api/admin/system', async (c) => {
@@ -532,19 +563,31 @@ async function handleAccount(c: any) {
       return c.json({ error: { message: 'Missing or invalid Authorization header. Must provide Bearer token.', type: 'invalid_request_error' } }, 401);
     }
     const token = authHeader.split(' ')[1];
-    
+    const hashedKey = hashPassword(token);
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${token.substring(0, 16)}`;
+    if (keyRows.length === 0) {
+      return c.json({ error: { message: 'Invalid API key.', type: 'invalid_request_error' } }, 401);
+    }
+    const userId = keyRows[0].user_id;
+
+    const userRow = await db`SELECT id, email, plan FROM users WHERE id = ${userId}`;
+    const email = userRow.length > 0 ? userRow[0].email : 'developer@cheaprouter.com';
+    const plan = userRow.length > 0 ? (userRow[0].plan || 'free') : 'pro';
+
+    const usageRes = await db`SELECT COUNT(*) AS requests, COALESCE(SUM(tokens),0) AS tokens FROM usage WHERE user_id = ${userId}`;
+
     return c.json({
       object: 'account',
-      id: 'acc_' + crypto.randomUUID().slice(0, 8),
-      email: 'developer@cheaprouter.com',
+      id: 'acc_' + (userId ? userId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) : crypto.randomUUID().slice(0, 8)),
+      email,
       subscription: {
-        plan: 'pro',
+        plan: plan === 'free' ? 'pro' : plan,
         status: 'active',
         billing_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
       },
       usage: {
-        total_requests: Math.floor(Math.random() * 1000),
-        tokens_used: Math.floor(Math.random() * 500000)
+        total_requests: Number(usageRes[0].requests),
+        tokens_used: Number(usageRes[0].tokens)
       }
     });
   } catch (e: any) {

@@ -57,7 +57,7 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export async function getUserById(id: string) {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users WHERE id = ${id}`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users WHERE id = ${id}`;
   return result[0] as any;
 }
 
@@ -118,12 +118,13 @@ function detectOs(hwInfo: any, userAgent?: string): string {
 }
 
 export async function getAllUsers() {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed FROM users ORDER BY created_at DESC`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users ORDER BY created_at DESC`;
   return result.map(row => ({
     id: row.id,
     name: row.name,
     email: row.email,
     plan: row.plan || 'Free',
+    balance: Number(row.balance ?? 0),
     plan_cli: row.plan_cli || 'Free',
     plan_api: row.plan_api || 'Free',
     plan_chat: row.plan_chat || 'Free',
@@ -187,7 +188,8 @@ export async function adminUpdateUser(id: string, data: any) {
     'plan_chat_start', 'plan_chat_expiry',
     'plan_agents_start', 'plan_agents_expiry',
     'created_at', 'last_login',
-    'is_student', 'experience_level', 'use_cases', 'earning_goal', 'onboarding_completed'
+    'is_student', 'experience_level', 'use_cases', 'earning_goal', 'onboarding_completed',
+    'balance'
   ];
   const updates = Object.keys(data).filter(k => allowedFields.includes(k) && data[k] !== undefined);
   if (updates.length === 0) return;

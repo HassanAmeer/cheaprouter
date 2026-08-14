@@ -115,8 +115,11 @@ export async function handleCompletions(c: any) {
     const reqKey = auth.replace('Bearer ', '');
     
     const hashedKey = hashPassword(reqKey);
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
+    const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
+    if (keyRows.length > 0) {
+      await db`UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ${keyRows[0].id}`;
+    }
     
     // Admin test models flow: the admin token is a valid JWT, not an API key.
     let adminUserId: string | null = null;
@@ -148,11 +151,32 @@ export async function handleCompletions(c: any) {
 
     const systemPrompt = await getSystemPromptForModel(model);
 
-    // Convert messages
-    const coreMessages: any[] = messages.map((m: any) => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content
-    }));
+    // Convert messages (supporting both text and multimodal image attachments)
+    const coreMessages: any[] = messages.map((m: any) => {
+      if (Array.isArray(m.content)) {
+        return {
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content
+        };
+      }
+      if (m.images && Array.isArray(m.images) && m.images.length > 0) {
+        const parts: any[] = [];
+        if (m.content) {
+          parts.push({ type: 'text', text: m.content });
+        }
+        for (const img of m.images) {
+          parts.push({ type: 'image', image: img });
+        }
+        return {
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: parts
+        };
+      }
+      return {
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content
+      };
+    });
 
     if (systemPrompt) {
       coreMessages.unshift({ role: 'system', content: systemPrompt });
