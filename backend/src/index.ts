@@ -17,7 +17,7 @@ import {
   adminDeleteUser,
   hashPassword,
 } from './auth.ts';
-import { listKeys, createKey, deleteKey } from './keys.ts';
+import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { getBilling, topUp, upgradePlan, seedWelcomeBalance } from './billing.ts';

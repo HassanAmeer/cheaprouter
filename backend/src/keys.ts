@@ -29,3 +29,21 @@ export async function createKey(userId: string, name: string) {
 export async function deleteKey(userId: string, id: string) {
   await db`DELETE FROM api_keys WHERE id = ${id} AND user_id = ${userId}`;
 }
+
+export async function listAllKeysWithUsers() {
+  return await db`
+    SELECT
+      k.id, k.name, k.key_prefix AS prefix, k.created_at AS created, k.last_used AS "lastUsed",
+      u.id AS "userId", u.name AS "userName", u.email AS "userEmail",
+      COALESCE(u.plan, 'free') AS plan,
+      COALESCE(u.plan_api, 'Free') AS "planApi",
+      COALESCE(u.balance, 0) AS balance
+    FROM api_keys k
+    JOIN users u ON u.id = k.user_id
+    ORDER BY k.created_at DESC
+  `;
+}
+
+export async function adminDeleteKey(id: string) {
+  await db`DELETE FROM api_keys WHERE id = ${id}`;
+}
