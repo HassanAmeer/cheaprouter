@@ -3,6 +3,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { KeyRound, ShieldAlert, ChevronRight, CircuitBoard, Lock } from 'lucide-react';
+import s from './system-api.module.css';
 
 const NAV_ITEMS = [
   { href: '/admin/system-api/keys', label: 'Keys Store', icon: <KeyRound size={16} />, desc: 'Store system API keys' },
@@ -12,15 +13,11 @@ export default function SystemApiLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
+    <div className={s.wrap}>
       {/* Inner sidebar */}
-      <aside style={{
-        position: 'sticky', top: 24, background: 'var(--color-card-bg)',
-        border: '1px solid var(--color-border)', borderRadius: 16, padding: 12,
-        display: 'flex', flexDirection: 'column'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px 12px', borderBottom: '1px solid var(--color-border)', marginBottom: 10 }}>
-          <span style={{ display: 'inline-flex', width: 28, height: 28, borderRadius: 8, background: 'var(--color-warning-soft, rgba(250,204,21,0.15))', color: 'var(--color-warning)', alignItems: 'center', justifyContent: 'center' }}>
+      <aside className={s.sidebar}>
+        <div className={s.sidebarHead} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px 12px', borderBottom: '1px solid var(--color-border)', marginBottom: 10 }}>
+          <span style={{ display: 'inline-flex', width: 28, height: 28, borderRadius: 8, background: 'var(--color-warning-soft, rgba(250,204,21,0.15))', color: 'var(--color-warning)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <ShieldAlert size={16} />
           </span>
           <div style={{ minWidth: 0 }}>
@@ -31,7 +28,7 @@ export default function SystemApiLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <nav className={s.navList} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {NAV_ITEMS.map(item => {
             const active = pathname === item.href || (item.href !== '/admin/system-api' && pathname.startsWith(item.href));
             return (
@@ -55,7 +52,7 @@ export default function SystemApiLayout({ children }: { children: React.ReactNod
           })}
 
           {/* Future placeholders */}
-          <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--color-border)' }}>
+          <div className={s.future} style={{ marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--color-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', color: 'var(--color-text-muted)', fontSize: '12px', opacity: 0.6 }}>
               <CircuitBoard size={15} />
               <span>More APIs coming…</span>
@@ -65,7 +62,7 @@ export default function SystemApiLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Content */}
-      <div style={{ minWidth: 0 }}>{children}</div>
+      <div className={s.content}>{children}</div>
     </div>
   );
 }

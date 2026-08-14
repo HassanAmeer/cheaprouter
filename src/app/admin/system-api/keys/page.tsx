@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from '../../admin.module.css';
+import s from '../system-api.module.css';
 import { Key, Copy, Check, Trash2, ShieldAlert, Plus, Loader2, Terminal, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
 
 interface SystemKey {
@@ -160,7 +161,7 @@ export default function AdminSystemApiPage() {
           <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Store New System Key</h3>
         </div>
         <form onSubmit={handleStore} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, flexWrap: 'wrap' }}>
+          <div className={s.formGrid}>
             <input
               value={name}
               onChange={e => setName(e.target.value)}

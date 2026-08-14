@@ -88,60 +88,44 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
   const renderPricingCell = (currentPrice?: string, offPrice?: string) => {
     if (!currentPrice && !offPrice) return <span style={{ color: 'var(--color-text-muted)' }}>-</span>;
 
-    const rawCurrent = currentPrice ? currentPrice.toString().replace(/[^0-9.]/g, '') : '';
-    const rawOff = offPrice ? offPrice.toString().replace(/[^0-9.]/g, '') : '';
+    const rawCurrent = currentPrice !== undefined && currentPrice !== null ? currentPrice.toString().replace(/[^0-9.]/g, '') : '';
+    const rawOff = offPrice !== undefined && offPrice !== null ? offPrice.toString().replace(/[^0-9.]/g, '') : '';
 
-    const numCurrent = rawCurrent ? parseFloat(rawCurrent) : NaN;
-    const numOff = rawOff ? parseFloat(rawOff) : NaN;
+    const numCurrent = rawCurrent !== '' ? parseFloat(rawCurrent) : NaN;
+    const numOff = rawOff !== '' ? parseFloat(rawOff) : NaN;
 
-    // If only one price is available or both are identical
-    if (!offPrice || isNaN(numOff) || numOff === numCurrent || !currentPrice) {
-      const val = currentPrice || offPrice;
-      if (!val || val === '0' || val === '0.00' || val.toLowerCase() === 'free') {
-        return <span style={{ fontWeight: 700, color: '#10B981' }}>Free</span>;
+    const hasCurrent = !isNaN(numCurrent);
+    const hasOff = !isNaN(numOff) && numOff > 0;
+
+    // If only Our Price is provided or Others Price is not set / identical
+    if (!hasOff || (hasCurrent && numOff === numCurrent)) {
+      if (!hasCurrent || numCurrent === 0) {
+        return <span style={{ fontWeight: 700, color: '#10B981', fontSize: '13px' }}>Free</span>;
       }
-      return <span style={{ fontWeight: 600 }}>{val.startsWith('$') ? val : `$${val}/1M`}</span>;
+      return <span style={{ fontWeight: 600, fontSize: '13px' }}>${numCurrent}</span>;
     }
 
-    // Both prices exist -> determine discounted price (lower) and original crossed-out price (higher)
-    const activeNum = Math.min(numCurrent, numOff);
-    const originalNum = Math.max(numCurrent, numOff);
-    const discountPercent = Math.round(((originalNum - activeNum) / originalNum) * 100);
+    // Both prices available: numCurrent is Our Price (green), numOff is Others Price (struck-through)
+    const ourPriceFormatted = !hasCurrent || numCurrent === 0 ? 'Free' : `$${numCurrent}`;
 
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-        <span style={{ fontWeight: 700, color: '#10B981', fontSize: '13px' }}>
-          {activeNum === 0 ? 'Free' : `$${activeNum}/1M`}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <span style={{ fontWeight: 700, color: '#10B981', fontSize: '13px', lineHeight: '1.25' }}>
+          {ourPriceFormatted}
         </span>
         <span 
           style={{ 
             textDecoration: 'line-through', 
             textDecorationColor: '#94A3B8',
             color: '#94A3B8', 
-            fontSize: '11.5px', 
-            fontWeight: 500
+            fontSize: '13px', 
+            fontWeight: 500,
+            lineHeight: '1.25'
           }}
-          title={`Others Price: $${originalNum}/1M`}
+          title={`Others Price: $${numOff}`}
         >
-          ${originalNum}
+          ${numOff}
         </span>
-        {discountPercent > 0 && (
-          <span 
-            style={{
-              fontSize: '9px',
-              fontWeight: 800,
-              background: 'rgba(16, 185, 129, 0.12)',
-              color: '#10B981',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              padding: '1px 5px',
-              borderRadius: '4px',
-              letterSpacing: '0.2px'
-            }}
-            title={`${discountPercent}% Discount`}
-          >
-            {discountPercent}% OFF
-          </span>
-        )}
       </div>
     );
   };
@@ -235,8 +219,8 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
             <tr>
               <th style={{ width: '35%' }}>Model</th>
               <th style={{ width: '12%' }}>Context</th>
-              <th style={{ width: '18%' }}>Input</th>
-              <th style={{ width: '18%' }}>Output</th>
+              <th style={{ width: '18%' }}>Input / 1M</th>
+              <th style={{ width: '18%' }}>Output / 1M</th>
               <th style={{ width: '17%' }}>Capabilities</th>
               {showToggle && <th style={{ textAlign: 'right' }}>Status</th>}
             </tr>
