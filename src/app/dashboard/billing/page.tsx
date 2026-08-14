@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, CreditCard, Download, ArrowUpRight, Zap, Shield, Crown, Terminal, Plug, MessageSquare, Bot, Globe, Sparkles, Wallet, Coins, Plus, ArrowDownCircle, ArrowUpCircle, Loader2 } from 'lucide-react';
+import { Check, CreditCard, Download, ArrowUpRight, Zap, Shield, Crown, Terminal, Plug, MessageSquare, Bot, Globe, Sparkles, Wallet, Coins, Plus, ArrowDownCircle, ArrowUpCircle, Loader2, X } from 'lucide-react';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import styles from '../dashboard.module.css';
@@ -82,6 +82,8 @@ export default function BillingPage() {
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [fundAmount, setFundAmount] = useState<string>('10');
   const [addingFunds, setAddingFunds] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('');
   const [upgradingId, setUpgradingId] = useState<string | null>(null);
   const fundsRef = useRef<HTMLDivElement | null>(null);
 
@@ -137,6 +139,16 @@ export default function BillingPage() {
       [activeTab]: { planId, used: prev[activeTab]?.used || 0, limit: parseLimit(planId) }
     }));
     toast(`Successfully switched to ${planName} plan for ${currentTabObj?.name}!`, 'success');
+  };
+
+  const handleWithdraw = () => {
+    const amt = parseFloat(withdrawAmount);
+    if (!amt || amt <= 0) { toast('Enter a valid amount', 'error'); return; }
+    if (amt < 5) { toast('Minimum withdrawal amount is $5', 'error'); return; }
+    if (amt > balance) { toast('Insufficient balance', 'error'); return; }
+    setShowWithdraw(false);
+    setWithdrawAmount('');
+    toast(`Withdrawal of ${money(amt)} submitted for admin review. You'll receive it in 1–3 business days.`, 'success');
   };
 
   const handleAddFunds = async () => {
@@ -282,17 +294,15 @@ export default function BillingPage() {
           )}
           <div style={{ height: 1, background: 'var(--color-border)', margin: '20px 0', opacity: 0.6 }} />
 
-          <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: 2 }}>Withdraw Funds</h3>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
-              Withdraw your unused balance back to your payment method.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast('Withdrawal request submitted — refund will be processed in 2–3 business days (simulated).', 'info')}
-            >
-              <ArrowDownCircle size={15} /> Withdraw
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: 2 }}>Withdraw Funds</h3>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0 }}>
+                Withdraw your unused balance back to your payment method.
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setShowWithdraw(true)}>
+              <ArrowDownCircle size={15} /> Withdraw Funds
             </Button>
           </div>
         </div>
@@ -633,6 +643,77 @@ export default function BillingPage() {
           </table>
         </div>
       </div>
+
+      {/* Withdraw Funds right-side sheet */}
+      {showWithdraw && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'flex-end'
+          }}
+          onClick={() => setShowWithdraw(false)}
+        >
+          <div
+            style={{
+              width: 420, maxWidth: '92vw', height: '100%',
+              background: 'var(--color-card-bg)',
+              borderLeft: '1px solid var(--color-border)',
+              padding: '28px', overflowY: 'auto',
+              boxShadow: '-8px 0 30px rgba(0,0,0,0.3)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Withdraw Funds</h3>
+              <button
+                onClick={() => setShowWithdraw(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.6, margin: '0 0 20px' }}>
+              Withdraw your unused balance back to your payment method. The minimum withdrawal amount is $5.
+            </p>
+
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>
+              Amount (USD)
+            </label>
+            <div style={{ position: 'relative', marginBottom: 8 }}>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', fontWeight: 700 }}>$</span>
+              <input
+                type="number"
+                min={5}
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="5"
+                style={{
+                  width: '100%', padding: '11px 14px 11px 30px', borderRadius: '10px',
+                  border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                  color: 'var(--color-text-main)', fontSize: '14px', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: 16 }}>
+              Available balance: <strong style={{ color: 'var(--color-text-main)' }}>{money(balance)}</strong>
+            </div>
+
+            <div style={{
+              background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)',
+              borderRadius: '10px', padding: '12px 14px', fontSize: '12px',
+              color: 'var(--color-text-muted)', marginBottom: 22, lineHeight: 1.7
+            }}>
+              Withdrawals are processed within <strong style={{ color: 'var(--color-text-main)' }}>1–3 business days</strong> once approved by an admin review.
+            </div>
+
+            <Button variant="primary" fullWidth onClick={handleWithdraw}>
+              <ArrowDownCircle size={16} /> Submit Withdrawal
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

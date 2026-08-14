@@ -505,39 +505,40 @@ export default function TestModelsPage() {
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 8px;
-          background: var(--color-card-bg, #15191E);
-          border: 1px solid var(--color-border, #262C34);
+          background: var(--color-card-bg, #FFFFFF);
+          border: 1px solid var(--color-border, #E2E8F0);
           border-radius: 12px;
           padding: 6px 12px;
           flex-shrink: 0;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
-        .modeToggle { display: inline-flex; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 8px; padding: 2px; gap: 3px; }
-        .modeBtn { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: none; background: transparent; color: var(--color-text-muted, #9AA3AF); cursor: pointer; transition: all 0.2s; }
+        .modeToggle { display: inline-flex; background: var(--color-bg-soft, #F1F5F9); border: 1px solid var(--color-border, #E2E8F0); border-radius: 8px; padding: 2px; gap: 3px; }
+        .modeBtn { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: none; background: transparent; color: var(--color-text-muted, #64748B); cursor: pointer; transition: all 0.2s; }
         .modeBtn.active { background: var(--color-primary, #EF4444); color: #fff; box-shadow: 0 2px 6px rgba(239,68,68,0.25); }
 
         .testGrid { display: grid; grid-template-columns: 310px 1fr; gap: 10px; flex: 1; min-height: 0; }
         .testGrid.arena { grid-template-columns: 280px 1fr 1fr; }
 
         .testCard {
-          background: var(--color-card-bg, #15191E);
-          border: 1px solid var(--color-border, #262C34);
+          background: var(--color-card-bg, #FFFFFF);
+          border: 1px solid var(--color-border, #E2E8F0);
           border-radius: 14px;
           padding: 12px 14px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.02);
           display: flex;
           flex-direction: column;
           min-height: 0;
           overflow: hidden;
         }
         .configScroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
-        .fieldLabel { display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #9AA3AF); margin-bottom: 4px; }
+        .fieldLabel { display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #64748B); margin-bottom: 4px; }
 
         .capTabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-        .capTab { font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted, #9AA3AF); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s; }
+        .capTab { font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--color-border, #E2E8F0); background: var(--color-bg-soft, #F8FAFC); color: var(--color-text-muted, #64748B); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s; }
         .capTab:hover { border-color: rgba(239,68,68,0.4); color: var(--color-text-main); }
-        .capTab.active { background: rgba(239,68,68,0.12); color: #EF4444; border-color: #EF4444; }
+        .capTab.active { background: rgba(239,68,68,0.1); color: #EF4444; border-color: #EF4444; }
 
-        .select, .textarea { width: 100%; background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 9px; color: var(--color-text-main, #F2F4F7); font-size: 12.5px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .select, .textarea { width: 100%; background: var(--color-bg, #FFFFFF); border: 1px solid var(--color-border, #E2E8F0); border-radius: 9px; color: var(--color-text-main, #0F172A); font-size: 12.5px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
         .select { padding: 7px 10px; cursor: pointer; }
         .textarea { padding: 7px 10px; resize: none; line-height: 1.45; }
         .select:focus, .textarea:focus { border-color: var(--color-primary, #EF4444); box-shadow: 0 0 0 2px rgba(239,68,68,0.12); }
@@ -591,7 +592,21 @@ export default function TestModelsPage() {
         .capBadge.image { background: rgba(219,39,119,0.08); color: #BE185D; border: 1px solid rgba(219,39,119,0.22); }
         .capBadge.video { background: rgba(225,29,72,0.08); color: #BE123C; border: 1px solid rgba(225,29,72,0.22); }
 
-        /* Dark Theme overrides for Model Hero Card */
+        /* Dark Theme overrides for Model Hero Card & Components */
+        [data-theme="dark"] .testCard { background: #15191E; border-color: #262C34; }
+        [data-theme="dark"] .topControlsBar { background: #15191E; border-color: #262C34; }
+        [data-theme="dark"] .modeToggle { background: #0B0D10; border-color: #262C34; }
+        [data-theme="dark"] .capTab { background: #0B0D10; border-color: #262C34; color: #9AA3AF; }
+        [data-theme="dark"] .select, [data-theme="dark"] .textarea { background: #0B0D10; border-color: #262C34; color: #F2F4F7; }
+        [data-theme="dark"] .quickChip { background: #0B0D10; border-color: #262C34; color: #9AA3AF; }
+        [data-theme="dark"] .bubbleAvatar { background: #0B0D10; border-color: #262C34; color: #9AA3AF; }
+        [data-theme="dark"] .bubbleBody { background: #0B0D10; border-color: #262C34; color: #F2F4F7; }
+        [data-theme="dark"] .bubble.user .bubbleBody { background: #1F2733; border-color: rgba(239,68,68,0.22); color: #F2F4F7; }
+        [data-theme="dark"] .unifiedInputBox { background: #0B0D10; border-color: #262C34; }
+        [data-theme="dark"] .unifiedTextarea { color: #F2F4F7; }
+        [data-theme="dark"] .markdownContent pre { background: #07080A; border-color: #1F242C; color: #F2F4F7; }
+        [data-theme="dark"] .markdownContent code { background: rgba(255,255,255,0.08); color: #F87171; }
+
         [data-theme="dark"] .modelHeroBanner {
           background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(31,39,51,0.4) 100%);
           border: 1px solid rgba(239,68,68,0.22);
@@ -612,62 +627,62 @@ export default function TestModelsPage() {
         [data-theme="dark"] .capBadge.video { background: rgba(251,113,133,0.14); color: #FB7185; border-color: rgba(251,113,133,0.3); }
 
         .quickChips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-        .quickChip { font-size: 10.5px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted); cursor: pointer; transition: all 0.15s; }
+        .quickChip { font-size: 10.5px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-border, #E2E8F0); background: var(--color-bg-soft, #F8FAFC); color: var(--color-text-muted, #64748B); cursor: pointer; transition: all 0.15s; }
         .quickChip:hover { border-color: var(--color-primary, #EF4444); color: var(--color-primary, #EF4444); background: rgba(239,68,68,0.08); }
 
         .chatCard { display: flex; flex-direction: column; height: 100%; min-height: 0; }
         .chatScroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; min-height: 0; }
         .bubble { display: flex; gap: 8px; align-items: flex-start; max-width: 94%; animation: rise 0.2s ease; }
         .bubble.user { align-self: flex-end; flex-direction: row-reverse; }
-        .bubbleAvatar { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--color-border, #262C34); background: var(--color-bg, #0B0D10); color: var(--color-text-muted); }
-        .bubble.user .bubbleAvatar { background: var(--color-primary-soft, #1F2733); color: var(--color-primary, #EF4444); border-color: rgba(239,68,68,0.25); }
-        .bubbleBody { background: var(--color-bg, #0B0D10); border: 1px solid var(--color-border, #262C34); border-radius: 12px; padding: 9px 12px; font-size: 13px; line-height: 1.5; word-break: break-word; }
-        .bubble.user .bubbleBody { background: var(--color-primary-soft, #1F2733); border-color: rgba(239,68,68,0.22); }
-        .bubbleBody.error { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); color: #F87171; }
+        .bubbleAvatar { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--color-border, #E2E8F0); background: var(--color-bg-soft, #F8FAFC); color: var(--color-text-muted, #64748B); }
+        .bubble.user .bubbleAvatar { background: var(--color-primary-soft, rgba(239,68,68,0.1)); color: var(--color-primary, #EF4444); border-color: rgba(239,68,68,0.25); }
+        .bubbleBody { background: var(--color-card-bg-2, #F8FAFC); border: 1px solid var(--color-border, #E2E8F0); border-radius: 12px; padding: 9px 12px; font-size: 13px; line-height: 1.5; word-break: break-word; color: var(--color-text-main, #0F172A); }
+        .bubble.user .bubbleBody { background: var(--color-primary-soft, rgba(239,68,68,0.08)); border-color: rgba(239,68,68,0.22); color: var(--color-text-main, #0F172A); }
+        .bubbleBody.error { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); color: #DC2626; }
 
-        .markdownContent pre { background: #07080A; border: 1px solid #1F242C; border-radius: 7px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; font-family: monospace; font-size: 11.5px; }
-        .markdownContent code { background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 4px; font-family: monospace; font-size: 11.5px; }
+        .markdownContent pre { background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 7px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; font-family: monospace; font-size: 11.5px; color: var(--color-text-main, #0F172A); }
+        .markdownContent code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 4px; font-family: monospace; font-size: 11.5px; color: #DC2626; }
         .markdownContent p { margin: 0 0 6px 0; }
         .markdownContent p:last-child { margin-bottom: 0; }
         .markdownContent ul, .markdownContent ol { margin: 3px 0 6px 16px; padding: 0; }
 
         .thinkingBox { margin-bottom: 6px; border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.05); border-radius: 8px; overflow: hidden; font-size: 11.5px; }
-        .thinkingHeader { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: rgba(168,85,247,0.1); color: #C084FC; font-weight: 600; cursor: pointer; }
-        .thinkingContent { padding: 8px; color: #D8B4FE; border-top: 1px dashed rgba(168,85,247,0.2); font-size: 11.5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4; max-height: 160px; overflow-y: auto; }
+        .thinkingHeader { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: rgba(168,85,247,0.1); color: #7C3AED; font-weight: 600; cursor: pointer; }
+        .thinkingContent { padding: 8px; color: #6D28D9; border-top: 1px dashed rgba(168,85,247,0.2); font-size: 11.5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4; max-height: 160px; overflow-y: auto; }
 
         .bubbleImgs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
         .bubbleImg { max-width: 140px; max-height: 100px; border-radius: 7px; border: 1px solid var(--color-border); object-fit: cover; }
 
         .bubbleMeta { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
-        .bubbleRole { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #9AA3AF); }
-        .iconActionBtn { background: transparent; border: none; color: var(--color-text-muted, #9AA3AF); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; border-radius: 5px; transition: all 0.15s; }
+        .bubbleRole { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted, #64748B); }
+        .iconActionBtn { background: transparent; border: none; color: var(--color-text-muted, #64748B); cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; border-radius: 5px; transition: all 0.15s; }
         .iconActionBtn:hover { color: var(--color-primary, #EF4444); background: rgba(239,68,68,0.08); }
         .iconActionBtn.active { color: #10B981; }
 
         /* ── UNIFIED COMPACT INTEGRATED INPUT BOX ── */
-        .composer { border-top: 1px dashed var(--color-border, #262C34); padding-top: 8px; margin-top: 8px; flex-shrink: 0; }
+        .composer { border-top: 1px dashed var(--color-border, #E2E8F0); padding-top: 8px; margin-top: 8px; flex-shrink: 0; }
         .unifiedInputBox {
           position: relative;
-          background: var(--color-bg, #0B0D10);
-          border: 1px solid var(--color-border, #262C34);
+          background: var(--color-card-bg, #FFFFFF);
+          border: 1px solid var(--color-border, #E2E8F0);
           border-radius: 12px;
           padding: 8px 10px 6px 10px;
           display: flex;
           flex-direction: column;
           gap: 4px;
           transition: all 0.2s ease;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.03);
         }
         .unifiedInputBox:focus-within {
           border-color: var(--color-primary, #EF4444);
-          box-shadow: 0 0 0 2px rgba(239,68,68,0.14), 0 4px 16px rgba(0,0,0,0.25);
+          box-shadow: 0 0 0 2px rgba(239,68,68,0.12), 0 4px 16px rgba(0,0,0,0.04);
         }
         .unifiedTextarea {
           width: 100%;
           background: transparent;
           border: none;
           outline: none;
-          color: var(--color-text-main, #F2F4F7);
+          color: var(--color-text-main, #0F172A);
           font-size: 13px;
           line-height: 1.45;
           resize: none;
@@ -677,7 +692,7 @@ export default function TestModelsPage() {
           font-family: inherit;
         }
         .unifiedTextarea::placeholder {
-          color: #6B7280;
+          color: var(--color-text-muted, #94A3B8);
         }
         .attachedPreviews { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
         .attachedItem { position: relative; width: 42px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-primary); }
@@ -866,7 +881,7 @@ export default function TestModelsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
               <div className="sliderRow">
                 <div className="sliderHead">
-                  <span>Temp: <strong style={{ color: '#fff' }}>{temperature}</strong></span>
+                  <span>Temp: <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{temperature}</strong></span>
                   <span style={{ fontSize: 10 }}>{temperature < 0.3 ? '🎯 Precise' : temperature > 1.0 ? '🎨 Creative' : '⚖️ Balanced'}</span>
                 </div>
                 <input
@@ -882,7 +897,7 @@ export default function TestModelsPage() {
 
               <div className="sliderRow">
                 <div className="sliderHead">
-                  <span>Top-P: <strong style={{ color: '#fff' }}>{topP}</strong></span>
+                  <span>Top-P: <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{topP}</strong></span>
                 </div>
                 <input
                   type="range"
@@ -897,7 +912,7 @@ export default function TestModelsPage() {
 
               <div className="sliderRow">
                 <div className="sliderHead">
-                  <span>Max Tokens: <strong style={{ color: '#fff' }}>{maxTokens}</strong></span>
+                  <span>Max Tokens: <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{maxTokens}</strong></span>
                 </div>
                 <input
                   type="range"
@@ -1108,10 +1123,10 @@ export default function TestModelsPage() {
             <div className="chatScroll">
               {messages.length === 0 && !sending && (
                 <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--color-text-muted)' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--color-primary-soft, #1F2733)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--color-primary-soft, rgba(239,68,68,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', border: '1px solid rgba(239,68,68,0.2)' }}>
                     <Sparkles size={18} color="#EF4444" />
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: '#fff', marginBottom: 2 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-main, #0F172A)', marginBottom: 2 }}>
                     Ready to Test {currentModel?.name}
                   </div>
                   <div style={{ fontSize: 11.5, maxWidth: 300, margin: '0 auto', lineHeight: 1.4 }}>
@@ -1216,10 +1231,10 @@ export default function TestModelsPage() {
                           setError('');
                         }}
                         style={{
-                          background: 'var(--color-bg, #0B0D10)',
-                          border: '1px solid rgba(239,68,68,0.4)',
+                          background: 'var(--color-card-bg, #FFFFFF)',
+                          border: '1px solid var(--color-border, #E2E8F0)',
                           borderRadius: 6,
-                          color: '#fff',
+                          color: 'var(--color-text-main, #0F172A)',
                           fontSize: 10.5,
                           fontWeight: 700,
                           padding: '2.5px 18px 2.5px 22px',
@@ -1246,19 +1261,19 @@ export default function TestModelsPage() {
                     {/* User Chats Icon + Count (with tooltip) */}
                     <div
                       title={`User Chats: ${userChatCount} message${userChatCount === 1 ? '' : 's'} sent`}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                     >
                       <UserIcon size={11} color="var(--color-primary, #EF4444)" />
-                      <strong style={{ color: '#fff' }}>{userChatCount}</strong>
+                      <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{userChatCount}</strong>
                     </div>
 
                     {/* AI Responses Icon + Count (with tooltip) */}
                     <div
                       title={`AI Responses: ${responseCount} response${responseCount === 1 ? '' : 's'} received`}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                     >
                       <Bot size={11} color="#10B981" />
-                      <strong style={{ color: '#fff' }}>{responseCount}</strong>
+                      <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{responseCount}</strong>
                     </div>
 
                     {/* Latency (with tooltip) */}
@@ -1274,7 +1289,7 @@ export default function TestModelsPage() {
                     {/* Char count & Enter hint */}
                     <span
                       title="Characters entered (Press Enter to send, Shift+Enter for newline)"
-                      style={{ fontSize: 10.5, color: 'var(--color-text-muted)', background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
+                      style={{ fontSize: 10.5, color: 'var(--color-text-muted, #64748B)', background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
                     >
                       {inputLen}c · Enter ↵
                     </span>
@@ -1296,7 +1311,7 @@ export default function TestModelsPage() {
                       className={`inputIconBtn ${isRecording ? 'recording' : ''}`}
                       onClick={toggleRecording}
                       title={isRecording ? 'Stop voice recording' : 'Voice Input (Speech-to-Text)'}
-                      style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                      style={{ width: 26, height: 26, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}
                     >
                       {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
                     </button>
@@ -1307,7 +1322,7 @@ export default function TestModelsPage() {
                       className={`inputIconBtn ${currentModel?.vision ? 'hasVision' : ''}`}
                       onClick={() => fileInputRef.current?.click()}
                       title="Attach Image (or press Ctrl+V to paste)"
-                      style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                      style={{ width: 26, height: 26, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}
                     >
                       <ImageIcon size={13} />
                       {attachedImages.length > 0 && (
@@ -1440,42 +1455,42 @@ export default function TestModelsPage() {
 
         {/* ── ARENA SHARED COMPOSER (When in Arena Mode) ── */}
         {viewMode === 'arena' && (
-          <div className="testCard" style={{ background: '#0D1117', border: '1px solid rgba(239,68,68,0.3)', padding: '8px 12px', flexShrink: 0 }}>
+          <div className="testCard" style={{ background: 'var(--color-card-bg, #FFFFFF)', border: '1px solid rgba(239,68,68,0.3)', padding: '8px 12px', flexShrink: 0 }}>
             {/* Top Row: User Chats, Responses, Char count on left; Benchmark chips on right */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                 {/* User Chats Icon + Count (with tooltip) */}
                 <div
                   title={`User Chats: ${userChatCount} messages`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                 >
                   <UserIcon size={11} color="#EF4444" />
-                  <strong style={{ color: '#fff' }}>{userChatCount}</strong>
+                  <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{userChatCount}</strong>
                 </div>
 
                 {/* Model A Responses Icon + Count (with tooltip) */}
                 <div
                   title={`Model A Responses: ${responseCount}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                 >
                   <Bot size={11} color="#10B981" />
                   <span style={{ fontSize: 9.5, color: '#10B981', fontWeight: 700 }}>A:</span>
-                  <strong style={{ color: '#fff' }}>{responseCount}</strong>
+                  <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{responseCount}</strong>
                 </div>
 
                 {/* Model B Responses Icon + Count (with tooltip) */}
                 <div
                   title={`Model B Responses: ${responseCountB}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, fontSize: 11, cursor: 'help' }}
                 >
                   <Bot size={11} color="#38BDF8" />
                   <span style={{ fontSize: 9.5, color: '#38BDF8', fontWeight: 700 }}>B:</span>
-                  <strong style={{ color: '#fff' }}>{responseCountB}</strong>
+                  <strong style={{ color: 'var(--color-text-main, #0F172A)' }}>{responseCountB}</strong>
                 </div>
 
                 <span
                   title="Characters entered (Press Enter to send)"
-                  style={{ fontSize: 10.5, color: 'var(--color-text-muted)', background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
+                  style={{ fontSize: 10.5, color: 'var(--color-text-muted, #64748B)', background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: '2.5px 7px', borderRadius: 6, cursor: 'help' }}
                 >
                   {inputLen}c · Enter ↵
                 </span>
@@ -1496,7 +1511,7 @@ export default function TestModelsPage() {
                   className={`inputIconBtn ${isRecording ? 'recording' : ''}`}
                   onClick={toggleRecording}
                   title={isRecording ? 'Stop voice recording' : 'Voice Input'}
-                  style={{ width: 26, height: 26, background: 'var(--color-bg, #0B0D10)', border: '1px solid var(--color-border, #262C34)', borderRadius: 6 }}
+                  style={{ width: 26, height: 26, background: 'var(--color-bg-soft, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}
                 >
                   {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
                 </button>
