@@ -36,7 +36,7 @@ export async function getSystemPromptForModel(model: string) {
   const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
   for (const prov of providersResult) {
     if (prov.models && Array.isArray(prov.models)) {
-      const matched = prov.models.find((m: any) => m.id === model);
+      const matched = prov.models.find((m: any) => m.id === model || m.originalId === model || m.name === model);
       if (matched && matched.systemPrompt) {
         return matched.systemPrompt;
       }
@@ -45,49 +45,58 @@ export async function getSystemPromptForModel(model: string) {
   return null;
 }
 
-export async function getModelInstances(userId: string, model: string, sessionId?: string) {
-  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
+export interface ModelInstanceItem {
+  instance: any;
+  providerName: string;
+  providerId: string;
+  modelId: string;
+  keyMask?: string;
+}
 
-  // Dynamic Provider Resolution
+export async function getModelInstances(userId: string, model: string, sessionId?: string): Promise<ModelInstanceItem[]> {
+  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true ORDER BY priority DESC NULLS LAST, id ASC`;
+  const items: ModelInstanceItem[] = [];
+
+  // Dynamic Provider Resolution across all active providers that match this model
   for (const p of providersResult) {
     if (p.models && Array.isArray(p.models)) {
-      const matched = p.models.find((m: any) => m.id === model);
+      const matched = p.models.find((m: any) => m.id === model || m.originalId === model || m.name === model);
       if (matched) {
         const apiKeys = getActiveKeys(p.key);
         if (apiKeys.length > 0) {
           const modelId = matched.originalId || matched.id;
-          const customHeaders: Record<string, string> = sessionId ? { 'x-session-id': sessionId } : {};
-          
-          const customFetch = async (url: any, options?: any) => {
-            const fs = require('fs');
-            fs.appendFileSync('fetch_debug.log', `customFetch called, body type: ${options?.body ? typeof options.body : 'undefined'} isBuffer: ${Buffer.isBuffer(options?.body)} constructor: ${options?.body?.constructor?.name}\n`);
-            if (options && options.body && typeof options.body === 'string' && sessionId) {
-              try {
-                const parsedBody = JSON.parse(options.body);
-                parsedBody.sessionId = sessionId;
-                options.body = JSON.stringify(parsedBody);
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-            return fetch(url, options);
+          const customHeaders: Record<string, string> = {
+            ...(p.headers && typeof p.headers === 'object' && !Array.isArray(p.headers) ? p.headers : {}),
+            ...(sessionId ? { 'x-session-id': sessionId } : {}),
           };
 
-          return apiKeys.map(apiKey => {
+          for (const apiKey of apiKeys) {
+            let instance: any;
             if (p.api_format === 'anthropic') {
-              return createAnthropic({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
+              instance = createAnthropic({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders })(modelId);
             } else if (p.api_format === 'google') {
-              return createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
+              instance = createGoogleGenerativeAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders })(modelId);
             } else if (p.api_format === 'cohere') {
-              return createCohere({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
+              instance = createCohere({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders })(modelId);
             } else {
-              // Default to OpenAI / Custom provider
-              return createOpenAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders, fetch: customFetch as any })(modelId);
+              instance = createOpenAI({ apiKey, baseURL: p.base_url || undefined, headers: customHeaders })(modelId);
             }
-          });
+
+            items.push({
+              instance,
+              providerName: p.name || p.id,
+              providerId: p.id,
+              modelId,
+              keyMask: apiKey.length > 8 ? apiKey.slice(0, 4) + '...' + apiKey.slice(-4) : 'key'
+            });
+          }
         }
       }
     }
+  }
+
+  if (items.length > 0) {
+    return items;
   }
 
   throw new Error(`Model '${model}' not found or no active provider configured for it.`);
@@ -105,15 +114,11 @@ export async function handleCompletions(c: any) {
     }
     const reqKey = auth.replace('Bearer ', '');
     
-    // In a real app we validate reqKey against api_keys table here
-    // For now we accept it to find the user. 
-    // We assume the user has a valid API key, or we just look up the user by key.
     const hashedKey = hashPassword(reqKey);
     const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
     
     // Admin test models flow: the admin token is a valid JWT, not an API key.
-    // Treat signed-in admins as the 'admin' test identity.
     let adminUserId: string | null = null;
     if (!userId) {
       const payload = await verifyToken(reqKey);
@@ -122,8 +127,6 @@ export async function handleCompletions(c: any) {
       }
     }
     
-    // If no user found from API key, but we have a user logged in (frontend chat), we could use c.get('userId')
-    // We'll fall back to c.get('userId')
     const finalUserId = userId || adminUserId || c.get('userId');
     
     if (!finalUserId) {
@@ -161,13 +164,13 @@ export async function handleCompletions(c: any) {
       payload: coreMessages
     }, sessionId);
 
-    const aiModels = await getModelInstances(finalUserId, model, sessionId);
-    if (!aiModels || aiModels.length === 0) {
+    const aiModelItems = await getModelInstances(finalUserId, model, sessionId);
+    if (!aiModelItems || aiModelItems.length === 0) {
       addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`, undefined, sessionId);
       return c.json({ error: 'Model not available or no active keys.' }, 500);
     }
     
-    addDevLog('INFO', 'Model Selection', `Found ${aiModels.length} active keys/instances for fallback loop`, undefined, sessionId);
+    addDevLog('INFO', 'Model Selection', `Found ${aiModelItems.length} active provider instances for fallback loop`, undefined, sessionId);
 
     // Check if user has disabled this model
     const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
@@ -186,98 +189,109 @@ export async function handleCompletions(c: any) {
 
     let lastError: any = null;
     let attempt = 0;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     
-    for (const aiModel of aiModels) {
+    for (const item of aiModelItems) {
       attempt++;
-      try {
-        addDevLog('INFO', 'AI Request', `Attempt ${attempt}/${aiModels.length} starting with selected key...`, undefined, sessionId);
-        if (stream) {
-          const result = await streamText({
-            model: aiModel,
-            maxRetries: 0,
-            messages: coreMessages,
-            async onFinish({ usage, text }) {
-              if (usage && !skipUsage) {
-                await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
-              }
-              addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
-                usage,
-                responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
-              }, sessionId);
-            },
-          });
-          return result.toTextStreamResponse();
-        } else {
-          const result = await generateText({
-            model: aiModel,
-            maxRetries: 0,
-            messages: coreMessages,
-          });
+      const maxTries = 2; // Up to 2 tries per key for transient 503/429 network/endpoint hiccups
+      for (let keyTry = 1; keyTry <= maxTries; keyTry++) {
+        try {
+          addDevLog('INFO', 'AI Request', `Attempt ${attempt} (try ${keyTry}) on ${item.providerName} [${item.modelId}] starting...`, undefined, sessionId);
+          if (stream) {
+            const result = await streamText({
+              model: item.instance,
+              maxRetries: 0,
+              messages: coreMessages,
+              async onFinish({ usage, text }) {
+                if (usage && !skipUsage) {
+                  await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
+                }
+                addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
+                  usage,
+                  responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
+                }, sessionId);
+              },
+            });
+            return result.toTextStreamResponse();
+          } else {
+            const result = await generateText({
+              model: item.instance,
+              maxRetries: 0,
+              messages: coreMessages,
+            });
 
-          const tokens: number = result.usage?.totalTokens || 150;
-          if (!skipUsage) {
-            await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
+            const tokens: number = result.usage?.totalTokens || 150;
+            if (!skipUsage) {
+              await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
+            }
+            
+            addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
+
+            return c.json({
+              id: `chatcmpl-${Date.now()}`,
+              object: 'chat.completion',
+              created: Math.floor(Date.now() / 1000),
+              model,
+              choices: [{
+                index: 0,
+                message: { role: 'assistant', content: result.text },
+                finish_reason: 'stop'
+              }],
+              usage: {
+                prompt_tokens: (result.usage as any)?.promptTokens || 0,
+                completion_tokens: (result.usage as any)?.completionTokens || 0,
+                total_tokens: tokens
+              }
+            });
+          }
+        } catch (err: any) {
+          lastError = err;
+          
+          const statusCode = err?.statusCode || (err as any)?.response?.status || 500;
+          let parsedResponse = err?.responseBody;
+          if (typeof parsedResponse === 'string') {
+            try { parsedResponse = JSON.parse(parsedResponse); } catch {}
+          }
+
+          const rawMsg = err?.message || '';
+          const isTransient = statusCode === 503 || statusCode === 429 || statusCode === 502 || statusCode === 504 || rawMsg.includes('Endpoint is unavailable') || rawMsg.includes('Rate limit');
+
+          const formattedLogDetails = {
+            "1. Error Message": rawMsg || 'Unknown error',
+            "2. Status Code": statusCode,
+            "3. Provider Response (Actual Error)": parsedResponse || err?.response || 'No response body',
+            "4. Request Payload (What we sent)": err?.requestBodyValues || 'N/A',
+            "5. Raw Error Object": err
+          };
+          
+          addDevLog('WARNING', 'AI Request', `Attempt ${attempt} (try ${keyTry}) failed on ${item.providerName}: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, formattedLogDetails, sessionId);
+          console.error(`[Fallback] AI request failed on ${item.providerName} (Status: ${statusCode}). Error:`, rawMsg || err);
+          
+          // If transient and we have a retry left on this key, wait briefly and retry
+          if (isTransient && keyTry < maxTries) {
+            addDevLog('INFO', 'AI Request', `Transient upstream issue on ${item.providerName}. Retrying in 600ms...`, undefined, sessionId);
+            await sleep(600);
+            continue;
+          }
+
+          // Hard client errors (e.g. 400 Bad Request, 403 Forbidden) abort unless model isn't supported on this provider
+          if (statusCode >= 400 && statusCode < 500 && statusCode !== 429 && !rawMsg.includes('not supported')) {
+            console.error(`[Fallback] Hard client error detected (${statusCode}), aborting fallback.`);
+            throw err;
           }
           
-          addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
-
-          return c.json({
-            id: `chatcmpl-${Date.now()}`,
-            object: 'chat.completion',
-            created: Math.floor(Date.now() / 1000),
-            model,
-            choices: [{
-              index: 0,
-              message: { role: 'assistant', content: result.text },
-              finish_reason: 'stop'
-            }],
-            usage: {
-              prompt_tokens: (result.usage as any)?.promptTokens || 0,
-              completion_tokens: (result.usage as any)?.completionTokens || 0,
-              total_tokens: tokens
-            }
-          });
+          // Otherwise break keyTry loop to try the next provider / key
+          break;
         }
-      } catch (err: any) {
-        lastError = err;
-        
-        // Extract status code from Vercel AI SDK error objects
-        const statusCode = err?.statusCode || (err as any)?.response?.status || 500;
-        
-        let parsedResponse = err?.responseBody;
-        if (typeof parsedResponse === 'string') {
-          try { parsedResponse = JSON.parse(parsedResponse); } catch {}
-        }
-
-        const formattedLogDetails = {
-          "1. Error Message": err?.message || 'Unknown error',
-          "2. Status Code": statusCode,
-          "3. Provider Response (Actual Error)": parsedResponse || err?.response || 'No response body',
-          "4. Request Payload (What we sent)": err?.requestBodyValues || 'N/A',
-          "5. Raw Error Object": err
-        };
-        
-        addDevLog('WARNING', 'AI Request', `Attempt ${attempt} failed: ${err?.message || 'Unknown error'} (Status: ${statusCode})`, formattedLogDetails, sessionId);
-        console.error(`[Fallback] AI request failed with a key (Status: ${statusCode}). Error:`, err?.message || err);
-        
-        // If it's a "Hard Error" (e.g. 400 Bad Request, 401, 403) and NOT a 429 Rate Limit, we abort fallback.
-        // This prevents trying the same invalid prompt on all keys.
-        if (statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
-          console.error(`[Fallback] Hard error detected (${statusCode}), aborting fallback.`);
-          throw err; // Break loop and send to user
-        }
-        
-        // Continue to the next aiModel in the array for 429 or 5xx errors
       }
     }
     
-    // If all keys failed, throw the last error so it can be sent to the user
+    // If all keys and providers failed, throw the last error so it can be sent to the user
     addDevLog('ERROR', 'Completions', `All fallback attempts failed.`, undefined, sessionId);
     throw lastError;
   } catch (error: any) {
     addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error }, sessionId);
     console.error('Chat completions error:', error);
-    // AI SDK throws APICallError with a responseBody string — parse it for the real error
     let msg = 'Error processing request';
     try {
       if (error?.responseBody) {
@@ -295,6 +309,6 @@ export async function handleCompletions(c: any) {
 }
 
 export async function getModelInstance(userId: string, model: string, sessionId?: string) {
-  const instances = await getModelInstances(userId, model, sessionId);
-  return instances[0];
+  const items = await getModelInstances(userId, model, sessionId);
+  return items[0]?.instance;
 }

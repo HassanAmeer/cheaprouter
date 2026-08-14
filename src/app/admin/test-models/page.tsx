@@ -91,19 +91,25 @@ export default function TestModelsPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
-  const sendMessage = async () => {
-    if (!userMessage.trim() || !selectedModel || sending) return;
-    const userMsg = userMessage.trim();
+  const sendMessage = async (retryText?: string) => {
+    const textToSend = (retryText !== undefined ? retryText : userMessage).trim();
+    if (!textToSend || !selectedModel || sending) return;
+    
+    // Only include successful (non-error) conversational turns in the history sent to LLM
+    const validHistory = messages.filter(m => !m.error && m.role !== 'system');
     const convo: ChatMessage[] = [
       ...(systemMessage.trim() ? [{ role: 'system' as const, content: systemMessage.trim() }] : []),
-      ...messages.filter(m => m.role !== 'system').map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-      { role: 'user' as const, content: userMsg },
+      ...validHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: textToSend },
     ];
 
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setUserMessage('');
+    if (retryText === undefined) {
+      setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
+      setUserMessage('');
+    }
     setSending(true);
     setLatency(null);
+    setError('');
 
     const sessionId = crypto.randomUUID();
 
@@ -353,6 +359,16 @@ export default function TestModelsPage() {
                     {i === messages.length - 1 && latency !== null && (
                       <span className="bubbleRole" style={{ color: latency < 4000 ? '#10B981' : '#F59E0B' }}>{latency}ms</span>
                     )}
+                    {m.error && i > 0 && messages[i - 1]?.role === 'user' && (
+                      <button 
+                        className="copyBtn" 
+                        onClick={() => sendMessage(messages[i - 1].content)} 
+                        title="Retry this message"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#F87171' }}
+                      >
+                        <RefreshCw size={12} /> Retry
+                      </button>
+                    )}
                     {!m.error && (
                       <button className={`copyBtn ${copiedIndex === i ? 'ok' : ''}`} onClick={() => copyMessage(i, m.content)} title="Copy">
                         {copiedIndex === i ? <Check size={13} /> : <Copy size={13} />}
@@ -389,7 +405,7 @@ export default function TestModelsPage() {
               disabled={sending}
             />
             <div className="sendRow">
-              <button className="sendBtn" onClick={sendMessage} disabled={sending || !selectedModel || !userMessage.trim()}>
+              <button className="sendBtn" onClick={() => sendMessage()} disabled={sending || !selectedModel || !userMessage.trim()}>
                 {sending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
                 <span>{sending ? 'Streaming…' : 'Send Request'}</span>
               </button>
