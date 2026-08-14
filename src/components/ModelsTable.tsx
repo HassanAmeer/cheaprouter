@@ -273,21 +273,17 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>{m.name}</span>
-                            {m.type === 'Premium' && (
-                              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary)' }}>PRO</span>
-                            )}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
                             {m.badgeText && (
                               <span 
                                 style={{ 
                                   fontSize: '9.5px', 
-                                  fontWeight: 800, 
+                                  fontWeight: 500, 
+                                  letterSpacing: '0.2px',
                                   padding: '1px 6px', 
                                   borderRadius: '4px', 
-                                  background: 'rgba(239, 68, 68, 0.15)', 
+                                  background: 'rgba(239, 68, 68, 0.12)', 
                                   color: 'var(--color-primary, #EF4444)', 
-                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
                                   flexShrink: 0,
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -297,6 +293,11 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
                                 {m.badgeText}
                               </span>
                             )}
+                            {m.type === 'Premium' && !m.badgeText && (
+                              <span style={{ fontSize: '9.5px', fontWeight: 500, letterSpacing: '0.2px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(255, 77, 77, 0.2)' }}>PRO</span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
                             {m.description && m.description.trim() ? (
                               <span className={styles.shimmerText} title={m.id}>
                                 {m.description}

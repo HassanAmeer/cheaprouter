@@ -14,6 +14,7 @@ type Model = {
   isWhiteTheme?: boolean;
   shimmerEffect?: boolean;
   badgeText?: string;
+  type?: string;
   text?: boolean; 
   reasoning?: boolean; 
   vision?: boolean; 
@@ -1313,7 +1314,7 @@ export default function ProvidersPage() {
                                   <td style={{ padding: '6px 10px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
                                       {m.badgeText && (
-                                        <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: '3px', maxWidth: '65px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }} title={`Badge: ${m.badgeText}`}>
+                                        <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.2px', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '1px 5px', borderRadius: '3px', maxWidth: '65px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }} title={`Badge: ${m.badgeText}`}>
                                           {m.badgeText}
                                         </span>
                                       )}
@@ -1597,18 +1598,18 @@ export default function ProvidersPage() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: '13px' }}>{m.name}</span>
-                              {m.type === 'Premium' && (
-                                <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary, #EF4444)', padding: '0 5px', borderRadius: '3px' }}>
+                              {m.badgeText && (
+                                <span style={{ fontSize: '9.5px', fontWeight: 500, letterSpacing: '0.2px', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '1px 6px', borderRadius: '4px', flexShrink: 0 }}>
+                                  {m.badgeText}
+                                </span>
+                              )}
+                              {m.type === 'Premium' && !m.badgeText && (
+                                <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.2px', background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(255, 77, 77, 0.2)', padding: '0 5px', borderRadius: '3px' }}>
                                   PRO
                                 </span>
                               )}
                             </div>
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
-                              {m.badgeText && (
-                                <span style={{ fontSize: '9.5px', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0 6px', borderRadius: '4px', flexShrink: 0 }}>
-                                  {m.badgeText}
-                                </span>
-                              )}
                               {m.description && m.description.trim() ? (
                                 <span 
                                   style={{
@@ -1649,38 +1650,6 @@ export default function ProvidersPage() {
                                   {m.id}
                                 </code>
                               )}
-
-                              {/* Sheet Drawer Trigger */}
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
-                                <button
-                                  onClick={() => {
-                                    const prov = providers.find(p => p.id === m.providerId);
-                                    const mIdx = prov ? prov.models.findIndex(item => item.id === m.id) : 0;
-                                    setEditingModelContext({
-                                      providerId: m.providerId,
-                                      modelIndex: mIdx >= 0 ? mIdx : 0,
-                                      model: { ...m }
-                                    });
-                                  }}
-                                  title="Customize Announcement & Badge in Sheet Drawer"
-                                  style={{
-                                    background: 'rgba(139, 92, 246, 0.1)',
-                                    border: '1px solid rgba(139, 92, 246, 0.25)',
-                                    color: '#A78BFA',
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    fontSize: '9.5px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '2px',
-                                    transition: 'all 0.15s'
-                                  }}
-                                >
-                                  <Sparkles size={10} /> Style
-                                </button>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -1983,7 +1952,7 @@ export default function ProvidersPage() {
                         background: editingModelContext.model.badgeText === badge ? 'var(--color-primary, #EF4444)' : 'var(--color-bg-soft)',
                         color: editingModelContext.model.badgeText === badge ? '#fff' : 'var(--color-text-muted)',
                         fontSize: '11px',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         cursor: 'pointer',
                         transition: 'all 0.15s ease'
                       }}

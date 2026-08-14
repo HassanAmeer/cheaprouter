@@ -104,7 +104,7 @@ function SidebarNavContent() {
           <Link href="/admin/test-models" className={`${styles.navItem} ${pathname.startsWith('/admin/test-models') ? styles.navItemActive : ''}`}>
             <Sparkles size={17} /> Test Models
           </Link>
-          <Link href="/admin/system-api" className={`${styles.navItem} ${pathname.startsWith('/admin/system-api') ? styles.navItemActive : ''}`}>
+          <Link href="/admin/system-api/keys" className={`${styles.navItem} ${pathname.startsWith('/admin/system-api') ? styles.navItemActive : ''}`}>
             <ShieldAlert size={17} /> System API
           </Link>
         </div>
