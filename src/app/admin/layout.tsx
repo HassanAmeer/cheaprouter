@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -45,6 +45,9 @@ function SidebarNavContent() {
           </Link>
           <Link href="/admin/revenue" className={`${styles.navItem} ${pathname.startsWith('/admin/revenue') ? styles.navItemActive : ''}`}>
             <DollarSign size={17} /> Revenue
+          </Link>
+          <Link href="/admin/billing" className={`${styles.navItem} ${pathname.startsWith('/admin/billing') ? styles.navItemActive : ''}`}>
+            <Receipt size={17} /> Billing
           </Link>
           <Link href="/admin/content-history" className={`${styles.navItem} ${pathname.startsWith('/admin/content-history') ? styles.navItemActive : ''}`}>
             <Video size={17} /> Content History
@@ -136,6 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/keys')) return 'Global API Keys';
     if (pathname.startsWith('/admin/providers')) return 'Provider Routing';
     if (pathname.startsWith('/admin/revenue')) return 'Revenue';
+    if (pathname.startsWith('/admin/billing')) return 'Billing Management';
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';
     if (pathname.startsWith('/admin/dash-settings')) return 'User Dashboard Settings';
     if (pathname.startsWith('/admin/logs')) return 'System Logs';

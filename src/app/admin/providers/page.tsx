@@ -1,11 +1,38 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown, Sparkles, Palette, Check } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
 
-type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; icon?: string; landingPagePriority?: number; };
+type Model = { 
+  id: string; 
+  name: string; 
+  originalId?: string; 
+  description?: string;
+  themeColor?: string;
+  isWhiteTheme?: boolean;
+  shimmerEffect?: boolean;
+  badgeText?: string;
+  text?: boolean; 
+  reasoning?: boolean; 
+  vision?: boolean; 
+  image?: boolean; 
+  video?: boolean; 
+  embedding?: boolean; 
+  audio?: boolean; 
+  contextWindow?: string; 
+  tokenLimit?: string; 
+  access?: string; 
+  inputPrice?: string; 
+  outputPrice?: string; 
+  offInputPrice?: string; 
+  offOutputPrice?: string; 
+  showOthersPrice?: boolean;
+  showOnLandingPage?: boolean; 
+  icon?: string; 
+  landingPagePriority?: number; 
+};
 type Header = { id: string; key: string; value: string };
 type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
@@ -96,6 +123,24 @@ export default function ProvidersPage() {
   const [customModelAccess, setCustomModelAccess] = useState('Free');
   const [customModelInputPrice, setCustomModelInputPrice] = useState('');
   const [customModelOutputPrice, setCustomModelOutputPrice] = useState('');
+  const [customModelOffInputPrice, setCustomModelOffInputPrice] = useState('');
+  const [customModelOffOutputPrice, setCustomModelOffOutputPrice] = useState('');
+
+  const [editingModelContext, setEditingModelContext] = useState<{
+    providerId: string;
+    modelIndex: number;
+    model: Model;
+  } | null>(null);
+
+  const updateEditingModelField = (field: keyof Model, value: any) => {
+    if (!editingModelContext) return;
+    const { providerId, modelIndex } = editingModelContext;
+    handleModelUpdateInGlobalSummary(providerId, modelIndex, field as string, value);
+    setEditingModelContext(prev => prev ? {
+      ...prev,
+      model: { ...prev.model, [field]: value }
+    } : null);
+  };
 
   const handleBulkDelete = () => {
     if (selectedModels.size === 0) return;
@@ -162,6 +207,8 @@ export default function ProvidersPage() {
       access: customModelAccess,
       inputPrice: customModelInputPrice || 'Variable',
       outputPrice: customModelOutputPrice || 'Variable',
+      offInputPrice: customModelOffInputPrice || '',
+      offOutputPrice: customModelOffOutputPrice || '',
       showOnLandingPage: false
     };
     setProviders(prevProviders => prevProviders.map(p => p.id === customModelProviderId ? { ...p, models: [...p.models, newModel] } : p));
@@ -181,6 +228,8 @@ export default function ProvidersPage() {
     setCustomModelAccess('Free');
     setCustomModelInputPrice('');
     setCustomModelOutputPrice('');
+    setCustomModelOffInputPrice('');
+    setCustomModelOffOutputPrice('');
     setShowAddCustomModel(false);
     setSaved(false);
   };
@@ -231,6 +280,19 @@ export default function ProvidersPage() {
       }
       return p;
     }));
+  };
+
+  const handleUpdateLandingModel = (providerId: string, modelId: string, field: string, value: any) => {
+    setProviders(prev => prev.map(p => {
+      if (p.id === providerId) {
+        return {
+          ...p,
+          models: (p.models || []).map(m => m.id === modelId ? { ...m, [field]: value } : m)
+        };
+      }
+      return p;
+    }));
+    setSaved(false);
   };
   const handleUpdateProviderIcon = async (providerId: string, iconUrl: string) => {
     const nextProviders = providers.map(p => p.id === providerId ? { ...p, icon: iconUrl } : p);
@@ -1088,11 +1150,11 @@ export default function ProvidersPage() {
                 <>
                   {renderPagination()}
 
-                  <div style={{ overflowX: 'auto' }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          <th style={{ padding: '10px 16px', width: '4%' }}>
+                          <th style={{ padding: '10px 16px', width: '3%' }}>
                             <input 
                               type="checkbox" 
                               checked={isAllSelected}
@@ -1100,12 +1162,16 @@ export default function ProvidersPage() {
                               style={{ cursor: 'pointer' }}
                             />
                           </th>
-                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '15%' }}>Original Model ID</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '18%' }}>Custom Names</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '9%' }}>Context</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '12%' }}>Pricing (1M)</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '25%' }}>Capabilities</th>
-                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '7%', textAlign: 'right' }}>Action</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '13%' }}>Original Model ID</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '14%' }}>Custom Names</th>
+                          <th style={{ padding: '10px 8px', fontWeight: 600, width: '6%' }}>Context</th>
+                          <th style={{ padding: '10px 8px', fontWeight: 600, width: '9%' }}>Our Price (1M)</th>
+                          <th style={{ padding: '10px 8px', fontWeight: 600, width: '10%' }} title="Competitors / Others Pricing">
+                            <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8' }}>Others Price (1M)</span>
+                          </th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Alert Msg</th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Capabilities</th>
+                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '11%', textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1113,7 +1179,7 @@ export default function ProvidersPage() {
                           <React.Fragment key={pId}>
                             {/* Provider Section Row */}
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <td colSpan={7} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+                              <td colSpan={9} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ 
                                     color: 'var(--color-primary, #ef4444)', 
@@ -1148,7 +1214,7 @@ export default function ProvidersPage() {
                                     style={{ cursor: 'pointer' }}
                                   />
                                 </td>
-                                <td style={{ padding: '6px 16px' }}>
+                                <td style={{ padding: '6px 14px' }}>
                                   <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
                                     {m.originalId || m.id}
                                   </code>
@@ -1177,7 +1243,7 @@ export default function ProvidersPage() {
                                     </div>
                                   </div>
                                 </td>
-                                <td style={{ padding: '4px 12px' }}>
+                                <td style={{ padding: '4px 10px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <input 
                                       type="number"
@@ -1189,34 +1255,188 @@ export default function ProvidersPage() {
                                     <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>K</span>
                                   </div>
                                 </td>
-                                <td style={{ padding: '4px 12px' }}>
+                                {/* Our Price (1M) */}
+                                <td style={{ padding: '4px 10px' }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>In:</span>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '24px' }}>In:</span>
                                       <input 
                                         type="number"
                                         value={m.inputPrice || ''}
                                         onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'inputPrice', e.target.value)}
                                         placeholder="0.00"
                                         step="0.0001"
-                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '56px' }}
                                       />
                                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>$</span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>Out:</span>
+                                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '24px' }}>Out:</span>
                                       <input 
                                         type="number"
                                         value={m.outputPrice || ''}
                                         onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'outputPrice', e.target.value)}
                                         placeholder="0.00"
                                         step="0.0001"
-                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '60px' }}
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none', width: '56px' }}
                                       />
                                       <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>$</span>
                                     </div>
                                   </div>
                                 </td>
+                                {/* Others Price (1M) - Grey & Cuted Line with Micro Show/Hide Toggle Below */}
+                                <td style={{ padding: '4px 8px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: m.showOthersPrice === false ? 0.35 : 1 }}>
+                                      <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 600, width: '20px', textDecoration: 'line-through' }} title="Others Input Price ($/1M)">In:</span>
+                                      <input 
+                                        type="number"
+                                        value={m.offInputPrice || ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'offInputPrice', e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.0001"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 5px', borderRadius: '4px', fontSize: '11px', color: '#94A3B8', textDecoration: 'line-through', outline: 'none', width: '52px' }}
+                                      />
+                                      <span style={{ fontSize: '10px', color: '#94A3B8', textDecoration: 'line-through' }}>$</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: m.showOthersPrice === false ? 0.35 : 1 }}>
+                                      <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 600, width: '20px', textDecoration: 'line-through' }} title="Others Output Price ($/1M)">Out:</span>
+                                      <input 
+                                        type="number"
+                                        value={m.offOutputPrice || ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'offOutputPrice', e.target.value)}
+                                        placeholder="0.00"
+                                        step="0.0001"
+                                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '2px 5px', borderRadius: '4px', fontSize: '11px', color: '#94A3B8', textDecoration: 'line-through', outline: 'none', width: '52px' }}
+                                      />
+                                      <span style={{ fontSize: '10px', color: '#94A3B8', textDecoration: 'line-through' }}>$</span>
+                                    </div>
+                                    {/* Micro Animated Toggle Switch Button (Green on Show, Grey on Hide) */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', paddingTop: '2px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'showOthersPrice', m.showOthersPrice === false ? true : false)}
+                                        title={m.showOthersPrice !== false ? 'Others Price is Visible (Click to Hide)' : 'Others Price is Hidden (Click to Show)'}
+                                        style={{
+                                          position: 'relative',
+                                          width: '24px',
+                                          height: '13px',
+                                          borderRadius: '10px',
+                                          background: m.showOthersPrice !== false ? '#10B981' : '#64748B',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          padding: 0,
+                                          outline: 'none',
+                                          transition: 'all 0.2s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          flexShrink: 0
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            top: '1.5px',
+                                            left: m.showOthersPrice !== false ? '12.5px' : '1.5px',
+                                            width: '10px',
+                                            height: '10px',
+                                            borderRadius: '50%',
+                                            background: '#ffffff',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                                            transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                          }}
+                                        />
+                                      </button>
+                                      <span 
+                                        onClick={() => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'showOthersPrice', m.showOthersPrice === false ? true : false)}
+                                        style={{ 
+                                          fontSize: '9.5px', 
+                                          fontWeight: 700, 
+                                          color: m.showOthersPrice !== false ? '#10B981' : '#94A3B8',
+                                          cursor: 'pointer',
+                                          userSelect: 'none',
+                                          transition: 'color 0.2s ease'
+                                        }}
+                                      >
+                                        {m.showOthersPrice !== false ? 'Show' : 'Hide'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                                  {/* Alert Msg & Theme Style in a Single Row */}
+                                  <td style={{ padding: '4px 10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <input 
+                                        type="text"
+                                        value={m.description || ''}
+                                        onChange={(e) => handleModelUpdateInGlobalSummary(pId, m.mIdx, 'description', e.target.value)}
+                                        placeholder="Alert..."
+                                        style={{
+                                          background: 'transparent',
+                                          border: 'none',
+                                          borderBottom: '1px solid var(--color-border)',
+                                          borderRadius: 0,
+                                          padding: '4px 2px',
+                                          fontSize: '11px',
+                                          color: 'var(--color-text-main)',
+                                          outline: 'none',
+                                          flex: 1,
+                                          minWidth: 0,
+                                          transition: 'border-color 0.15s'
+                                        }}
+                                        title={m.description || 'Enter alert message'}
+                                      />
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                        {m.themeColor && (
+                                          <span 
+                                            style={{ 
+                                              width: '12px', 
+                                              height: '12px', 
+                                              borderRadius: '50%', 
+                                              background: m.themeColor, 
+                                              border: '1px solid rgba(255,255,255,0.4)',
+                                              boxShadow: '0 0 4px rgba(0,0,0,0.2)',
+                                              flexShrink: 0
+                                            }} 
+                                            title={`Theme Color: ${m.themeColor}`} 
+                                          />
+                                        )}
+                                        {m.isWhiteTheme && (
+                                          <span style={{ fontSize: '9px', fontWeight: 600, background: '#FFFFFF', color: '#111827', border: '1px solid #E5E7EB', padding: '0 4px', borderRadius: '3px', flexShrink: 0 }} title="White Theme Active">
+                                            White
+                                          </span>
+                                        )}
+                                        {m.shimmerEffect && (
+                                          <span style={{ fontSize: '9px', fontWeight: 700, background: 'linear-gradient(90deg, #8B5CF6, #EC4899, #3B82F6)', color: '#fff', padding: '0 4px', borderRadius: '3px', flexShrink: 0 }} title="Shimmer Glow Active">
+                                            ✨
+                                          </span>
+                                        )}
+                                        {m.badgeText && (
+                                          <span style={{ fontSize: '9px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0 4px', borderRadius: '3px', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                            {m.badgeText}
+                                          </span>
+                                        )}
+                                        <button
+                                          onClick={() => setEditingModelContext({ providerId: pId, modelIndex: m.mIdx, model: m })}
+                                          style={{
+                                            background: 'var(--color-bg-soft)',
+                                            border: '1px solid var(--color-border)',
+                                            borderRadius: '5px',
+                                            padding: '4px 6px',
+                                            color: 'var(--color-primary, #EF4444)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                          }}
+                                          title="Open Announcement Style"
+                                        >
+                                          <Sparkles size={12} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
                                 <td style={{ padding: '4px 12px' }}>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', width: '100%', minWidth: '150px' }}>
                                     {[
@@ -1300,7 +1520,7 @@ export default function ProvidersPage() {
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '16px' }}>
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Landing Page and API Models</h2>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Models selected to be featured on the main landing page table and available via the public API.</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>The selected models for preview how to look like in landing page</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
@@ -1329,12 +1549,15 @@ export default function ProvidersPage() {
           <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Hidden Provider</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '30%' }}>Model</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '10%' }}>Context</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Pricing (In / Out)</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%' }}>Capabilities</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600, width: '15%', textAlign: 'right' }}>Action</th>
+                <th style={{ padding: '12px 14px', fontWeight: 600, width: '13%' }}>Hidden Provider</th>
+                <th style={{ padding: '12px 14px', fontWeight: 600, width: '31%' }}>Model</th>
+                <th style={{ padding: '12px 10px', fontWeight: 600, width: '8%' }}>Context</th>
+                <th style={{ padding: '12px 10px', fontWeight: 600, width: '13%' }}>Our Price (1M)</th>
+                <th style={{ padding: '12px 10px', fontWeight: 600, width: '13%' }}>
+                  <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8' }}>Others Price (1M)</span>
+                </th>
+                <th style={{ padding: '12px 8px', fontWeight: 600, width: '10%' }}>Capabilities</th>
+                <th style={{ padding: '12px 14px', fontWeight: 600, width: '12%', textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1352,7 +1575,7 @@ export default function ProvidersPage() {
                 if (landingPageModels.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                      <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
                         No models selected for landing page. Select models from the list above and click "Add to Landing Page".
                       </td>
                     </tr>
@@ -1361,7 +1584,8 @@ export default function ProvidersPage() {
 
                 return landingPageModels.map((m, index) => (
                   <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)', opacity: m.providerStatus === false ? 0.5 : 1 }}>
-                    <td style={{ padding: '12px 16px' }}>
+                    {/* Hidden Provider */}
+                    <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ color: 'var(--color-primary, #ef4444)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>
@@ -1376,13 +1600,15 @@ export default function ProvidersPage() {
                         </code>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                          <div style={{ position: 'relative', marginTop: '2px' }}>
+
+                    {/* Model Info with Styled Description & Theme */}
+                    <td style={{ padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div style={{ position: 'relative', marginTop: '2px', flexShrink: 0 }}>
                             <button 
                               onClick={() => setIconPickerOpenFor(iconPickerOpenFor === `${m.providerId}-${m.id}` ? null : `${m.providerId}-${m.id}`)}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '6px', cursor: 'pointer', outline: 'none' }}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', background: m.isWhiteTheme ? '#FFFFFF' : 'var(--color-bg-soft)', border: m.themeColor && !m.themeColor.includes('gradient') ? `1px solid ${m.themeColor}` : '1px solid var(--color-border)', borderRadius: '6px', cursor: 'pointer', outline: 'none', boxShadow: m.shimmerEffect ? '0 0 8px rgba(139, 92, 246, 0.3)' : 'none' }}
                               title="Select Icon"
                             >
                               {m.icon ? <img src={m.icon} width={16} height={16} alt="" style={{ borderRadius: '2px' }} /> : <ImageIcon size={14} color="var(--color-text-muted)" />}
@@ -1441,34 +1667,162 @@ export default function ProvidersPage() {
                               </div>
                             )}
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontWeight: 500, color: 'var(--color-text-main)' }}>{m.name}</span>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: '13px' }}>{m.name}</span>
+                              {m.badgeText && (
+                                <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0 5px', borderRadius: '3px' }}>
+                                  {m.badgeText}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <code style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--color-primary, #3b82f6)', background: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                                 {m.id}
                               </code>
+                              {/* Theme Indicators & Sheet Drawer Trigger */}
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '4px' }}>
+                                {m.themeColor && (
+                                  <span 
+                                    style={{ 
+                                      width: '10px', 
+                                      height: '10px', 
+                                      borderRadius: '50%', 
+                                      background: m.themeColor, 
+                                      border: '1px solid rgba(255,255,255,0.4)',
+                                      boxShadow: '0 0 4px rgba(0,0,0,0.2)'
+                                    }} 
+                                    title={`Theme Color: ${m.themeColor}`} 
+                                  />
+                                )}
+                                {m.isWhiteTheme && (
+                                  <span style={{ fontSize: '8px', fontWeight: 700, background: '#FFFFFF', color: '#111827', border: '1px solid #E5E7EB', padding: '0 4px', borderRadius: '3px' }} title="White Theme Active">
+                                    WHITE
+                                  </span>
+                                )}
+                                {m.shimmerEffect && (
+                                  <span style={{ fontSize: '8px', fontWeight: 700, background: 'rgba(139, 92, 246, 0.15)', color: '#8B5CF6', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '0 4px', borderRadius: '3px' }} title="Shimmer Glow Active">
+                                    ✨ SHIMMER
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    const prov = providers.find(p => p.id === m.providerId);
+                                    const mIdx = prov ? prov.models.findIndex(item => item.id === m.id) : 0;
+                                    setEditingModelContext({
+                                      providerId: m.providerId,
+                                      modelIndex: mIdx >= 0 ? mIdx : 0,
+                                      model: { ...m }
+                                    });
+                                  }}
+                                  title="Customize Theme, Description & Glow in Sheet Drawer"
+                                  style={{
+                                    background: 'rgba(139, 92, 246, 0.1)',
+                                    border: '1px solid rgba(139, 92, 246, 0.25)',
+                                    color: '#A78BFA',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    fontSize: '9.5px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    marginLeft: '2px',
+                                    transition: 'all 0.15s'
+                                  }}
+                                >
+                                  <Sparkles size={10} /> Style
+                                </button>
+                              </div>
                             </div>
+
+                            {/* Tree Node Line Connected Description */}
+                            {m.description && m.description.trim() ? (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '3px' }}>
+                                <div 
+                                  style={{
+                                    width: '12px',
+                                    height: '10px',
+                                    borderLeft: '1.5px solid var(--color-border)',
+                                    borderBottom: '1.5px solid var(--color-border)',
+                                    borderBottomLeftRadius: '4px',
+                                    flexShrink: 0,
+                                    marginTop: '-1px',
+                                    opacity: 0.6
+                                  }} 
+                                />
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: '1.4', maxWidth: '340px' }}>
+                                  {m.description}
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>{m.contextWindow || 'N/A'}</td>
-                    <td style={{ padding: '12px 16px', color: 'var(--color-text-muted)' }}>
-                      ${m.inputPrice || '0'} / ${m.outputPrice || '0'}
+
+                    {/* Context Window (Read-only styled) */}
+                    <td style={{ padding: '12px 10px', color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 500 }}>
+                      {m.contextWindow || '-'}
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', color: 'var(--color-text-muted)' }}>
-                        {m.text && <span title="Text"><Type size={14} /></span>}
-                        {m.reasoning && <span title="Reasoning"><Brain size={14} /></span>}
-                        {m.vision && <span title="Vision"><Eye size={14} /></span>}
-                        {m.image && <span title="Image Gen"><ImageIcon size={14} /></span>}
-                        {m.video && <span title="Video"><Video size={14} /></span>}
-                        {m.audio && <span title="Audio"><Mic size={14} /></span>}
-                        {m.embedding && <span title="Embedding"><Database size={14} /></span>}
+
+                    {/* Active / Our Pricing (1M) */}
+                    <td style={{ padding: '12px 10px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>In:</span>
+                          <span style={{ fontWeight: 600, color: '#10B981', fontSize: '12px' }}>${m.inputPrice || '0.00'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', width: '22px' }}>Out:</span>
+                          <span style={{ fontWeight: 600, color: '#10B981', fontSize: '12px' }}>${m.outputPrice || '0.00'}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Others / Old Cuted Pricing (1M) */}
+                    <td style={{ padding: '12px 10px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: '#94A3B8', width: '22px', textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>In:</span>
+                          {m.offInputPrice ? (
+                            <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8', fontSize: '11.5px', fontWeight: 500 }}>
+                              ${m.offInputPrice}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', opacity: 0.5 }}>-</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: '#94A3B8', width: '22px', textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>Out:</span>
+                          {m.offOutputPrice ? (
+                            <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8', fontSize: '11.5px', fontWeight: 500 }}>
+                              ${m.offOutputPrice}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', opacity: 0.5 }}>-</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Capabilities */}
+                    <td style={{ padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', gap: '5px', alignItems: 'center', color: 'var(--color-text-muted)' }}>
+                        {m.text && <span title="Text"><Type size={13} /></span>}
+                        {m.reasoning && <span title="Reasoning"><Brain size={13} /></span>}
+                        {m.vision && <span title="Vision"><Eye size={13} /></span>}
+                        {m.image && <span title="Image Gen"><ImageIcon size={13} /></span>}
+                        {m.video && <span title="Video"><Video size={13} /></span>}
+                        {m.audio && <span title="Audio"><Mic size={13} /></span>}
+                        {m.embedding && <span title="Embedding"><Database size={13} /></span>}
                         {(!m.text && !m.reasoning && !m.vision && !m.image && !m.video && !m.audio && !m.embedding) && <span style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.5 }}>None</span>}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+
+                    {/* Actions */}
+                    <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <button 
                           onClick={() => handleMoveLandingPageModel(index, 'up')}
@@ -1476,7 +1830,7 @@ export default function ProvidersPage() {
                           style={{ background: 'none', border: 'none', color: index === 0 ? 'var(--color-text-muted)' : 'var(--color-text-main)', cursor: index === 0 ? 'not-allowed' : 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', opacity: index === 0 ? 0.3 : 1 }}
                           title="Move Up"
                         >
-                          <ArrowUp size={16} />
+                          <ArrowUp size={15} />
                         </button>
                         <button 
                           onClick={() => handleMoveLandingPageModel(index, 'down')}
@@ -1484,14 +1838,14 @@ export default function ProvidersPage() {
                           style={{ background: 'none', border: 'none', color: index === landingPageModels.length - 1 ? 'var(--color-text-muted)' : 'var(--color-text-main)', cursor: index === landingPageModels.length - 1 ? 'not-allowed' : 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', opacity: index === landingPageModels.length - 1 ? 0.3 : 1 }}
                           title="Move Down"
                         >
-                          <ArrowDown size={16} />
+                          <ArrowDown size={15} />
                         </button>
                         <button 
                           onClick={() => handleRemoveLandingPage(m.providerId, m.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--color-danger, #ef4444)', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'inline-flex', alignItems: 'center', opacity: 0.8 }}
                           title="Remove from Landing Page"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -1503,80 +1857,79 @@ export default function ProvidersPage() {
         </div>
       </div>
 
-      {/* ===== ADD CUSTOM MODEL DRAWER ===== */}
+      {/* ===== ADD CUSTOM MODEL MODAL DRAWER ===== */}
       {showAddCustomModel && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setShowAddCustomModel(false)}>
-          <div style={{ width: '420px', background: 'var(--color-card-bg)', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 15px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Add Custom Model</h2>
-              <button onClick={() => setShowAddCustomModel(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex' }}>
-                <X size={18} />
-              </button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
+          <div style={{ width: '480px', maxWidth: '90vw', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>Add Custom Model</h3>
+              <button onClick={() => setShowAddCustomModel(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '75vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Provider</label>
                 <select value={customModelProviderId} onChange={e => setCustomModelProviderId(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
-                  <option value="">Select Provider</option>
-                  {providers.filter(p => p.status).map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                  {providers.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.models.length} models)</option>
                   ))}
                 </select>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original Model ID</label>
-                <input type="text" value={customModelOriginalId} onChange={e => setCustomModelOriginalId(e.target.value)} placeholder="e.g. gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original Model ID (Backend)</label>
+                <input type="text" value={customModelOriginalId} onChange={e => setCustomModelOriginalId(e.target.value)} placeholder="e.g. gpt-4o-2024-08-06" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Name</label>
-                <input type="text" value={customModelName} onChange={e => setCustomModelName(e.target.value)} placeholder="e.g. GPT-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Showing Model ID</label>
-                <input type="text" value={customModelShowingId} onChange={e => setCustomModelShowingId(e.target.value)} placeholder="e.g. cr-gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Users will use this ID to call the API.</span>
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'block' }}>Capabilities</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                  {[
-                    { label: 'Text', state: customModelText, setter: setCustomModelText },
-                    { label: 'Reasoning', state: customModelReasoning, setter: setCustomModelReasoning },
-                    { label: 'Vision', state: customModelVision, setter: setCustomModelVision },
-                    { label: 'Image', state: customModelImage, setter: setCustomModelImage },
-                    { label: 'Video', state: customModelVideo, setter: setCustomModelVideo },
-                    { label: 'Embedding', state: customModelEmbedding, setter: setCustomModelEmbedding },
-                    { label: 'Audio', state: customModelAudio, setter: setCustomModelAudio },
-                  ].map(cap => (
-                    <label key={cap.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer', background: 'var(--color-bg-soft)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
-                      <input type="checkbox" checked={cap.state} onChange={e => cap.setter(e.target.checked)} />
-                      {cap.label}
-                    </label>
-                  ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Name (Display)</label>
+                  <input type="text" value={customModelName} onChange={e => setCustomModelName(e.target.value)} placeholder="e.g. GPT-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Custom ID (API Route)</label>
+                  <input type="text" value={customModelShowingId} onChange={e => setCustomModelShowingId(e.target.value)} placeholder="e.g. gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Access Type</label>
+                  <select value={customModelAccess} onChange={e => setCustomModelAccess(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
+                    <option value="Free">Free</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium</option>
+                  </select>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context Window</label>
                   <input type="text" value={customModelContextWindow} onChange={e => setCustomModelContextWindow(e.target.value)} placeholder="e.g. 128K" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
                 </div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Our Input Price ($/1M)</label>
+                  <input type="text" value={customModelInputPrice} onChange={e => setCustomModelInputPrice(e.target.value)} placeholder="e.g. 5.00" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Our Output Price ($/1M)</label>
+                  <input type="text" value={customModelOutputPrice} onChange={e => setCustomModelOutputPrice(e.target.value)} placeholder="e.g. 15.00" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                </div>
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Input Price (per 1M)</label>
-                  <input type="text" value={customModelInputPrice} onChange={e => setCustomModelInputPrice(e.target.value)} placeholder="e.g. $5/M" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>Others Input Price ($/1M)</span>
+                  </label>
+                  <input type="text" value={customModelOffInputPrice} onChange={e => setCustomModelOffInputPrice(e.target.value)} placeholder="e.g. 2.50" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: '#94A3B8', textDecoration: 'line-through', textDecorationColor: '#94A3B8', outline: 'none', fontSize: '13px', fontWeight: 500 }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Output Price (per 1M)</label>
-                  <input type="text" value={customModelOutputPrice} onChange={e => setCustomModelOutputPrice(e.target.value)} placeholder="e.g. $15/M" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>Others Output Price ($/1M)</span>
+                  </label>
+                  <input type="text" value={customModelOffOutputPrice} onChange={e => setCustomModelOffOutputPrice(e.target.value)} placeholder="e.g. 7.50" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: '#94A3B8', textDecoration: 'line-through', textDecorationColor: '#94A3B8', outline: 'none', fontSize: '13px', fontWeight: 500 }} />
                 </div>
               </div>
             </div>
@@ -1588,6 +1941,412 @@ export default function ProvidersPage() {
           </div>
         </div>
       )}
+
+      {/* ===== MODEL THEME & DESCRIPTION RIGHT-SIDE DRAWER SHEET ===== */}
+      {editingModelContext && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            background: 'rgba(0,0,0,0.6)', 
+            zIndex: 1050, 
+            display: 'flex', 
+            justifyContent: 'flex-end',
+            backdropFilter: 'blur(3px)',
+            animation: 'fadeIn 0.2s ease-out'
+          }} 
+          onClick={() => setEditingModelContext(null)}
+        >
+          <div 
+            style={{ 
+              width: '460px', 
+              maxWidth: '92vw',
+              background: 'var(--color-card-bg)', 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: '-10px 0 30px rgba(0,0,0,0.25)',
+              borderLeft: '1px solid var(--color-border)',
+              animation: 'slideInRight 0.25s ease-out'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-primary, #EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Palette size={18} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-text-main)' }}>
+                    Announcement Style
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                    {editingModelContext.model.name} ({editingModelContext.model.id})
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingModelContext(null)} 
+                style={{ background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Drawer Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Model Live Preview Card */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px', display: 'block' }}>
+                  Live Preview Card
+                </label>
+                <div 
+                  style={{
+                    borderRadius: '12px',
+                    padding: '16px',
+                    background: editingModelContext.model.isWhiteTheme 
+                      ? '#FFFFFF' 
+                      : (editingModelContext.model.themeColor?.includes('gradient') ? editingModelContext.model.themeColor : (editingModelContext.model.themeColor ? `${editingModelContext.model.themeColor}15` : 'var(--color-bg-soft)')),
+                    border: editingModelContext.model.isWhiteTheme ? '1.5px solid #E2E8F0' : `1.5px solid ${editingModelContext.model.themeColor && !editingModelContext.model.themeColor.includes('gradient') ? editingModelContext.model.themeColor : 'var(--color-border)'}`,
+                    color: editingModelContext.model.isWhiteTheme ? '#0F172A' : 'var(--color-text-main)',
+                    boxShadow: editingModelContext.model.shimmerEffect 
+                      ? '0 0 20px rgba(139, 92, 246, 0.35), 0 4px 15px rgba(0,0,0,0.1)' 
+                      : '0 4px 12px rgba(0,0,0,0.06)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  {editingModelContext.model.shimmerEffect && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        background: 'linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6, #10b981, #ec4899)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmerSweep 2s linear infinite'
+                      }}
+                    />
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: editingModelContext.model.isWhiteTheme ? '#F1F5F9' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {editingModelContext.model.icon ? <img src={editingModelContext.model.icon} width={18} height={18} alt="" /> : <Sparkles size={16} color="var(--color-primary, #EF4444)" />}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700 }}>{editingModelContext.model.name || 'Model Name'}</h4>
+                        <span style={{ fontSize: '10px', opacity: 0.7 }}>{editingModelContext.model.id || 'model-id'}</span>
+                      </div>
+                    </div>
+                    {editingModelContext.model.badgeText && (
+                      <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(59,130,246,0.18)', color: '#2563EB', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.35)' }}>
+                        {editingModelContext.model.badgeText}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '8px 0 10px 0', fontSize: '12px', lineHeight: '1.4', opacity: 0.85 }}>
+                    {editingModelContext.model.description || 'No description provided yet. Add description below.'}
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11px', fontWeight: 600, opacity: 0.9, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span>Ctx: {editingModelContext.model.contextWindow || '128K'}</span>
+                    <span>•</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      In: 
+                      {(() => {
+                        const p1 = editingModelContext.model.inputPrice ? parseFloat(editingModelContext.model.inputPrice.replace(/[^0-9.]/g, '')) : NaN;
+                        const p2 = editingModelContext.model.offInputPrice ? parseFloat(editingModelContext.model.offInputPrice.replace(/[^0-9.]/g, '')) : NaN;
+                        if (!editingModelContext.model.offInputPrice || isNaN(p2) || p1 === p2 || !editingModelContext.model.inputPrice) {
+                          return <span style={{ color: '#10B981', fontWeight: 700 }}>${editingModelContext.model.inputPrice || editingModelContext.model.offInputPrice || '0.00'}</span>;
+                        }
+                        const active = Math.min(p1, p2);
+                        const orig = Math.max(p1, p2);
+                        return (
+                          <>
+                            <span style={{ color: '#10B981', fontWeight: 700 }}>${active}</span>
+                            <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8', fontSize: '10px' }}>${orig}</span>
+                          </>
+                        );
+                      })()}
+                    </span>
+                    <span>•</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      Out: 
+                      {(() => {
+                        const p1 = editingModelContext.model.outputPrice ? parseFloat(editingModelContext.model.outputPrice.replace(/[^0-9.]/g, '')) : NaN;
+                        const p2 = editingModelContext.model.offOutputPrice ? parseFloat(editingModelContext.model.offOutputPrice.replace(/[^0-9.]/g, '')) : NaN;
+                        if (!editingModelContext.model.offOutputPrice || isNaN(p2) || p1 === p2 || !editingModelContext.model.outputPrice) {
+                          return <span style={{ color: '#10B981', fontWeight: 700 }}>${editingModelContext.model.outputPrice || editingModelContext.model.offOutputPrice || '0.00'}</span>;
+                        }
+                        const active = Math.min(p1, p2);
+                        const orig = Math.max(p1, p2);
+                        return (
+                          <>
+                            <span style={{ color: '#10B981', fontWeight: 700 }}>${active}</span>
+                            <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8', fontSize: '10px' }}>${orig}</span>
+                          </>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description Field */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Model Description & Tagline
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingModelContext.model.description || ''}
+                  onChange={(e) => updateEditingModelField('description', e.target.value)}
+                  placeholder="Write a clear description for users (e.g. Ultra-fast reasoning model specialized in complex coding, mathematical reasoning, and low-latency agentic tasks)..."
+                  style={{
+                    background: 'var(--color-input-bg)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    fontSize: '12px',
+                    color: 'var(--color-text-main)',
+                    outline: 'none',
+                    resize: 'vertical',
+                    lineHeight: '1.5'
+                  }}
+                />
+              </div>
+
+              {/* Badge Text Field */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Featured Badge / Tag Text
+                </label>
+                <input
+                  type="text"
+                  value={editingModelContext.model.badgeText || ''}
+                  onChange={(e) => updateEditingModelField('badgeText', e.target.value)}
+                  placeholder="e.g. HOT, NEW, FAST, 90% OFF, PRO..."
+                  style={{
+                    background: 'var(--color-input-bg)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    color: 'var(--color-text-main)',
+                    outline: 'none'
+                  }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                  {['🔥 HOT', '✨ NEW', '⚡ FAST', '🏆 BEST', '👑 PRO', '🎁 FREE', '🏷️ 90% OFF', 'Clear'].map(badge => (
+                    <button
+                      key={badge}
+                      type="button"
+                      onClick={() => updateEditingModelField('badgeText', badge === 'Clear' ? '' : badge)}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-border)',
+                        background: editingModelContext.model.badgeText === badge ? 'var(--color-primary, #EF4444)' : 'var(--color-bg-soft)',
+                        color: editingModelContext.model.badgeText === badge ? '#fff' : 'var(--color-text-muted)',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {badge}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Theme Accent Color */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Theme Accent Color
+                  </label>
+                  {editingModelContext.model.themeColor && (
+                    <button
+                      type="button"
+                      onClick={() => updateEditingModelField('themeColor', '')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-danger, #EF4444)', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Reset Color
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+                  {[
+                    { name: 'Default', value: '' },
+                    { name: 'Blue', value: '#3B82F6' },
+                    { name: 'Purple', value: '#8B5CF6' },
+                    { name: 'Green', value: '#10B981' },
+                    { name: 'Amber', value: '#F59E0B' },
+                    { name: 'Crimson', value: '#EF4444' },
+                    { name: 'Cyan', value: '#06B6D4' },
+                    { name: 'Pink', value: '#EC4899' },
+                    { name: 'White', value: '#FFFFFF' },
+                    { name: 'Slate', value: '#1E293B' },
+                    { name: 'Sunset Gradient', value: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)' },
+                    { name: 'Cyber Gradient', value: 'linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%)' }
+                  ].map(col => (
+                    <button
+                      key={col.name}
+                      type="button"
+                      onClick={() => updateEditingModelField('themeColor', col.value)}
+                      style={{
+                        height: '32px',
+                        borderRadius: '6px',
+                        background: col.value || 'var(--color-bg-soft)',
+                        border: (editingModelContext.model.themeColor === col.value) || (!editingModelContext.model.themeColor && !col.value)
+                          ? '2px solid var(--color-primary, #EF4444)'
+                          : '1px solid var(--color-border)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: (editingModelContext.model.themeColor === col.value) ? '0 0 8px rgba(239, 68, 68, 0.4)' : 'none'
+                      }}
+                      title={col.name}
+                    >
+                      {((editingModelContext.model.themeColor === col.value) || (!editingModelContext.model.themeColor && !col.value)) && (
+                        <Check size={14} color={col.value === '#FFFFFF' ? '#000' : '#fff'} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Color Input */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <input
+                    type="color"
+                    value={editingModelContext.model.themeColor && !editingModelContext.model.themeColor.includes('gradient') ? editingModelContext.model.themeColor : '#3B82F6'}
+                    onChange={(e) => updateEditingModelField('themeColor', e.target.value)}
+                    style={{ width: '36px', height: '36px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'transparent', cursor: 'pointer', padding: '2px' }}
+                  />
+                  <input
+                    type="text"
+                    value={editingModelContext.model.themeColor || ''}
+                    onChange={(e) => updateEditingModelField('themeColor', e.target.value)}
+                    placeholder="Custom color / hex (e.g. #3B82F6)"
+                    style={{
+                      flex: 1,
+                      background: 'var(--color-input-bg)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      color: 'var(--color-text-main)',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Visual Effects & Mode Toggles */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Display & Card Options
+                </label>
+                
+                {/* White Card Theme Checkbox */}
+                <label 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '10px 14px', 
+                    borderRadius: '8px', 
+                    background: 'var(--color-bg-soft)', 
+                    border: '1px solid var(--color-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', display: 'block' }}>
+                      ⚪ White Theme Card Surface
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                      Forces clean white surface with dark slate typography
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!editingModelContext.model.isWhiteTheme}
+                    onChange={(e) => updateEditingModelField('isWhiteTheme', e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                </label>
+
+                {/* Shimmer Effect Checkbox */}
+                <label 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '10px 14px', 
+                    borderRadius: '8px', 
+                    background: 'var(--color-bg-soft)', 
+                    border: '1px solid var(--color-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', display: 'block' }}>
+                      ✨ Animated Shimmer Glow Effect
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                      Adds dynamic animated rainbow neon shimmer border
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!editingModelContext.model.shimmerEffect}
+                    onChange={(e) => updateEditingModelField('shimmerEffect', e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                </label>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-soft)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => setEditingModelContext(null)}
+                className="btn-primary"
+                style={{ padding: '9px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Done & Apply
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Global Drawer Animations */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideInRight {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes shimmerSweep {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}} />
     </div>
   );
 }

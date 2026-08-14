@@ -49,7 +49,7 @@ import AgnesAISetup, { AgnesAISetupRef } from '../AgnesAISetup';
 import TokenRouterSetup, { TokenRouterSetupRef } from '../TokenRouterSetup';
 
 
-type Model = { id: string; name: string; originalId?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; showOnLandingPage?: boolean; };
+type Model = { id: string; name: string; originalId?: string; description?: string; themeColor?: string; isWhiteTheme?: boolean; shimmerEffect?: boolean; badgeText?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; offInputPrice?: string; offOutputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
 type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
