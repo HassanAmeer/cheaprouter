@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt, ShieldAlert
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -38,7 +38,7 @@ function SidebarNavContent() {
             <Users size={17} /> User Management
           </Link>
           <Link href="/admin/keys" className={`${styles.navItem} ${pathname.startsWith('/admin/keys') ? styles.navItemActive : ''}`}>
-            <Zap size={17} /> Global API Keys
+            <Zap size={17} /> Purchased Keys
           </Link>
           <Link href="/admin/providers" className={`${styles.navItem} ${pathname.startsWith('/admin/providers') ? styles.navItemActive : ''}`}>
             <Server size={17} /> Provider Routing
@@ -104,6 +104,9 @@ function SidebarNavContent() {
           <Link href="/admin/test-models" className={`${styles.navItem} ${pathname.startsWith('/admin/test-models') ? styles.navItemActive : ''}`}>
             <Sparkles size={17} /> Test Models
           </Link>
+          <Link href="/admin/system-api" className={`${styles.navItem} ${pathname.startsWith('/admin/system-api') ? styles.navItemActive : ''}`}>
+            <ShieldAlert size={17} /> System API
+          </Link>
         </div>
       </div>
     </nav>
@@ -136,7 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const getPageTitle = () => {
     if (pathname === '/admin') return 'Dashboard Overview';
     if (pathname.startsWith('/admin/users')) return 'User Management';
-    if (pathname.startsWith('/admin/keys')) return 'Global API Keys';
+    if (pathname.startsWith('/admin/keys')) return 'Purchased Keys';
     if (pathname.startsWith('/admin/providers')) return 'Provider Routing';
     if (pathname.startsWith('/admin/revenue')) return 'Revenue';
     if (pathname.startsWith('/admin/billing')) return 'Billing Management';
@@ -146,6 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.startsWith('/admin/seeding')) return 'Database Seeding';
     if (pathname.startsWith('/admin/raw-data')) return 'Raw Data Storage';
     if (pathname.startsWith('/admin/test-models')) return 'Test Models';
+    if (pathname.startsWith('/admin/system-api')) return 'System API - Store Keys';
     return 'Admin Panel';
   };
 

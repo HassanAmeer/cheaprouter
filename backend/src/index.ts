@@ -17,7 +17,7 @@ import {
   adminDeleteUser,
   hashPassword,
 } from './auth.ts';
-import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey } from './keys.ts';
+import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
 import { getAnalytics, getSummary, recordUsage } from './usage.ts';
 import { getBilling, topUp, upgradePlan, seedWelcomeBalance } from './billing.ts';
@@ -70,7 +70,7 @@ app.use('/api/*', async (c, next) => {
   if (p.startsWith('/api/v1/')) {
     return next();
   }
-  if (p.startsWith('/api/admin')) {
+  if (p.startsWith('/api/admin') || p.startsWith('/api/systemapi')) {
     return requireAdminAuth(c, next);
   }
   return requireAuth(c, next);
@@ -415,6 +415,34 @@ app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.st
     await adminUpdateUser(id, data);
   }
   return c.json({ ok: true, count: ids.length });
+});
+
+// ---- Admin: All user API keys (joined with owner) ----
+app.get('/api/admin/keys', async (c) => {
+  const keys = await listAllKeysWithUsers();
+  return c.json({ keys });
+});
+
+app.delete('/api/admin/keys/:id', async (c) => {
+  await adminDeleteKey(c.req.param('id'));
+  return c.json({ ok: true });
+});
+
+// ---- System API: store system-level keys (admin-only) ----
+app.get('/api/systemapi/keys', async (c) => {
+  const keys = await listSystemKeys();
+  return c.json({ keys });
+});
+
+app.post('/api/systemapi/keys', zValidator('json', z.object({ name: z.string().min(1), description: z.string().optional() })), async (c) => {
+  const { name, description } = c.req.valid('json');
+  const key = await storeSystemKey(name, description);
+  return c.json({ key });
+});
+
+app.delete('/api/systemapi/keys/:id', async (c) => {
+  await deleteSystemKey(c.req.param('id'));
+  return c.json({ ok: true });
 });
 
 app.get('/api/admin/submissions', async (c) => {

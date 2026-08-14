@@ -47,3 +47,22 @@ export async function listAllKeysWithUsers() {
 export async function adminDeleteKey(id: string) {
   await db`DELETE FROM api_keys WHERE id = ${id}`;
 }
+
+// ── System API: store a key (admin-only) ──
+export async function storeSystemKey(name: string, description?: string) {
+  const { full, prefix, hash } = generateApiKey();
+  const id = genId('key');
+  await db`
+    INSERT INTO system_keys (id, name, key_prefix, key_hash, description)
+    VALUES (${id}, ${name}, ${prefix}, ${hash}, ${description ?? ''})
+  `;
+  return { id, name, secret: full, prefix, created: new Date().toISOString().slice(0, 10), lastUsed: 'Never' };
+}
+
+export async function listSystemKeys() {
+  return await db`SELECT id, name, key_prefix AS prefix, description, created_at AS created, last_used AS "lastUsed" FROM system_keys ORDER BY created_at DESC`;
+}
+
+export async function deleteSystemKey(id: string) {
+  await db`DELETE FROM system_keys WHERE id = ${id}`;
+}

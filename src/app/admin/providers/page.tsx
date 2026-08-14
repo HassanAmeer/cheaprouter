@@ -1096,38 +1096,6 @@ export default function ProvidersPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={handleAddLandingPage}
-                    disabled={selectedModels.size === 0}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px',
-                      background: selectedModels.size > 0 ? 'var(--color-primary, #3b82f6)' : 'transparent',
-                      color: selectedModels.size > 0 ? '#fff' : 'var(--color-text-muted)',
-                      border: `1px solid ${selectedModels.size > 0 ? 'var(--color-primary, #3b82f6)' : 'var(--color-border)'}`,
-                      fontSize: '12px', fontWeight: 600,
-                      cursor: selectedModels.size > 0 ? 'pointer' : 'not-allowed',
-                      opacity: selectedModels.size > 0 ? 1 : 0.5,
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <Globe size={14} /> Add to Landing Page ({selectedModels.size})
-                  </button>
-                  <button
-                    onClick={handleBulkDelete}
-                    disabled={selectedModels.size === 0}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px',
-                      background: selectedModels.size > 0 ? 'var(--color-danger, #ef4444)' : 'transparent',
-                      color: selectedModels.size > 0 ? '#fff' : 'var(--color-text-muted)',
-                      border: `1px solid ${selectedModels.size > 0 ? 'var(--color-danger, #ef4444)' : 'var(--color-border)'}`,
-                      fontSize: '12px', fontWeight: 600,
-                      cursor: selectedModels.size > 0 ? 'pointer' : 'not-allowed',
-                      opacity: selectedModels.size > 0 ? 1 : 0.5,
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <Trash2 size={14} /> Delete Selected ({selectedModels.size})
-                  </button>
                   <button 
                     onClick={() => fetchProviders()}
                     title="Reload Models" 
@@ -1140,11 +1108,11 @@ export default function ProvidersPage() {
 
               {allModelsListUnfiltered.length === 0 ? (
                 <div style={{ padding: '40px 20px', fontSize: '13px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  No models selected yet. Click on the <strong>"Add & Manage Providers"</strong> button to select or configure models.
+                  No models found. Click on the <strong>"Add & Manage Providers"</strong> button to select or configure models.
                 </div>
               ) : allModelsList.length === 0 ? (
                 <div style={{ padding: '40px 20px', fontSize: '13px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  No models match your search for "{searchQuery}".
+                  No models match the selected filters.
                 </div>
               ) : (
                 <>
@@ -1154,23 +1122,15 @@ export default function ProvidersPage() {
                     <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          <th style={{ padding: '10px 16px', width: '3%' }}>
-                            <input 
-                              type="checkbox" 
-                              checked={isAllSelected}
-                              onChange={handleSelectAll}
-                              style={{ cursor: 'pointer' }}
-                            />
-                          </th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '13%' }}>Original Model ID</th>
+                          <th style={{ padding: '10px 14px', fontWeight: 600, width: '14%' }}>Original Model ID</th>
                           <th style={{ padding: '10px 12px', fontWeight: 600, width: '14%' }}>Custom Names</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '6%' }}>Context</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '9%' }}>Our Price (1M)</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '10%' }} title="Competitors / Others Pricing">
                             <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8' }}>Others Price (1M)</span>
                           </th>
-                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Alert Msg</th>
-                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Capabilities</th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '18%' }}>Alert Msg</th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '18%' }}>Capabilities</th>
                           <th style={{ padding: '10px 16px', fontWeight: 600, width: '11%', textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
@@ -1179,7 +1139,7 @@ export default function ProvidersPage() {
                           <React.Fragment key={pId}>
                             {/* Provider Section Row */}
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <td colSpan={9} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+                              <td colSpan={8} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ 
                                     color: 'var(--color-primary, #ef4444)', 
@@ -1198,22 +1158,8 @@ export default function ProvidersPage() {
                             </tr>
                             {/* Model Rows */}
                             {group.models.map((m) => {
-                              const key = `${pId}-${m.id}`;
                               return (
-                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)', background: selectedModels.has(key) ? 'var(--color-bg-soft)' : 'transparent' }}>
-                                <td style={{ padding: '6px 16px' }}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={selectedModels.has(key)}
-                                    onChange={(e) => {
-                                      const next = new Set(selectedModels);
-                                      if (e.target.checked) next.add(key);
-                                      else next.delete(key);
-                                      setSelectedModels(next);
-                                    }}
-                                    style={{ cursor: 'pointer' }}
-                                  />
-                                </td>
+                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                 <td style={{ padding: '6px 14px' }}>
                                   <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
                                     {m.originalId || m.id}
@@ -1364,18 +1310,28 @@ export default function ProvidersPage() {
                                   </div>
                                 </td>
                                   {/* Alert Msg & Theme Style - Compact Inline Display */}
-                                  <td style={{ padding: '4px 10px' }}>
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', maxWidth: '100%' }}>
-                                      {m.description ? (
+                                  <td style={{ padding: '6px 10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
+                                      {m.badgeText && (
+                                        <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: '3px', maxWidth: '65px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }} title={`Badge: ${m.badgeText}`}>
+                                          {m.badgeText}
+                                        </span>
+                                      )}
+                                      {m.description && m.description.trim() ? (
                                         <span 
                                           style={{ 
-                                            fontSize: '11.5px', 
-                                            color: 'var(--color-text-main)', 
+                                            fontSize: '11px', 
+                                            background: 'linear-gradient(90deg, #EF4444 0%, #F59E0B 25%, #EC4899 50%, #8B5CF6 75%, #EF4444 100%)',
+                                            backgroundSize: '200% auto',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            animation: 'textShimmer 3s linear infinite',
                                             overflow: 'hidden', 
                                             textOverflow: 'ellipsis', 
                                             whiteSpace: 'nowrap', 
-                                            fontWeight: 500,
-                                            maxWidth: '120px'
+                                            fontWeight: 600,
+                                            maxWidth: '120px',
+                                            display: 'inline-block'
                                           }} 
                                           title={m.description}
                                         >
@@ -1384,31 +1340,6 @@ export default function ProvidersPage() {
                                       ) : (
                                         <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', opacity: 0.55, fontStyle: 'italic' }}>
                                           Empty
-                                        </span>
-                                      )}
-
-                                      {m.themeColor && (
-                                        <span 
-                                          style={{ 
-                                            width: '8px', 
-                                            height: '8px', 
-                                            borderRadius: '50%', 
-                                            background: m.themeColor, 
-                                            border: '1px solid rgba(255,255,255,0.4)',
-                                            boxShadow: '0 0 4px rgba(0,0,0,0.2)',
-                                            flexShrink: 0
-                                          }} 
-                                          title={`Theme Color: ${m.themeColor}`} 
-                                        />
-                                      )}
-                                      {m.shimmerEffect && (
-                                        <span style={{ fontSize: '9px', fontWeight: 700, background: 'linear-gradient(90deg, #8B5CF6, #EC4899, #3B82F6)', color: '#fff', padding: '0 3px', borderRadius: '3px', flexShrink: 0 }} title="Shimmer Glow Active">
-                                          ✨
-                                        </span>
-                                      )}
-                                      {m.badgeText && (
-                                        <span style={{ fontSize: '9px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0 4px', borderRadius: '3px', maxWidth: '55px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }} title={`Badge: ${m.badgeText}`}>
-                                          {m.badgeText}
                                         </span>
                                       )}
 
@@ -1666,41 +1597,61 @@ export default function ProvidersPage() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: '13px' }}>{m.name}</span>
-                              {m.badgeText && (
-                                <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '0 5px', borderRadius: '3px' }}>
-                                  {m.badgeText}
+                              {m.type === 'Premium' && (
+                                <span style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary, #EF4444)', padding: '0 5px', borderRadius: '3px' }}>
+                                  PRO
                                 </span>
                               )}
                             </div>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                              <code style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--color-primary, #3b82f6)', background: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                                {m.id}
-                              </code>
-                              {/* Theme Indicators & Sheet Drawer Trigger */}
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '4px' }}>
-                                {m.themeColor && (
-                                  <span 
-                                    style={{ 
-                                      width: '10px', 
-                                      height: '10px', 
-                                      borderRadius: '50%', 
-                                      background: m.themeColor, 
-                                      border: '1px solid rgba(255,255,255,0.4)',
-                                      boxShadow: '0 0 4px rgba(0,0,0,0.2)'
-                                    }} 
-                                    title={`Theme Color: ${m.themeColor}`} 
-                                  />
-                                )}
-                                {m.isWhiteTheme && (
-                                  <span style={{ fontSize: '8px', fontWeight: 700, background: '#FFFFFF', color: '#111827', border: '1px solid #E5E7EB', padding: '0 4px', borderRadius: '3px' }} title="White Theme Active">
-                                    WHITE
-                                  </span>
-                                )}
-                                {m.shimmerEffect && (
-                                  <span style={{ fontSize: '8px', fontWeight: 700, background: 'rgba(139, 92, 246, 0.15)', color: '#8B5CF6', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '0 4px', borderRadius: '3px' }} title="Shimmer Glow Active">
-                                    ✨ SHIMMER
-                                  </span>
-                                )}
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
+                              {m.badgeText && (
+                                <span style={{ fontSize: '9.5px', fontWeight: 800, background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-primary, #EF4444)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0 6px', borderRadius: '4px', flexShrink: 0 }}>
+                                  {m.badgeText}
+                                </span>
+                              )}
+                              {m.description && m.description.trim() ? (
+                                <span 
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    background: 'linear-gradient(90deg, #EF4444 0%, #F59E0B 25%, #EC4899 50%, #8B5CF6 75%, #EF4444 100%)',
+                                    backgroundSize: '200% auto',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    animation: 'textShimmer 3s linear infinite',
+                                    maxWidth: '360px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    display: 'inline-block'
+                                  }}
+                                  title={m.id}
+                                >
+                                  {m.description}
+                                </span>
+                              ) : (
+                                <code 
+                                  style={{ 
+                                    fontSize: '10px', 
+                                    fontFamily: 'monospace', 
+                                    color: 'var(--color-primary, #3b82f6)', 
+                                    background: 'rgba(59, 130, 246, 0.1)', 
+                                    padding: '2px 6px', 
+                                    borderRadius: '4px', 
+                                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                                    maxWidth: '380px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title={m.id}
+                                >
+                                  {m.id}
+                                </code>
+                              )}
+
+                              {/* Sheet Drawer Trigger */}
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
                                 <button
                                   onClick={() => {
                                     const prov = providers.find(p => p.id === m.providerId);
@@ -1711,7 +1662,7 @@ export default function ProvidersPage() {
                                       model: { ...m }
                                     });
                                   }}
-                                  title="Customize Theme, Description & Glow in Sheet Drawer"
+                                  title="Customize Announcement & Badge in Sheet Drawer"
                                   style={{
                                     background: 'rgba(139, 92, 246, 0.1)',
                                     border: '1px solid rgba(139, 92, 246, 0.25)',
@@ -1724,7 +1675,6 @@ export default function ProvidersPage() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '2px',
-                                    marginLeft: '2px',
                                     transition: 'all 0.15s'
                                   }}
                                 >
@@ -1732,27 +1682,6 @@ export default function ProvidersPage() {
                                 </button>
                               </div>
                             </div>
-
-                            {/* Tree Node Line Connected Description */}
-                            {m.description && m.description.trim() ? (
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '3px' }}>
-                                <div 
-                                  style={{
-                                    width: '12px',
-                                    height: '10px',
-                                    borderLeft: '1.5px solid var(--color-border)',
-                                    borderBottom: '1.5px solid var(--color-border)',
-                                    borderBottomLeftRadius: '4px',
-                                    flexShrink: 0,
-                                    marginTop: '-1px',
-                                    opacity: 0.6
-                                  }} 
-                                />
-                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: '1.4', maxWidth: '340px' }}>
-                                  {m.description}
-                                </span>
-                              </div>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1998,7 +1927,7 @@ export default function ProvidersPage() {
               
 
               {/* Description / Announcement Message Field */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Announcement / Alert Message
                 </label>
@@ -2019,34 +1948,40 @@ export default function ProvidersPage() {
                     lineHeight: '1.5'
                   }}
                 />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Quick Tags:</span>
+              </div>
+
+              {/* Featured Badge / Tag Text Field */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Featured Badge / Tag Text
+                </label>
+                <input
+                  type="text"
+                  value={editingModelContext.model.badgeText || ''}
+                  onChange={(e) => updateEditingModelField('badgeText', e.target.value)}
+                  placeholder="e.g. HOT, NEW, FAST, 90% OFF, PRO..."
+                  style={{
+                    background: 'var(--color-input-bg)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    padding: '7px 10px',
+                    fontSize: '12px',
+                    color: 'var(--color-text-main)',
+                    outline: 'none'
+                  }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '2px' }}>
                   {['🔥 HOT', '✨ NEW', '⚡ FAST', '🏆 BEST', '👑 PRO', '🎁 FREE', '🏷️ 90% OFF', 'Clear'].map(badge => (
                     <button
                       key={badge}
                       type="button"
-                      onClick={() => {
-                        if (badge === 'Clear') {
-                          updateEditingModelField('description', '');
-                        } else {
-                          const curr = (editingModelContext.model.description || '').trim();
-                          if (!curr) {
-                            updateEditingModelField('description', badge);
-                          } else if (!curr.includes(badge)) {
-                            updateEditingModelField('description', `${curr} ${badge}`);
-                          }
-                        }
-                      }}
+                      onClick={() => updateEditingModelField('badgeText', badge === 'Clear' ? '' : badge)}
                       style={{
                         padding: '3px 8px',
-                        borderRadius: '6px',
+                        borderRadius: '5px',
                         border: '1px solid var(--color-border)',
-                        background: (editingModelContext.model.description || '').includes(badge) && badge !== 'Clear'
-                          ? 'var(--color-primary, #EF4444)' 
-                          : 'var(--color-bg-soft)',
-                        color: (editingModelContext.model.description || '').includes(badge) && badge !== 'Clear'
-                          ? '#fff' 
-                          : 'var(--color-text-muted)',
+                        background: editingModelContext.model.badgeText === badge ? 'var(--color-primary, #EF4444)' : 'var(--color-bg-soft)',
+                        color: editingModelContext.model.badgeText === badge ? '#fff' : 'var(--color-text-muted)',
                         fontSize: '11px',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -2057,143 +1992,6 @@ export default function ProvidersPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Theme Accent Color */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Theme Accent Color
-                  </label>
-                  {editingModelContext.model.themeColor && (
-                    <button
-                      type="button"
-                      onClick={() => updateEditingModelField('themeColor', '')}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-danger, #EF4444)', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Reset Color
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '6px' }}>
-                  {[
-                    { name: 'Default', value: '' },
-                    { name: 'Electric Blue', value: '#3B82F6' },
-                    { name: 'Sky Blue', value: '#0EA5E9' },
-                    { name: 'Bright Cyan', value: '#06B6D4' },
-                    { name: 'Teal', value: '#14B8A6' },
-                    { name: 'Emerald Green', value: '#10B981' },
-                    { name: 'Lime Green', value: '#84CC16' },
-                    { name: 'Mint Neon', value: '#00F5D4' },
-                    { name: 'Amber Gold', value: '#F59E0B' },
-                    { name: 'Vibrant Orange', value: '#F97316' },
-                    { name: 'Coral Red', value: '#FF6B6B' },
-                    { name: 'Crimson Red', value: '#EF4444' },
-                    { name: 'Deep Burgundy', value: '#B91C1C' },
-                    { name: 'Rose Pink', value: '#F43F5E' },
-                    { name: 'Hot Magenta', value: '#EC4899' },
-                    { name: 'Neon Purple', value: '#A855F7' },
-                    { name: 'Royal Violet', value: '#8B5CF6' },
-                    { name: 'Indigo', value: '#6366F1' },
-                    { name: 'Pure White', value: '#FFFFFF' },
-                    { name: 'Silver Grey', value: '#94A3B8' },
-                    { name: 'Dark Slate', value: '#1E293B' },
-                    { name: 'Charcoal Black', value: '#0F172A' },
-                    { name: 'Sunset Glow', value: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)' },
-                    { name: 'Cyber Neon', value: 'linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%)' },
-                    { name: 'Purple Haze', value: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)' },
-                    { name: 'Ocean Breeze', value: 'linear-gradient(135deg, #2E3192 0%, #1BFFFF 100%)' },
-                    { name: 'Electric Flame', value: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)' }
-                  ].map(col => (
-                    <button
-                      key={col.name}
-                      type="button"
-                      onClick={() => updateEditingModelField('themeColor', col.value)}
-                      style={{
-                        height: '24px',
-                        borderRadius: '4px',
-                        background: col.value || 'var(--color-bg-soft)',
-                        border: (editingModelContext.model.themeColor === col.value) || (!editingModelContext.model.themeColor && !col.value)
-                          ? '2px solid var(--color-primary, #EF4444)'
-                          : '1px solid var(--color-border)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: (editingModelContext.model.themeColor === col.value) ? '0 0 6px rgba(239, 68, 68, 0.4)' : 'none',
-                        transition: 'transform 0.1s ease',
-                        padding: 0
-                      }}
-                      title={col.name}
-                    >
-                      {((editingModelContext.model.themeColor === col.value) || (!editingModelContext.model.themeColor && !col.value)) && (
-                        <Check size={11} color={col.value === '#FFFFFF' ? '#000' : '#fff'} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom Color Input */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                  <input
-                    type="color"
-                    value={editingModelContext.model.themeColor && !editingModelContext.model.themeColor.includes('gradient') ? editingModelContext.model.themeColor : '#3B82F6'}
-                    onChange={(e) => updateEditingModelField('themeColor', e.target.value)}
-                    style={{ width: '28px', height: '28px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'transparent', cursor: 'pointer', padding: '1px' }}
-                  />
-                  <input
-                    type="text"
-                    value={editingModelContext.model.themeColor || ''}
-                    onChange={(e) => updateEditingModelField('themeColor', e.target.value)}
-                    placeholder="Custom hex / gradient (e.g. #3B82F6)"
-                    style={{
-                      flex: 1,
-                      background: 'var(--color-input-bg)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '6px',
-                      padding: '6px 10px',
-                      fontSize: '11px',
-                      color: 'var(--color-text-main)',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Visual Effects & Mode Toggles */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Display & Card Options
-                </label>
-                
-                {/* Shimmer Effect Checkbox */}
-                <label 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    padding: '10px 14px', 
-                    borderRadius: '8px', 
-                    background: 'var(--color-bg-soft)', 
-                    border: '1px solid var(--color-border)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', display: 'block' }}>
-                      ✨ Animated Shimmer Glow Effect
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                      Adds dynamic animated rainbow neon shimmer border
-                    </span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!!editingModelContext.model.shimmerEffect}
-                    onChange={(e) => updateEditingModelField('shimmerEffect', e.target.checked)}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                </label>
               </div>
 
             </div>
@@ -2213,7 +2011,7 @@ export default function ProvidersPage() {
         </div>
       )}
 
-      {/* Global Drawer Animations */}
+      {/* Global Drawer & Text Animations */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes slideInRight {
           from { transform: translateX(100%); }
@@ -2226,6 +2024,10 @@ export default function ProvidersPage() {
         @keyframes shimmerSweep {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+        @keyframes textShimmer {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
         }
       `}} />
     </div>

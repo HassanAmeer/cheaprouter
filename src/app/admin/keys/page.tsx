@@ -1,110 +1,128 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from '../admin.module.css';
-import { Search, Plus, Key, Copy, Check, Trash2, ShieldAlert, Sparkles, CheckCircle, RefreshCw, X } from 'lucide-react';
+import { Search, Key, Copy, Check, Trash2, ShieldAlert, Sparkles, CheckCircle, Loader2, User, Mail, Calendar, Activity, Layers } from 'lucide-react';
 
-interface ProxyKey {
+interface AdminKey {
   id: string;
   name: string;
-  keyVal: string;
-  calls: number;
-  cost: number;
+  prefix: string;
   created: string;
-  status: 'Active' | 'Revoked';
-  rateLimit: string;
+  lastUsed: string | null;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  plan: string;
+  planApi: string;
+  balance: number;
 }
 
-const INITIAL_KEYS: ProxyKey[] = [
-  { id: 'key_master_1', name: 'Primary Prod Proxy Gateway', keyVal: 'ca_live_9f8c12a83b4c...e81d', calls: 1420500, cost: 724.80, created: '2026-06-01', status: 'Active', rateLimit: '10,000 req/min' },
-  { id: 'key_dev_hasan', name: 'Hasan Local Development Key', keyVal: 'ca_live_2x7v38d91b0k...99a0', calls: 42000, cost: 12.40, created: '2026-06-15', status: 'Active', rateLimit: '100 req/min' },
-  { id: 'key_testing_sandbox', name: 'Automated CI/CD Test Key', keyVal: 'ca_live_8q1p2w3e4r5t...78cd', calls: 9840, cost: 3.10, created: '2026-07-01', status: 'Active', rateLimit: '500 req/min' },
-  { id: 'key_legacy_migration', name: 'Old Migration Token (Depr)', keyVal: 'ca_live_4n5m6b7v8c9x...1234', calls: 890432, cost: 412.10, created: '2026-01-10', status: 'Revoked', rateLimit: 'None' },
-];
+const formatDate = (d: string | null) => {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return d;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const maskKey = (prefix: string) => {
+  if (!prefix) return 'sk-…';
+  return prefix.length >= 16 ? `${prefix.slice(0, 6)}…${prefix.slice(-4)}` : prefix;
+};
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('adminToken')) : null;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
 export default function AdminKeysPage() {
-  const [keys, setKeys] = useState<ProxyKey[]>(INITIAL_KEYS);
+  const [keys, setKeys] = useState<AdminKey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
-  // Modals state
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isConfirmRevokeOpen, setIsConfirmRevokeOpen] = useState(false);
-  const [keyToRevoke, setKeyToRevoke] = useState<ProxyKey | null>(null);
-  
-  // Test loading state
-  const [testingId, setTestingId] = useState<string | null>(null);
+  const [keyToRevoke, setKeyToRevoke] = useState<AdminKey | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
-
-  // New key form state
-  const [newKeyName, setNewKeyName] = useState('');
-  const [newKeyLimit, setNewKeyLimit] = useState('1,000 req/min');
 
   const triggerToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const fetchKeys = useCallback(() => {
+    setLoading(true);
+    fetch('/api/admin/keys', { headers: getAuthHeaders() })
+      .then(res => {
+        if (!res.ok) throw new Error(`Failed to load keys (${res.status})`);
+        return res.json();
+      })
+      .then(data => {
+        setKeys(data.keys || []);
+        setError(null);
+      })
+      .catch(err => {
+        console.error(err);
+        setError(err.message || 'Failed to load keys');
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchKeys();
+  }, [fetchKeys]);
+
   const handleCopy = (id: string, val: string) => {
-    navigator.clipboard.writeText(val);
+    navigator.clipboard.writeText(val).catch(() => {});
     setCopiedId(id);
-    triggerToast('API Key copied to clipboard!');
+    triggerToast('API key prefix copied to clipboard!');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleTestKey = (id: string) => {
-    setTestingId(id);
-    setTimeout(() => {
-      setTestingId(null);
-      triggerToast('Proxy Route Online. Status: 200 OK (Latency: 45ms)', 'success');
-    }, 1500);
-  };
-
-  const openRevokeConfirm = (key: ProxyKey) => {
+  const openRevokeConfirm = (key: AdminKey) => {
     setKeyToRevoke(key);
     setIsConfirmRevokeOpen(true);
   };
 
-  const handleRevoke = () => {
+  const handleRevoke = async () => {
     if (!keyToRevoke) return;
-    setKeys(prev => prev.map(k => k.id === keyToRevoke.id ? { ...k, status: 'Revoked' } : k));
+    setDeletingId(keyToRevoke.id);
+    try {
+      const res = await fetch(`/api/admin/keys/${keyToRevoke.id}`, { method: 'DELETE', headers: getAuthHeaders() });
+      if (res.ok) {
+        setKeys(prev => prev.filter(k => k.id !== keyToRevoke.id));
+        triggerToast(`Key "${keyToRevoke.name}" revoked`, 'info');
+      } else {
+        triggerToast('Failed to revoke key', 'error');
+      }
+    } catch (e) {
+      triggerToast('Failed to revoke key', 'error');
+    }
+    setDeletingId(null);
     setIsConfirmRevokeOpen(false);
-    triggerToast(`Successfully revoked "${keyToRevoke.name}"`, 'info');
     setKeyToRevoke(null);
   };
 
-  const handleCreateKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKeyName.trim()) return;
+  const filteredKeys = keys.filter(k => {
+    const q = searchTerm.toLowerCase();
+    return (
+      k.name?.toLowerCase().includes(q) ||
+      k.id?.toLowerCase().includes(q) ||
+      k.userId?.toLowerCase().includes(q) ||
+      k.userName?.toLowerCase().includes(q) ||
+      k.userEmail?.toLowerCase().includes(q) ||
+      k.prefix?.toLowerCase().includes(q)
+    );
+  });
 
-    const randomHex = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    const fullKey = `ca_live_${randomHex.slice(0, 12)}...${randomHex.slice(12, 16)}`;
-
-    const newKey: ProxyKey = {
-      id: `key_${Date.now()}`,
-      name: newKeyName,
-      keyVal: fullKey,
-      calls: 0,
-      cost: 0.00,
-      created: new Date().toISOString().split('T')[0],
-      status: 'Active',
-      rateLimit: newKeyLimit,
-    };
-
-    setKeys([newKey, ...keys]);
-    setIsCreateModalOpen(false);
-    setNewKeyName('');
-    setNewKeyLimit('1,000 req/min');
-    triggerToast('New Master Proxy Key successfully generated!');
-  };
-
-  const filteredKeys = keys.filter(k => 
-    k.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    k.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const totalKeys = keys.length;
+  const activeUsers = new Set(keys.map(k => k.userId)).size;
+  const totalBalance = keys.reduce((sum, k) => sum + (Number(k.balance) || 0), 0);
 
   return (
-    <div style={{ position: 'relative' }}>
-      
+    <div style={{ animation: 'fadeIn .4s ease' }}>
+      <style jsx>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
+
       {/* Toast Notification */}
       {toastMessage && (
         <div style={{
@@ -121,189 +139,176 @@ export default function AdminKeysPage() {
           fontSize: '14px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          animation: 'slideIn 0.3s ease-out'
+          gap: '8px'
         }}>
           {toastMessage.type === 'success' ? <CheckCircle size={16} /> : <ShieldAlert size={16} />}
           {toastMessage.text}
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Global Proxy Keys</h2>
-          <p style={{ color: 'var(--color-text-muted)' }}>Manage master API keys used to route frontend queries through the cheap-gateway.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '12px', fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-soft)', padding: '4px 10px', borderRadius: '20px' }}>
+              <Key size={12} /> User API Keys
+            </span>
+          </div>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(90deg, var(--color-text-main) 0%, #a1a1aa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Purchased Keys</h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: '8px 0 0', maxWidth: '640px' }}>
+            Every API key users have generated and paid for — created through the API/code-editor flow. Each key is linked to the user who owns it, showing their plan and remaining balance.
+          </p>
         </div>
-        <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
-          <Plus size={16} /> Generate Master Key
-        </button>
       </div>
 
-      {/* Search Filter */}
+      {/* Stats strip */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        {[
+          { icon: <Key size={15} />, label: 'Active keys', value: totalKeys, tint: 'var(--color-primary)' },
+          { icon: <User size={15} />, label: 'Unique users', value: activeUsers, tint: 'var(--color-success)' },
+          { icon: <Layers size={15} />, label: 'Total balance ($)', value: `$${totalBalance.toFixed(2)}`, tint: 'var(--color-warning)' },
+        ].map(s => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px' }}>
+            <span style={{ color: s.tint, display: 'inline-flex' }}>{s.icon}</span>
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 800, lineHeight: 1.1 }}>{s.value}</div>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Search proxy keys by name or ID..." 
+          <input
+            type="text"
+            placeholder="Search by key name, key ID, user ID, email, or key prefix..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ 
-              background: 'var(--color-card-bg)', 
-              border: '1px solid var(--color-border)', 
-              padding: '10px 16px 10px 36px', 
+            style={{
+              background: 'var(--color-card-bg)',
+              border: '1px solid var(--color-border)',
+              padding: '10px 16px 10px 36px',
               borderRadius: '8px',
               color: 'var(--color-text-main)',
               outline: 'none',
               width: '100%'
-            }} 
+            }}
           />
         </div>
       </div>
 
       {/* Keys Table */}
       <div className={styles.tableContainer}>
-        <table className={styles.dataTable}>
-          <thead>
-            <tr>
-              <th>Key Name / ID</th>
-              <th>API Key Value</th>
-              <th>Rate Limit</th>
-              <th>Calls Routed</th>
-              <th>Cost Incurred</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredKeys.map((k) => (
-              <tr key={k.id} style={{ opacity: k.status === 'Revoked' ? 0.6 : 1 }}>
-                <td>
-                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Key size={14} color={k.status === 'Active' ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
-                    {k.name}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace', marginTop: '2px' }}>{k.id}</div>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <code style={{ background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace' }}>
-                      {k.keyVal}
-                    </code>
-                    {k.status === 'Active' && (
-                      <button 
-                        onClick={() => handleCopy(k.id, k.keyVal)}
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '60px', color: 'var(--color-text-muted)' }}>
+            <Loader2 size={18} className="lucide-spin" /> Loading keys…
+          </div>
+        ) : error && keys.length === 0 ? (
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: 6 }}>Could not load keys</div>
+            <div style={{ fontSize: '13px' }}>{error}</div>
+          </div>
+        ) : (
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th>Key Name</th>
+                <th>API Key</th>
+                <th>Owner (User ID)</th>
+                <th>Plan</th>
+                <th>Created</th>
+                <th>Last Used</th>
+                <th>Balance</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredKeys.map((k) => (
+                <tr key={k.id}>
+                  <td>
+                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Key size={14} color="var(--color-primary)" />
+                      {k.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace', marginTop: '2px' }}>{k.id}</div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <code style={{ background: 'var(--color-bg-soft)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace' }}>
+                        {maskKey(k.prefix)}
+                      </code>
+                      <button
+                        onClick={() => handleCopy(k.id, k.prefix)}
                         style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                        title="Copy Key"
+                        title="Copy Key Prefix"
                       >
                         {copiedId === k.id ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
                       </button>
-                    )}
-                  </div>
-                </td>
-                <td style={{ fontSize: '13px' }}>{k.rateLimit}</td>
-                <td style={{ fontWeight: 500 }}>{k.calls.toLocaleString()}</td>
-                <td style={{ color: 'var(--color-primary)', fontWeight: 600 }}>${k.cost.toFixed(2)}</td>
-                <td>
-                  <span className={`${styles.badge} ${k.status === 'Active' ? styles.badgeActive : styles.badgeInactive}`}>
-                    {k.status}
-                  </span>
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    {k.status === 'Active' && (
-                      <>
-                        <button 
-                          className={styles.actionBtn}
-                          onClick={() => handleTestKey(k.id)}
-                          disabled={testingId === k.id}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <RefreshCw size={12} className={testingId === k.id ? 'spin' : ''} style={{ animation: testingId === k.id ? 'spin 1s linear infinite' : 'none' }} />
-                          {testingId === k.id ? 'Testing...' : 'Test Proxy'}
-                        </button>
-                        <button 
-                          className={styles.actionBtn} 
-                          onClick={() => openRevokeConfirm(k)}
-                          style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444' }}
-                          title="Revoke Key"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredKeys.length === 0 && (
-              <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
-                  No proxy keys found matching "{searchTerm}"
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                        <User size={12} color="var(--color-primary)" /> {k.userName || '—'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Mail size={10} /> {k.userEmail || '—'}
+                        </span>
+                        <code style={{ color: 'var(--color-text-muted)' }}>{k.userId}</code>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`${styles.badge} ${styles.badgeActive}`}>
+                      {k.planApi || k.plan || 'Free'}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Calendar size={11} /> {formatDate(k.created)}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Activity size={11} /> {formatDate(k.lastUsed)}
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--color-primary)', fontWeight: 600 }}>${Number(k.balance || 0).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button
+                        className={styles.actionBtn}
+                        onClick={() => openRevokeConfirm(k)}
+                        disabled={deletingId === k.id}
+                        style={{ border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444' }}
+                        title="Revoke / Delete Key"
+                      >
+                        {deletingId === k.id ? <Loader2 size={14} className="lucide-spin" /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredKeys.length === 0 && (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
+                    {searchTerm ? `No keys found matching "${searchTerm}"` : 'No keys yet. When users generate API keys from their dashboard or code editor, they will appear here.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* ================= MODAL: GENERATE KEY ================= */}
-      {isCreateModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 999
-        }}>
-          <div style={{
-            background: 'var(--color-card-bg)', border: '1px solid var(--color-border)',
-            borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} color="var(--color-primary)" /> Generate Master Proxy Key
-              </h3>
-              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateKey} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)' }}>Key Name / Description</label>
-                <input 
-                  type="text" 
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="e.g. Production Cluster Client"
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)' }}>Rate Limit Policy</label>
-                <select 
-                  value={newKeyLimit} 
-                  onChange={(e) => setNewKeyLimit(e.target.value)}
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }}
-                >
-                  <option value="100 req/min">100 req/min (Developer Sandbox)</option>
-                  <option value="1,000 req/min">1,000 req/min (Standard Tier)</option>
-                  <option value="5,000 req/min">5,000 req/min (High Throughput)</option>
-                  <option value="10,000 req/min">10,000 req/min (Master Cluster)</option>
-                  <option value="None">No Limits (Caution)</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                <button type="button" className={styles.actionBtn} onClick={() => setIsCreateModalOpen(false)} style={{ flex: 1, padding: '12px' }}>Cancel</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '12px' }}>Generate Token</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: 'var(--color-text-muted)', fontSize: '12px' }}>
+        <ShieldAlert size={14} color="var(--color-warning)" />
+        Full key values are stored hashed — only the prefix is recoverable. Revoking removes the key for the owner immediately.
+      </div>
 
       {/* ================= MODAL: REVOKE CONFIRMATION ================= */}
       {isConfirmRevokeOpen && keyToRevoke && (
@@ -318,14 +323,15 @@ export default function AdminKeysPage() {
             boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
           }}>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <ShieldAlert size={20} /> Revoke Master Key?
+              <ShieldAlert size={20} /> Revoke Key?
             </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-              Are you sure you want to revoke the key <strong>"{keyToRevoke.name}"</strong>? This action is irreversible. All applications and clients currently routing proxy queries with this token will immediately fail.
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '8px' }}>
+              Are you sure you want to revoke the key <strong>"{keyToRevoke.name}"</strong> belonging to {' '}
+              <strong>{keyToRevoke.userEmail || keyToRevoke.userId}</strong>? The owner will lose access immediately.
             </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button className={styles.actionBtn} onClick={() => setIsConfirmRevokeOpen(false)} style={{ flex: 1, padding: '10px' }}>Cancel</button>
-              <button 
+              <button
                 onClick={handleRevoke}
                 style={{ flex: 1, padding: '10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
               >
@@ -336,18 +342,12 @@ export default function AdminKeysPage() {
         </div>
       )}
 
-      {/* Inline Spin CSS animation */}
-      <style jsx global>{`
+      <style jsx>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        @keyframes slideIn {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
       `}</style>
-
     </div>
   );
 }

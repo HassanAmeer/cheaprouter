@@ -68,6 +68,18 @@ export async function initDb() {
   `;
 
   await db`
+    CREATE TABLE IF NOT EXISTS system_keys (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      key_prefix TEXT NOT NULL,
+      key_hash TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      last_used TIMESTAMP,
+      description TEXT DEFAULT ''
+    );
+  `;
+
+  await db`
     CREATE TABLE IF NOT EXISTS providers (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

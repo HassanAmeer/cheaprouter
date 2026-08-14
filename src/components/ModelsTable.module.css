@@ -143,6 +143,34 @@
   margin-top: 2px;
 }
 
+.shimmerText {
+  font-size: 12.5px;
+  font-weight: 600;
+  background: linear-gradient(
+    90deg, 
+    #EF4444 0%, 
+    #F59E0B 25%, 
+    #EC4899 50%, 
+    #8B5CF6 75%, 
+    #EF4444 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 3s linear infinite;
+  display: inline-block;
+  line-height: 1.4;
+}
+
+@keyframes textShimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
 .costCol {
   font-family: monospace;
   font-size: 14px;

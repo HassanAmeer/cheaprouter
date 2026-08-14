@@ -273,45 +273,42 @@ export default function ModelsTable({ limit, showToggle }: ModelsTableProps = {}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>{m.name}</span>
-                            {m.badgeText && (
-                              <span style={{ fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                                {m.badgeText}
-                              </span>
-                            )}
-                            {m.type === 'Premium' && !m.badgeText && (
+                            {m.type === 'Premium' && (
                               <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255, 77, 77, 0.1)', color: 'var(--color-primary)' }}>PRO</span>
                             )}
                           </div>
-                          <div className={styles.modelId}>{m.id}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+                            {m.badgeText && (
+                              <span 
+                                style={{ 
+                                  fontSize: '9.5px', 
+                                  fontWeight: 800, 
+                                  padding: '1px 6px', 
+                                  borderRadius: '4px', 
+                                  background: 'rgba(239, 68, 68, 0.15)', 
+                                  color: 'var(--color-primary, #EF4444)', 
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  flexShrink: 0,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  lineHeight: '1.4'
+                                }}
+                              >
+                                {m.badgeText}
+                              </span>
+                            )}
+                            {m.description && m.description.trim() ? (
+                              <span className={styles.shimmerText} title={m.id}>
+                                {m.description}
+                              </span>
+                            ) : (
+                              <span className={styles.modelId} title={m.id}>
+                                {m.id}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-
-                      {/* Tree Node Description Branch */}
-                      {m.description && m.description.trim() ? (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginLeft: '17px', marginTop: '6px' }}>
-                          <div 
-                            style={{
-                              width: '16px',
-                              height: '14px',
-                              borderLeft: '1.5px solid var(--color-border, #475569)',
-                              borderBottom: '1.5px solid var(--color-border, #475569)',
-                              borderBottomLeftRadius: '6px',
-                              flexShrink: 0,
-                              marginTop: '-2px',
-                              opacity: 0.65
-                            }} 
-                          />
-                          <span style={{ 
-                            fontSize: '11.5px', 
-                            color: 'var(--color-text-muted)', 
-                            lineHeight: '1.45', 
-                            maxWidth: '420px',
-                            whiteSpace: 'normal'
-                          }}>
-                            {m.description}
-                          </span>
-                        </div>
-                      ) : null}
                     </div>
                   </td>
                   <td style={{ fontWeight: 600, verticalAlign: 'top', paddingTop: '18px' }}>{m.context}</td>
