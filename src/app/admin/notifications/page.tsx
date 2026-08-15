@@ -140,7 +140,7 @@ export default function NotificationsPage() {
       <div className="card glass-card" style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '24px', padding: '40px', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
         <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'var(--color-primary)', filter: 'blur(150px)', opacity: 0.05, zIndex: 0, borderRadius: '50%' }} />
         
-        <form onSubmit={handleSendNotification} style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '40px' }}>
+        <form onSubmit={handleSendNotification} style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '40px' }}>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             

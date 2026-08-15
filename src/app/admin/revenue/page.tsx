@@ -301,13 +301,13 @@ export default function RevenuePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         <div className="premium-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             <Box size={20} color="var(--color-primary)" />
             <h3 style={{ fontSize: '18px', fontWeight: 600 }}>Top Performing Models</h3>
           </div>
-          <div className="table-container">
+          <div className={styles.tableScroll}>
             <table>
               <thead>
                 <tr>
@@ -343,7 +343,7 @@ export default function RevenuePage() {
             <Users size={20} color="#F59E0B" />
             <h3 style={{ fontSize: '18px', fontWeight: 600 }}>Top Customers by Spend</h3>
           </div>
-          <div className="table-container">
+          <div className={styles.tableScroll}>
             <table>
               <thead>
                 <tr>

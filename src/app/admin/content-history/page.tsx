@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Video, CheckCircle2, XCircle, Clock, ExternalLink } from 'lucide-react';
+import styles from '../admin.module.css';
 
 type Submission = {
   id: string;
@@ -68,6 +69,7 @@ export default function ContentHistoryPage() {
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>Loading submissions...</div>
       ) : (
       <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div className={styles.tableScroll}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-alt)' }}>
@@ -140,6 +142,7 @@ export default function ContentHistoryPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
       )}
     </div>

@@ -567,11 +567,21 @@ a, button {
 /* ---- Dashboard responsive grid overrides (inline styles) ---- */
 @media (max-width: 768px) {
   [style*="grid-template-columns:1fr 380px"],
-  [style*="grid-template-columns:1fr 1.6fr"] {
+  [style*="grid-template-columns: 1fr 380px"],
+  [style*="grid-template-columns:1fr 1.6fr"],
+  [style*="grid-template-columns: 1fr 1.6fr"] {
     grid-template-columns: 1fr !important;
   }
 
-  [style*="grid-template-columns:1fr 1fr"] {
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [style*="grid-template-columns:1fr 2fr auto"],
+  [style*="grid-template-columns: 1fr 2fr auto"],
+  [style*="grid-template-columns:auto 1fr 2fr auto"],
+  [style*="grid-template-columns: auto 1fr 2fr auto"] {
     grid-template-columns: 1fr !important;
   }
 }
@@ -580,5 +590,66 @@ a, button {
   .card,
   .card-static {
     padding: 14px;
+  }
+}
+
+/* ─── Docs page responsive (inline-style layout) ─── */
+@media (max-width: 900px) {
+  main[style*="gap:48px"] {
+    flex-direction: column !important;
+    gap: 24px !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    padding-top: 24px !important;
+  }
+
+  aside[style*="width:260px"] {
+    width: 100% !important;
+    flex-shrink: 1 !important;
+    position: static !important;
+    top: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 0 24px 0 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  aside[style*="width:260px"] > div:first-child > div[style*="margin-bottom:40px"] {
+    display: none;
+  }
+
+  aside[style*="width:260px"] > div:first-child > div[style*="margin-bottom:32px"] {
+    margin-bottom: 12px !important;
+  }
+
+  aside[style*="width:260px"] nav[style*="flex-direction:column"] {
+    flex-direction: row !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  aside[style*="width:260px"] nav[style*="flex-direction:column"] button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  aside[style*="width:260px"] > div:last-child {
+    display: none !important;
+  }
+
+  div[style*="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr)"],
+  div[style*="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+}
+
+/* ─── Founder page: fluid pixel canvas ─── */
+@media (max-width: 1024px) {
+  canvas[aria-label="Pixelated rendering of source image"] {
+    width: 100% !important;
+    height: auto !important;
   }
 }

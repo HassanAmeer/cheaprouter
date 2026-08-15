@@ -1339,7 +1339,18 @@
 @media (max-width: 968px) {
   .apiSplit {
     flex-direction: column;
+    align-items: stretch;
     gap: 40px;
+  }
+
+  .apiCodeWrap {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .apiText {
+    min-width: 0;
   }
 }
 

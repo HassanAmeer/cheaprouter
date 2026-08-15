@@ -212,6 +212,7 @@ export default function AdminKeysPage() {
             <div style={{ fontSize: '13px' }}>{error}</div>
           </div>
         ) : (
+          <div className={styles.tableScroll}>
           <table className={styles.dataTable}>
             <thead>
               <tr>
@@ -302,6 +303,7 @@ export default function AdminKeysPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
