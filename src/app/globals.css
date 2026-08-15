@@ -563,3 +563,22 @@ a, button {
 .monaco-editor-hover {
   pointer-events: none !important;
 }
+
+/* ---- Dashboard responsive grid overrides (inline styles) ---- */
+@media (max-width: 768px) {
+  [style*="grid-template-columns:1fr 380px"],
+  [style*="grid-template-columns:1fr 1.6fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .card,
+  .card-static {
+    padding: 14px;
+  }
+}

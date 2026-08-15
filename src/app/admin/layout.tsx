@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt, ShieldAlert
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt, ShieldAlert, Menu, X
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -117,6 +117,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isLoginPage = pathname === '/admin/login';
 
@@ -128,6 +129,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setIsAuthenticated(true);
     }
   }, [pathname, isLoginPage, router]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   if (isAuthenticated === null) return null; // Avoid hydration mismatch / flash
 
@@ -159,10 +164,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className={styles.dashboardLayout}>
-      <aside className={styles.sidebar}>
-        <Link href="/admin" className={styles.sidebarLogo}>
-          <Zap size={24} color="var(--color-primary)" fill="var(--color-primary)" /> Admin Panel
-        </Link>
+      {sidebarOpen && (
+        <div className={styles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+        <div className={styles.sidebarLogoRow}>
+          <Link href="/admin" className={styles.sidebarLogo}>
+            <Zap size={24} color="var(--color-primary)" fill="var(--color-primary)" /> Admin Panel
+          </Link>
+          <button className={styles.sidebarCloseBtn} onClick={() => setSidebarOpen(false)} title="Close menu">
+            <X size={18} />
+          </button>
+        </div>
 
         <Suspense fallback={<nav className={styles.sidebarNav} />}>
           <SidebarNavContent />
@@ -181,8 +194,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
       <main className={styles.mainContent}>
         <header className={styles.topbar}>
-          <div className={styles.pageTitle}>{getPageTitle()}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <button className={styles.menuButton} onClick={() => setSidebarOpen(true)} title="Open menu">
+              <Menu size={20} />
+            </button>
+            <div className={styles.pageTitle} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getPageTitle()}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
             <DevLogsWidget />
             <ThemeToggle />
           </div>

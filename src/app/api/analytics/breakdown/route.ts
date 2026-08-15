@@ -6,12 +6,12 @@ export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization') || '';
     const url = new URL(req.url);
     const query = url.search || '';
-    
-    const response = await fetch(`${backendUrl}/api/analytics${query}`, {
+
+    const response = await fetch(`${backendUrl}/api/analytics/breakdown${query}`, {
       headers: { 'Authorization': authHeader }
     });
     if (!response.ok) return NextResponse.json({}, { status: response.status });
-    
+
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {

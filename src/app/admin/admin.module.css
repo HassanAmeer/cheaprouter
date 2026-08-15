@@ -206,6 +206,51 @@
   flex-shrink: 0;
 }
 
+.sidebarLogoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.menuButton:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+}
+
+.sidebarCloseBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.sidebarCloseBtn:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+}
+
+.sidebarOverlay {
+  display: none;
+}
+
 .sidebarNav {
   display: flex;
   flex-direction: column;

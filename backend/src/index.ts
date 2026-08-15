@@ -19,7 +19,7 @@ import {
 } from './auth.ts';
 import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
-import { getAnalytics, getSummary, recordUsage } from './usage.ts';
+import { getAnalytics, getSummary, getUsageBreakdown, recordUsage } from './usage.ts';
 import { getBilling, topUp, upgradePlan, seedWelcomeBalance } from './billing.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
@@ -212,7 +212,8 @@ app.delete('/api/providers/:id', async (c) => {
 });
 
 // ---- Analytics & Summary ----
-app.get('/api/analytics', async (c) => c.json(await getAnalytics(c.get('userId'))));
+app.get('/api/analytics', async (c) => c.json(await getAnalytics(c.get('userId'), c.req.query('source'))));
+  app.get('/api/analytics/breakdown', async (c) => c.json(await getUsageBreakdown(c.get('userId'), c.req.query('source'))));
 app.get('/api/summary', async (c) => c.json(await getSummary(c.get('userId'))));
 
 // ---- Billing / Account Balance ----
@@ -519,7 +520,7 @@ app.post('/api/conversations', zValidator('json', z.object({ title: z.string().o
   const tokens = result.usage?.totalTokens ?? 150;
   
   await addMessage(convId, 'assistant', replyText);
-  await recordUsage(userId, 'gpt-4o', tokens, tokens * 0.000003);
+  await recordUsage(userId, 'gpt-4o', tokens, tokens * 0.000003, 'chat');
   return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: replyText }] }, 201);
 });
 
@@ -536,7 +537,7 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   const tokens = result.usage?.totalTokens ?? 150;
   
   await addMessage(convId, 'assistant', replyText);
-  await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003);
+  await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003, 'chat');
   return c.json({ message: { role: 'assistant', content: replyText } });
 });
 
@@ -695,7 +696,7 @@ app.get('/api/stream', async (c) => {
         // Wait for final usage
         const usage = await result.usage;
         const tokens = usage?.totalTokens ?? 150;
-        await recordUsage(userId, model, tokens, tokens * 0.000003);
+        await recordUsage(userId, model, tokens, tokens * 0.000003, 'chat');
       },
     });
     return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });

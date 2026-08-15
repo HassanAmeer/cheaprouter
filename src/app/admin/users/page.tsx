@@ -342,7 +342,7 @@ export default function UsersPage() {
               <th>IP Address</th>
               <th>Active Plans</th>
               <th>Onboarding</th>
-              <th>API Calls</th>
+              <th>Total API Calls</th>
               <th>Banned</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>

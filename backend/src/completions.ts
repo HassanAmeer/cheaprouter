@@ -108,6 +108,9 @@ export async function handleCompletions(c: any) {
   try {
     auth = c.req.header('authorization') || '';
     sessionId = c.req.header('x-session-id') || '';
+    const userAgent = (c.req.header('user-agent') || '').toLowerCase();
+    const cliUa = ['cli', 'code', 'aider', 'cursor', 'kilocode', 'opencode', 'opencli', 'agent', 'claude-code', 'cmdk', 'terminal', 'windsurf'].some(k => userAgent.includes(k));
+    const source = cliUa ? 'cli' : 'api';
     
     if (!auth || !auth.startsWith('Bearer ')) {
       return c.json({ error: 'Unauthorized' }, 401);
@@ -235,7 +238,7 @@ export async function handleCompletions(c: any) {
               ...(typeof top_p === 'number' ? { topP: top_p } : {}),
               async onFinish({ usage, text }) {
                 if (usage && !skipUsage) {
-                  await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003);
+                  await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003, source);
                 }
                 addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
                   usage,
@@ -256,7 +259,7 @@ export async function handleCompletions(c: any) {
 
             const tokens: number = result.usage?.totalTokens || 150;
             if (!skipUsage) {
-              await recordUsage(finalUserId, model, tokens, tokens * 0.000003);
+              await recordUsage(finalUserId, model, tokens, tokens * 0.000003, source);
             }
             
             addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);

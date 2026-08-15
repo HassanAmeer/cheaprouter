@@ -589,35 +589,37 @@ export default function BillingPage() {
               No invoices yet.
             </div>
           ) : (
-            <table className={styles.dataTable}>
-              <thead>
-                <tr>
-                  <th>Invoice</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {INVOICES.map((inv) => (
-                  <tr key={inv.id}>
-                    <td><strong style={{ fontSize: '13px' }}>{inv.id}</strong></td>
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{inv.date}</td>
-                    <td style={{ fontWeight: 600 }}>{inv.amount}</td>
-                    <td><Badge tone="success"><Check size={11} /> {inv.status}</Badge></td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        onClick={() => toast('Downloading invoice…')}
-                        style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}
-                      >
-                        <Download size={13} /> PDF
+            <div className={styles.tableScroll}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INVOICES.map((inv) => (
+                    <tr key={inv.id}>
+                      <td><strong style={{ fontSize: '13px' }}>{inv.id}</strong></td>
+                      <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{inv.date}</td>
+                      <td style={{ fontWeight: 600 }}>{inv.amount}</td>
+                      <td><Badge tone="success"><Check size={11} /> {inv.status}</Badge></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          onClick={() => toast('Downloading invoice…')}
+                          style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          <Download size={13} /> PDF
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       </div>
@@ -629,32 +631,34 @@ export default function BillingPage() {
           <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{WITHDRAWALS.length} withdrawals</span>
         </div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th>Withdrawal</th>
-                <th>Date</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {WITHDRAWALS.map((w) => (
-                <tr key={w.id}>
-                  <td><strong style={{ fontSize: '13px' }}>{w.id}</strong></td>
-                  <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.date}</td>
-                  <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.method}</td>
-                  <td style={{ fontWeight: 600 }}>{w.amount}</td>
-                  <td>
-                    {w.status === 'Completed'
-                      ? <Badge tone="success"><Check size={11} /> Completed</Badge>
-                      : <Badge tone="warning"><Loader2 size={11} className="lucide-spin" /> Pending</Badge>}
-                  </td>
+          <div className={styles.tableScroll}>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th>Withdrawal</th>
+                  <th>Date</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {WITHDRAWALS.map((w) => (
+                  <tr key={w.id}>
+                    <td><strong style={{ fontSize: '13px' }}>{w.id}</strong></td>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.date}</td>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.method}</td>
+                    <td style={{ fontWeight: 600 }}>{w.amount}</td>
+                    <td>
+                      {w.status === 'Completed'
+                        ? <Badge tone="success"><Check size={11} /> Completed</Badge>
+                        : <Badge tone="warning"><Loader2 size={11} className="lucide-spin" /> Pending</Badge>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

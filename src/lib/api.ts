@@ -73,8 +73,9 @@ export const api = {
   deleteProvider: (id: string) => request<{ ok: true }>(`/api/providers/${id}`, { method: 'DELETE' }),
 
   // Analytics
-  analytics: () => request<any>('/api/analytics'),
+  analytics: (source?: string) => request<any>(source ? `/api/analytics?source=${source}` : '/api/analytics'),
   summary: () => request<any>('/api/summary'),
+  usageBreakdown: (source?: string) => request<any>(source ? `/api/analytics/breakdown?source=${source}` : '/api/analytics/breakdown'),
 
   // Billing / Account Balance
   getBilling: () => request<any>('/api/billing'),

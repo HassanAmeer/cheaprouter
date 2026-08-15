@@ -7,7 +7,7 @@ import pageStyles from '@/app/page.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X, Gift } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X, Gift, Menu } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,6 +18,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // ⌘K / Ctrl+K shortcut to focus search
   useEffect(() => {
@@ -46,6 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Overview', path: '/dashboard', icon: <BarChart3 size={18} />, badge: null },
     { name: 'API Keys', path: '/dashboard/keys', icon: <Key size={18} />, badge: null },
     { name: 'Providers', path: '/dashboard/providers', icon: <Plug size={18} />, badge: 'BYOK' },
+    { name: 'Usage', path: '/dashboard/usage', icon: <LineChart size={18} />, badge: null },
     { name: 'Billing', path: '/dashboard/billing', icon: <CreditCard size={18} />, badge: null },
     { name: 'Refer & Earn', path: '/dashboard/refer', icon: <Gift size={18} />, badge: 'Bonus' },
     { name: 'Notifications', path: '/dashboard/notifications', icon: <Bell size={18} />, badge: 'New' },
@@ -61,11 +67,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className={`${styles.dashboardContainer} bg-grid-light`}>
       {/* Sidebar */}
-      <aside className={styles.sidebar}>
+      {sidebarOpen && (
+        <div className={styles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.logo}>
             <Zap size={20} fill="var(--color-primary)" color="var(--color-primary)" /> CheapRouter
           </Link>
+          <button
+            className={styles.sidebarCloseBtn}
+            onClick={() => setSidebarOpen(false)}
+            title="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
 
@@ -182,6 +198,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Topbar */}
         <header className={styles.topbar}>
+          <button className={styles.menuButton} onClick={() => setSidebarOpen(true)} title="Open menu">
+            <Menu size={20} />
+          </button>
           <div>
             <div className={styles.pageTitle}>
               {navItems.find(i => i.path === pathname)?.name ?? 'Dashboard'}

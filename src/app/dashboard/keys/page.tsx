@@ -113,22 +113,23 @@ export default function ApiKeysPage() {
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Secret Key</th>
-                <th>Created</th>
-                <th>Last Used</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((k) => (
-                <tr key={k.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
+          <div className={styles.tableScroll}>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Secret Key</th>
+                  <th>Created</th>
+                  <th>Last Used</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keys.map((k) => (
+                  <tr key={k.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
                         width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-soft)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                       }}>
@@ -166,7 +167,8 @@ export default function ApiKeysPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 

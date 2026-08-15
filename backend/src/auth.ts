@@ -119,6 +119,8 @@ function detectOs(hwInfo: any, userAgent?: string): string {
 
 export async function getAllUsers() {
   const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users ORDER BY created_at DESC`;
+  const callCounts = await db`SELECT user_id, COUNT(*) AS count FROM usage GROUP BY user_id` as { user_id: string; count: number }[];
+  const callMap = new Map(callCounts.map(r => [r.user_id, Number(r.count)]));
   return result.map(row => ({
     id: row.id,
     name: row.name,
@@ -142,7 +144,7 @@ export async function getAllUsers() {
     last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
     last_ip: row.last_ip ?? null,
     os: detectOs(row.hardware_info, row.user_agent),
-    calls: 0,
+    calls: callMap.get(row.id) ?? 0,
     status: row.status || 'Active',
     profile_picture: row.profile_picture,
     is_student: row.is_student ?? false,

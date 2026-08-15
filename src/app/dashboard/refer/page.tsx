@@ -150,7 +150,8 @@ export default function ReferAndEarnPage() {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Submitted Content</h3>
         </div>
-        <table className={styles.dataTable}>
+        <div className={styles.tableScroll}>
+          <table className={styles.dataTable}>
           <thead>
             <tr>
               <th>Date</th>
@@ -185,7 +186,8 @@ export default function ReferAndEarnPage() {
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   );

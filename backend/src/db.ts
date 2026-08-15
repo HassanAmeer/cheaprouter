@@ -100,6 +100,8 @@ export async function initDb() {
       day TEXT NOT NULL
     );
   `;
+  await db`ALTER TABLE usage ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'api';`;
+  await db`ALTER TABLE usage ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
   await db`
     CREATE TABLE IF NOT EXISTS conversations (
