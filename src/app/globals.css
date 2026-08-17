@@ -19,6 +19,12 @@
   --color-border: #E5E7EB;
   --color-input-bg: #FFFFFF;
 
+  /* Code / terminal surfaces */
+  --color-code-bg: #0B1220;
+  --color-code-bg-2: #0D1526;
+  --color-code-text: #CBD5E1;
+  --color-code-accent: #FBBF24;
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -71,6 +77,12 @@
   --color-text-muted: #9AA4B2;
   --color-border: #262C34;
   --color-input-bg: #1A1F25;
+
+  /* Code / terminal surfaces */
+  --color-code-bg: #0B1220;
+  --color-code-bg-2: #0D1526;
+  --color-code-text: #CBD5E1;
+  --color-code-accent: #FBBF24;
   --shadow-glow: 0 0 24px rgba(255, 59, 59, 0.22);
 }
 

@@ -259,6 +259,10 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  scrollbar-width: none;
+}
+.sidebarNav::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── DOTTED LINE SECTION HEADER ─── */
@@ -715,18 +719,18 @@ input:checked + .toggleSlider:before {
 /* ─── RESPONSIVE SHELL (TABLET ICON RAIL) ─── */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 76px;
-    padding: 20px 10px;
+    width: 60px;
+    padding: 16px 6px;
     align-items: center;
   }
   .sidebarLogo {
     font-size: 0;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .sidebarLogo svg {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
   }
   .sidebarLogoRow {
     width: 100%;
@@ -737,16 +741,19 @@ input:checked + .toggleSlider:before {
     display: none;
   }
   .sectionHeader {
-    margin: 10px 0 8px 0;
+    margin: 6px 0 6px 0;
   }
   .sectionItems {
     gap: 6px;
   }
   .navItem {
     justify-content: center;
-    padding: 11px 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     gap: 0;
     font-size: 0;
+    border-radius: 10px;
   }
   .navItem svg {
     width: 19px;
@@ -755,8 +762,11 @@ input:checked + .toggleSlider:before {
   }
   .subNavItem {
     justify-content: center;
-    padding: 9px 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     font-size: 0;
+    border-radius: 8px;
   }
   .subNavItem svg {
     width: 18px;
@@ -765,7 +775,15 @@ input:checked + .toggleSlider:before {
   }
   .sidebarFooter {
     justify-content: center;
-    padding-top: 16px;
+    padding-top: 12px;
+  }
+  .avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .logoutBtn {
+    padding: 2px;
   }
   .userInfo {
     display: none;

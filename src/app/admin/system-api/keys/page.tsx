@@ -141,8 +141,8 @@ export default function AdminSystemApiPage() {
           <span style={{ fontSize: '13px', fontWeight: 700 }}>POST <code style={{ background: 'var(--color-bg-soft)', padding: '2px 8px', borderRadius: '6px' }}>/api/systemapi/keys</code></span>
         </div>
         <pre style={{
-          background: '#0b1220', border: '1px solid var(--color-border)', borderRadius: '12px',
-          padding: '16px', overflowX: 'auto', fontSize: '12.5px', lineHeight: 1.6, color: '#cbd5e1', fontFamily: 'monospace', margin: 0
+          background: 'var(--color-code-bg)', border: '1px solid var(--color-border)', borderRadius: '12px',
+          padding: '16px', overflowX: 'auto', fontSize: '12.5px', lineHeight: 1.6, color: 'var(--color-code-text)', fontFamily: 'monospace', margin: 0
         }}>
 {`curl -X POST ${'`'}${`$`}{BACKEND_URL}/api/systemapi/keys${'`'} \\
   -H "Authorization: Bearer $TOKEN" \\
@@ -188,13 +188,13 @@ export default function AdminSystemApiPage() {
 
       {/* Newly generated secret */}
       {newSecret && (
-        <div style={{ background: '#0b1220', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px', marginBottom: 24 }}>
+        <div style={{ background: 'var(--color-code-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <CheckCircle size={16} color="#10B981" />
             <span style={{ fontSize: '14px', fontWeight: 700, color: '#10B981' }}>Key stored — copy the secret now (shown once)</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0d1526', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(250,204,21,0.3)' }}>
-            <code style={{ fontSize: '13px', color: '#fbbf24', fontFamily: 'monospace', flex: 1, overflowX: 'auto', whiteSpace: 'nowrap' }}>{newSecret.secret}</code>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-code-bg-2)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(250,204,21,0.3)' }}>
+            <code style={{ fontSize: '13px', color: 'var(--color-code-accent)', fontFamily: 'monospace', flex: 1, overflowX: 'auto', whiteSpace: 'nowrap' }}>{newSecret.secret}</code>
             <button onClick={() => copy(newSecret.id, newSecret.secret || '')} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex' }}>
               {copiedId === newSecret.id ? <Check size={16} color="#10B981" /> : <Copy size={16} />}
             </button>
