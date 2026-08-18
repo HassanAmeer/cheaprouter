@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Zap, Check, ArrowRight, Sparkles, Clock, ShieldCheck } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './PlanComparison.module.css';
 
 interface PlanRow {
@@ -54,6 +55,13 @@ const COMPARISON_ROWS: PlanRow[] = [
 ];
 
 export default function PlanComparison() {
+  const { settings } = useSiteSettings();
+  const cliTab = (settings.pricingSection?.tabs || []).find((t) => t.id === 'tab_cli');
+  const freePlan = (cliTab?.plans || []).find((p) => p.id === 'p_cli_1');
+  const paidPlan = (cliTab?.plans || []).find((p) => p.id === 'p_cli_2');
+  const freeLabel = freePlan ? `${freePlan.price}${freePlan.period}` : '$0 / Forever';
+  const paidLabel = paidPlan ? `${paidPlan.price}${paidPlan.period}` : 'From $5 / mo';
+
   return (
     <section className={styles.planSection} id="plan-comparison">
       <div className={styles.container}>
@@ -77,14 +85,14 @@ export default function PlanComparison() {
                   <th className={styles.featureHeader}>Feature / Capability</th>
                   <th className={styles.freeHeader}>
                     <div className={styles.planColTitle}>Free Plan</div>
-                    <span className={styles.planColSub}>$0 / Forever</span>
+                    <span className={styles.planColSub}>{freeLabel}</span>
                   </th>
                   <th className={styles.paidHeader}>
                     <div className={styles.featuredBadge}>
                       <Sparkles size={12} /> Recommended for Production
                     </div>
                     <div className={styles.planColTitlePaid}>Paid Plan</div>
-                    <span className={styles.planColSubPaid}>From $5 / mo</span>
+                    <span className={styles.planColSubPaid}>{paidLabel}</span>
                   </th>
                 </tr>
               </thead>

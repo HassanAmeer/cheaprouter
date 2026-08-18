@@ -2,9 +2,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { MessageSquare, Terminal, Code, Zap, Clock, Workflow, Globe, ArrowUpRight } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from '@/app/page.module.css';
 
 export default function InstallGrid() {
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+  const apiBase = install.apiBaseUrl || 'https://api.cheaprouter.com/v1';
+  const chromeUrl = install.chromeUrl || 'chrome.cheaprouter.io';
+  const cliName = install.cliName || 'cheap-cli';
+
   return (
         <div className={styles.installGrid}>
           {/* Card 1: Free Unlimited Coding */}
@@ -42,7 +49,7 @@ export default function InstallGrid() {
                   <span className={styles.miniTermTitle}>~ terminal</span>
                 </div>
                 <div className={styles.miniTermBody}>
-                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap-cli install</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>$</span> {cliName} install</div>
                   <div className={styles.termRowOk}>✔ Installed successfully</div>
                   <div className={styles.termRow}><span className={styles.termPrompt}>$</span> cheap ask &quot;fix this bug&quot;</div>
                 </div>
@@ -86,7 +93,7 @@ export default function InstallGrid() {
                 </div>
                 <div className={styles.miniCodeBody}>
                   <div><span className={styles.kw}>const</span> ai = <span className={styles.kw}>new</span> OpenAI({'{'}</div>
-                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;api.cheaprouter.io&quot;</span>,</div>
+                  <div>&nbsp;&nbsp;baseURL: <span className={styles.str}>&quot;{apiBase}&quot;</span>,</div>
                   <div>&nbsp;&nbsp;apiKey: <span className={styles.str}>&quot;cm_***&quot;</span></div>
                   <div>{'}'});</div>
                 </div>
@@ -214,7 +221,7 @@ export default function InstallGrid() {
               <div className={styles.miniChat}>
                 <div className={styles.miniChatHeader}>
                   <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>chrome.cheaprouter.io</div>
+                  <div className={styles.miniUrl}>{chromeUrl}</div>
                 </div>
                 <div className={styles.miniChatBody}>
                   <div className={styles.chatBubbleUser}>Summarize this page</div>

@@ -4,9 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 import { SiteNav } from '@/components/site-nav';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './legal-shell.module.css';
 
 export function LegalShell({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
+  const { settings } = useSiteSettings();
+
   return (
     <main className={styles.page}>
       <SiteNav
@@ -36,7 +39,7 @@ export function LegalShell({ title, updated, children }: { title: string; update
 
       <footer className={styles.footer}>
         <div className="container">
-          <span>© 2026 CheapRouter. All rights reserved.</span>
+          <span>{settings.footer?.copyrightText || `© ${new Date().getFullYear()} ${settings.brandName || 'CheapRouter'}. All rights reserved.`}</span>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>

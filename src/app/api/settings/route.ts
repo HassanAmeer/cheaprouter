@@ -17,10 +17,11 @@ export async function GET() {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
+    const authHeader = req.headers.get('authorization') || '';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const response = await fetch(`${backendUrl}/api/settings`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
       body: JSON.stringify(body)
     });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });

@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, MessageSquare, Globe, Code2, Puzzle, Network, Terminal } from 'lucide-react';
 
-export default function IntroductionView() {
+export default function IntroductionView({ baseUrl = 'https://api.cheaprouter.com' }: { baseUrl?: string }) {
+  const apiBase = baseUrl.replace(/\/$/, '');
   const features = [
     { icon: <Cpu size={20} className="text-primary" />, title: 'Multiple Models', desc: 'Access a wide variety of state-of-the-art AI models for any use case.' },
     { icon: <MessageSquare size={20} className="text-primary" />, title: 'Chat Capabilities', desc: 'Build engaging conversational agents and chatbots effortlessly.' },
@@ -65,7 +66,7 @@ export default function IntroductionView() {
               color: 'var(--color-text-main)',
               fontSize: '13px',
             }}>
-              https://api.cheaprouter.com/v1
+              {apiBase}/v1
             </div>
           </div>
 

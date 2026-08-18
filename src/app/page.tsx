@@ -40,12 +40,15 @@ export default function Home() {
     setTimeout(() => setShowDemandToast(false), 3000);
   };
 
+  const whatsappUrl = settings.footer?.socialLinks?.find(l => l.platform?.toLowerCase() === 'whatsapp')?.url
+    || 'https://wa.me/1234567890';
+
   return (
     <main>
       {/* WhatsApp Floating Button */}
 
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
-        <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" className="tooltip">
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="tooltip">
           <div className="tooltip__content"><MessageCircle size={32} /></div>
           <svg className="tooltip__label" viewBox="0 0 100 100">
             <path id="circlePath" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />

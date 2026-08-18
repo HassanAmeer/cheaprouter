@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from '../app/page.module.css';
 
-const announcements = [
+const defaultAnnouncements = [
   "DeepSeek Coder V2 & Llama 3.1 405B are now available! 🎉",
   "Claude 3.5 Sonnet BYOK is fully supported for free routing! 🚀",
   "Experience the new Grok 1.5 with enhanced reasoning! ⚡"
@@ -20,6 +21,11 @@ const getFace = (rot: number) => {
 };
 
 export default function AnnouncementBar() {
+  const { settings } = useSiteSettings();
+  const banner = settings.dashboardSettings?.announcementBanner;
+  const announcements = banner
+    ? [banner, ...defaultAnnouncements.filter(a => a !== banner)]
+    : defaultAnnouncements;
   const [index, setIndex] = useState(0);
   const [rotation, setRotation] = useState(0);
   const [isHovered, setIsHovered] = useState(false);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, CreditCard, Download, ArrowUpRight, Zap, Shield, Crown, Terminal, Plug, MessageSquare, Bot, Globe, Sparkles, Wallet, Coins, Plus, ArrowDownCircle, ArrowUpCircle, Loader2, X } from 'lucide-react';
+import { Check, CreditCard, ArrowUpRight, Zap, Shield, Crown, Terminal, Plug, MessageSquare, Bot, Globe, Sparkles, Wallet, Coins, Plus, ArrowDownCircle, ArrowUpCircle, Loader2, X } from 'lucide-react';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import styles from '../dashboard.module.css';
@@ -9,20 +9,9 @@ import { useSiteSettings } from '@/components/settings-provider';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 
-const INVOICES = [
-  { id: 'INV-2026-07', date: 'Jul 1, 2026', amount: '$15.00', status: 'Paid' },
-  { id: 'INV-2026-06', date: 'Jun 1, 2026', amount: '$15.00', status: 'Paid' },
-  { id: 'INV-2026-05', date: 'May 1, 2026', amount: '$15.00', status: 'Paid' },
-  { id: 'INV-2026-04', date: 'Apr 1, 2026', amount: '$15.00', status: 'Paid' },
-];
-
 const PRESET_FUNDS = [5, 10, 20, 50, 100];
 
-const WITHDRAWALS = [
-  { id: 'WD-2026-08', date: 'Aug 10, 2026', method: 'Bank Transfer', amount: '$25.00', status: 'Pending' },
-  { id: 'WD-2026-07', date: 'Jul 22, 2026', method: 'PayPal', amount: '$10.00', status: 'Completed' },
-  { id: 'WD-2026-06', date: 'Jun 15, 2026', method: 'Bank Transfer', amount: '$40.00', status: 'Completed' },
-];
+const WITHDRAW_METHODS = ['Wallet', 'Bank Transfer', 'PayPal', 'JazzCash', 'UPI', 'Crypto (USDT)'];
 
 // Default mock active plan map per category tab
 const DEFAULT_ACTIVE_PLANS: Record<string, { planId: string; used: number; limit: number }> = {
@@ -85,24 +74,62 @@ export default function BillingPage() {
 
   // Billing / balance state
   const [billing, setBilling] = useState<any>(null);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [topups, setTopups] = useState<any[]>([]);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [fundAmount, setFundAmount] = useState<string>('10');
   const [addingFunds, setAddingFunds] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>('');
+  const [withdrawMethod, setWithdrawMethod] = useState<string>('Wallet');
+  const [withdrawing, setWithdrawing] = useState(false);
   const [upgradingId, setUpgradingId] = useState<string | null>(null);
   const fundsRef = useRef<HTMLDivElement | null>(null);
+
+  const withdrawSettings = settings.withdrawSettings || { enabled: true, minAmount: 5, announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.' };
+  const minWithdraw = Number(withdrawSettings.minAmount) || 5;
 
   const loadBilling = () => {
     api.getBilling().then(setBilling).catch(() => {});
   };
 
-  useEffect(() => { loadBilling(); }, []);
+  const loadWithdrawals = () => {
+    api.listWithdrawals().then((r) => setWithdrawals(r.withdrawals || [])).catch(() => {});
+  };
+
+  const loadTopups = () => {
+    api.listTopups().then((r) => setTopups(r.topups || [])).catch(() => {});
+  };
+
+  // Map each plan tab to its usage source so the Active Plans show real usage.
+  const sourceForTab = (tabId: string): string => {
+    const v = String(tabId || '').toLowerCase();
+    if (v.includes('cli')) return 'cli';
+    if (v.includes('api')) return 'api';
+    if (v.includes('chat')) return 'chat';
+    return 'api';
+  };
+
+  const loadUsageForTabs = (tabsList: any[]) => {
+    (tabsList || []).forEach((tab) => {
+      api.usageBreakdown(sourceForTab(tab.id))
+        .then((d: any) => {
+          setActivePlans((prev) => {
+            const cur = prev[tab.id] || { planId: tab.plans?.[0]?.id || '', used: 0, limit: 1000 };
+            return { ...prev, [tab.id]: { ...cur, used: d?.totalCalls ?? cur.used } };
+          });
+        })
+        .catch(() => {});
+    });
+  };
+
+  useEffect(() => { loadBilling(); loadWithdrawals(); loadTopups(); }, []);
 
   useEffect(() => {
     if (settings && user && settings?.pricingSection?.tabs?.length > 0) {
       setActivePlans(buildActiveFromUser(user, settings.pricingSection.tabs));
       setActiveTab((prev) => prev || settings.pricingSection.tabs[0].id);
+      loadUsageForTabs(settings.pricingSection.tabs);
     }
   }, [settings, user]);
 
@@ -139,6 +166,15 @@ export default function BillingPage() {
   const usagePercent = Math.min(100, Math.round((activeState.used / activeState.limit) * 100));
   const balance = Number(billing?.balance ?? 0);
 
+  const planDatesFor = (tabId: string) => {
+    const v = String(tabId || '').toLowerCase();
+    const key = v.includes('cli') ? 'cli' : v.includes('api') ? 'api' : v.includes('chat') ? 'chat' : v.includes('agent') ? 'agents' : '';
+    const start = key ? user?.[`plan_${key}_start`] : null;
+    const expiry = key ? user?.[`plan_${key}_expiry`] : null;
+    const fmt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return { start: fmt(start), expiry: fmt(expiry) };
+  };
+
   const handleSelectPlan = (planId: string, planName: string) => {
     setActivePlans(prev => ({
       ...prev,
@@ -147,14 +183,25 @@ export default function BillingPage() {
     toast(`Successfully switched to ${planName} plan for ${currentTabObj?.name}!`, 'success');
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amt = parseFloat(withdrawAmount);
     if (!amt || amt <= 0) { toast('Enter a valid amount', 'error'); return; }
-    if (amt < 5) { toast('Minimum withdrawal amount is $5', 'error'); return; }
+    if (amt < minWithdraw) { toast(`Minimum withdrawal amount is $${minWithdraw.toFixed(2)}`, 'error'); return; }
     if (amt > balance) { toast('Insufficient balance', 'error'); return; }
-    setShowWithdraw(false);
-    setWithdrawAmount('');
-    toast(`Withdrawal of ${money(amt)} submitted for admin review. You'll receive it in 1–3 business days.`, 'success');
+    setWithdrawing(true);
+    try {
+      await api.createWithdrawal(amt, withdrawMethod);
+      setShowWithdraw(false);
+      setWithdrawAmount('');
+      setWithdrawMethod('Wallet');
+      await loadWithdrawals();
+      await loadBilling();
+      toast(`Withdrawal of ${money(amt)} submitted for admin review. You'll receive it in 1–3 business days.`, 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Withdrawal request failed', 'error');
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
   const handleAddFunds = async () => {
@@ -164,10 +211,10 @@ export default function BillingPage() {
     try {
       await api.topUp(amt);
       setFundAmount('');
-      await loadBilling();
-      toast(`${money(amt)} added to your account balance.`, 'success');
+      await loadTopups();
+      toast(`Top-up request for ${money(amt)} submitted. Funds are added once an admin approves the request.`, 'success');
     } catch (e: any) {
-      toast(e?.message || 'Failed to add funds', 'error');
+      toast(e?.message || 'Failed to submit top-up request', 'error');
     } finally {
       setAddingFunds(false);
     }
@@ -298,8 +345,36 @@ export default function BillingPage() {
                 </Button>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', margin: '10px 0 0' }}>
-                Funds are added instantly (simulated payment).
+                Top-ups are approved by an admin. Funds appear in your balance once your request is approved.
               </p>
+            </div>
+          )}
+
+          {topups.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: 8 }}>Top-up Requests</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {topups.map((t: any) => (
+                  <div key={t.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)',
+                    background: 'var(--color-bg-soft)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Coins size={14} style={{ color: 'var(--color-text-muted)' }} />
+                      <span style={{ fontWeight: 700, fontSize: '13px' }}>{money(Number(t.amount))}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        {t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}
+                      </span>
+                      <Badge tone={t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'danger' : 'warning'}>
+                        {t.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <div style={{ height: 1, background: 'var(--color-border)', margin: '20px 0', opacity: 0.6 }} />
@@ -416,8 +491,8 @@ export default function BillingPage() {
 
                 {/* Starting / expiry dates on bottom */}
                 <div style={{ display: 'flex', gap: 18, fontSize: '11px', color: 'var(--color-text-muted)', marginTop: 10, flexWrap: 'wrap' }}>
-                  <span><strong style={{ color: 'var(--color-text-main)' }}>Start:</strong> Jul 15, 2026</span>
-                  <span><strong style={{ color: 'var(--color-text-main)' }}>Expires:</strong> Aug 15, 2026</span>
+                  <span><strong style={{ color: 'var(--color-text-main)' }}>Start:</strong> {planDatesFor(tab.id).start}</span>
+                  <span><strong style={{ color: 'var(--color-text-main)' }}>Expires:</strong> {planDatesFor(tab.id).expiry}</span>
                 </div>
 
                 {/* Half centered divider line before next plan details */}
@@ -575,49 +650,45 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Invoice History */}
+      {/* Transaction History */}
       <div style={{ marginBottom: 36 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Invoice History</h2>
-          <button style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
-            Download All <Download size={13} />
-          </button>
+          <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Transaction History</h2>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{billing?.transactions?.length ?? 0} transactions</span>
         </div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {INVOICES.length === 0 ? (
+          {!billing || (billing.transactions || []).length === 0 ? (
             <div style={{ padding: '28px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-              No invoices yet.
+              No transactions yet.
             </div>
           ) : (
             <div className={styles.tableScroll}>
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th>Invoice</th>
+                    <th>Type</th>
                     <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
+                    <th>Description</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {INVOICES.map((inv) => (
-                    <tr key={inv.id}>
-                      <td><strong style={{ fontSize: '13px' }}>{inv.id}</strong></td>
-                      <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{inv.date}</td>
-                      <td style={{ fontWeight: 600 }}>{inv.amount}</td>
-                      <td><Badge tone="success"><Check size={11} /> {inv.status}</Badge></td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => toast('Downloading invoice…')}
-                          style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}
-                        >
-                          <Download size={13} /> PDF
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                  {(billing.transactions || []).map((txn: any) => {
+                    const isCredit = Number(txn.amount) >= 0;
+                    return (
+                      <tr key={txn.id}>
+                        <td style={{ textTransform: 'capitalize' }}><strong style={{ fontSize: '13px' }}>{txn.type}</strong></td>
+                        <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                          {txn.created ? new Date(txn.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                        </td>
+                        <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{txn.description || '—'}</td>
+                        <td style={{ fontWeight: 600, textAlign: 'right', color: isCredit ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                          {isCredit ? '+' : ''}{money(Math.abs(Number(txn.amount)))}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
           )}
@@ -628,9 +699,14 @@ export default function BillingPage() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: '16px', fontWeight: 700 }}>Withdraw History</h2>
-          <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{WITHDRAWALS.length} withdrawals</span>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>{withdrawals.length} withdrawals</span>
         </div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {withdrawals.length === 0 ? (
+            <div style={{ padding: '28px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+              No withdrawal requests yet.
+            </div>
+          ) : (
           <div className={styles.tableScroll}>
             <table className={styles.dataTable}>
               <thead>
@@ -643,15 +719,19 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody>
-                {WITHDRAWALS.map((w) => (
+                {withdrawals.map((w) => (
                   <tr key={w.id}>
                     <td><strong style={{ fontSize: '13px' }}>{w.id}</strong></td>
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.date}</td>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                      {w.created ? new Date(w.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                    </td>
                     <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{w.method}</td>
-                    <td style={{ fontWeight: 600 }}>{w.amount}</td>
+                    <td style={{ fontWeight: 600 }}>{money(Number(w.amount))}</td>
                     <td>
-                      {w.status === 'Completed'
-                        ? <Badge tone="success"><Check size={11} /> Completed</Badge>
+                      {w.status === 'approved'
+                        ? <Badge tone="success"><Check size={11} /> Approved</Badge>
+                        : w.status === 'rejected'
+                        ? <Badge tone="danger"><X size={11} /> Rejected</Badge>
                         : <Badge tone="warning"><Loader2 size={11} className="lucide-spin" /> Pending</Badge>}
                     </td>
                   </tr>
@@ -659,6 +739,7 @@ export default function BillingPage() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       </div>
 
@@ -693,7 +774,7 @@ export default function BillingPage() {
             </div>
 
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.6, margin: '0 0 20px' }}>
-              Withdraw your unused balance back to your payment method. The minimum withdrawal amount is $5.
+              Withdraw your unused balance to your payment method. The minimum withdrawal amount is ${money(minWithdraw)}.
             </p>
 
             <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>
@@ -703,10 +784,10 @@ export default function BillingPage() {
               <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', fontWeight: 700 }}>$</span>
               <input
                 type="number"
-                min={5}
+                min={minWithdraw}
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="5"
+                placeholder={String(minWithdraw)}
                 style={{
                   width: '100%', padding: '11px 14px 11px 30px', borderRadius: '10px',
                   border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
@@ -714,6 +795,21 @@ export default function BillingPage() {
                 }}
               />
             </div>
+
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6, marginTop: 14 }}>
+              Payment Method
+            </label>
+            <select
+              value={withdrawMethod}
+              onChange={(e) => setWithdrawMethod(e.target.value)}
+              style={{
+                width: '100%', padding: '11px 14px', borderRadius: '10px',
+                border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                color: 'var(--color-text-main)', fontSize: '14px', outline: 'none', marginBottom: 16
+              }}
+            >
+              {WITHDRAW_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
             <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginBottom: 16 }}>
               Available balance: <strong style={{ color: 'var(--color-text-main)' }}>{money(balance)}</strong>
             </div>
@@ -723,11 +819,11 @@ export default function BillingPage() {
               borderRadius: '10px', padding: '12px 14px', fontSize: '12px',
               color: 'var(--color-text-muted)', marginBottom: 22, lineHeight: 1.7
             }}>
-              Withdrawals are processed within <strong style={{ color: 'var(--color-text-main)' }}>1–3 business days</strong> once approved by an admin review.
+              {withdrawSettings.announcement || 'Withdrawals are processed within 1–3 business days once approved by an admin review.'}
             </div>
 
-            <Button variant="primary" fullWidth onClick={handleWithdraw}>
-              <ArrowDownCircle size={16} /> Submit Withdrawal
+            <Button variant="primary" fullWidth onClick={handleWithdraw} disabled={withdrawing}>
+              {withdrawing ? <Loader2 size={16} className="lucide-spin" /> : <ArrowDownCircle size={16} />} Submit Withdrawal
             </Button>
           </div>
         </div>

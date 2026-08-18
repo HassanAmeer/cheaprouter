@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Input, Badge } from '@/components/ui/primitives';
+import { Button, Input, Badge, Modal } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/components/auth-provider';
+import { useSiteSettings } from '@/components/settings-provider';
+import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
-import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2, GraduationCap, Code2, Target, Compass, Cpu, Pencil } from 'lucide-react';
+import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2, GraduationCap, Code2, Target, Compass, Cpu, Pencil, Loader2 } from 'lucide-react';
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   beginner: 'New / Beginner',
@@ -38,12 +40,76 @@ const GOAL_LABELS: Record<string, string> = {
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
+  const { settings } = useSiteSettings();
   const [name, setName] = useState(user?.name ?? 'John Doe');
   const [email] = useState(user?.email ?? 'john@company.com');
   const [profilePic, setProfilePic] = useState<string | null>(user?.profile_picture ?? null);
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [delBusy, setDelBusy] = useState(false);
+
+  const memberSince = user?.created_at ? new Date(user.created_at) : null;
+
+  const passwordChangedLabel = user?.password_changed_at
+    ? (() => {
+        const d = new Date(user.password_changed_at);
+        const days = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+        if (days === 0) return 'Last changed today';
+        if (days === 1) return 'Last changed 1 day ago';
+        return `Last changed ${days} days ago`;
+      })()
+    : 'Never changed';
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      toast('Enter your current and new password', 'warning');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast('New password must be at least 6 characters', 'warning');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast('New passwords do not match', 'error');
+      return;
+    }
+    setPwBusy(true);
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      toast('Password updated successfully', 'success');
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast(err.message ?? 'Failed to update password', 'error');
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDelBusy(true);
+    try {
+      await api.deleteAccount();
+      toast('Account deleted', 'success');
+      logout();
+      setTimeout(() => { window.location.href = '/'; }, 500);
+    } catch (err: any) {
+      toast(err.message ?? 'Failed to delete account', 'error');
+      setShowDeleteModal(false);
+    } finally {
+      setDelBusy(false);
+    }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,6 +137,14 @@ export default function SettingsPage() {
 
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
+  const activePlanId = user?.plan && user.plan !== 'free'
+    ? (user.plan_cli || user.plan_api || user.plan_chat || user.plan_agents)
+    : null;
+  const activePlan = (settings?.pricingSection?.tabs || [])
+    .flatMap((t: any) => t.plans || [])
+    .find((p: any) => p.id === activePlanId);
+  const planPrice = activePlan ? parseFloat(String(activePlan.price ?? '0').replace(/[^0-9.]/g, '')) || 0 : 0;
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <div style={{ marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -80,7 +154,7 @@ export default function SettingsPage() {
             Manage your account preferences, security, and billing details.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => toast('Logged out successfully', 'success')} style={{ borderRadius: 12, padding: '10px 16px', background: 'var(--color-bg-soft)' }}>
+        <Button variant="secondary" onClick={() => { logout(); }} style={{ borderRadius: 12, padding: '10px 16px', background: 'var(--color-bg-soft)' }}>
           <LogOut size={16} style={{ marginRight: 8 }} /> Sign Out
         </Button>
       </div>
@@ -149,13 +223,13 @@ export default function SettingsPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Active Plan: {(user?.plan ?? 'pro').toUpperCase()}
+                  Active Plan: {(user?.plan ?? 'Free').toUpperCase()}
                   <Badge tone="success" style={{ padding: '4px 10px', borderRadius: 12, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active</Badge>
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', gap: '16px' }}>
-                  <span>Member since Jan 2026</span>
+                  <span>Member since {memberSince ? memberSince.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}</span>
                   <span>•</span>
-                  <span>Last Login: {user?.last_login || 'Just now'}</span>
+                  <span>Last Login: {user?.last_login ? new Date(user.last_login).toLocaleString() : 'Just now'}</span>
                 </div>
               </div>
             </div>
@@ -262,10 +336,10 @@ export default function SettingsPage() {
                 <KeyRound size={20} color="var(--color-text-muted)" />
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: 700 }}>Account Password</div>
-                  <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Last changed 30 days ago</div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>{passwordChangedLabel}</div>
                 </div>
               </div>
-              <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => toast('Password reset email sent', 'success')}>Update Password</Button>
+              <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => setShowPasswordModal(true)}>Update Password</Button>
             </div>
           </div>
         </div>
@@ -282,13 +356,15 @@ export default function SettingsPage() {
           <div style={{ padding: '20px', background: 'var(--color-bg)', borderRadius: 16, border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                Pro Developer
-                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-primary)' }}>$15<span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>/mo</span></span>
+                {user?.plan ? user.plan.charAt(0).toUpperCase() + user.plan.slice(1) : 'Free'}
+                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-primary)' }}>
+                  {user?.plan === 'free' || !user?.plan ? 'Free' : <>${planPrice}<span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>/mo</span></>}
+                </span>
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 8 }}>Renews on Aug 15, 2026</div>
-              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>1M tokens per month included</div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 8 }}>{user?.plan === 'free' || !user?.plan ? 'No active paid plan' : 'Plan active'}</div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>Manage your subscription in the Billing page</div>
             </div>
-            <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => toast('Redirecting to billing portal…', 'info')}>Manage Subscription</Button>
+            <Button variant="secondary" style={{ width: '100%', justifyContent: 'center', borderRadius: 12 }} onClick={() => (window.location.href = '/dashboard/billing')}>Manage Subscription</Button>
           </div>
         </div>
       </div>
@@ -305,15 +381,48 @@ export default function SettingsPage() {
               Once you delete your account, all data including API keys, conversations, and usage history will be permanently removed. This action cannot be undone.
             </p>
           </div>
-          <Button variant="danger" style={{ padding: '12px 24px', borderRadius: 12, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.4)', flexShrink: 0, transition: 'all 0.2s' }} onClick={() => {
-            if (confirm('Are you absolutely sure you want to delete your account? This cannot be undone.')) {
-              toast('Account deletion requires email confirmation', 'warning');
-            }
-          }}>
+          <Button variant="danger" style={{ padding: '12px 24px', borderRadius: 12, fontWeight: 700, background: 'rgba(239,68,68,0.15)', color: 'var(--color-danger)', border: '1px solid rgba(239,68,68,0.4)', flexShrink: 0, transition: 'all 0.2s' }} onClick={() => setShowDeleteModal(true)}>
             <Trash2 size={18} style={{ marginRight: 8 }} /> Delete Account
           </Button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <Modal open={showPasswordModal} onClose={() => !pwBusy && setShowPasswordModal(false)} title="Change Password">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Current Password</label>
+            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" />
+          </div>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>New Password</label>
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" />
+          </div>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>Confirm New Password</label>
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat new password" />
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <Button variant="ghost" onClick={() => setShowPasswordModal(false)}>Cancel</Button>
+          <Button variant="primary" disabled={pwBusy} onClick={handleChangePassword}>
+            {pwBusy ? <Loader2 size={15} className="lucide-spin" /> : 'Save Password'}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Delete Account Modal */}
+      <Modal open={showDeleteModal} onClose={() => !delBusy && setShowDeleteModal(false)} title="Delete Account">
+        <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+          Are you absolutely sure? Deleting your account will permanently remove your API keys, usage history, conversations, transactions, and referral submissions. This action cannot be undone.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+          <Button variant="danger" disabled={delBusy} onClick={handleDeleteAccount}>
+            {delBusy ? <Loader2 size={15} className="lucide-spin" /> : 'Yes, delete my account'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

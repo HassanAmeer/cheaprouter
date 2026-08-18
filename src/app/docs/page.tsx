@@ -25,7 +25,7 @@ export default function DocsPage() {
   const renderView = () => {
     switch (activeView) {
       case 'introduction':
-        return <IntroductionView key="intro" />;
+        return <IntroductionView key="intro" baseUrl={baseUrl} />;
       case 'models':
         return <ModelsView key="models" baseUrl={baseUrl} />;
       case 'chat-completions':

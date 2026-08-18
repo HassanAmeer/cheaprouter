@@ -28,9 +28,14 @@ export default function NotificationsPage() {
     fetchUsers();
   }, []);
 
+  const adminHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return { 'Authorization': `Bearer ${token || ''}`, 'Content-Type': 'application/json' };
+  };
+
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch('/api/admin/users', { headers: adminHeaders() });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
@@ -100,7 +105,7 @@ export default function NotificationsPage() {
     try {
       const res = await fetch('/api/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders(),
         body: JSON.stringify({ title, message, targetUserIds: selectedUserIds })
       });
       

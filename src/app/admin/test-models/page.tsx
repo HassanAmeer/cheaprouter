@@ -448,7 +448,8 @@ export default function TestModelsPage() {
       max_tokens: maxTokens,
     };
 
-    const curl = `curl https://api.cheaprouter.com/v1/chat/completions \\
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://api.cheaprouter.com';
+    const curl = `curl ${origin}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${token}" \\
   -d '${JSON.stringify(payload, null, 2)}'`;

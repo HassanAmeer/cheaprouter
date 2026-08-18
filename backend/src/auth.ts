@@ -1,6 +1,16 @@
 import { db, genId } from './db.ts';
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-cheapmodels-secret-change-me';
+// Never fall back to a hardcoded secret: if JWT_SECRET is unset, fail loudly at
+// startup so a deploy without a secret can't mint forgeable admin tokens.
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET env var is required (min 32 chars). Refusing to start with a default/insecure secret.');
+  process.exit(1);
+}
+
+// Token lifetimes (ms).
+const USER_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ADMIN_TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 function b64url(input: ArrayBuffer | string): string {
   const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : new Uint8Array(input);
@@ -23,9 +33,10 @@ async function sign(data: string): Promise<string> {
   return b64url(sig);
 }
 
-export async function signToken(payload: { sub: string; email: string }): Promise<string> {
+export async function signToken(payload: { sub: string; email: string }, role?: 'admin'): Promise<string> {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = b64url(JSON.stringify({ ...payload, iat: Date.now() }));
+  const ttl = role === 'admin' ? ADMIN_TOKEN_TTL : USER_TOKEN_TTL;
+  const body = b64url(JSON.stringify({ ...payload, role, iat: Date.now(), exp: Date.now() + ttl }));
   const sig = await sign(`${header}.${body}`);
   return `${header}.${body}.${sig}`;
 }
@@ -36,6 +47,9 @@ export async function verifyToken(token: string): Promise<{ sub: string; email: 
     const expected = await sign(`${header}.${body}`);
     if (expected !== sig) return null;
     const json = JSON.parse(new TextDecoder().decode(b64urlDecode(body)));
+    if (json.sub === undefined) return null;
+    // Reject expired tokens.
+    if (typeof json.exp === 'number' && json.exp < Date.now()) return null;
     return { sub: json.sub, email: json.email, role: json.role };
   } catch {
     return null;
@@ -57,7 +71,7 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 export async function getUserById(id: string) {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users WHERE id = ${id}`;
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance, password_changed_at FROM users WHERE id = ${id}`;
   return result[0] as any;
 }
 
@@ -117,42 +131,49 @@ function detectOs(hwInfo: any, userAgent?: string): string {
   return 'Unknown';
 }
 
-export async function getAllUsers() {
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users ORDER BY created_at DESC`;
+export async function getAllUsers(limit?: number, offset?: number) {
+  const totalRes = await db`SELECT COUNT(*) AS c FROM users` as { c: number }[];
+  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users ORDER BY created_at DESC ${limit && limit > 0 ? db`LIMIT ${limit} OFFSET ${offset ?? 0}` : db``}`;
   const callCounts = await db`SELECT user_id, COUNT(*) AS count FROM usage GROUP BY user_id` as { user_id: string; count: number }[];
   const callMap = new Map(callCounts.map(r => [r.user_id, Number(r.count)]));
-  return result.map(row => ({
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    plan: row.plan || 'Free',
-    balance: Number(row.balance ?? 0),
-    plan_cli: row.plan_cli || 'Free',
-    plan_api: row.plan_api || 'Free',
-    plan_chat: row.plan_chat || 'Free',
-    plan_agents: row.plan_agents || 'Free',
-    plan_cli_start: row.plan_cli_start ? new Date(row.plan_cli_start).toISOString() : null,
-    plan_cli_expiry: row.plan_cli_expiry ? new Date(row.plan_cli_expiry).toISOString() : null,
-    plan_api_start: row.plan_api_start ? new Date(row.plan_api_start).toISOString() : null,
-    plan_api_expiry: row.plan_api_expiry ? new Date(row.plan_api_expiry).toISOString() : null,
-    plan_chat_start: row.plan_chat_start ? new Date(row.plan_chat_start).toISOString() : null,
-    plan_chat_expiry: row.plan_chat_expiry ? new Date(row.plan_chat_expiry).toISOString() : null,
-    plan_agents_start: row.plan_agents_start ? new Date(row.plan_agents_start).toISOString() : null,
-    plan_agents_expiry: row.plan_agents_expiry ? new Date(row.plan_agents_expiry).toISOString() : null,
-    created_at: new Date(row.created_at).toISOString(),
-    joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
-    last_ip: row.last_ip ?? null,
-    os: detectOs(row.hardware_info, row.user_agent),
-    calls: callMap.get(row.id) ?? 0,
-    status: row.status || 'Active',
-    profile_picture: row.profile_picture,
-    is_student: row.is_student ?? false,
-    experience_level: row.experience_level ?? null,
-    use_cases: row.use_cases ?? null,
-    earning_goal: row.earning_goal ?? null,
-    onboarding_completed: row.onboarding_completed ?? false
-  }));
+  return {
+    users: result.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      plan: row.plan || 'Free',
+      balance: Number(row.balance ?? 0),
+      plan_cli: row.plan_cli || 'Free',
+      plan_api: row.plan_api || 'Free',
+      plan_chat: row.plan_chat || 'Free',
+      plan_agents: row.plan_agents || 'Free',
+      plan_cli_start: row.plan_cli_start ? new Date(row.plan_cli_start).toISOString() : null,
+      plan_cli_expiry: row.plan_cli_expiry ? new Date(row.plan_cli_expiry).toISOString() : null,
+      plan_api_start: row.plan_api_start ? new Date(row.plan_api_start).toISOString() : null,
+      plan_api_expiry: row.plan_api_expiry ? new Date(row.plan_api_expiry).toISOString() : null,
+      plan_chat_start: row.plan_chat_start ? new Date(row.plan_chat_start).toISOString() : null,
+      plan_chat_expiry: row.plan_chat_expiry ? new Date(row.plan_chat_expiry).toISOString() : null,
+      plan_agents_start: row.plan_agents_start ? new Date(row.plan_agents_start).toISOString() : null,
+      plan_agents_expiry: row.plan_agents_expiry ? new Date(row.plan_agents_expiry).toISOString() : null,
+      created_at: new Date(row.created_at).toISOString(),
+      joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      password_changed_at: row.password_changed_at ? new Date(row.password_changed_at).toISOString() : null,
+      last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
+      last_ip: row.last_ip ?? null,
+      os: detectOs(row.hardware_info, row.user_agent),
+      calls: callMap.get(row.id) ?? 0,
+      status: row.status || 'Active',
+      profile_picture: row.profile_picture,
+      is_student: row.is_student ?? false,
+      experience_level: row.experience_level ?? null,
+      use_cases: row.use_cases ?? null,
+      earning_goal: row.earning_goal ?? null,
+      onboarding_completed: row.onboarding_completed ?? false
+    })),
+    total: Number(totalRes[0]?.c ?? 0),
+    limit: limit ?? null,
+    offset: offset ?? 0,
+  };
 }
 
 export async function updateUserProfile(id: string, name: string, profile_picture?: string) {
@@ -161,6 +182,21 @@ export async function updateUserProfile(id: string, name: string, profile_pictur
   } else {
     await db`UPDATE users SET name = ${name} WHERE id = ${id}`;
   }
+}
+
+export async function changeUserPassword(id: string, newPassword: string) {
+  await db`
+    UPDATE users SET password_hash = ${hashPassword(newPassword)}, password_changed_at = CURRENT_TIMESTAMP WHERE id = ${id}
+  `;
+}
+
+export async function deleteUser(id: string) {
+  await db`DELETE FROM users WHERE id = ${id}`;
+}
+
+export async function getPasswordHash(id: string): Promise<string | null> {
+  const result = await db`SELECT password_hash FROM users WHERE id = ${id}`;
+  return (result[0]?.password_hash as string) ?? null;
 }
 
 export async function saveOnboarding(id: string, data: {

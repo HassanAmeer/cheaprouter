@@ -1,10 +1,16 @@
+'use client';
+
 import React from 'react';
 import { Copy, Star, Check } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './BottomCtaCard.module.css';
 
 export default function BottomCtaCard() {
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+
   const handleCopy = () => {
-    navigator.clipboard.writeText('npm install -g cheap-cli');
+    navigator.clipboard.writeText(`npm install -g ${install.npmPackage || 'cheap-cli'}`);
     // Optional: add a toast here if you want
   };
 

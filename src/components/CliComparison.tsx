@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Terminal, Check, X, ArrowRight, Shield, Cpu, Zap, Code } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './CliComparison.module.css';
 
 interface FeatureRow {
@@ -52,6 +53,11 @@ const MATRIX: FeatureRow[] = [
 ];
 
 export default function CliComparison() {
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+  const cliName = install.cliName || 'cheap-cli';
+  const npmPkg = install.npmPackage || 'cheap-cli';
+
   return (
     <section className={styles.cliSection} id="cli-benchmark">
       <div className={styles.container}>
@@ -60,10 +66,10 @@ export default function CliComparison() {
             <Terminal size={14} /> CLI Power Benchmark
           </div>
           <h2 className={styles.title}>
-            Why Developers Choose <span className={styles.gradientText}>cheap-cli</span>
+            Why Developers Choose <span className={styles.gradientText}>{cliName}</span>
           </h2>
           <p className={styles.subtitle}>
-            Compare `cheap-cli` against Claude Code, OpenAI Codex, and Cursor Terminal. One CLI to route every AI model without single-provider lock-in.
+            Compare `{cliName}` against Claude Code, OpenAI Codex, and Cursor Terminal. One CLI to route every AI model without single-provider lock-in.
           </p>
         </div>
 
@@ -75,7 +81,7 @@ export default function CliComparison() {
                   <th>Capability</th>
                   <th className={styles.cheapHeader}>
                     <div className={styles.cheapTitle}>
-                      <Terminal size={16} /> cheap-cli
+                      <Terminal size={16} /> {cliName}
                     </div>
                   </th>
                   <th>Claude Code</th>
@@ -124,10 +130,10 @@ export default function CliComparison() {
           <div className={styles.installFooter}>
             <div className={styles.commandBox}>
               <span className={styles.prompt}>$</span>
-              <code>npm install -g cheap-cli</code>
+              <code>npm install -g {npmPkg}</code>
             </div>
             <Link href="/cli" className={styles.cliBtn}>
-              Explore cheap-cli Docs <ArrowRight size={16} />
+              Explore {cliName} Docs <ArrowRight size={16} />
             </Link>
           </div>
         </div>

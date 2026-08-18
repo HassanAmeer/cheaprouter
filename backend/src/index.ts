@@ -13,17 +13,21 @@ import {
   updateUserLoginInfo,
   updateUserProfile,
   saveOnboarding,
+  changeUserPassword,
+  deleteUser,
+  getPasswordHash,
   adminUpdateUser,
   adminDeleteUser,
   hashPassword,
 } from './auth.ts';
-import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey } from './keys.ts';
+import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey, hashKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
-import { getAnalytics, getSummary, getUsageBreakdown, recordUsage } from './usage.ts';
-import { getBilling, topUp, upgradePlan, seedWelcomeBalance } from './billing.ts';
+import { getAnalytics, getSummary, getUsageBreakdown, getAdminAnalytics, recordUsage } from './usage.ts';
+import { getBilling, requestTopUp, listUserTopups, listAdminTopups, setTopupStatus, upgradePlan, seedWelcomeBalance, computeCost, getBalance, checkBalanceEnough, deductBalance, clearBillingCache, getBillingSettings } from './billing.ts';
+import { listUserWithdrawals, createWithdrawalRequest, listAdminWithdrawals, setWithdrawalStatus, getWithdrawSettings, WITHDRAW_STATUSES } from './withdrawals.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
-import { handleCompletions, getModelInstance, getSystemPromptForModel } from './completions.ts';
+import { handleCompletions, getModelInstance, getSystemPromptForModel, getDefaultModel } from './completions.ts';
 import { getDevLogs, clearDevLogs, addDevLog } from './logger.ts';
 import { generateText, streamText } from 'ai';
 import { db, initDb, DB_URL } from './db.ts';
@@ -65,6 +69,11 @@ app.use('/api/*', async (c, next) => {
   const p = c.req.path;
   if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models' || p === '/api/public/providers' || p === '/api/admin/providers') {
     return next();
+  }
+  // Settings are readable by anyone (used by the marketing site), but only an admin may write them.
+  if (p === '/api/settings') {
+    if (c.req.method === 'GET') return next();
+    return requireAdminAuth(c, next);
   }
   // OpenAI-compatible endpoints authenticate via API key internally (not JWT).
   if (p.startsWith('/api/v1/')) {
@@ -134,11 +143,15 @@ app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
 
 app.post('/api/auth/admin-login', zValidator('json', z.object({ username: z.string(), password: z.string() })), async (c) => {
   const { username, password } = c.req.valid('json');
-  const adminUser = process.env.ADMIN_USERNAME || 'admin';
-  const adminPass = process.env.ADMIN_PASSWORD || '1234';
-  
+  const adminUser = process.env.ADMIN_USERNAME;
+  const adminPass = process.env.ADMIN_PASSWORD;
+  // Fail closed: without configured admin credentials there is no admin login.
+  if (!adminUser || !adminPass) {
+    return c.json({ error: 'Admin login is not configured on this server' }, 503);
+  }
+
   if (username === adminUser && password === adminPass) {
-    const token = await signToken({ sub: 'admin', email: 'admin@system', role: 'admin' } as any);
+    const token = await signToken({ sub: 'admin', email: 'admin@system' }, 'admin');
     return c.json({ token, user: { role: 'admin' } });
   }
   return c.json({ error: 'Invalid admin credentials' }, 401);
@@ -172,6 +185,28 @@ app.put('/api/me/onboarding', zValidator('json', onboardingSchema), async (c) =>
   await saveOnboarding(userId, data);
   const user = await getUserById(userId);
   return c.json({ user });
+});
+
+// ---- Change password (authenticated user) ----
+app.put('/api/me/password', zValidator('json', z.object({ currentPassword: z.string(), newPassword: z.string().min(6) })), async (c) => {
+  const userId = c.get('userId');
+  const { currentPassword, newPassword } = c.req.valid('json');
+  const hash = await getPasswordHash(userId);
+  if (!hash || !verifyPassword(currentPassword, hash)) {
+    return c.json({ error: 'Current password is incorrect' }, 400);
+  }
+  if (currentPassword === newPassword) {
+    return c.json({ error: 'New password must be different from the current password' }, 400);
+  }
+  await changeUserPassword(userId, newPassword);
+  return c.json({ ok: true });
+});
+
+// ---- Delete account (authenticated user) ----
+app.delete('/api/me', async (c) => {
+  const userId = c.get('userId');
+  await deleteUser(userId);
+  return c.json({ ok: true });
 });
 
 // ---- API Keys ----
@@ -212,31 +247,74 @@ app.delete('/api/providers/:id', async (c) => {
 });
 
 // ---- Analytics & Summary ----
-app.get('/api/analytics', async (c) => c.json(await getAnalytics(c.get('userId'), c.req.query('source'))));
+app.get('/api/analytics', async (c) => {
+  const days = c.req.query('days');
+  const parsed = days && /^\d+$/.test(days) ? parseInt(days, 10) : undefined;
+  return c.json(await getAnalytics(c.get('userId'), c.req.query('source'), parsed));
+});
   app.get('/api/analytics/breakdown', async (c) => c.json(await getUsageBreakdown(c.get('userId'), c.req.query('source'))));
 app.get('/api/summary', async (c) => c.json(await getSummary(c.get('userId'))));
+app.get('/api/admin/analytics', async (c) => c.json(await getAdminAnalytics()));
 
 // ---- Billing / Account Balance ----
 app.get('/api/billing', async (c) => c.json(await getBilling(c.get('userId'))));
 
-app.post('/api/billing/topup', zValidator('json', z.object({ amount: z.number().positive() })), async (c) => {
+// Top-ups require admin approval before any balance is credited (there is no
+// payment gateway, so users can never self-credit free money).
+app.post('/api/billing/topup', zValidator('json', z.object({ amount: z.number() })), async (c) => {
   const { amount } = c.req.valid('json');
-  return c.json(await topUp(c.get('userId'), amount));
+  const result = await requestTopUp(c.get('userId'), amount);
+  if (!result.ok) return c.json({ error: result.error }, 400);
+  return c.json(result, 201);
+});
+
+app.get('/api/billing/topups', async (c) => c.json({ topups: await listUserTopups(c.get('userId')) }));
+
+// ---- Top-ups (admin) ----
+app.get('/api/admin/topups', async (c) => c.json({ topups: await listAdminTopups() }));
+
+app.put('/api/admin/topups/:id', zValidator('json', z.object({ status: z.enum(['approved', 'rejected']) })), async (c) => {
+  const { status } = c.req.valid('json');
+  const result = await setTopupStatus(c.req.param('id'), status);
+  if (!result.ok) return c.json({ error: result.error }, 400);
+  return c.json(result);
 });
 
 app.post('/api/billing/upgrade', zValidator('json', z.object({
   planField: z.string(),
   planId: z.string(),
   planName: z.string(),
-  price: z.number(),
+  price: z.number().optional(),
   durationDays: z.number().optional(),
 })), async (c) => {
   const body = c.req.valid('json');
-  const result = await upgradePlan(c.get('userId'), body);
+  const result = await upgradePlan(c.get('userId'), body as any);
   if (!result.ok) {
     const status = result.error === 'Insufficient balance' ? 402 : 400;
     return c.json({ error: result.error, balance: result.balance }, status);
   }
+  return c.json(result);
+});
+
+// ---- Withdrawals (user) ----
+app.get('/api/withdrawals', async (c) => c.json({ withdrawals: await listUserWithdrawals(c.get('userId')) }));
+
+app.post('/api/withdrawals', zValidator('json', z.object({ amount: z.number(), method: z.string().optional() })), async (c) => {
+  const { amount, method } = c.req.valid('json');
+  const result = await createWithdrawalRequest(c.get('userId'), amount, method ?? '');
+  if (!result.ok) return c.json({ error: result.error }, 400);
+  return c.json(result, 201);
+});
+
+app.get('/api/withdrawals/settings', async (c) => c.json(await getWithdrawSettings()));
+
+// ---- Withdrawals (admin) ----
+app.get('/api/admin/withdrawals', async (c) => c.json({ withdrawals: await listAdminWithdrawals() }));
+
+app.put('/api/admin/withdrawals/:id', zValidator('json', z.object({ status: z.enum(WITHDRAW_STATUSES) })), async (c) => {
+  const { status } = c.req.valid('json');
+  const result = await setWithdrawalStatus(c.req.param('id'), status);
+  if (!result.ok) return c.json({ error: result.error }, 400);
   return c.json(result);
 });
 
@@ -291,8 +369,8 @@ app.get('/api/admin/system', async (c) => {
       dbHost,
       dbPort,
       dbUser,
-      dbPassword,
-      rawUrl: DB_URL
+      dbPassword: dbPassword ? '******** (Set)' : 'Not Set',
+      rawUrl: DB_URL ? '******** (Set)' : 'Not Set'
     };
     dbConnected = true;
   } catch (e) {
@@ -380,8 +458,18 @@ app.delete('/api/admin/system/logs', zValidator('json', z.object({ days: z.union
 
 // ---- Admin Users & Notifications ----
 app.get('/api/admin/users', async (c) => {
-  const users = await getAllUsers();
-  return c.json({ users });
+  const limit = Math.min(Math.max(parseInt(String(c.req.query('limit') || '50'), 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(String(c.req.query('offset') || '0'), 10) || 0, 0);
+  const result = await getAllUsers(limit, offset);
+  return c.json(result);
+});
+
+app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.string()), data: z.any() })), async (c) => {
+  const { ids, data } = c.req.valid('json');
+  for (const id of ids) {
+    await adminUpdateUser(id, data);
+  }
+  return c.json({ ok: true, count: ids.length });
 });
 
 app.get('/api/admin/users/:id', async (c) => {
@@ -410,12 +498,33 @@ app.delete('/api/admin/users', zValidator('json', z.object({ ids: z.array(z.stri
   return c.json({ ok: true, count: ids.length });
 });
 
-app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.string()), data: z.any() })), async (c) => {
-  const { ids, data } = c.req.valid('json');
-  for (const id of ids) {
-    await adminUpdateUser(id, data);
-  }
-  return c.json({ ok: true, count: ids.length });
+app.get('/api/admin/transactions', async (c) => {
+  const limit = Math.min(Math.max(parseInt(String(c.req.query('limit') || '50'), 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(String(c.req.query('offset') || '0'), 10) || 0, 0);
+  const countRes = await db`SELECT COUNT(*) AS c FROM transactions` as { c: number }[];
+  const rows = await db`
+    SELECT t.id, t.user_id, t.type, t.amount, t.description, t.created_at,
+           u.name AS "userName", u.email AS "userEmail"
+    FROM transactions t
+    LEFT JOIN users u ON u.id = t.user_id
+    ORDER BY t.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return c.json({
+    transactions: rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      userName: r.userName ?? 'Unknown',
+      userEmail: r.userEmail ?? '',
+      type: r.type,
+      amount: Number(r.amount),
+      description: r.description,
+      created: r.created_at ? new Date(r.created_at).toISOString() : null,
+    })),
+    total: Number(countRes[0]?.c ?? 0),
+    limit,
+    offset,
+  });
 });
 
 // ---- Admin: All user API keys (joined with owner) ----
@@ -451,6 +560,20 @@ app.get('/api/admin/submissions', async (c) => {
   return c.json({ submissions });
 });
 
+app.get('/api/submissions', async (c) => {
+  const submissions = await db`SELECT id, url, status, created_at as date FROM submissions WHERE user_id = ${c.get('userId')} ORDER BY created_at DESC`;
+  return c.json({ submissions });
+});
+
+app.post('/api/submissions', zValidator('json', z.object({ url: z.string().url() })), async (c) => {
+  const { url } = c.req.valid('json');
+  const userId = c.get('userId');
+  const userRes = await db`SELECT name FROM users WHERE id = ${userId}`;
+  const id = require('./db.ts').genId('sub');
+  await db`INSERT INTO submissions (id, user_id, user_name, url, status) VALUES (${id}, ${userId}, ${userRes[0]?.name ?? 'User'}, ${url}, 'pending')`;
+  return c.json({ id, url, status: 'pending', date: new Date().toISOString().slice(0, 10) });
+});
+
 app.put('/api/admin/submissions/:id', zValidator('json', z.object({ status: z.enum(['pending', 'approved', 'rejected']) })), async (c) => {
   const { status } = c.req.valid('json');
   await db`UPDATE submissions SET status = ${status} WHERE id = ${c.req.param('id')}`;
@@ -481,19 +604,48 @@ app.post('/api/admin/notifications', zValidator('json', z.object({ title: z.stri
 // ---- User Notifications ----
 app.get('/api/notifications', async (c) => {
   const userId = c.get('userId');
-  const notifications = await db`SELECT * FROM notifications WHERE user_id = ${userId} OR user_id IS NULL ORDER BY created_at DESC`;
-  return c.json({ notifications });
+  const notifications = await db`
+    SELECT n.id, n.title, n.message, n.created_at,
+           CASE
+             WHEN n.user_id IS NOT NULL THEN n.read
+             ELSE EXISTS (SELECT 1 FROM notification_reads r WHERE r.notification_id = n.id AND r.user_id = ${userId})
+           END AS read
+    FROM notifications n
+    WHERE n.user_id = ${userId} OR n.user_id IS NULL
+    ORDER BY n.created_at DESC
+  `;
+  return c.json({ notifications: notifications.map((n) => ({ ...n, read: Boolean(n.read) })) });
 });
 
 app.put('/api/notifications', zValidator('json', z.object({ action: z.enum(['markRead', 'markAllRead']), id: z.string().optional() })), async (c) => {
   const { action, id } = c.req.valid('json');
   const userId = c.get('userId');
-  
+
   if (action === 'markRead' && id) {
-    await db`UPDATE notifications SET read = TRUE WHERE id = ${id} AND (user_id = ${userId} OR user_id IS NULL)`;
+    // For broadcast notifications (user_id IS NULL) record a per-user read so
+    // marking one doesn't hide it from everyone else.
+    const row = await db`SELECT user_id FROM notifications WHERE id = ${id}`;
+    if (row.length === 0) return c.json({ error: 'Notification not found' }, 404);
+    if (row[0].user_id === null) {
+      await db`
+        INSERT INTO notification_reads (notification_id, user_id) VALUES (${id}, ${userId})
+        ON CONFLICT (notification_id, user_id) DO NOTHING
+      `;
+    } else {
+      await db`UPDATE notifications SET read = TRUE WHERE id = ${id} AND user_id = ${userId}`;
+    }
     return c.json({ success: true });
   } else if (action === 'markAllRead') {
-    await db`UPDATE notifications SET read = TRUE WHERE user_id = ${userId} OR user_id IS NULL`;
+    await db`UPDATE notifications SET read = TRUE WHERE user_id = ${userId}`;
+    // Mark every broadcast notification read for this user.
+    const broadcast = await db`SELECT id FROM notifications WHERE user_id IS NULL`;
+    if (broadcast.length > 0) {
+      await db`
+        INSERT INTO notification_reads (notification_id, user_id)
+        SELECT n.id, ${userId} FROM notifications n WHERE n.user_id IS NULL
+        ON CONFLICT (notification_id, user_id) DO NOTHING
+      `;
+    }
     return c.json({ success: true });
   }
   return c.json({ error: 'Invalid request' }, 400);
@@ -511,17 +663,30 @@ app.get('/api/conversations/:id', async (c) => {
 app.post('/api/conversations', zValidator('json', z.object({ title: z.string().optional(), message: z.string().min(1) })), async (c) => {
   const { title, message } = c.req.valid('json');
   const userId = c.get('userId');
+  const bal = await checkBalanceEnough(userId);
+  if (!bal.ok) {
+    return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
+  }
   const convId = await createConversation(userId, title ?? message.slice(0, 28));
   await addMessage(convId, 'user', message);
-  const aiModel = await getModelInstance(userId, 'gpt-4o');
-  const systemPrompt = await getSystemPromptForModel('gpt-4o');
-  const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
-  const replyText = result.text;
-  const tokens = result.usage?.totalTokens ?? 150;
-  
-  await addMessage(convId, 'assistant', replyText);
-  await recordUsage(userId, 'gpt-4o', tokens, tokens * 0.000003, 'chat');
-  return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: replyText }] }, 201);
+  const defaultModel = await getDefaultModel();
+  try {
+    const aiModel = await getModelInstance(userId, defaultModel);
+    const systemPrompt = await getSystemPromptForModel(defaultModel);
+    const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
+    const replyText = result.text;
+    const tokens = result.usage?.totalTokens ?? 150;
+    const cost = await computeCost(tokens);
+    await addMessage(convId, 'assistant', replyText);
+    await recordUsage(userId, defaultModel, tokens, cost, 'chat');
+    await deductBalance(userId, cost);
+    return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: replyText }] }, 201);
+  } catch (err) {
+    // Avoid orphan conversations: roll back the message/conversation if the model call fails.
+    await db`DELETE FROM messages WHERE conversation_id = ${convId}`;
+    await db`DELETE FROM conversations WHERE id = ${convId}`;
+    throw err;
+  }
 });
 
 app.post('/api/conversations/:id/messages', zValidator('json', z.object({ message: z.string().min(1), model: z.string().optional() })), async (c) => {
@@ -529,15 +694,21 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   const userId = c.get('userId');
   const convId = c.req.param('id');
   if (!(await getMessages(convId, userId))) return c.json({ error: 'Not found' }, 404);
+  const bal = await checkBalanceEnough(userId);
+  if (!bal.ok) {
+    return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
+  }
   await addMessage(convId, 'user', message);
-  const aiModel = await getModelInstance(userId, model || 'gpt-4o');
-  const systemPrompt = await getSystemPromptForModel(model || 'gpt-4o');
+  const resolvedModel = model || (await getDefaultModel());
+  const aiModel = await getModelInstance(userId, resolvedModel);
+  const systemPrompt = await getSystemPromptForModel(resolvedModel);
   const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
   const replyText = result.text;
   const tokens = result.usage?.totalTokens ?? 150;
-  
+  const cost = await computeCost(tokens);
   await addMessage(convId, 'assistant', replyText);
-  await recordUsage(userId, model || 'gpt-4o', tokens, tokens * 0.000003, 'chat');
+  await recordUsage(userId, resolvedModel, tokens, cost, 'chat');
+  await deductBalance(userId, cost);
   return c.json({ message: { role: 'assistant', content: replyText } });
 });
 
@@ -592,8 +763,9 @@ async function handleAccount(c: any) {
       return c.json({ error: { message: 'Missing or invalid Authorization header. Must provide Bearer token.', type: 'invalid_request_error' } }, 401);
     }
     const token = authHeader.split(' ')[1];
-    const hashedKey = hashPassword(token);
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${token.substring(0, 16)}`;
+    const hashedKey = hashKey(token);
+    const legacyHashedKey = hashPassword(token);
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_hash = ${legacyHashedKey}`;
     if (keyRows.length === 0) {
       return c.json({ error: { message: 'Invalid API key.', type: 'invalid_request_error' } }, 401);
     }
@@ -601,22 +773,24 @@ async function handleAccount(c: any) {
 
     const userRow = await db`SELECT id, email, plan FROM users WHERE id = ${userId}`;
     const email = userRow.length > 0 ? userRow[0].email : 'developer@cheaprouter.com';
-    const plan = userRow.length > 0 ? (userRow[0].plan || 'free') : 'pro';
+    const plan = userRow.length > 0 ? (userRow[0].plan || 'free') : 'free';
 
     const usageRes = await db`SELECT COUNT(*) AS requests, COALESCE(SUM(tokens),0) AS tokens FROM usage WHERE user_id = ${userId}`;
+    const { monthlyTokenQuota } = await getBillingSettings();
 
     return c.json({
       object: 'account',
       id: 'acc_' + (userId ? userId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) : crypto.randomUUID().slice(0, 8)),
       email,
       subscription: {
-        plan: plan === 'free' ? 'pro' : plan,
+        plan: plan,
         status: 'active',
         billing_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
       },
       usage: {
         total_requests: Number(usageRes[0].requests),
-        tokens_used: Number(usageRes[0].tokens)
+        tokens_used: Number(usageRes[0].tokens),
+        token_quota: monthlyTokenQuota
       }
     });
   } catch (e: any) {
@@ -625,6 +799,27 @@ async function handleAccount(c: any) {
 }
 
 async function handleListModels(c: any) {
+  // OpenAI-compatible endpoints are exempt from the JWT middleware, so they
+  // must authenticate internally: valid API key or admin JWT only.
+  const auth = c.req.header('authorization') || '';
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return c.json({ error: { message: 'Unauthorized' } }, 401);
+  }
+  const reqKey = auth.replace('Bearer ', '');
+  const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashKey(reqKey)} OR key_hash = ${hashPassword(reqKey)}`;
+  const apiUserId = keyRows.length > 0 ? keyRows[0].user_id : null;
+  let valid = false;
+  if (apiUserId) {
+    await db`UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ${keyRows[0].id}`;
+    valid = true;
+  } else {
+    const payload = await verifyToken(reqKey);
+    if (payload && payload.role === 'admin') valid = true;
+  }
+  if (!valid) {
+    return c.json({ error: { message: 'Invalid API key or unauthorized' } }, 401);
+  }
+
   try {
     const providersResult = await db`SELECT models FROM admin_providers WHERE status = true`;
     const data: any[] = [];
@@ -678,25 +873,49 @@ app.get('/api/stream', async (c) => {
   const userId = c.get('userId');
   const url = new URL(c.req.url);
   const prompt = url.searchParams.get('prompt') ?? '';
-  const model = url.searchParams.get('model') ?? 'gpt-4o';
+  const model = url.searchParams.get('model') ?? (await getDefaultModel());
   try {
+    const bal = await checkBalanceEnough(userId);
+    if (!bal.ok) {
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}.` })}\n\n`));
+          controller.close();
+        }
+      });
+      return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+    }
     const aiModel = await getModelInstance(userId, model);
     const systemPrompt = await getSystemPromptForModel(model);
     const result = await streamText({ model: aiModel, prompt, system: systemPrompt || undefined });
 
+    // Bill exactly once in a finally so an upstream error or client abort
+    // still records usage instead of silently skipping billing.
+    let billed = false;
+    const bill = async () => {
+      if (billed) return;
+      billed = true;
+      const usage = await Promise.resolve(result.usage).catch(() => undefined);
+      const tokens = usage?.totalTokens ?? 150;
+      const cost = await computeCost(tokens);
+      await recordUsage(userId, model, tokens, cost, 'chat');
+      await deductBalance(userId, cost);
+    };
+
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder();
-        for await (const chunk of result.textStream) {
-          controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
+        try {
+          for await (const chunk of result.textStream) {
+            controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
+          }
+          controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+        } catch (err) {
+          controller.error(err);
+        } finally {
+          await bill().catch(() => {});
+          controller.close();
         }
-        controller.enqueue(enc.encode(`data: [DONE]\n\n`));
-        controller.close();
-        
-        // Wait for final usage
-        const usage = await result.usage;
-        const tokens = usage?.totalTokens ?? 150;
-        await recordUsage(userId, model, tokens, tokens * 0.000003, 'chat');
       },
     });
     return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });
@@ -720,12 +939,15 @@ app.get('/api/settings', async (c) => {
 
 app.put('/api/settings', zValidator('json', z.any()), async (c) => {
   const data = c.req.valid('json');
+  const existing = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+  const merged = { ...(existing[0]?.data ?? {}), ...data };
   await db`
     INSERT INTO global_settings (id, data) 
-    VALUES ('global', ${db.json(data)}) 
-    ON CONFLICT (id) DO UPDATE SET data = ${db.json(data)}
+    VALUES ('global', ${db.json(merged)}) 
+    ON CONFLICT (id) DO UPDATE SET data = ${db.json(merged)}
   `;
-  return c.json(data);
+  clearBillingCache();
+  return c.json(merged);
 });
 
 // ---- Global Public Providers ----

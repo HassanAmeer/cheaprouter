@@ -43,7 +43,7 @@ export default function BulkEditUsersPage() {
     }
     setSaving(true);
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       const res = await fetch('/api/admin/users/bulk', {
         method: 'PUT',
         headers: {

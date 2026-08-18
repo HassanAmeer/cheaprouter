@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Copy, Check, Trash2, Plus, KeyRound, Eye, EyeOff, Shield } from 'lucide-react';
+import { Copy, Check, Trash2, Plus, KeyRound, Shield } from 'lucide-react';
 import { Button, Input, Modal, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
@@ -23,7 +23,6 @@ export default function ApiKeysPage() {
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [revealId, setRevealId] = useState<string | null>(null);
 
   const load = () => {
     api.listKeys().then((r) => setKeys(r.keys.map((k: any) => ({ ...k, lastUsed: k.lastUsed ?? 'Never' })))).catch(console.error).finally(() => setLoading(false));
@@ -60,11 +59,6 @@ export default function ApiKeysPage() {
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
     toast('Copied to clipboard');
-  };
-
-  const maskKey = (key: string) => {
-    if (key.length <= 12) return key;
-    return key.slice(0, 10) + '•'.repeat(Math.max(key.length - 14, 4)) + key.slice(-4);
   };
 
   const closeModal = () => {
@@ -144,7 +138,7 @@ export default function ApiKeysPage() {
                       padding: '4px 10px', borderRadius: 'var(--radius-sm)', display: 'inline-block',
                       color: 'var(--color-text-muted)'
                     }}>
-                      {revealId === k.id ? k.secret : maskKey(k.secret)}
+                      {k.secret}
                     </code>
                   </td>
                   <td style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{k.created}</td>
@@ -154,12 +148,6 @@ export default function ApiKeysPage() {
                     </Badge>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <button className={styles.actionBtn} onClick={() => setRevealId(revealId === k.id ? null : k.id)} title="Toggle visibility">
-                      {revealId === k.id ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                    <button className={styles.actionBtn} onClick={() => copy(k.secret, k.id)} title="Copy">
-                      {copied === k.id ? <Check size={15} color="var(--color-success)" /> : <Copy size={15} />}
-                    </button>
                     <button className={styles.actionBtn} onClick={() => revoke(k.id, k.name)} title="Revoke" style={{ color: 'var(--color-danger)' }}>
                       <Trash2 size={15} />
                     </button>

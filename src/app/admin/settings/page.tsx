@@ -58,16 +58,23 @@ function SettingsContent() {
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}`,
+        },
         body: JSON.stringify(formData),
       });
       if (res.ok) {
         await refreshSettings();
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.error || `Failed to save settings (${res.status})`);
       }
     } catch (e) {
       console.error(e);
+      alert('Failed to save settings');
     } finally {
       setSaving(false);
     }

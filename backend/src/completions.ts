@@ -6,6 +6,8 @@ import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage } from './usage.ts';
 import { hashPassword, verifyToken } from './auth.ts';
+import { hashKey } from './keys.ts';
+import { computeCost, getBalance, checkBalanceEnough, deductBalance } from './billing.ts';
 import { addDevLog } from './logger.ts';
 
 function getActiveKeys(keyStr: string): string[] {
@@ -53,8 +55,25 @@ export interface ModelInstanceItem {
   keyMask?: string;
 }
 
+// Pick the default model for chat: the first model offered by the lowest-priority
+// active provider, falling back to a hardcoded default if none can be resolved.
+export async function getDefaultModel(): Promise<string> {
+  try {
+    const providersResult = await db`SELECT * FROM admin_providers WHERE status = true ORDER BY priority ASC NULLS LAST, id ASC`;
+    for (const p of providersResult) {
+      if (p.models && Array.isArray(p.models) && p.models.length > 0) {
+        const first = p.models[0];
+        return (first.originalId || first.id || first.name || '').trim() || undefined;
+      }
+    }
+  } catch (e) {
+    // fall through
+  }
+  return 'gpt-4o';
+}
+
 export async function getModelInstances(userId: string, model: string, sessionId?: string): Promise<ModelInstanceItem[]> {
-  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true ORDER BY priority DESC NULLS LAST, id ASC`;
+  const providersResult = await db`SELECT * FROM admin_providers WHERE status = true ORDER BY priority ASC NULLS LAST, id ASC`;
   const items: ModelInstanceItem[] = [];
 
   // Dynamic Provider Resolution across all active providers that match this model
@@ -117,8 +136,11 @@ export async function handleCompletions(c: any) {
     }
     const reqKey = auth.replace('Bearer ', '');
     
-    const hashedKey = hashPassword(reqKey);
-    const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_prefix = ${reqKey.substring(0, 16)}`;
+    // Match against the hash actually stored (FNV-1a via hashKey) — the old
+    // hashPassword + key_prefix fallback allowed a 16-char prefix to authenticate.
+    const hashedKey = hashKey(reqKey);
+    const legacyHashedKey = hashPassword(reqKey);
+    const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_hash = ${legacyHashedKey}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
     if (keyRows.length > 0) {
       await db`UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ${keyRows[0].id}`;
@@ -139,13 +161,32 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid API key or unauthorized' }, 401);
     }
 
+    // Admin test-identity must not be charged or recorded (no real user row).
+    const skipUsage = adminUserId === 'admin';
+
+    // ── Balance enforcement: reject before spending upstream tokens ──
+    if (!skipUsage) {
+      const bal = await checkBalanceEnough(finalUserId);
+      if (!bal.ok) {
+        addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance})`, undefined, sessionId);
+        return c.json({
+          error: {
+            message: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.`,
+            type: 'insufficient_quota',
+            code: 'insufficient_balance'
+          }
+        }, 402);
+      }
+    }
+
     let body;
     try {
       body = await c.req.json();
     } catch (e) {
       return c.json({ error: 'Invalid JSON body' }, 400);
     }
-    const { model = 'gpt-4o', messages, stream = false, temperature, max_tokens, top_p } = body;
+    const { model: requestedModel, messages, stream = false, temperature, max_tokens, top_p } = body;
+    const model = requestedModel || (await getDefaultModel());
 
     if (!messages || !Array.isArray(messages)) {
       addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, sessionId);
@@ -154,13 +195,58 @@ export async function handleCompletions(c: any) {
 
     const systemPrompt = await getSystemPromptForModel(model);
 
+    // Map OpenAI roles to AI SDK roles, preserving system and handling tool/function.
+    // 'tool' must stay 'tool' (with a tool-result part) so the provider can
+    // close the tool-call round-trip; collapsing it to 'assistant' breaks that.
+    const mapRole = (role: string): string => {
+      const r = String(role || '').toLowerCase();
+      if (r === 'system' || r === 'user' || r === 'assistant' || r === 'tool') return r;
+      if (r === 'function' || r === 'tool_result') return 'tool';
+      return 'assistant';
+    };
+
     // Convert messages (supporting both text and multimodal image attachments)
     const coreMessages: any[] = messages.map((m: any) => {
-      if (Array.isArray(m.content)) {
+      const role = mapRole(m.role);
+      if (role === 'tool') {
+        // OpenAI-style tool message -> AI SDK tool-result part so providers
+        // (Anthropic/Google/etc.) can associate it with the tool call.
+        const rawResult = Array.isArray(m.content) ? JSON.stringify(m.content) : m.content;
+        let parsed: unknown = rawResult;
+        if (typeof rawResult === 'string') {
+          try { parsed = JSON.parse(rawResult); } catch { parsed = rawResult; }
+        }
+        const output = (parsed !== null && typeof parsed === 'object')
+          ? { type: 'json', value: parsed }
+          : { type: 'text', value: rawResult ?? '' };
         return {
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: m.content
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: m.tool_call_id ?? m.toolCallId ?? `call_${Math.random().toString(36).slice(2, 10)}`,
+            toolName: m.name ?? 'unknown',
+            output,
+          }],
         };
+      }
+      if (Array.isArray(m.content)) {
+        return { role, content: m.content };
+      }
+      if (m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+        // OpenAI-style assistant tool_calls -> AI SDK tool-call parts so the
+        // provider can see which tool was invoked before the tool result.
+        const parts: any[] = [];
+        if (m.content) parts.push({ type: 'text', text: m.content });
+        for (const tc of m.tool_calls) {
+          const fn = tc.function || {};
+          parts.push({
+            type: 'tool-call',
+            toolCallId: tc.id ?? `call_${Math.random().toString(36).slice(2, 10)}`,
+            toolName: fn.name ?? 'unknown',
+            input: typeof fn.arguments === 'string' ? JSON.parse(fn.arguments || '{}') : (fn.arguments ?? {}),
+          });
+        }
+        return { role, content: parts };
       }
       if (m.images && Array.isArray(m.images) && m.images.length > 0) {
         const parts: any[] = [];
@@ -170,15 +256,9 @@ export async function handleCompletions(c: any) {
         for (const img of m.images) {
           parts.push({ type: 'image', image: img });
         }
-        return {
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: parts
-        };
+        return { role, content: parts };
       }
-      return {
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content
-      };
+      return { role, content: m.content };
     });
 
     if (systemPrompt) {
@@ -215,9 +295,6 @@ export async function handleCompletions(c: any) {
       }, 403);
     }
 
-    // Admin test-identity must not be recorded against usage (no real user row).
-    const skipUsage = adminUserId === 'admin';
-
     let lastError: any = null;
     let attempt = 0;
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -229,6 +306,21 @@ export async function handleCompletions(c: any) {
         try {
           addDevLog('INFO', 'AI Request', `Attempt ${attempt} (try ${keyTry}) on ${item.providerName} [${item.modelId}] starting...`, undefined, sessionId);
           if (stream) {
+            // Bill exactly once regardless of how the stream ends (success,
+            // upstream error, or client abort). onFinish alone is skipped on
+            // error/abort, so we also settle in the stream's finally block.
+            let billed = false;
+            const bill = async (usage: any) => {
+              if (billed) return;
+              billed = true;
+              if (!skipUsage) {
+                const tokens = usage?.totalTokens || 150;
+                const cost = await computeCost(tokens);
+                await recordUsage(finalUserId, model, tokens, cost, source);
+                await deductBalance(finalUserId, cost);
+              }
+            };
+
             const result = await streamText({
               model: item.instance,
               maxRetries: 0,
@@ -237,16 +329,63 @@ export async function handleCompletions(c: any) {
               ...(typeof max_tokens === 'number' ? { maxTokens: max_tokens } : {}),
               ...(typeof top_p === 'number' ? { topP: top_p } : {}),
               async onFinish({ usage, text }) {
-                if (usage && !skipUsage) {
-                  await recordUsage(finalUserId, model, usage.totalTokens || 150, (usage.totalTokens || 150) * 0.000003, source);
-                }
+                await bill(usage);
                 addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
                   usage,
                   responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
                 }, sessionId);
               },
+              async onError({ error }) {
+                await bill(undefined);
+                addDevLog('ERROR', 'AI Request', `Attempt ${attempt}: Stream error.`, { error: String(error) }, sessionId);
+              },
             });
-            return result.toTextStreamResponse();
+
+            // OpenAI-compatible SSE stream so aider/cursor/claude-code etc. can parse it.
+            const encoder = new TextEncoder();
+            const stream = new ReadableStream({
+              async start(controller) {
+                const sentinel = `chatcmpl-${Date.now()}`;
+                const created = Math.floor(Date.now() / 1000);
+                try {
+                  for await (const chunk of result.textStream) {
+                    const payload = {
+                      id: sentinel,
+                      object: 'chat.completion.chunk',
+                      created,
+                      model,
+                      choices: [{ index: 0, delta: { content: chunk }, finish_reason: null }],
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                  }
+                  const done = {
+                    id: sentinel,
+                    object: 'chat.completion.chunk',
+                    created,
+                    model,
+                    choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                } catch (err) {
+                  controller.error(err);
+                } finally {
+                  // Settle billing even if onFinish never fired (error/abort).
+                  const usage = await Promise.resolve(result.usage).catch(() => undefined);
+                  await bill(usage).catch(() => {});
+                  controller.close();
+                }
+              },
+            });
+
+            return new Response(stream, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache, no-transform',
+                Connection: 'keep-alive',
+                'X-Accel-Buffering': 'no',
+              },
+            });
           } else {
             const result = await generateText({
               model: item.instance,
@@ -259,7 +398,9 @@ export async function handleCompletions(c: any) {
 
             const tokens: number = result.usage?.totalTokens || 150;
             if (!skipUsage) {
-              await recordUsage(finalUserId, model, tokens, tokens * 0.000003, source);
+              const cost = await computeCost(tokens);
+              await recordUsage(finalUserId, model, tokens, cost, source);
+              await deductBalance(finalUserId, cost);
             }
             
             addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
@@ -311,8 +452,9 @@ export async function handleCompletions(c: any) {
             continue;
           }
 
-          // Hard client errors (e.g. 400 Bad Request, 403 Forbidden) abort unless model isn't supported on this provider
-          if (statusCode >= 400 && statusCode < 500 && statusCode !== 429 && !rawMsg.includes('not supported')) {
+          // Hard client errors (e.g. 400 Bad Request, 422) abort unless model isn't supported on this provider.
+          // 401/403 mean the key is bad/rotated on this provider — fail over to the next provider/key instead.
+          if (statusCode >= 400 && statusCode < 500 && statusCode !== 401 && statusCode !== 403 && statusCode !== 429 && !rawMsg.includes('not supported')) {
             console.error(`[Fallback] Hard client error detected (${statusCode}), aborting fallback.`);
             throw err;
           }

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
-import { Activity, DollarSign, TrendingUp, BarChart3, PieChart as PieChartIcon, Users, Box, ArrowUpRight } from 'lucide-react';
+import { Activity, DollarSign, BarChart3, PieChart as PieChartIcon, Users, Box, ArrowUpRight } from 'lucide-react';
 import { DonutChart } from '@/components/ui/charts';
 import {
   Chart as ChartJS,
@@ -32,7 +32,7 @@ export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/analytics')
+    fetch('/api/admin/analytics', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` } })
       .then(res => {
         if (!res.ok) return null;
         const ct = res.headers.get('content-type');
@@ -62,9 +62,9 @@ export default function RevenuePage() {
 
   const hasData = data && data.topModels;
 
-  const estimatedCost = data?.totalCost ?? 1580.70;
-  const estimatedRevenue = data?.totalRevenue ?? 8350.70; 
-  const mrr = data?.mrr ?? 12450.00;
+  const estimatedCost = data?.totalCost ?? 0;
+  const estimatedRevenue = data?.totalRevenue ?? 0;
+  const mrr = data?.mrr ?? 0;
   const marginPercent = estimatedRevenue > 0 ? ((estimatedRevenue - estimatedCost) / estimatedRevenue) * 100 : 0;
 
   // Setup Chart.js Data
@@ -235,27 +235,27 @@ export default function RevenuePage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
         <div className="premium-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600 }}>Monthly Recurring (MRR)</span>
+            <span style={{ fontSize: '14px', fontWeight: 600 }}>Net Revenue (30d)</span>
             <DollarSign size={18} color="#10B981" />
           </div>
           <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
             ${mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: '13px', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <TrendingUp size={14} /> +12.5% from last month
+          <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Top-ups minus withdrawals (no subscriptions)
           </div>
         </div>
         
         <div className="premium-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600 }}>Total Revenue (30d)</span>
+            <span style={{ fontSize: '14px', fontWeight: 600 }}>Total Revenue</span>
             <Activity size={18} color="#3B82F6" />
           </div>
           <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
             ${estimatedRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: '13px', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <TrendingUp size={14} /> +8.4% from last month
+          <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            All-time top-ups minus withdrawals
           </div>
         </div>
 

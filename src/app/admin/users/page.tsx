@@ -61,7 +61,7 @@ export default function UsersPage() {
   const handleDeleteSelected = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedUserIds.size} users?`)) return;
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('admin_token');
       const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: {

@@ -104,10 +104,42 @@ export interface SiteSettings {
     creatorBonus: string;
     alertMessage: string;
   };
+  withdrawSettings?: {
+    enabled: boolean;
+    minAmount: number;
+    announcement: string;
+  };
+  billingSettings?: {
+    welcomeCredit: number;
+    costPerToken: number;
+    minBalanceRequired: number;
+    minBillableTokens: number;
+    monthlyTokenQuota: number;
+  };
+  install?: {
+    cliName: string;
+    npmPackage: string;
+    installSh: string;
+    installPs1: string;
+    apiBaseUrl: string;
+    websiteUrl: string;
+    chatUrl: string;
+    chromeUrl: string;
+  };
 }
 
 const defaultSettings: SiteSettings = {
   brandName: 'CheapRouter',
+  install: {
+    cliName: 'cheap-cli',
+    npmPackage: 'cheap-cli',
+    installSh: 'https://cheaprouter.ai/install.sh',
+    installPs1: 'https://cheaprouter.ai/install.ps1',
+    apiBaseUrl: 'https://api.cheaprouter.com/v1',
+    websiteUrl: 'https://cheaprouter.com',
+    chatUrl: 'chat.cheaprouter.io',
+    chromeUrl: 'chrome.cheaprouter.io',
+  },
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
   heroAnimatedTexts: ['Free Coding', 'Free Chat', 'Cheap API', 'Cheap Agents'],
@@ -308,6 +340,11 @@ const defaultSettings: SiteSettings = {
     standardBonus: '$5.00',
     creatorBonus: '$20.00',
     alertMessage: 'Attention Content Creators! Make a video about CheapRouter on YouTube or TikTok, get 100+ views, and earn a $20.00 platform credit instantly!'
+  },
+  withdrawSettings: {
+    enabled: true,
+    minAmount: 5,
+    announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.'
   }
 };
 

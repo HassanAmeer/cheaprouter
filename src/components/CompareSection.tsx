@@ -1,9 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { Check, X, Minus, Terminal, Shield, Unlock, Globe, Zap, Code, ChevronRight, Key, Layers, ArrowRight } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './CompareSection.module.css';
 
 export default function CompareSection() {
+  const { settings } = useSiteSettings();
+  const cliTab = (settings.pricingSection?.tabs || []).find((t) => t.id === 'tab_cli');
+  const starter = (cliTab?.plans || []).find((p) => p.id === 'p_cli_2');
+  const entryLabel = starter ? `${starter.price}${starter.period}` : '$2/mo';
+
   return (
     <section className={styles.section} id="compare">
       <div className={styles.container}>
@@ -15,7 +21,7 @@ export default function CompareSection() {
             <thead>
               <tr>
                 <th></th>
-                <th className={styles.highlightCol}>CheapRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
+                <th className={styles.highlightCol}>{settings.brandName || 'CheapRouter'}<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
                 <th>OpenRouter<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PAYG</span></th>
                 <th>LiteLLM<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>OSS</span></th>
                 <th>Helicone<br/><span style={{fontSize:'0.75rem', fontWeight:'normal', opacity:0.7}}>PRO</span></th>
@@ -25,7 +31,7 @@ export default function CompareSection() {
             <tbody>
               <tr>
                 <td>Entry price</td>
-                <td className={styles.highlightCol}>$2/mo</td>
+                <td className={styles.highlightCol}>{entryLabel}</td>
                 <td>Pay as you go</td>
                 <td>$0 (Self-host)</td>
                 <td>$50/mo</td>

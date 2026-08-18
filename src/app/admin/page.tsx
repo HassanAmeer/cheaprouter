@@ -12,10 +12,17 @@ export default function AdminDashboard() {
     last30Days: 0,
     filteredCount: 0
   });
+  const [system, setSystem] = useState({ providersActive: 0, providersTotal: 0, mrr: 0, totalRevenue: 0, health: 100 });
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<'30' | '60' | '90' | 'all' | 'custom'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const tokenHeader = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return { 'Authorization': `Bearer ${token || ''}` };
+  };
 
   const fetchStats = () => {
     setLoading(true);
@@ -28,7 +35,10 @@ export default function AdminDashboard() {
       if (endDate) url += `endDate=${endDate}&`;
     }
 
-    fetch(url)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
       .then(res => {
         if (!res.ok) return null;
         const ct = res.headers.get('content-type');
@@ -38,17 +48,74 @@ export default function AdminDashboard() {
         return null;
       })
       .then(data => {
-        if (data && data.stats) {
-          setStats(data.stats);
+        const users: any[] = (data && data.users) || [];
+        const now = Date.now();
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        let filtered = users;
+        if (activeFilter === 'custom' && startDate) {
+          const s = new Date(startDate + 'T00:00:00').getTime();
+          const e = endDate ? new Date(endDate + 'T23:59:59').getTime() : now;
+          filtered = users.filter(u => {
+            const t = new Date(u.created_at).getTime();
+            return t >= s && t <= e;
+          });
+        } else if (activeFilter !== 'all') {
+          const days = parseInt(activeFilter, 10) || 0;
+          const cutoff = now - days * 86400000;
+          filtered = users.filter(u => new Date(u.created_at).getTime() >= cutoff);
         }
+        const byDay = (n: number) => users.filter(u => new Date(u.created_at).getTime() >= now - n * 86400000).length;
+        setStats({
+          total: users.length,
+          today: users.filter(u => new Date(u.created_at) >= todayStart).length,
+          last7Days: byDay(7),
+          last30Days: byDay(30),
+          filteredCount: filtered.length
+        });
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
 
+  const fetchSystem = () => {
+    Promise.all([
+      fetch('/api/admin/analytics', { headers: tokenHeader() }),
+      fetch('/api/admin/providers', { headers: tokenHeader() })
+    ])
+      .then(async ([aRes, pRes]) => {
+        const a = aRes.ok ? await aRes.json().catch(() => null) : null;
+        const p = pRes.ok ? await pRes.json().catch(() => []) : [];
+        const providers = Array.isArray(p) ? p : [];
+        const active = providers.filter((x: any) => x.status === true || x.status === 'true').length;
+        setSystem({
+          providersActive: active,
+          providersTotal: providers.length,
+          mrr: a?.mrr ?? 0,
+          totalRevenue: a?.totalRevenue ?? 0,
+          health: providers.length ? Math.round((active / providers.length) * 100) : 100
+        });
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     fetchStats();
   }, [activeFilter, startDate, endDate]);
+
+  useEffect(() => {
+    fetchSystem();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    fetch('/api/admin/users', { headers: token ? { 'Authorization': `Bearer ${token}` } : {} })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.users) {
+          setRecentUsers([...data.users]
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 8));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div>
@@ -170,22 +237,22 @@ export default function AdminDashboard() {
           <div className={styles.statHeader}>
             Active Providers <Server size={16} />
           </div>
-          <div className={styles.statValue}>4</div>
-          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>OpenAI, Anthropic, Google, DeepSeek</div>
+          <div className={styles.statValue}>{system.providersActive} / {system.providersTotal}</div>
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Enabled upstream providers</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
             Estimated Monthly Revenue <DollarSign size={16} />
           </div>
-          <div className={styles.statValue}>$4,320</div>
-          <div style={{ fontSize: '12px', color: '#10B981' }}>+12.5% vs last month</div>
+          <div className={styles.statValue}>${system.mrr.toFixed(2)}</div>
+          <div style={{ fontSize: '12px', color: '#10B981' }}>{system.totalRevenue.toFixed(2)} total received</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
-            System Health <Activity size={16} />
+            Provider Health <Activity size={16} />
           </div>
-          <div className={styles.statValue} style={{ color: '#10B981' }}>99.9%</div>
-          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>All proxy nodes operational</div>
+          <div className={styles.statValue} style={{ color: '#10B981' }}>{system.health}%</div>
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{system.providersActive} of {system.providersTotal} providers enabled</div>
         </div>
       </div>
 
@@ -207,21 +274,28 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td><span className={styles.badge} style={{ background: 'var(--color-bg-soft)', color: 'var(--color-text-main)' }}>User Signup</span></td>
-                <td>john@example.com (John Doe)</td>
-                <td style={{ color: 'var(--color-text-muted)' }}>Today</td>
-              </tr>
-              <tr>
-                <td><span className={styles.badge} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>API Key Created</span></td>
-                <td>usr_2x8c (Alice Smith)</td>
-                <td style={{ color: 'var(--color-text-muted)' }}>2 days ago</td>
-              </tr>
-              <tr>
-                <td><span className={styles.badge} style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>Plan Upgrade</span></td>
-                <td>mike@tech.co (Upgraded to Pro)</td>
-                <td style={{ color: 'var(--color-text-muted)' }}>25 days ago</td>
-              </tr>
+              {recentUsers.length === 0 && (
+                <tr>
+                  <td colSpan={3} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                    No user activity yet
+                  </td>
+                </tr>
+              )}
+              {recentUsers.map(u => (
+                <tr key={u.id}>
+                  <td><span className={styles.badge} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>User Signup</span></td>
+                  <td>{u.email} ({u.name})</td>
+                  <td style={{ color: 'var(--color-text-muted)' }}>
+                    {(() => {
+                      const t = new Date(u.created_at).getTime();
+                      const days = Math.max(0, Math.floor((Date.now() - t) / 86400000));
+                      if (days === 0) return 'Today';
+                      if (days === 1) return '1 day ago';
+                      return `${days} days ago`;
+                    })()}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

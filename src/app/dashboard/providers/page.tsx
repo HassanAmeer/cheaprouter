@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Copy, Layers, X, Lock } from 'lucide-react';
+import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Layers, X, Lock } from 'lucide-react';
 import styles from '../dashboard.module.css';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
@@ -341,9 +341,6 @@ export default function ProvidersPage() {
                       <Key size={14} color="var(--color-text-muted)" />
                       <span style={{ fontFamily: 'monospace', fontSize: '14px', letterSpacing: '1px' }}>{p.masked}</span>
                     </div>
-                    <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }} title="Copy Key" onClick={() => toast('Key copied to clipboard', 'success')}>
-                      <Copy size={14} />
-                    </button>
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

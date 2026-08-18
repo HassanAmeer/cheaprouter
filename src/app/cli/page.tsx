@@ -18,18 +18,21 @@ import { SiteFooter } from '@/components/site-footer';
 import { useSiteSettings } from '@/components/settings-provider';
 import styles from './cli.module.css';
 
-const COMMANDS: Record<string, { label: string, cmd: string, icon: React.ReactNode }> = {
-  Mac: { label: 'macOS', cmd: 'curl -fsSL https://cheaprouter.ai/install.sh | bash', icon: <Command size={16} /> },
-  Windows: { label: 'Windows', cmd: 'iwr -useb https://cheaprouter.ai/install.ps1 | iex', icon: <LayoutGrid size={16} /> },
-  Linux: { label: 'Linux', cmd: 'curl -fsSL https://cheaprouter.ai/install.sh | bash', icon: <Terminal size={16} /> },
-  npm: { label: 'npm', cmd: 'npm install -g cheap-cli', icon: <Package size={16} /> },
-};
-
 export default function CliPage() {
   const { settings } = useSiteSettings();
   const { toast } = useToast();
   const [tab, setTab] = useState('npm');
   const [copied, setCopied] = useState<string | null>(null);
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+
+  const commands: Record<string, { label: string, cmd: string, icon: React.ReactNode }> = {
+    Mac: { label: 'macOS', cmd: `curl -fsSL ${install.installSh || 'https://cheaprouter.ai/install.sh'} | bash`, icon: <Command size={16} /> },
+    Windows: { label: 'Windows', cmd: `iwr -useb ${install.installPs1 || 'https://cheaprouter.ai/install.ps1'} | iex`, icon: <LayoutGrid size={16} /> },
+    Linux: { label: 'Linux', cmd: `curl -fsSL ${install.installSh || 'https://cheaprouter.ai/install.sh'} | bash`, icon: <Terminal size={16} /> },
+    npm: { label: 'npm', cmd: `npm install -g ${install.npmPackage || 'cheap-cli'}`, icon: <Package size={16} /> },
+  };
+
+  const cliName = install.cliName || 'cheap-cli';
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -65,7 +68,7 @@ export default function CliPage() {
                 <div className={`${styles.macBtn} ${styles.macGreen}`}></div>
               </div>
               <div className={styles.installTabs}>
-                {Object.keys(COMMANDS).map((t) => (
+                {Object.keys(commands).map((t) => (
                 <button key={t} className={`${styles.installTab} ${tab === t ? styles.installTabActive : ''}`} onClick={() => setTab(t)}>
                   <div className={styles.starsBg}>
                     <div className={`${styles.star} ${styles.star1}`}></div>
@@ -77,8 +80,8 @@ export default function CliPage() {
                     <div className={`${styles.shootingStar} ${styles.shootingStar2}`}></div>
                   </div>
                   <span className={styles.tabContent}>
-                    <span className={styles.tabIcon}>{COMMANDS[t].icon}</span>
-                    {COMMANDS[t].label}
+                    <span className={styles.tabIcon}>{commands[t].icon}</span>
+                    {commands[t].label}
                   </span>
                 </button>
               ))}
@@ -86,8 +89,8 @@ export default function CliPage() {
             </div>
             <div className={styles.installCmd}>
               <Terminal size={18} color="var(--color-primary)" />
-              <code>{COMMANDS[tab].cmd}</code>
-              <button className={styles.copyBtn} onClick={() => copy(COMMANDS[tab].cmd, 'install')}>
+              <code>{commands[tab].cmd}</code>
+              <button className={styles.copyBtn} onClick={() => copy(commands[tab].cmd, 'install')}>
                 {copied === 'install' ? <Check size={16} color="var(--color-success)" /> : <Copy size={16} />}
               </button>
             </div>
@@ -103,14 +106,14 @@ export default function CliPage() {
                   <div className={`${styles.macBtn} ${styles.macYellow}`}></div>
                   <div className={`${styles.macBtn} ${styles.macGreen}`}></div>
                 </div>
-                <div className={styles.mockupTitle}>cheap-cli — 80x24</div>
+                <div className={styles.mockupTitle}>{cliName} — 80x24</div>
               </div>
 
               {/* Window Body */}
               <div className={styles.mockupBody}>
                 <div className={styles.mockupLine}>
                   <span className={styles.mockupPrompt}>~/project $</span>
-                  <span className={styles.mockupCommand}>cheap-cli init --framework=nextjs</span>
+                  <span className={styles.mockupCommand}>{cliName} init --framework=nextjs</span>
                 </div>
                 
                 <div className={styles.mockupOutput}>
@@ -131,7 +134,7 @@ export default function CliPage() {
                 
                 <div className={styles.mockupLine} style={{ marginTop: 20 }}>
                   <span className={styles.mockupPrompt}>~/project/cheap-editor-demo $</span>
-                  <span className={styles.mockupCommand}>cheap-cli generate component</span>
+                  <span className={styles.mockupCommand}>{cliName} generate component</span>
                 </div>
 
                 <div className={styles.mockupOutput}>
@@ -243,7 +246,13 @@ export default function CliPage() {
               </tr>
               <tr>
                 <td>Entry price</td>
-                <td className={styles.highlightCol}>$2/mo</td>
+                <td className={styles.highlightCol}>
+                  {(() => {
+                    const cliTab = (settings.pricingSection?.tabs || []).find((t) => t.id === 'tab_cli');
+                    const starter = (cliTab?.plans || []).find((p) => p.id === 'p_cli_2');
+                    return starter ? `${starter.price}${starter.period}` : '$2/mo';
+                  })()}
+                </td>
                 <td>$20–200/mo</td>
                 <td>$0 (BYO)</td>
                 <td>$0 (BYO)</td>

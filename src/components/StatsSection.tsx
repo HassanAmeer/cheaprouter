@@ -1,8 +1,14 @@
 import React from 'react';
 import { Check, Unlock, Key, Zap } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './StatsSection.module.css';
 
 export default function StatsSection() {
+  const { settings } = useSiteSettings();
+  const cliTab = (settings.pricingSection?.tabs || []).find((t) => t.id === 'tab_cli');
+  const starter = (cliTab?.plans || []).find((p) => p.id === 'p_cli_2');
+  const entryPrice = starter ? starter.price.replace('$', '') : '$2';
+
   return (
     <section className={`container ${styles.statsSection}`}>
       <div className={styles.statsGrid}>
@@ -23,7 +29,7 @@ export default function StatsSection() {
         </div>
         <div className={styles.statCard}>
           <div className={styles.statIcon}><Zap size={24} /></div>
-          <div className={styles.statValue}>$2</div>
+          <div className={styles.statValue}>{entryPrice}</div>
           <div className={styles.statLabel}>to get started</div>
         </div>
       </div>

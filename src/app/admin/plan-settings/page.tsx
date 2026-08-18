@@ -99,7 +99,7 @@ export default function PlanSettingsPage() {
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` },
         body: JSON.stringify(formData)
       });
       if (res.ok) {

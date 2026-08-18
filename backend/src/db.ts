@@ -41,6 +41,7 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS earning_goal TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance REAL DEFAULT 0;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP;`;
   } catch (e) {
     console.error('Migration error:', e);
   }
@@ -132,6 +133,18 @@ export async function initDb() {
     );
   `;
 
+  // Per-user read state for broadcast notifications (user_id = NULL rows).
+  // Without this, marking a broadcast notification as read would flip the
+  // shared row and hide it from every other user.
+  await db`
+    CREATE TABLE IF NOT EXISTS notification_reads (
+      notification_id TEXT NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (notification_id, user_id)
+    );
+  `;
+
   await db`
     CREATE TABLE IF NOT EXISTS global_settings (
       id TEXT PRIMARY KEY,
@@ -185,6 +198,29 @@ export async function initDb() {
       amount REAL NOT NULL DEFAULT 0,
       description TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS withdraw_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      method TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      processed_at TIMESTAMP
+    );
+  `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS topup_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      processed_at TIMESTAMP
     );
   `;
 }

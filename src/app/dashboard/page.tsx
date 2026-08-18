@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AreaChart } from '@/components/ui/charts';
 import { useAuth } from '@/components/auth-provider';
@@ -22,6 +22,12 @@ export default function DashboardOverview() {
   const [hideWelcome, setHideWelcome] = useState(false);
   const [recentNotify, setRecentNotify] = useState<any[]>([]);
 
+  const daysFor = (f: string) => f === 'All' ? 0 : f === '7D' ? 7 : f === '15D' ? 15 : f === '1M' ? 30 : 90;
+
+  const loadAnalytics = useCallback((f: string) => {
+    api.analytics(undefined, daysFor(f)).then((a) => { setUsage(a.usageOverTime); setAnalytics(a); }).catch(() => setUsage([]));
+  }, []);
+
   useEffect(() => {
     if (user && user.onboarding_completed === false && !localStorage.getItem('cm_onboarding_skipped')) {
       router.replace('/onboarding');
@@ -31,9 +37,9 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     api.summary().then(setSummary).catch(() => setSummary({ limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 }));
-    api.analytics().then((a) => { setUsage(a.usageOverTime); setAnalytics(a); }).catch(() => setUsage([]));
+    loadAnalytics(timeFilter);
     api.getNotifications().then((res) => setRecentNotify(res.notifications?.slice(0, 5) || [])).catch(() => {});
-  }, []);
+  }, [loadAnalytics]);
 
   const s = summary ?? { limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 };
   const userName = user?.name?.split(' ')[0] ?? 'Developer';
@@ -97,10 +103,10 @@ export default function DashboardOverview() {
           <div className={styles.statIcon} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
             <Zap size={20} />
           </div>
-          <div className={styles.statLabel}>Usage Tokens</div>
+          <div className={styles.statLabel}>Tokens Used</div>
           <div className={styles.statValue}>{s.used.toLocaleString()}</div>
           <span className={`${styles.statChange} ${styles.statChangeUp}`}>
-            <ArrowUpRight size={12} /> 12.5%
+            <ArrowUpRight size={12} /> {s.percent}% of plan
           </span>
         </div>
         <div className={styles.statCard}>
@@ -115,12 +121,12 @@ export default function DashboardOverview() {
         </div>
         <div className={styles.statCard}>
           <div className={styles.statIcon} style={{ background: 'rgba(217,119,6,0.1)', color: 'var(--color-warning)' }}>
-            <Clock size={20} />
+            <Activity size={20} />
           </div>
-          <div className={styles.statLabel}>API Requests (7d)</div>
-          <div className={styles.statValue}>{analytics?.totalTokens ? Math.round(analytics.totalTokens / 150) : 24}</div>
+          <div className={styles.statLabel}>API Requests ({timeFilter})</div>
+          <div className={styles.statValue}>{analytics?.totalCalls != null ? analytics.totalCalls.toLocaleString() : '0'}</div>
           <span className={`${styles.statChange} ${styles.statChangeUp}`}>
-            <ArrowUpRight size={12} /> 8.3%
+            {analytics?.totalCost != null ? `$${analytics.totalCost.toFixed(4)}` : '$0.00'} cost
           </span>
         </div>
       </div>
@@ -215,7 +221,7 @@ export default function DashboardOverview() {
               {['All', '7D', '15D', '1M', '3M'].map(f => (
                 <button 
                   key={f} 
-                  onClick={() => setTimeFilter(f)}
+                  onClick={() => { setTimeFilter(f); loadAnalytics(f); }}
                   style={{ 
                     padding: '4px 10px', 
                     borderRadius: '6px', 

@@ -2,17 +2,20 @@
 
 import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './InstallBox.module.css';
 
 export default function InstallBox() {
   const [activeTab, setActiveTab] = useState('Windows');
   const [copied, setCopied] = useState(false);
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
 
   const commands: Record<string, string> = {
-    Windows: 'iwr -useb https://cheaprouter.ai/install.ps1 | iex',
-    Mac: 'curl -fsSL https://cheaprouter.ai/install.sh | bash',
-    Linux: 'curl -fsSL https://cheaprouter.ai/install.sh | bash',
-    npm: 'npm install -g cheap-cli'
+    Windows: `iwr -useb ${install.installPs1 || 'https://cheaprouter.ai/install.ps1'} | iex`,
+    Mac: `curl -fsSL ${install.installSh || 'https://cheaprouter.ai/install.sh'} | bash`,
+    Linux: `curl -fsSL ${install.installSh || 'https://cheaprouter.ai/install.sh'} | bash`,
+    npm: `npm install -g ${install.npmPackage || 'cheap-cli'}`
   };
 
   const handleCopy = () => {

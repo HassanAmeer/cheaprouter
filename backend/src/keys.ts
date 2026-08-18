@@ -1,6 +1,6 @@
 import { db, genId } from './db.ts';
 
-function hashKey(key: string): string {
+export function hashKey(key: string): string {
   let h = 2166136261;
   for (let i = 0; i < key.length; i++) {
     h ^= key.charCodeAt(i);
@@ -16,7 +16,20 @@ export function generateApiKey(): { full: string; prefix: string; hash: string }
 }
 
 export async function listKeys(userId: string) {
-  return await db`SELECT id, name, key_prefix AS secret, created_at AS created, last_used AS "lastUsed" FROM api_keys WHERE user_id = ${userId} ORDER BY created_at DESC` as { id: string; name: string; secret: string; created: string; lastUsed: string | null }[];
+  const rows = await db`SELECT id, name, key_prefix AS prefix, created_at AS created, last_used AS "lastUsed" FROM api_keys WHERE user_id = ${userId} ORDER BY created_at DESC` as { id: string; name: string; prefix: string; created: string; lastUsed: string | null }[];
+  return rows.map(k => ({
+    id: k.id,
+    name: k.name,
+    secret: maskSecret(k.prefix),
+    created: k.created,
+    lastUsed: k.lastUsed,
+  }));
+}
+
+// Only a masked display value — the full key is never recoverable after creation.
+function maskSecret(prefix: string): string {
+  const tail = prefix.length > 6 ? prefix.slice(-4) : prefix;
+  return `sk-••••••••••${tail}`;
 }
 
 export async function createKey(userId: string, name: string) {

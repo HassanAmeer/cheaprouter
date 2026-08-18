@@ -2,9 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Paperclip, ArrowUp } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import styles from './HeroTerminal.module.css';
 
 export default function HeroTerminal() {
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+  const apiBase = install.apiBaseUrl || 'https://api.cheaprouter.ai/v1';
+  const chatUrl = install.chatUrl || 'chat.cheaprouter.io';
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [isPaused, setIsPaused] = useState(false);
@@ -90,7 +95,7 @@ export default function HeroTerminal() {
                 <div className={styles.cliDiffBlock}>
                   <div className={styles.diffFilename}>src/api/openai.ts</div>
                   <div className={styles.diffMinus}><span>-</span> <span>&nbsp;&nbsp;baseURL: &apos;https://api.openai.com/v1&apos;,</span></div>
-                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: &apos;https://api.cheaprouter.ai/v1&apos;,</span></div>
+                  <div className={styles.diffPlus}><span>+</span> <span>&nbsp;&nbsp;baseURL: &apos;{apiBase}&apos;,</span></div>
                 </div>
                 <div className={styles.cliSuccess}>✔ Routing updated seamlessly! 🚀</div>
               </div>
@@ -124,7 +129,7 @@ export default function HeroTerminal() {
                   <div><span className={styles.keyword}>import</span> {'{'} OpenAI {'}'} <span className={styles.keyword}>from</span> <span className={styles.string}>&apos;openai&apos;</span>;</div>
                   <br />
                   <div><span className={styles.keyword}>const</span> openai = <span className={styles.keyword}>new</span> <span className={styles.function}>OpenAI</span>({'{'}</div>
-                  <div style={{ paddingLeft: '16px' }}>baseURL: <span className={styles.string}>&apos;https://api.cheaprouter.ai/v1&apos;</span>,</div>
+                  <div style={{ paddingLeft: '16px' }}>baseURL: <span className={styles.string}>&apos;{apiBase}&apos;</span>,</div>
                   <div style={{ paddingLeft: '16px' }}>apiKey: process.env.CHEAPAGENTS_API_KEY,</div>
                   <div>{'}'});</div>
                   <br />
@@ -155,7 +160,7 @@ export default function HeroTerminal() {
           <div className={styles.cardHeader}>
             <div className={styles.browserHeader}>
               <div className={styles.browserDots}><span/><span/><span/></div>
-              <div className={styles.browserUrl}>chat.cheaprouter.io</div>
+              <div className={styles.browserUrl}>{chatUrl}</div>
             </div>
           </div>
           <div className={styles.cardBody} style={{ padding: 0 }}>

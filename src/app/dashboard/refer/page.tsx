@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gift, Copy, Video, Send, CheckCircle2, Clock } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/primitives';
+import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
 
 export default function ReferAndEarnPage() {
@@ -15,9 +16,11 @@ export default function ReferAndEarnPage() {
   
   const [videoLink, setVideoLink] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [submissions, setSubmissions] = useState([
-    { id: '1', url: 'https://youtube.com/watch?v=demo', status: 'pending', date: '2026-08-05' }
-  ]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.getSubmissions().then((r) => setSubmissions(r.submissions || [])).catch(() => {});
+  }, []);
 
   const referralSettings = settings.referralSettings || {
     isEnabled: true,
@@ -39,30 +42,29 @@ export default function ReferAndEarnPage() {
     );
   }
 
-  const referralLink = `https://cheaprouter.com/?ref=${user?.id || 'demo_123'}`;
+  const websiteUrl = settings.install?.websiteUrl || 'https://cheaprouter.com';
+  const referralLink = `${websiteUrl}/?ref=${user?.id || 'demo_123'}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
     toast('Referral link copied to clipboard!', 'success');
   };
 
-  const handleSubmitVideo = (e: React.FormEvent) => {
+  const handleSubmitVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!videoLink.trim()) return;
     
     setSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSubmissions([{
-        id: Date.now().toString(),
-        url: videoLink,
-        status: 'pending',
-        date: new Date().toISOString().split('T')[0]
-      }, ...submissions]);
+    try {
+      const created = await api.createSubmission(videoLink);
+      setSubmissions([created, ...submissions]);
       setVideoLink('');
-      setSubmitting(false);
       toast('Video link submitted for review. You will receive your bonus once approved!', 'success');
-    }, 1000);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to submit. Please check the URL and try again.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

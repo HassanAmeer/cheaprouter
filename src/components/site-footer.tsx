@@ -49,8 +49,7 @@ export function SiteFooter() {
       <div className={styles.footerBottom}>
         <span>{settings.footer.copyrightText}</span>
         <div className={styles.footerRight}>
-          <span className={styles.statusBadge}><span className={styles.statusDot} /> All Systems Operational</span>
-          <span>v2.4.1</span>
+          <Link href="/dashboard" prefetch={false} className={styles.statusBadge}><span className={styles.statusDot} /> Platform Online</Link>
         </div>
       </div>
 

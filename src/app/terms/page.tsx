@@ -1,12 +1,16 @@
-import { LegalShell } from '@/components/legal-shell';
+'use client';
 
-export const metadata = { title: 'Terms of Service' };
+import { LegalShell } from '@/components/legal-shell';
+import { useSiteSettings } from '@/components/settings-provider';
 
 export default function TermsPage() {
+  const { settings } = useSiteSettings();
+  const brand = settings.brandName || 'CheapRouter';
+
   return (
     <LegalShell title="Terms of Service" updated="July 1, 2026">
       <p>
-        By accessing or using CheapRouter ("the Service"), you agree to be bound by these Terms. If you do not agree,
+        By accessing or using {brand} ("the Service"), you agree to be bound by these Terms. If you do not agree,
         do not use the Service.
       </p>
 
@@ -19,7 +23,7 @@ export default function TermsPage() {
 
       <h2>2. API Keys &amp; BYOK</h2>
       <p>
-        You are responsible for safeguarding your CheapRouter API keys and any provider keys you connect. We store
+        You are responsible for safeguarding your {brand} API keys and any provider keys you connect. We store
         provider keys encrypted and route requests on your behalf.
       </p>
 

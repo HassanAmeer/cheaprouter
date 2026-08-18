@@ -2,11 +2,17 @@
 import React, { useRef } from 'react';
 import { useInView } from 'framer-motion';
 import { Terminal, MessageSquare, Code, LayoutDashboard, Cpu, Zap } from 'lucide-react';
+import { useSiteSettings } from '@/components/settings-provider';
 import './BranchFeatures.css';
 
 export default function BranchFeatures() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const { settings } = useSiteSettings();
+  const install = settings.install || ({} as NonNullable<typeof settings.install>);
+  const chatUrl = install.chatUrl || 'chat.cheaprouter.io';
+  const cliName = install.cliName || 'cheap-cli';
+  const brand = settings.brandName || 'CheapRouter';
 
   return (
     <div ref={ref} className={`tooltip-container ${isInView ? 'is-visible' : ''}`}>
@@ -16,7 +22,7 @@ export default function BranchFeatures() {
           <div className="merge-btn">
             <div className="core-engine-glow" />
             <Cpu className="core-icon" size={24} />
-            <span className="core-label">CheapRouter Core Engine</span>
+            <span className="core-label">{brand} Core Engine</span>
             <Zap size={14} className="core-zap" />
           </div>
           <svg className="branch-path-svg" viewBox="0 0 1260 200" preserveAspectRatio="none">
@@ -54,10 +60,10 @@ export default function BranchFeatures() {
                 <div className="term-dots">
                   <span className="dot red"></span><span className="dot yellow"></span><span className="dot green"></span>
                 </div>
-                <div className="term-title">user@cheaprouter:~</div>
+                <div className="term-title">user@{brand.toLowerCase().replace(/[^a-z0-9]/g, '')}:~</div>
               </div>
               <div className="term-body">
-                <div className="term-line"><span className="prompt">❯</span> <span className="typewriter-cli">cheap-cli "add auth"<span className="cli-cursor">|</span></span></div>
+                <div className="term-line"><span className="prompt">❯</span> <span className="typewriter-cli">{cliName} "add auth"<span className="cli-cursor">|</span></span></div>
                 <div className="diff-block">
                   <div className="term-line diff-minus"><span>-</span> <span className="code-text">&lt;button&gt;Enter&lt;/button&gt;</span></div>
                   <div className="term-line diff-plus"><span>+</span> <span className="code-text">&lt;LoginAuth provider="github" /&gt;</span></div>
@@ -77,7 +83,7 @@ export default function BranchFeatures() {
             <div className="mini-ui real-chat">
               <div className="chat-browser-header">
                 <div className="browser-dots"><span/><span/><span/></div>
-                <div className="browser-url">chat.cheaprouter.io</div>
+                <div className="browser-url">{chatUrl}</div>
               </div>
               <div className="chat-window">
                 <div className="chat-sidebar">

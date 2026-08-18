@@ -1,12 +1,17 @@
-import { LegalShell } from '@/components/legal-shell';
+'use client';
 
-export const metadata = { title: 'Privacy Policy' };
+import { LegalShell } from '@/components/legal-shell';
+import { useSiteSettings } from '@/components/settings-provider';
 
 export default function PrivacyPage() {
+  const { settings } = useSiteSettings();
+  const brand = settings.brandName || 'CheapRouter';
+  const email = settings.contactInfo?.supportEmail || 'privacy@cheaprouter.ai';
+
   return (
     <LegalShell title="Privacy Policy" updated="July 1, 2026">
       <p>
-        CheapRouter ("we", "us") respects your privacy. This policy explains what data we collect when you use our
+        {brand} ("we", "us") respects your privacy. This policy explains what data we collect when you use our
         unified API, dashboard, and related services, and how we use it.
       </p>
 
@@ -32,7 +37,7 @@ export default function PrivacyPage() {
       <h2>4. Your Rights</h2>
       <p>
         You may request export or deletion of your data at any time from the Dashboard settings. For questions,
-        contact privacy@cheaprouter.ai.
+        contact {email}.
       </p>
     </LegalShell>
   );

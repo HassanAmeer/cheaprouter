@@ -52,6 +52,9 @@ export const api = {
     request<{ user: any }>('/api/me/profile', { method: 'PUT', body: JSON.stringify({ name, profile_picture }) }),
   saveOnboarding: (data: { isStudent: boolean; experienceLevel: string; useCases: string[]; earningGoal: string }) =>
     request<{ user: any }>('/api/me/onboarding', { method: 'PUT', body: JSON.stringify(data) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ ok: true }>('/api/me/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
+  deleteAccount: () => request<{ ok: true }>('/api/me', { method: 'DELETE' }),
 
   // Models
   models: () => request<{ models: any[] }>('/api/models'),
@@ -73,18 +76,35 @@ export const api = {
   deleteProvider: (id: string) => request<{ ok: true }>(`/api/providers/${id}`, { method: 'DELETE' }),
 
   // Analytics
-  analytics: (source?: string) => request<any>(source ? `/api/analytics?source=${source}` : '/api/analytics'),
+  analytics: (source?: string, days?: number) => {
+    const params = new URLSearchParams();
+    if (source) params.set('source', source);
+    if (days && days > 0) params.set('days', String(days));
+    const qs = params.toString();
+    return request<any>(qs ? `/api/analytics?${qs}` : '/api/analytics');
+  },
   summary: () => request<any>('/api/summary'),
   usageBreakdown: (source?: string) => request<any>(source ? `/api/analytics/breakdown?source=${source}` : '/api/analytics/breakdown'),
 
   // Billing / Account Balance
   getBilling: () => request<any>('/api/billing'),
   topUp: (amount: number) => request<any>('/api/billing/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
-  upgradePlan: (data: { planField: string; planId: string; planName: string; price: number; durationDays?: number }) =>
+  listTopups: () => request<{ topups: any[] }>('/api/billing/topups'),
+  upgradePlan: (data: { planField: string; planId: string; planName: string; price?: number; durationDays?: number }) =>
     request<any>('/api/billing/upgrade', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Withdrawals (user)
+  listWithdrawals: () => request<any>('/api/withdrawals'),
+  createWithdrawal: (amount: number, method?: string) =>
+    request<any>('/api/withdrawals', { method: 'POST', body: JSON.stringify({ amount, method }) }),
 
   // Notifications
   getNotifications: () => request<any>('/api/notifications'),
+
+  // Referrals / content submissions
+  getSubmissions: () => request<{ submissions: any[] }>('/api/submissions'),
+  createSubmission: (url: string) =>
+    request<{ id: string; url: string; status: string; date: string }>('/api/submissions', { method: 'POST', body: JSON.stringify({ url }) }),
 
   // Conversations
   listConversations: () => request<{ conversations: any[] }>('/api/conversations'),

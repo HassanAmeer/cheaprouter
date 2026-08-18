@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.logo}>
-            <Zap size={20} fill="var(--color-primary)" color="var(--color-primary)" /> CheapRouter
+            <Zap size={20} fill="var(--color-primary)" color="var(--color-primary)" /> {settings.brandName || 'CheapRouter'}
           </Link>
           <button
             className={styles.sidebarCloseBtn}

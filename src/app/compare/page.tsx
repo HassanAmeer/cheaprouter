@@ -4,10 +4,17 @@ import React from 'react';
 import Link from 'next/link';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
+import { useSiteSettings } from '@/components/settings-provider';
 import { Check, X, Minus, Terminal, Shield, Unlock, Globe, Zap, Code, ChevronRight, Key, Layers, ArrowRight } from 'lucide-react';
 import styles from './page.module.css';
 
 export default function ComparePage() {
+  const { settings } = useSiteSettings();
+  const cliTab = (settings.pricingSection?.tabs || []).find((t) => t.id === 'tab_cli');
+  const starter = (cliTab?.plans || []).find((p) => p.id === 'p_cli_2');
+  const entryPrice = starter ? starter.price.replace('$', '') : '2';
+  const entryLabel = starter ? `${starter.price}${starter.period}` : '$2/mo';
+
   return (
     <main className={styles.page}>
       <SiteNav links={[
@@ -21,8 +28,8 @@ export default function ComparePage() {
 
       <div className={styles.container}>
         <div className={styles.header}>
-          <div className={styles.badge}>CheapRouter v2.4</div>
-          <h1 className={styles.title}>CheapRouter vs the rest</h1>
+          <div className={styles.badge}>{settings.brandName || 'CheapRouter'}</div>
+          <h1 className={styles.title}>{settings.brandName || 'CheapRouter'} vs the rest</h1>
           <p className={styles.subtitle}>
             An honest comparison. CheapRouter is the only unified API and CLI that gives you access to 100+ premium AI models with a single key, unbeatable prices, and zero lock-in.
           </p>
@@ -46,7 +53,7 @@ export default function ComparePage() {
           </div>
           <div className={styles.statCard}>
             <div className={styles.statIcon}><Zap size={24} /></div>
-            <div className={styles.statValue}>$2</div>
+            <div className={styles.statValue}>{entryPrice}</div>
             <div className={styles.statLabel}>to get started</div>
           </div>
         </div>
@@ -69,7 +76,7 @@ export default function ComparePage() {
             <tbody>
               <tr>
                 <td>Entry price</td>
-                <td className={styles.highlightCol}>$2/mo</td>
+                <td className={styles.highlightCol}>{entryLabel}</td>
                 <td>Pay as you go</td>
                 <td>$0 (Self-host)</td>
                 <td>$50/mo</td>
@@ -247,7 +254,7 @@ export default function ComparePage() {
           <div className={styles.diffCard}>
             <div className={styles.diffIcon}><Zap size={28} /></div>
             <h3 className={styles.diffTitle}>Unbeatable Pricing</h3>
-            <p className={styles.diffDesc}>Start for just $2/month and get access to premium models. No crazy markups, no hidden fees. Transparent usage analytics included.</p>
+            <p className={styles.diffDesc}>Start for just {entryLabel.replace('/mo', '/month')} and get access to premium models. No crazy markups, no hidden fees. Transparent usage analytics included.</p>
           </div>
         </div>
 
