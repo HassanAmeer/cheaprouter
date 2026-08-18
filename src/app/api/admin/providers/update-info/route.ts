@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { verifyAdminToken } from '@/lib/verify-admin-token';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  const ok = await verifyAdminToken(token);
+  if (!ok) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const data = await req.json();
     

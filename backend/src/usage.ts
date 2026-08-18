@@ -1,11 +1,30 @@
 import { db, genId } from './db.ts';
 import { getBillingSettings } from './billing.ts';
+import { maybeRewardReferral } from './billing.ts';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function recordUsage(userId: string, model: string, tokens: number, cost: number, source: string = 'api') {
   const day = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   await db`INSERT INTO usage (id, user_id, model, tokens, cost, day, source) VALUES (${genId('usg')}, ${userId}, ${model}, ${tokens}, ${cost}, ${day}, ${source})`;
+  // A referee's first API call unlocks the referral bonus for both parties.
+  await maybeRewardReferral(userId);
+}
+
+// Tokens used in the CURRENT calendar month (the quota window).
+export async function getMonthlyUsage(userId: string): Promise<number> {
+  const res = await db`
+    SELECT COALESCE(SUM(tokens), 0) AS t FROM usage
+    WHERE user_id = ${userId} AND created_at >= date_trunc('month', CURRENT_TIMESTAMP)
+  `;
+  return Number(res[0]?.t ?? 0);
+}
+
+export async function checkMonthlyQuota(userId: string): Promise<{ ok: boolean; limit: number; used: number; remaining: number }> {
+  const { monthlyTokenQuota } = await getBillingSettings();
+  const used = await getMonthlyUsage(userId);
+  const remaining = Math.max(0, monthlyTokenQuota - used);
+  return { ok: used < monthlyTokenQuota, limit: monthlyTokenQuota, used, remaining };
 }
 
 export async function getAnalytics(userId: string, source?: string, days?: number) {
@@ -115,8 +134,8 @@ export async function getUsageBreakdown(userId: string, source?: string) {
 export async function getSummary(userId: string) {
   const { monthlyTokenQuota } = await getBillingSettings();
   const limit = monthlyTokenQuota;
-  const usedRes = await db`SELECT COALESCE(SUM(tokens),0) AS t FROM usage WHERE user_id = ${userId}`;
-  const used = Number(usedRes[0].t);
+  // Quota is a per-month allowance: compare against the CURRENT month only.
+  const used = await getMonthlyUsage(userId);
   const byokRes = await db`SELECT COUNT(*) AS c FROM providers WHERE user_id = ${userId}`;
   const byok = Number(byokRes[0].c);
   
@@ -124,7 +143,7 @@ export async function getSummary(userId: string) {
     limit,
     used,
     remaining: Math.max(0, limit - used),
-    percent: Math.round((used / limit) * 100),
+    percent: Math.min(100, Math.round((used / limit) * 100)),
     providers: byok,
   };
 }

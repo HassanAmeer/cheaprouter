@@ -80,6 +80,24 @@ export async function checkBalanceEnough(userId: string): Promise<{ ok: boolean;
   return { ok: balance >= minBalanceRequired, balance };
 }
 
+// Worst-case cost for a request BEFORE it hits the provider. When the client
+// specifies max_tokens we can bound it; otherwise fall back to the minimum
+// billable floor (the post-billing deduct check is the backstop for the
+// unbounded case).
+export async function estimateMaxCost(maxTokens?: number): Promise<number> {
+  const { costPerToken, minBillableTokens } = await getBillingSettings();
+  const t = Math.max(Number(maxTokens) || 0, minBillableTokens);
+  return Math.round(t * costPerToken * 1000000) / 1000000;
+}
+
+// Reject requests the user can't afford up front instead of serving them and
+// silently skipping the failed deduction (free-ride exploit).
+export async function checkBalanceForCost(userId: string, maxTokens?: number): Promise<{ ok: boolean; balance: number; estimatedCost: number }> {
+  const balance = await getBalance(userId);
+  const estimatedCost = await estimateMaxCost(maxTokens);
+  return { ok: balance >= estimatedCost, balance, estimatedCost };
+}
+
 // Atomically deduct `cost` from the user's balance, refusing to drive the
 // balance below zero. This closes the check-then-deduct race: a concurrent
 // request that already spent the balance gets `ok: false` instead of a
@@ -115,11 +133,58 @@ export async function getBilling(userId: string) {
 }
 
 export async function seedWelcomeBalance(userId: string) {
-  const existing = await db`SELECT id FROM transactions WHERE user_id = ${userId} AND type = 'welcome'`;
-  if (existing.length > 0) return;
-  const { welcomeCredit } = await getBillingSettings();
-  await db`UPDATE users SET balance = COALESCE(balance, 0) + ${welcomeCredit} WHERE id = ${userId}`;
-  await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'welcome', ${welcomeCredit}, 'Welcome credit')`;
+  // Transactional + in-txn existence guard so the check-then-credit race that
+  // could double-credit is closed: either the whole welcome grant happens or
+  // nothing does.
+  await db.begin(async (tx) => {
+    const existing = await tx`SELECT id FROM transactions WHERE user_id = ${userId} AND type = 'welcome'`;
+    if (existing.length > 0) return;
+    const { welcomeCredit } = await getBillingSettings();
+    await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${welcomeCredit} WHERE id = ${userId}`;
+    await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'welcome', ${welcomeCredit}, 'Welcome credit')`;
+  });
+}
+
+function parseMoney(raw: unknown): number {
+  const n = parseFloat(String(raw ?? '').replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n * 100) / 100;
+}
+
+async function getReferralSettings(): Promise<{ isEnabled: boolean; standardBonus: number }> {
+  try {
+    const res = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+    const rs = res[0]?.data?.referralSettings;
+    return { isEnabled: rs?.isEnabled ?? true, standardBonus: parseMoney(rs?.standardBonus) || 5 };
+  } catch {
+    return { isEnabled: true, standardBonus: 5 };
+  }
+}
+
+// Award the referral bonus to both parties the first time the referee makes an
+// API call. The guarded UPDATE is an atomic claim, so concurrent first calls
+// can't double-pay.
+export async function maybeRewardReferral(userId: string) {
+  try {
+    const claimed = await db`
+      UPDATE users SET referral_rewarded = TRUE
+      WHERE id = ${userId} AND referred_by IS NOT NULL AND referral_rewarded = FALSE
+      RETURNING referred_by
+    `;
+    if (claimed.length === 0) return;
+    const referrerId = claimed[0].referred_by;
+    if (referrerId === userId) return;
+    const { isEnabled, standardBonus } = await getReferralSettings();
+    if (!isEnabled || standardBonus <= 0) return;
+
+    await db.begin(async (tx) => {
+      await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${standardBonus} WHERE id = ${userId}`;
+      await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'referral', ${standardBonus}, 'Referral bonus')`;
+      await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${standardBonus} WHERE id = ${referrerId}`;
+      await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${referrerId}, 'referral', ${standardBonus}, 'Referral reward')`;
+    });
+  } catch (e) {
+    console.error('Referral reward failed:', e);
+  }
 }
 
 // ── Top-ups ─────────────────────────────────────────────────────────────

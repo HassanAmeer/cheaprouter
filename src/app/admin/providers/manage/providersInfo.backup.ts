@@ -1216,7 +1216,7 @@ export const ALL_PROVIDERS_INFO = [
   },
   {
     "name": "Meta",
-    "tag": "PAID ONLY..",
+    "tag": "PAID ONLY.",
     "tagColor": "#6B7280",
     "hasFree": false,
     "website": "[https://llama.meta.com/](https://llama.meta.com/)",

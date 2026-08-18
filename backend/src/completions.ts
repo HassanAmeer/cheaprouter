@@ -4,11 +4,21 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createCohere } from '@ai-sdk/cohere';
 import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
-import { recordUsage } from './usage.ts';
+import { recordUsage, checkMonthlyQuota } from './usage.ts';
 import { hashPassword, verifyToken } from './auth.ts';
 import { hashKey } from './keys.ts';
-import { computeCost, getBalance, checkBalanceEnough, deductBalance } from './billing.ts';
+import { computeCost, checkBalanceForCost, deductBalance } from './billing.ts';
 import { addDevLog } from './logger.ts';
+
+// Placeholder/masked keys (from seed data or admin UI) must never be sent
+// upstream as live Bearer credentials.
+function isPlaceholderKey(key: string): boolean {
+  const s = String(key || '').trim();
+  if (!s) return true;
+  if (s.includes('•') || s.includes('...')) return true;
+  if (/demo$/i.test(s)) return true;
+  return false;
+}
 
 function getActiveKeys(keyStr: string): string[] {
   if (!keyStr) return [];
@@ -16,8 +26,8 @@ function getActiveKeys(keyStr: string): string[] {
     const parsed = JSON.parse(keyStr);
     if (Array.isArray(parsed)) {
       const activeKeys = parsed.filter((k: any) => {
-        if (typeof k === 'string') return true;
-        return k.active !== false && k.key?.trim() !== '';
+        if (typeof k === 'string') return !isPlaceholderKey(k);
+        return k.active !== false && !isPlaceholderKey(k.key ?? '');
       }).map((k: any) => typeof k === 'string' ? k : k.key);
       
       // Shuffle the active keys array for load balancing
@@ -28,20 +38,28 @@ function getActiveKeys(keyStr: string): string[] {
       
       return activeKeys;
     }
-    return [keyStr];
+    return isPlaceholderKey(keyStr) ? [] : [keyStr];
   } catch {
-    return [keyStr];
+    return isPlaceholderKey(keyStr) ? [] : [keyStr];
   }
+}
+
+// Match a model request against a provider's model list, supporting both
+// object entries ({ id, originalId, name }) and plain string entries.
+function matchModel(models: any, model: string): any {
+  if (!Array.isArray(models)) return null;
+  return models.find((m: any) => {
+    if (typeof m === 'string') return m === model;
+    return m.id === model || m.originalId === model || m.name === model;
+  });
 }
 
 export async function getSystemPromptForModel(model: string) {
   const providersResult = await db`SELECT * FROM admin_providers WHERE status = true`;
   for (const prov of providersResult) {
-    if (prov.models && Array.isArray(prov.models)) {
-      const matched = prov.models.find((m: any) => m.id === model || m.originalId === model || m.name === model);
-      if (matched && matched.systemPrompt) {
-        return matched.systemPrompt;
-      }
+    const matched = matchModel(prov.models, model);
+    if (matched && typeof matched !== 'string' && matched.systemPrompt) {
+      return matched.systemPrompt;
     }
   }
   return null;
@@ -63,7 +81,8 @@ export async function getDefaultModel(): Promise<string> {
     for (const p of providersResult) {
       if (p.models && Array.isArray(p.models) && p.models.length > 0) {
         const first = p.models[0];
-        return (first.originalId || first.id || first.name || '').trim() || undefined;
+        const modelId = typeof first === 'string' ? first : (first.originalId || first.id || first.name || '');
+        return modelId.trim() || undefined;
       }
     }
   } catch (e) {
@@ -78,12 +97,11 @@ export async function getModelInstances(userId: string, model: string, sessionId
 
   // Dynamic Provider Resolution across all active providers that match this model
   for (const p of providersResult) {
-    if (p.models && Array.isArray(p.models)) {
-      const matched = p.models.find((m: any) => m.id === model || m.originalId === model || m.name === model);
-      if (matched) {
-        const apiKeys = getActiveKeys(p.key);
-        if (apiKeys.length > 0) {
-          const modelId = matched.originalId || matched.id;
+    const matched = matchModel(p.models, model);
+    if (matched) {
+      const apiKeys = getActiveKeys(p.key);
+      if (apiKeys.length > 0) {
+        const modelId = typeof matched === 'string' ? matched : (matched.originalId || matched.id);
           const customHeaders: Record<string, string> = {
             ...(p.headers && typeof p.headers === 'object' && !Array.isArray(p.headers) ? p.headers : {}),
             ...(sessionId ? { 'x-session-id': sessionId } : {}),
@@ -111,7 +129,6 @@ export async function getModelInstances(userId: string, model: string, sessionId
           }
         }
       }
-    }
   }
 
   if (items.length > 0) {
@@ -164,21 +181,6 @@ export async function handleCompletions(c: any) {
     // Admin test-identity must not be charged or recorded (no real user row).
     const skipUsage = adminUserId === 'admin';
 
-    // ── Balance enforcement: reject before spending upstream tokens ──
-    if (!skipUsage) {
-      const bal = await checkBalanceEnough(finalUserId);
-      if (!bal.ok) {
-        addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance})`, undefined, sessionId);
-        return c.json({
-          error: {
-            message: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.`,
-            type: 'insufficient_quota',
-            code: 'insufficient_balance'
-          }
-        }, 402);
-      }
-    }
-
     let body;
     try {
       body = await c.req.json();
@@ -191,6 +193,35 @@ export async function handleCompletions(c: any) {
     if (!messages || !Array.isArray(messages)) {
       addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, sessionId);
       return c.json({ error: 'Invalid messages format' }, 400);
+    }
+
+    // ── Balance + monthly quota: reject before spending upstream tokens ──
+    if (!skipUsage) {
+      // Cost-aware gate: a request the user can't afford (worst case bounded by
+      // max_tokens) is rejected up front instead of being served for free when
+      // the post-generation deduction can't cover the real cost.
+      const bal = await checkBalanceForCost(finalUserId, max_tokens);
+      if (!bal.ok) {
+        addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance} vs est. $${bal.estimatedCost})`, undefined, sessionId);
+        return c.json({
+          error: {
+            message: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.`,
+            type: 'insufficient_quota',
+            code: 'insufficient_balance'
+          }
+        }, 402);
+      }
+      const q = await checkMonthlyQuota(finalUserId);
+      if (!q.ok) {
+        addDevLog('WARNING', 'Billing', `Monthly quota reached for ${finalUserId} (${q.used}/${q.limit})`, undefined, sessionId);
+        return c.json({
+          error: {
+            message: `Monthly token quota reached (${q.used.toLocaleString()} of ${q.limit.toLocaleString()} tokens used). Quota resets next month.`,
+            type: 'insufficient_quota',
+            code: 'monthly_quota_reached'
+          }
+        }, 402);
+      }
     }
 
     const systemPrompt = await getSystemPromptForModel(model);
@@ -306,21 +337,6 @@ export async function handleCompletions(c: any) {
         try {
           addDevLog('INFO', 'AI Request', `Attempt ${attempt} (try ${keyTry}) on ${item.providerName} [${item.modelId}] starting...`, undefined, sessionId);
           if (stream) {
-            // Bill exactly once regardless of how the stream ends (success,
-            // upstream error, or client abort). onFinish alone is skipped on
-            // error/abort, so we also settle in the stream's finally block.
-            let billed = false;
-            const bill = async (usage: any) => {
-              if (billed) return;
-              billed = true;
-              if (!skipUsage) {
-                const tokens = usage?.totalTokens || 150;
-                const cost = await computeCost(tokens);
-                await recordUsage(finalUserId, model, tokens, cost, source);
-                await deductBalance(finalUserId, cost);
-              }
-            };
-
             const result = await streamText({
               model: item.instance,
               maxRetries: 0,
@@ -328,18 +344,23 @@ export async function handleCompletions(c: any) {
               ...(typeof temperature === 'number' ? { temperature } : {}),
               ...(typeof max_tokens === 'number' ? { maxTokens: max_tokens } : {}),
               ...(typeof top_p === 'number' ? { topP: top_p } : {}),
-              async onFinish({ usage, text }) {
-                await bill(usage);
-                addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { 
-                  usage,
-                  responsePreview: text.slice(0, 200) + (text.length > 200 ? '...' : '')
-                }, sessionId);
-              },
-              async onError({ error }) {
-                await bill(undefined);
-                addDevLog('ERROR', 'AI Request', `Attempt ${attempt}: Stream error.`, { error: String(error) }, sessionId);
-              },
             });
+
+            // Peek the first fullStream part so upstream provider errors (bad
+            // key, dead provider, 4xx/5xx) surface HERE inside the
+            // retry/fallback loop, before a single byte is sent to the client.
+            // AI SDK v7 reports provider errors as an 'error' part instead of
+            // throwing from streamText, which previously made the fallback
+            // loop dead code for streaming.
+            const iterator = result.fullStream[Symbol.asyncIterator]();
+            const first = await iterator.next();
+            if (first.done) {
+              throw new Error('Provider returned an empty stream');
+            }
+            if (first.value.type === 'error') {
+              const e: any = first.value.error;
+              throw e instanceof Error ? e : new Error(e?.message || 'Stream error');
+            }
 
             // OpenAI-compatible SSE stream so aider/cursor/claude-code etc. can parse it.
             const encoder = new TextEncoder();
@@ -347,32 +368,51 @@ export async function handleCompletions(c: any) {
               async start(controller) {
                 const sentinel = `chatcmpl-${Date.now()}`;
                 const created = Math.floor(Date.now() / 1000);
-                try {
-                  for await (const chunk of result.textStream) {
-                    const payload = {
-                      id: sentinel,
-                      object: 'chat.completion.chunk',
-                      created,
-                      model,
-                      choices: [{ index: 0, delta: { content: chunk }, finish_reason: null }],
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                const send = (obj: any) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+                const sendRaw = (text: string) => controller.enqueue(encoder.encode(text + '\n\n'));
+                // Bill only real usage (never the 150-token minimum for a
+                // failed stream) and only once.
+                let billed = false;
+                const billOnce = async (usage: any) => {
+                  if (billed) return;
+                  billed = true;
+                  if (!skipUsage && usage?.totalTokens) {
+                    const tokens = usage.totalTokens;
+                    const cost = await computeCost(tokens);
+                    await recordUsage(finalUserId, model, tokens, cost, source);
+                    const ded = await deductBalance(finalUserId, cost);
+                    if (!ded.ok) {
+                      addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
+                    }
                   }
-                  const done = {
-                    id: sentinel,
-                    object: 'chat.completion.chunk',
-                    created,
-                    model,
-                    choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+                };
+                try {
+                  const handlePart = async (part: any) => {
+                    if (part.type === 'text-delta') {
+                      send({ id: sentinel, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: { content: part.delta }, finish_reason: null }] });
+                    }
                   };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
-                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                  await handlePart(first.value);
+                  let next = await iterator.next();
+                  while (!next.done) {
+                    const part = next.value;
+                    if (part.type === 'error') {
+                      send({ error: (part.error as any)?.message || 'Stream error', type: 'provider_error' });
+                      return;
+                    }
+                    if (part.type === 'finish') {
+                      send({ id: sentinel, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
+                      sendRaw('data: [DONE]');
+                      await billOnce(part.totalUsage);
+                      addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { usage: part.totalUsage }, sessionId);
+                      return;
+                    }
+                    await handlePart(part);
+                    next = await iterator.next();
+                  }
                 } catch (err) {
                   controller.error(err);
                 } finally {
-                  // Settle billing even if onFinish never fired (error/abort).
-                  const usage = await Promise.resolve(result.usage).catch(() => undefined);
-                  await bill(usage).catch(() => {});
                   controller.close();
                 }
               },
@@ -400,7 +440,18 @@ export async function handleCompletions(c: any) {
             if (!skipUsage) {
               const cost = await computeCost(tokens);
               await recordUsage(finalUserId, model, tokens, cost, source);
-              await deductBalance(finalUserId, cost);
+              const ded = await deductBalance(finalUserId, cost);
+              if (!ded.ok) {
+                // Free-ride backstop: never hand over content that wasn't paid for.
+                addDevLog('WARNING', 'Billing', `Billing failed after generation: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
+                return c.json({
+                  error: {
+                    message: `Insufficient balance. Current balance: $${ded.balance.toFixed(2)}. Please top up your account.`,
+                    type: 'insufficient_quota',
+                    code: 'insufficient_balance'
+                  }
+                }, 402);
+              }
             }
             
             addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
@@ -452,9 +503,11 @@ export async function handleCompletions(c: any) {
             continue;
           }
 
-          // Hard client errors (e.g. 400 Bad Request, 422) abort unless model isn't supported on this provider.
-          // 401/403 mean the key is bad/rotated on this provider — fail over to the next provider/key instead.
-          if (statusCode >= 400 && statusCode < 500 && statusCode !== 401 && statusCode !== 403 && statusCode !== 429 && !rawMsg.includes('not supported')) {
+          // Hard client errors (e.g. 400/422 malformed payload) abort unless
+          // the provider simply doesn't support this model. 401/403 = bad key,
+          // 429 = rate limit, 404 = model not found — all fail over instead.
+          const modelNotFound = statusCode === 404 || /not supported|does not exist|not found/i.test(rawMsg);
+          if (statusCode >= 400 && statusCode < 500 && statusCode !== 401 && statusCode !== 403 && statusCode !== 429 && !modelNotFound) {
             console.error(`[Fallback] Hard client error detected (${statusCode}), aborting fallback.`);
             throw err;
           }
@@ -490,4 +543,41 @@ export async function handleCompletions(c: any) {
 export async function getModelInstance(userId: string, model: string, sessionId?: string) {
   const items = await getModelInstances(userId, model, sessionId);
   return items[0]?.instance;
+}
+
+// Try every matching model instance in priority order until one succeeds.
+// Chat/stream routes use this so a down or misconfigured primary provider
+// fails over instead of returning an error. Only hard client errors (malformed
+// payload) abort the chain; bad keys, rate limits and missing models fail over.
+export async function tryInstances(
+  userId: string,
+  model: string,
+  sessionId: string | undefined,
+  call: (item: ModelInstanceItem) => Promise<void>,
+  onFail?: (item: ModelInstanceItem, err: any) => void
+): Promise<void> {
+  const items = await getModelInstances(userId, model, sessionId);
+  let lastError: any;
+  for (const item of items) {
+    try {
+      await call(item);
+      return;
+    } catch (err: any) {
+      lastError = err;
+      if (onFail) onFail(item, err);
+      const statusCode = err?.statusCode || err?.response?.status || 500;
+      let rawMsg = err?.message || String(err);
+      if (typeof err?.responseBody === 'string') {
+        try {
+          const parsed = JSON.parse(err.responseBody);
+          rawMsg = parsed?.error?.message || rawMsg;
+        } catch {}
+      }
+      const modelNotFound = statusCode === 404 || /not supported|does not exist|not found/i.test(rawMsg);
+      const hardAbort = statusCode >= 400 && statusCode < 500 && statusCode !== 401 && statusCode !== 403 && statusCode !== 429 && !modelNotFound;
+      if (hardAbort) throw err;
+      addDevLog('WARNING', 'AI Request', `Instance failed, trying next provider: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, undefined, sessionId);
+    }
+  }
+  throw lastError || new Error(`Model '${model}' not found or no active provider configured for it.`);
 }

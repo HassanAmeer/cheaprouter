@@ -93,7 +93,7 @@ export default function ManageProvidersPage() {
     setDisplayVersion(v);
     if (v === 2 && !backupData) {
       try {
-        const res = await fetch('/api/admin/providers/get-backup');
+const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHeaders() });
         const result = await res.json();
         if (res.ok) setBackupData(result.data);
         else setBackupData([]);
@@ -631,7 +631,7 @@ export default function ManageProvidersPage() {
     setImportError('');
     setIsLoadingBackup(true);
     try {
-      const res = await fetch('/api/admin/providers/get-backup');
+      const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHeaders() });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to load backup');
 
@@ -661,7 +661,7 @@ export default function ManageProvidersPage() {
 
       const res = await fetch('/api/admin/providers/update-info', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(parsedData)
       });
 

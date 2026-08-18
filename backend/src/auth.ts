@@ -88,12 +88,13 @@ export async function createUser(
   password: string,
   last_ip?: string,
   user_agent?: string,
-  hardware_info?: string
+  hardware_info?: string,
+  referred_by?: string
 ) {
   const id = genId('usr');
   await db`
-    INSERT INTO users (id, name, email, password_hash, last_ip, user_agent, hardware_info)
-    VALUES (${id}, ${name}, ${email}, ${hashPassword(password)}, ${last_ip ?? null}, ${user_agent ?? null}, ${hardware_info ?? null})
+    INSERT INTO users (id, name, email, password_hash, last_ip, user_agent, hardware_info, referred_by)
+    VALUES (${id}, ${name}, ${email}, ${hashPassword(password)}, ${last_ip ?? null}, ${user_agent ?? null}, ${hardware_info ?? null}, ${referred_by ?? null})
   `;
   return { id, name, email, plan: 'free' };
 }
@@ -131,48 +132,95 @@ function detectOs(hwInfo: any, userAgent?: string): string {
   return 'Unknown';
 }
 
+function mapUserRows(result: any[], callCounts: { user_id: string; count: number }[]) {
+  const callMap = new Map(callCounts.map(r => [r.user_id, Number(r.count)]));
+  return result.map(row => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    plan: row.plan || 'Free',
+    balance: Number(row.balance ?? 0),
+    plan_cli: row.plan_cli || 'Free',
+    plan_api: row.plan_api || 'Free',
+    plan_chat: row.plan_chat || 'Free',
+    plan_agents: row.plan_agents || 'Free',
+    plan_cli_start: row.plan_cli_start ? new Date(row.plan_cli_start).toISOString() : null,
+    plan_cli_expiry: row.plan_cli_expiry ? new Date(row.plan_cli_expiry).toISOString() : null,
+    plan_api_start: row.plan_api_start ? new Date(row.plan_api_start).toISOString() : null,
+    plan_api_expiry: row.plan_api_expiry ? new Date(row.plan_api_expiry).toISOString() : null,
+    plan_chat_start: row.plan_chat_start ? new Date(row.plan_chat_start).toISOString() : null,
+    plan_chat_expiry: row.plan_chat_expiry ? new Date(row.plan_chat_expiry).toISOString() : null,
+    plan_agents_start: row.plan_agents_start ? new Date(row.plan_agents_start).toISOString() : null,
+    plan_agents_expiry: row.plan_agents_expiry ? new Date(row.plan_agents_expiry).toISOString() : null,
+    created_at: new Date(row.created_at).toISOString(),
+    joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    password_changed_at: row.password_changed_at ? new Date(row.password_changed_at).toISOString() : null,
+    last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
+    last_ip: row.last_ip ?? null,
+    os: detectOs(row.hardware_info, row.user_agent),
+    calls: callMap.get(row.id) ?? 0,
+    status: row.status || 'Active',
+    profile_picture: row.profile_picture,
+    is_student: row.is_student ?? false,
+    experience_level: row.experience_level ?? null,
+    use_cases: row.use_cases ?? null,
+    earning_goal: row.earning_goal ?? null,
+    onboarding_completed: row.onboarding_completed ?? false
+  }));
+}
+
+const USER_SELECT = db`id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance, password_changed_at`;
+
 export async function getAllUsers(limit?: number, offset?: number) {
   const totalRes = await db`SELECT COUNT(*) AS c FROM users` as { c: number }[];
-  const result = await db`SELECT id, name, email, plan, created_at, profile_picture, status, last_login, last_ip, user_agent, hardware_info, plan_cli, plan_api, plan_chat, plan_agents, plan_cli_start, plan_cli_expiry, plan_api_start, plan_api_expiry, plan_chat_start, plan_chat_expiry, plan_agents_start, plan_agents_expiry, is_student, experience_level, use_cases, earning_goal, onboarding_completed, balance FROM users ORDER BY created_at DESC ${limit && limit > 0 ? db`LIMIT ${limit} OFFSET ${offset ?? 0}` : db``}`;
+  const result = await db`SELECT ${USER_SELECT} FROM users ORDER BY created_at DESC ${limit && limit > 0 ? db`LIMIT ${limit} OFFSET ${offset ?? 0}` : db``}`;
   const callCounts = await db`SELECT user_id, COUNT(*) AS count FROM usage GROUP BY user_id` as { user_id: string; count: number }[];
-  const callMap = new Map(callCounts.map(r => [r.user_id, Number(r.count)]));
   return {
-    users: result.map(row => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      plan: row.plan || 'Free',
-      balance: Number(row.balance ?? 0),
-      plan_cli: row.plan_cli || 'Free',
-      plan_api: row.plan_api || 'Free',
-      plan_chat: row.plan_chat || 'Free',
-      plan_agents: row.plan_agents || 'Free',
-      plan_cli_start: row.plan_cli_start ? new Date(row.plan_cli_start).toISOString() : null,
-      plan_cli_expiry: row.plan_cli_expiry ? new Date(row.plan_cli_expiry).toISOString() : null,
-      plan_api_start: row.plan_api_start ? new Date(row.plan_api_start).toISOString() : null,
-      plan_api_expiry: row.plan_api_expiry ? new Date(row.plan_api_expiry).toISOString() : null,
-      plan_chat_start: row.plan_chat_start ? new Date(row.plan_chat_start).toISOString() : null,
-      plan_chat_expiry: row.plan_chat_expiry ? new Date(row.plan_chat_expiry).toISOString() : null,
-      plan_agents_start: row.plan_agents_start ? new Date(row.plan_agents_start).toISOString() : null,
-      plan_agents_expiry: row.plan_agents_expiry ? new Date(row.plan_agents_expiry).toISOString() : null,
-      created_at: new Date(row.created_at).toISOString(),
-      joined: new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      password_changed_at: row.password_changed_at ? new Date(row.password_changed_at).toISOString() : null,
-      last_login: row.last_login ? new Date(row.last_login).toISOString() : null,
-      last_ip: row.last_ip ?? null,
-      os: detectOs(row.hardware_info, row.user_agent),
-      calls: callMap.get(row.id) ?? 0,
-      status: row.status || 'Active',
-      profile_picture: row.profile_picture,
-      is_student: row.is_student ?? false,
-      experience_level: row.experience_level ?? null,
-      use_cases: row.use_cases ?? null,
-      earning_goal: row.earning_goal ?? null,
-      onboarding_completed: row.onboarding_completed ?? false
-    })),
+    users: mapUserRows(result, callCounts),
     total: Number(totalRes[0]?.c ?? 0),
     limit: limit ?? null,
     offset: offset ?? 0,
+  };
+}
+
+// Admin user list with optional registration-date filtering (30/60/90 day
+// windows or a custom start/end date) plus signup stats for the header cards.
+export async function getFilteredUsers(opts: { filterDays?: number; startDate?: string; endDate?: string; limit?: number; offset?: number }) {
+  const { filterDays, startDate, endDate } = opts;
+  let where = db``;
+  if (filterDays && filterDays > 0) {
+    where = db`WHERE created_at >= NOW() - INTERVAL '1 day' * ${filterDays}`;
+  } else if (startDate || endDate) {
+    const parts: any[] = [];
+    if (startDate) parts.push(db`created_at >= ${startDate}::date`);
+    if (endDate) parts.push(db`created_at < (${endDate}::date + 1)`);
+    where = parts.length === 2 ? db`WHERE ${parts[0]} AND ${parts[1]}` : db`WHERE ${parts[0]}`;
+  }
+
+  const totalRes = await db`SELECT COUNT(*) AS c FROM users` as { c: number }[];
+  const todayRes = await db`SELECT COUNT(*) AS c FROM users WHERE created_at >= CURRENT_DATE` as { c: number }[];
+  const weekRes = await db`SELECT COUNT(*) AS c FROM users WHERE created_at >= NOW() - INTERVAL '7 days'` as { c: number }[];
+  const monthRes = await db`SELECT COUNT(*) AS c FROM users WHERE created_at >= NOW() - INTERVAL '30 days'` as { c: number }[];
+  const filteredRes = await db`SELECT COUNT(*) AS c FROM users ${where}` as { c: number }[];
+
+  const result = await db`
+    SELECT ${USER_SELECT} FROM users ${where}
+    ORDER BY created_at DESC
+    ${opts.limit && opts.limit > 0 ? db`LIMIT ${opts.limit} OFFSET ${opts.offset ?? 0}` : db``}
+  `;
+  const callCounts = await db`SELECT user_id, COUNT(*) AS count FROM usage GROUP BY user_id` as { user_id: string; count: number }[];
+
+  return {
+    users: mapUserRows(result, callCounts),
+    stats: {
+      total: Number(totalRes[0]?.c ?? 0),
+      today: Number(todayRes[0]?.c ?? 0),
+      last7Days: Number(weekRes[0]?.c ?? 0),
+      last30Days: Number(monthRes[0]?.c ?? 0),
+      filteredCount: Number(filteredRes[0]?.c ?? 0),
+    },
+    limit: opts.limit ?? null,
+    offset: opts.offset ?? 0,
   };
 }
 

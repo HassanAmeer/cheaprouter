@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { verifyAdminToken } from '@/lib/verify-admin-token';
 
-export async function GET() {
+export const runtime = 'nodejs';
+
+export async function GET(req: Request) {
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  const ok = await verifyAdminToken(token);
+  if (!ok) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const backupPath = path.join(process.cwd(), 'src/app/admin/providers/manage/providersInfo.backup.ts');
     

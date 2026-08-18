@@ -77,40 +77,34 @@ export async function listAdminWithdrawals() {
 }
 
 // Atomically claim the pending request (status -> approved/rejected) so two
-// concurrent approvals can't both pass the pending check and double-pay.
+// concurrent approvals can't both pass the pending check and double-pay. The
+// claim comes FIRST; only the winner may touch the balance, so a losing
+// concurrent approve can never deduct.
 export async function setWithdrawalStatus(id: string, status: WithdrawStatus): Promise<{ ok: boolean; error?: string }> {
-  const rows = await db`SELECT id, user_id, amount, status FROM withdraw_requests WHERE id = ${id}`;
-  if (rows.length === 0) return { ok: false, error: 'Withdrawal request not found' };
-  const req = rows[0];
-
-  // Only a pending request may transition. The conditional UPDATE below is the
-  // atomic guard against double payout (approve -> reject -> approve, or two
-  // concurrent approvals): only the first one flips status.
-  if (req.status !== 'pending') {
-    return { ok: false, error: 'This withdrawal request has already been processed' };
-  }
-
-  // Approving a pending request pays out the balance.
-  if (status === 'approved') {
-    const balance = await getBalance(req.user_id);
-    const amt = Number(req.amount);
-    if (balance < amt) {
-      return { ok: false, error: 'User does not have enough balance to pay out this withdrawal' };
-    }
-    const ded = await deductBalance(req.user_id, amt);
-    if (!ded.ok) {
-      return { ok: false, error: 'User does not have enough balance to pay out this withdrawal' };
-    }
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'withdraw', ${-amt}, 'Withdrawal payout')`;
-  }
-
   const claimed = await db`
     UPDATE withdraw_requests SET status = ${status}, processed_at = CURRENT_TIMESTAMP
     WHERE id = ${id} AND status = 'pending'
-    RETURNING id
+    RETURNING id, user_id, amount
   `;
   if (claimed.length === 0) {
+    const rows = await db`SELECT id, status FROM withdraw_requests WHERE id = ${id}`;
+    if (rows.length === 0) return { ok: false, error: 'Withdrawal request not found' };
     return { ok: false, error: 'This withdrawal request has already been processed' };
+  }
+
+  const req = claimed[0];
+
+  // Approving pays out the balance. Deduct only after the claim is secured.
+  // If the balance no longer covers the payout (spent meanwhile), release the
+  // claim back to pending so the admin can retry or reject.
+  if (status === 'approved') {
+    const amt = Number(req.amount);
+    const ded = await deductBalance(req.user_id, amt);
+    if (!ded.ok) {
+      await db`UPDATE withdraw_requests SET status = 'pending', processed_at = NULL WHERE id = ${id} AND status = 'approved'`;
+      return { ok: false, error: 'User does not have enough balance to pay out this withdrawal' };
+    }
+    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'withdraw', ${-amt}, 'Withdrawal payout')`;
   }
   return { ok: true };
 }

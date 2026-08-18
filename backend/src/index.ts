@@ -9,7 +9,6 @@ import {
   getUserById,
   createUser,
   verifyPassword,
-  getAllUsers,
   updateUserLoginInfo,
   updateUserProfile,
   saveOnboarding,
@@ -19,15 +18,16 @@ import {
   adminUpdateUser,
   adminDeleteUser,
   hashPassword,
+  getFilteredUsers,
 } from './auth.ts';
 import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey, hashKey } from './keys.ts';
-import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta } from './providers.ts';
-import { getAnalytics, getSummary, getUsageBreakdown, getAdminAnalytics, recordUsage } from './usage.ts';
-import { getBilling, requestTopUp, listUserTopups, listAdminTopups, setTopupStatus, upgradePlan, seedWelcomeBalance, computeCost, getBalance, checkBalanceEnough, deductBalance, clearBillingCache, getBillingSettings } from './billing.ts';
+import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta, testProviderConnection } from './providers.ts';
+import { getAnalytics, getSummary, getUsageBreakdown, getAdminAnalytics, recordUsage, checkMonthlyQuota } from './usage.ts';
+import { getBilling, requestTopUp, listUserTopups, listAdminTopups, setTopupStatus, upgradePlan, seedWelcomeBalance, computeCost, getBalance, checkBalanceForCost, deductBalance, clearBillingCache, getBillingSettings } from './billing.ts';
 import { listUserWithdrawals, createWithdrawalRequest, listAdminWithdrawals, setWithdrawalStatus, getWithdrawSettings, WITHDRAW_STATUSES } from './withdrawals.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
-import { handleCompletions, getModelInstance, getSystemPromptForModel, getDefaultModel } from './completions.ts';
+import { handleCompletions, getModelInstance, getSystemPromptForModel, getDefaultModel, tryInstances } from './completions.ts';
 import { getDevLogs, clearDevLogs, addDevLog } from './logger.ts';
 import { generateText, streamText } from 'ai';
 import { db, initDb, DB_URL } from './db.ts';
@@ -119,9 +119,28 @@ app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
   const hwInfoStr = hardwareInfo ? JSON.stringify(hardwareInfo) : undefined;
   
   if (await getUserByEmail(email)) return c.json({ error: 'Email already registered' }, 409);
-  
-  const user = await createUser(name ?? email.split('@')[0], email, password, ip, userAgent, hwInfoStr);
-  await seedWelcomeBalance(user.id);
+
+  // Referral attribution: `ref` = referrer's email (or user id) from the URL.
+  const ref = String(c.req.query('ref') || c.req.header('x-referral') || '').trim().toLowerCase();
+  let referredBy: string | undefined;
+  if (ref) {
+    const referrer = await db`SELECT id FROM users WHERE email = ${ref} OR id = ${ref} LIMIT 1` as { id: string }[];
+    if (!referrer[0]) {
+      return c.json({ error: 'Invalid referral code' }, 400);
+    }
+    referredBy = referrer[0].id;
+  }
+
+  // Create user + seed the welcome credit atomically: if the welcome credit
+  // fails, roll the account back so a broken signup can't happen twice.
+  const user = await createUser(name ?? email.split('@')[0], email, password, ip, userAgent, hwInfoStr, referredBy);
+  try {
+    await seedWelcomeBalance(user.id);
+  } catch (e) {
+    await db`DELETE FROM users WHERE id = ${user.id}`.catch(() => {});
+    console.error('[Signup] Welcome credit failed, rolling back user:', e);
+    return c.json({ error: 'Account creation failed, please try again' }, 500);
+  }
   const token = await signToken({ sub: user.id, email: user.email });
   return c.json({ token, user });
 });
@@ -460,7 +479,11 @@ app.delete('/api/admin/system/logs', zValidator('json', z.object({ days: z.union
 app.get('/api/admin/users', async (c) => {
   const limit = Math.min(Math.max(parseInt(String(c.req.query('limit') || '50'), 10) || 50, 1), 200);
   const offset = Math.max(parseInt(String(c.req.query('offset') || '0'), 10) || 0, 0);
-  const result = await getAllUsers(limit, offset);
+  const filterRaw = String(c.req.query('filter') || '').toLowerCase();
+  const startDate = String(c.req.query('startDate') || '').trim();
+  const endDate = String(c.req.query('endDate') || '').trim();
+  const filterDays = filterRaw === '30' || filterRaw === '60' || filterRaw === '90' ? parseInt(filterRaw, 10) : undefined;
+  const result = await getFilteredUsers({ filterDays, startDate: startDate || undefined, endDate: endDate || undefined, limit, offset });
   return c.json(result);
 });
 
@@ -652,6 +675,29 @@ app.put('/api/notifications', zValidator('json', z.object({ action: z.enum(['mar
 });
 
 // ---- Conversations (chat) ----
+// Run one chat turn with provider failover: each matching provider/key is
+// tried in priority order; the reply is stored and billed only after the
+// deduction succeeds (ded.ok is checked so a free-ride can't slip through).
+async function runChatTurn(userId: string, model: string, prompt: string, convId: string): Promise<string> {
+  let replyText = '';
+  await tryInstances(userId, model, convId, async (item) => {
+    const systemPrompt = await getSystemPromptForModel(model);
+    const result = await generateText({ model: item.instance, prompt, system: systemPrompt || undefined });
+    const tokens = result.usage?.totalTokens ?? 150;
+    const cost = await computeCost(tokens);
+    const ded = await deductBalance(userId, cost);
+    if (!ded.ok) {
+      const e: any = new Error(`Insufficient balance. Current balance: $${ded.balance.toFixed(2)}. Please top up your account.`);
+      e.statusCode = 402;
+      throw e;
+    }
+    await recordUsage(userId, model, tokens, cost, 'chat');
+    replyText = result.text;
+    await addMessage(convId, 'assistant', replyText);
+  });
+  return replyText;
+}
+
 app.get('/api/conversations', async (c) => c.json({ conversations: await listConversations(c.get('userId')) }));
 
 app.get('/api/conversations/:id', async (c) => {
@@ -663,23 +709,19 @@ app.get('/api/conversations/:id', async (c) => {
 app.post('/api/conversations', zValidator('json', z.object({ title: z.string().optional(), message: z.string().min(1) })), async (c) => {
   const { title, message } = c.req.valid('json');
   const userId = c.get('userId');
-  const bal = await checkBalanceEnough(userId);
+  const bal = await checkBalanceForCost(userId);
   if (!bal.ok) {
     return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
+  }
+  const quota = await checkMonthlyQuota(userId);
+  if (!quota.ok) {
+    return c.json({ error: `Monthly token quota reached (${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens used). Quota resets next month.` }, 402);
   }
   const convId = await createConversation(userId, title ?? message.slice(0, 28));
   await addMessage(convId, 'user', message);
   const defaultModel = await getDefaultModel();
   try {
-    const aiModel = await getModelInstance(userId, defaultModel);
-    const systemPrompt = await getSystemPromptForModel(defaultModel);
-    const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
-    const replyText = result.text;
-    const tokens = result.usage?.totalTokens ?? 150;
-    const cost = await computeCost(tokens);
-    await addMessage(convId, 'assistant', replyText);
-    await recordUsage(userId, defaultModel, tokens, cost, 'chat');
-    await deductBalance(userId, cost);
+    const replyText = await runChatTurn(userId, defaultModel, message, convId);
     return c.json({ id: convId, messages: [{ role: 'user', content: message }, { role: 'assistant', content: replyText }] }, 201);
   } catch (err) {
     // Avoid orphan conversations: roll back the message/conversation if the model call fails.
@@ -694,21 +736,17 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   const userId = c.get('userId');
   const convId = c.req.param('id');
   if (!(await getMessages(convId, userId))) return c.json({ error: 'Not found' }, 404);
-  const bal = await checkBalanceEnough(userId);
+  const bal = await checkBalanceForCost(userId);
   if (!bal.ok) {
     return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
   }
+  const quota = await checkMonthlyQuota(userId);
+  if (!quota.ok) {
+    return c.json({ error: `Monthly token quota reached (${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens used). Quota resets next month.` }, 402);
+  }
   await addMessage(convId, 'user', message);
   const resolvedModel = model || (await getDefaultModel());
-  const aiModel = await getModelInstance(userId, resolvedModel);
-  const systemPrompt = await getSystemPromptForModel(resolvedModel);
-  const result = await generateText({ model: aiModel, prompt: message, system: systemPrompt || undefined });
-  const replyText = result.text;
-  const tokens = result.usage?.totalTokens ?? 150;
-  const cost = await computeCost(tokens);
-  await addMessage(convId, 'assistant', replyText);
-  await recordUsage(userId, resolvedModel, tokens, cost, 'chat');
-  await deductBalance(userId, cost);
+  const replyText = await runChatTurn(userId, resolvedModel, message, convId);
   return c.json({ message: { role: 'assistant', content: replyText } });
 });
 
@@ -874,59 +912,98 @@ app.get('/api/stream', async (c) => {
   const url = new URL(c.req.url);
   const prompt = url.searchParams.get('prompt') ?? '';
   const model = url.searchParams.get('model') ?? (await getDefaultModel());
-  try {
-    const bal = await checkBalanceEnough(userId);
-    if (!bal.ok) {
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}.` })}\n\n`));
-          controller.close();
-        }
-      });
-      return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
-    }
-    const aiModel = await getModelInstance(userId, model);
-    const systemPrompt = await getSystemPromptForModel(model);
-    const result = await streamText({ model: aiModel, prompt, system: systemPrompt || undefined });
-
-    // Bill exactly once in a finally so an upstream error or client abort
-    // still records usage instead of silently skipping billing.
-    let billed = false;
-    const bill = async () => {
-      if (billed) return;
-      billed = true;
-      const usage = await Promise.resolve(result.usage).catch(() => undefined);
-      const tokens = usage?.totalTokens ?? 150;
-      const cost = await computeCost(tokens);
-      await recordUsage(userId, model, tokens, cost, 'chat');
-      await deductBalance(userId, cost);
-    };
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const enc = new TextEncoder();
-        try {
-          for await (const chunk of result.textStream) {
-            controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`));
-          }
-          controller.enqueue(enc.encode(`data: [DONE]\n\n`));
-        } catch (err) {
-          controller.error(err);
-        } finally {
-          await bill().catch(() => {});
-          controller.close();
-        }
-      },
-    });
-    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } });
-  } catch (error: any) {
+  const enc = new TextEncoder();
+  const errorStream = (message: string) => {
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: error.message })}\n\n`));
+        controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: message })}\n\n`));
         controller.close();
       }
     });
     return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  try {
+    const bal = await checkBalanceForCost(userId);
+    if (!bal.ok) {
+      return errorStream(`Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.`);
+    }
+    const quota = await checkMonthlyQuota(userId);
+    if (!quota.ok) {
+      return errorStream(`Monthly token quota reached (${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens used). Quota resets next month.`);
+    }
+    let streamResponse: Response | null = null;
+    await tryInstances(userId, model, undefined, async (item) => {
+      const systemPrompt = await getSystemPromptForModel(model);
+      const result = await streamText({ model: item.instance, prompt, system: systemPrompt || undefined });
+
+      // Peek the first fullStream part: AI SDK v7 reports provider errors as
+      // parts, not exceptions — catching them here lets tryInstances fail over.
+      const iterator = result.fullStream[Symbol.asyncIterator]();
+      const first = await iterator.next();
+      if (first.done) throw new Error('Provider returned an empty stream');
+      if (first.value.type === 'error') {
+        const e: any = first.value.error;
+        throw e instanceof Error ? e : new Error(e?.message || 'Stream error');
+      }
+
+      // Bill only real usage (never the 150-token minimum for a failed stream).
+      let billed = false;
+      const billOnce = async (usage: any) => {
+        if (billed) return;
+        billed = true;
+        if (!usage?.totalTokens) return;
+        const tokens = usage.totalTokens;
+        const cost = await computeCost(tokens);
+        await recordUsage(userId, model, tokens, cost, 'chat');
+        const ded = await deductBalance(userId, cost);
+        if (!ded.ok) {
+          addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, userId);
+        }
+      };
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const handlePart = async (part: any) => {
+            if (part.type === 'text-delta') {
+              controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk: part.delta })}\n\n`));
+            }
+          };
+          try {
+            await handlePart(first.value);
+            let next = await iterator.next();
+            while (!next.done) {
+              const part = next.value;
+              if (part.type === 'error') {
+                controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: (part.error as any)?.message || 'Stream error' })}\n\n`));
+                return;
+              }
+              if (part.type === 'finish') {
+                controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+                await billOnce(part.totalUsage);
+                return;
+              }
+              await handlePart(part);
+              next = await iterator.next();
+            }
+          } catch (err) {
+            controller.error(err);
+          } finally {
+            controller.close();
+          }
+        },
+      });
+      streamResponse = new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    });
+    if (!streamResponse) return errorStream('No provider available for this model.');
+    return streamResponse;
+  } catch (error: any) {
+    return errorStream(error.message || 'Streaming failed');
   }
 });
 
