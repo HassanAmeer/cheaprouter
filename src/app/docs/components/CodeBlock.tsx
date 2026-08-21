@@ -32,7 +32,9 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
   };
 
   return (
-    <div style={{
+    <div
+      className="code-block"
+      style={{
       backgroundColor: 'var(--color-bg-card)', // Dark neutral code block
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border)',
@@ -47,7 +49,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
         justifyContent: 'space-between',
         backgroundColor: 'var(--color-bg-muted)',
         borderBottom: '1px solid var(--color-border)',
-        padding: '12px 16px',
+        padding: '10px 14px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Mac OS Window Dots */}
@@ -60,7 +62,7 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
           {title ? (
             <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>{title}</span>
           ) : (
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               {snippets.map((snippet) => {
                 const isActive = activeTab === snippet.language;
                 return (

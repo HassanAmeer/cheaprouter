@@ -1,0 +1,243 @@
+/* Keys Page Styles */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.headerSubtitle {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.generateButton {
+  /* Button component handles styling */
+}
+
+.infoBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  border: 1px solid rgba(204, 0, 0, 0.1);
+}
+
+.infoIcon {
+  color: var(--color-primary);
+}
+
+.infoText {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.loadingState {
+  text-align: center;
+  padding: 64px;
+  color: var(--color-text-muted);
+}
+
+.emptyStateIcon {
+  /* uses lucide icon sizing */
+}
+
+.emptyState {
+  text-align: center;
+  padding: 32px;
+}
+
+.emptyStateTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 8px;
+}
+
+.emptyStateDescription {
+  margin-bottom: 20px;
+}
+
+.emptyStateButton {
+  /* Button component handles styling */
+}
+
+.tableContainer {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+
+.dataTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.dataTable tr:last-child td {
+  border-bottom: none;
+}
+
+.dataTable tr:hover td {
+  background: var(--color-bg-soft);
+}
+
+.keyRow {
+  /* row styling handled by table */
+}
+
+.keyNameCell {
+  /* cell styling */
+}
+
+.keyNameWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.keyIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.keyIcon {
+  color: var(--color-text-muted);
+}
+
+.keyName {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.keySecretCell {
+  /* cell styling */
+}
+
+.keySecret {
+  font-family: monospace;
+  font-size: 13px;
+  background: var(--color-bg-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  color: var(--color-text-muted);
+}
+
+.keyCreated {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.keyLastUsed {
+  /* badge handles styling */
+}
+
+.keyActions {
+  text-align: right;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-danger);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+
+.actionBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.modalContent {
+  /* modal content spacing */
+}
+
+.modalWarning {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  font-size: 13px;
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secretDisplay {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--color-bg-soft);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.secretCode {
+  flex: 1;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.copyButton {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.inputHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}

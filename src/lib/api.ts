@@ -1,3 +1,5 @@
+import { SummaryData } from '@/lib/api-types';
+
 const BASE = '';
 
 export const API_BASE = BASE;
@@ -74,6 +76,8 @@ export const api = {
   setProviderStatus: (id: string, status: 'active' | 'paused') =>
     request<{ ok: true }>(`/api/providers/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
   deleteProvider: (id: string) => request<{ ok: true }>(`/api/providers/${id}`, { method: 'DELETE' }),
+  testProvider: (id: string) =>
+    request<{ ok: boolean; latencyMs?: number; error?: string }>(`/api/providers/${id}/test`, { method: 'POST' }),
 
   // Analytics
   analytics: (source?: string, days?: number) => {
@@ -83,7 +87,7 @@ export const api = {
     const qs = params.toString();
     return request<any>(qs ? `/api/analytics?${qs}` : '/api/analytics');
   },
-  summary: () => request<any>('/api/summary'),
+  summary: () => request<SummaryData>('/api/summary'),
   usageBreakdown: (source?: string) => request<any>(source ? `/api/analytics/breakdown?source=${source}` : '/api/analytics/breakdown'),
 
   // Billing / Account Balance

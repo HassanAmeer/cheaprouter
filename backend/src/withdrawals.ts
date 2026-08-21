@@ -1,5 +1,5 @@
 import { db, genId } from './db.ts';
-import { getBalance, deductBalance } from './billing.ts';
+import { deductBalance } from './billing.ts';
 
 export const WITHDRAW_STATUSES = ['pending', 'approved', 'rejected'] as const;
 export type WithdrawStatus = (typeof WITHDRAW_STATUSES)[number];
@@ -45,13 +45,22 @@ export async function createWithdrawalRequest(userId: string, amount: number, me
   if (amt < minAmount) {
     return { ok: false as const, error: `Minimum withdrawal amount is $${minAmount.toFixed(2)}` };
   }
-  const balance = await getBalance(userId);
-  if (amt > balance) {
-    return { ok: false as const, error: 'Insufficient balance' };
-  }
 
   const id = genId('wdr');
-  await db`INSERT INTO withdraw_requests (id, user_id, amount, method, status) VALUES (${id}, ${userId}, ${amt}, ${method || 'Wallet'}, 'pending')`;
+  // Atomically check balance minus already-pending withdrawals (row lock) so a
+  // user can't fire several concurrent requests that together exceed their
+  // balance. The real deduction still happens on admin approval.
+  try {
+    await db.begin(async (tx) => {
+      const bal = await tx`SELECT COALESCE(balance, 0) AS b FROM users WHERE id = ${userId} FOR UPDATE`;
+      const pending = await tx`SELECT COALESCE(SUM(amount), 0) AS r FROM withdraw_requests WHERE user_id = ${userId} AND status = 'pending'`;
+      const available = Number(bal[0].b) - Number(pending[0].r);
+      if (amt > available) throw new Error('Insufficient balance');
+      await tx`INSERT INTO withdraw_requests (id, user_id, amount, method, status) VALUES (${id}, ${userId}, ${amt}, ${method || 'Wallet'}, 'pending')`;
+    });
+  } catch (e: any) {
+    return { ok: false as const, error: e?.message || 'Insufficient balance' };
+  }
   return { ok: true as const, id, amount: amt, status: 'pending' };
 }
 

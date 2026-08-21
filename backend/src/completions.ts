@@ -5,9 +5,9 @@ import { createCohere } from '@ai-sdk/cohere';
 import { streamText, generateText } from 'ai';
 import { db } from './db.ts';
 import { recordUsage, checkMonthlyQuota } from './usage.ts';
-import { hashPassword, verifyToken } from './auth.ts';
+import { verifyToken } from './auth.ts';
 import { hashKey } from './keys.ts';
-import { computeCost, checkBalanceForCost, deductBalance } from './billing.ts';
+import { computeCost, checkBalanceForCost, deductBalance, checkBalanceAndPlanLimit, SOURCE_TO_PLAN_FIELD } from './billing.ts';
 import { addDevLog } from './logger.ts';
 
 // Placeholder/masked keys (from seed data or admin UI) must never be sent
@@ -146,19 +146,22 @@ export async function handleCompletions(c: any) {
     sessionId = c.req.header('x-session-id') || '';
     const userAgent = (c.req.header('user-agent') || '').toLowerCase();
     const cliUa = ['cli', 'code', 'aider', 'cursor', 'kilocode', 'opencode', 'opencli', 'agent', 'claude-code', 'cmdk', 'terminal', 'windsurf'].some(k => userAgent.includes(k));
-    const source = cliUa ? 'cli' : 'api';
+    // Quota source is assigned after the key lookup (below) so a spoofed
+    // 'cli'/'code' User-Agent can't claim a different free quota.
     
     if (!auth || !auth.startsWith('Bearer ')) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
     const reqKey = auth.replace('Bearer ', '');
     
-    // Match against the hash actually stored (FNV-1a via hashKey) — the old
-    // hashPassword + key_prefix fallback allowed a 16-char prefix to authenticate.
-    const hashedKey = hashKey(reqKey);
-    const legacyHashedKey = hashPassword(reqKey);
-    const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_hash = ${legacyHashedKey}`;
+    // Match against the SHA-256 hash actually stored. Legacy FNV/weak-hash
+    // fallback paths have been removed so a partial key prefix can't authenticate.
+    const hashedKey = await hashKey(reqKey);
+    const keyRows = await db`SELECT id, user_id, source FROM api_keys WHERE key_hash = ${hashedKey}`;
     const userId = keyRows.length > 0 ? keyRows[0].user_id : null;
+    // Use the matched key's own source column for quota; only fall back to UA
+    // detection on the bearer-token (user) path where there's no key record.
+    const source = keyRows.length > 0 ? (keyRows[0].source || (cliUa ? 'cli' : 'api')) : (cliUa ? 'cli' : 'api');
     if (keyRows.length > 0) {
       await db`UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = ${keyRows[0].id}`;
     }
@@ -178,6 +181,14 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid API key or unauthorized' }, 401);
     }
 
+    // Enforce account suspension/bans for real users (admins are exempt).
+    if (finalUserId !== 'admin') {
+      const uRes = await db`SELECT status FROM users WHERE id = ${finalUserId}`;
+      if (uRes[0] && uRes[0].status !== 'Active') {
+        return c.json({ error: 'Account suspended' }, 403);
+      }
+    }
+
     // Admin test-identity must not be charged or recorded (no real user row).
     const skipUsage = adminUserId === 'admin';
 
@@ -195,13 +206,26 @@ export async function handleCompletions(c: any) {
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
-    // ── Balance + monthly quota: reject before spending upstream tokens ──
+    // ── Balance + monthly quota + plan limit: reject before spending upstream tokens ──
     if (!skipUsage) {
       // Cost-aware gate: a request the user can't afford (worst case bounded by
       // max_tokens) is rejected up front instead of being served for free when
       // the post-generation deduction can't cover the real cost.
-      const bal = await checkBalanceForCost(finalUserId, max_tokens);
+      const bal = await checkBalanceAndPlanLimit(finalUserId, source, max_tokens);
       if (!bal.ok) {
+        if (!bal.planOk) {
+          addDevLog('WARNING', 'Billing', `Plan limit reached for ${finalUserId} (${bal.planUsed}/${bal.planLimit} tokens on ${bal.planName} plan)`, undefined, sessionId);
+          return c.json({
+            error: {
+              message: `Plan limit reached (${bal.planUsed.toLocaleString()} of ${bal.planLimit.toLocaleString()} tokens used this month on ${bal.planName} plan). Upgrade your plan or wait for reset.`,
+              type: 'insufficient_quota',
+              code: 'plan_limit_reached',
+              planName: bal.planName,
+              planUsed: bal.planUsed,
+              planLimit: bal.planLimit,
+            }
+          }, 402);
+        }
         addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance} vs est. $${bal.estimatedCost})`, undefined, sessionId);
         return c.json({
           error: {
@@ -364,28 +388,31 @@ export async function handleCompletions(c: any) {
 
             // OpenAI-compatible SSE stream so aider/cursor/claude-code etc. can parse it.
             const encoder = new TextEncoder();
+
+            // Bill real usage when reported; if the stream ends without a
+            // finish/usage report (client disconnect mid-stream) fall back to
+            // the minimum billable tokens so the request can't be used for free.
+            // Only ever bills once.
+            let billed = false;
+            const billOnce = async (usage: any) => {
+              if (billed) return;
+              billed = true;
+              if (skipUsage) return;
+              const tokens = Number(usage?.totalTokens) || 0;
+              const cost = await computeCost(tokens);
+              await recordUsage(finalUserId, model, tokens, cost, source);
+              const ded = await deductBalance(finalUserId, cost);
+              if (!ded.ok) {
+                addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
+              }
+            };
+
             const stream = new ReadableStream({
               async start(controller) {
                 const sentinel = `chatcmpl-${Date.now()}`;
                 const created = Math.floor(Date.now() / 1000);
                 const send = (obj: any) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
                 const sendRaw = (text: string) => controller.enqueue(encoder.encode(text + '\n\n'));
-                // Bill only real usage (never the 150-token minimum for a
-                // failed stream) and only once.
-                let billed = false;
-                const billOnce = async (usage: any) => {
-                  if (billed) return;
-                  billed = true;
-                  if (!skipUsage && usage?.totalTokens) {
-                    const tokens = usage.totalTokens;
-                    const cost = await computeCost(tokens);
-                    await recordUsage(finalUserId, model, tokens, cost, source);
-                    const ded = await deductBalance(finalUserId, cost);
-                    if (!ded.ok) {
-                      addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
-                    }
-                  }
-                };
                 try {
                   const handlePart = async (part: any) => {
                     if (part.type === 'text-delta') {
@@ -415,6 +442,10 @@ export async function handleCompletions(c: any) {
                 } finally {
                   controller.close();
                 }
+              },
+              cancel() {
+                // Client disconnected: still bill at least the minimum.
+                billOnce(null);
               },
             });
 

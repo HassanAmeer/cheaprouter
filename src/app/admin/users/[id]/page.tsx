@@ -206,7 +206,11 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         try {
           const formData = new FormData();
           formData.append('file', profileFile);
-          const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
+          const uploadRes = await fetch('/api/upload/profile', {
+            method: 'POST',
+            body: formData,
+            headers: { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` },
+          });
           if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
           const uploadData = await uploadRes.json();
           finalUser.profile_picture = uploadData.url;

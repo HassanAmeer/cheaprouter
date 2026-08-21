@@ -100,7 +100,9 @@ export default function PlanSettingsPage() {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` },
-        body: JSON.stringify(formData)
+        // Send only this editor's section so other sections saved elsewhere
+        // (billing, dashboard, referral) are never overwritten with stale copies.
+        body: JSON.stringify({ pricingSection: formData.pricingSection })
       });
       if (res.ok) {
         setSaved(true);

@@ -85,6 +85,9 @@ export default function UsersPage() {
   const fetchUsers = () => {
     setLoading(true);
     let url = '/api/admin/users?';
+    // Backend caps the page at 200 rows; request the max so admins can see
+    // (and search) more than the 50-row default.
+    url += 'limit=200&';
     if (activeFilter !== 'all') url += `filter=${activeFilter}&`;
     if (activeFilter === 'custom') {
       if (startDate) url += `startDate=${startDate}&`;
@@ -117,23 +120,27 @@ export default function UsersPage() {
     fetchUsers();
   }, [activeFilter, startDate, endDate]);
 
-  const toggleBan = (userId: string, currentStatus: string) => {
+  const toggleBan = async (userId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'Active' ? 'Suspended' : 'Active';
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
-    
+
     const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
 
-    fetch(`/api/admin/users/${userId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-      body: JSON.stringify({ status: nextStatus })
-    }).catch(err => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (!res.ok) throw new Error('Request failed');
+    } catch (err) {
       console.error(err);
+      // Revert the optimistic update on any failure (network OR HTTP error).
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus } : u));
-    });
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!userToDelete) return;
     const targetId = userToDelete.id;
     setUserToDelete(null);
@@ -143,14 +150,16 @@ export default function UsersPage() {
     
     const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
 
-    fetch(`/api/admin/users/${targetId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${adminToken}` }
-    })
-    .catch(err => {
+    try {
+      const res = await fetch(`/api/admin/users/${targetId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${adminToken}` }
+      });
+      if (!res.ok) throw new Error('Delete failed');
+    } catch (err) {
       console.error(err);
       fetchUsers();
-    });
+    }
   };
 
   const filteredUsers = users.filter(u => 
@@ -387,7 +396,9 @@ export default function UsersPage() {
                 </td>
                   <td style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                     <div style={{ color: 'var(--color-text-main)' }}>Signup: {user.joined}</div>
-                    <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>Last Login: {user.last_login}</div>
+                    <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>
+                      Last Login: {user.last_login ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Never'}
+                    </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -464,7 +475,7 @@ export default function UsersPage() {
             ))}
             {paginatedUsers.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
+                <td colSpan={10} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
                   No users found matching search or filter criteria.
                 </td>
               </tr>

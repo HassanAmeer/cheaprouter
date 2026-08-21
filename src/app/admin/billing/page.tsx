@@ -126,12 +126,12 @@ export default function AdminBillingPage() {
   const saveWithdrawSettings = async () => {
     setSavingSettings(true);
     try {
-      const current = await fetch('/api/settings', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
-      const updated = { ...(current || {}), withdrawSettings };
+      // Send only this section; the backend merges shallowly so other
+      // sections can't be reverted with stale copies.
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: adminHeaders(),
-        body: JSON.stringify(updated)
+        body: JSON.stringify({ withdrawSettings })
       });
       if (res.ok) {
         setSettingsSaved(true);
@@ -147,12 +147,10 @@ export default function AdminBillingPage() {
   const saveBillingConfig = async () => {
     setSavingSettings(true);
     try {
-      const current = await fetch('/api/settings', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
-      const updated = { ...(current || {}), billingSettings: billingConfig };
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: adminHeaders(),
-        body: JSON.stringify(updated)
+        body: JSON.stringify({ billingSettings: billingConfig })
       });
       if (res.ok) {
         setSettingsSaved(true);
@@ -632,7 +630,7 @@ export default function AdminBillingPage() {
                       <div style={{ fontWeight: 500 }}>{t.userName || '—'}</div>
                       <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t.userEmail || ''}</div>
                     </td>
-                    <td style={{ color: 'var(--color-text-muted)' }}>{fmtDate(t.created_at)}</td>
+                    <td style={{ color: 'var(--color-text-muted)' }}>{fmtDate(t.created)}</td>
                     <td style={{ fontWeight: 600 }}>{money(t.amount)}</td>
                     <td>
                       <span className={`${styles.badge} ${t.status === 'approved' ? styles.badgeActive : t.status === 'rejected' ? styles.badgeInactive : styles.badgePro}`}>

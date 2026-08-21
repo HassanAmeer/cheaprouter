@@ -123,10 +123,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
-    if (!token && !isLoginPage) {
+    // Decode (not verify — route-level auth enforces real validation) just the
+    // JWT payload to reject obviously invalid/expired tokens so we don't render
+    // the admin shell for a stale token.
+    const tokenValid = (() => {
+      if (!token) return false;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()) return false;
+        return payload.role === 'admin';
+      } catch {
+        return false;
+      }
+    })();
+    if (!tokenValid && !isLoginPage) {
+      localStorage.removeItem('admin_token');
       router.push('/admin/login');
-    } else {
+    } else if (tokenValid) {
       setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
     }
   }, [pathname, isLoginPage, router]);
 

@@ -96,7 +96,7 @@ export async function testProviderConnection(providerType: string): Promise<{ ok
       await generateText({
         model: instance,
         messages: [{ role: 'user', content: 'ping' }],
-        maxTokens: 1,
+        maxOutputTokens: 1,
       });
       const latencyMs = Date.now() - start;
       return { ok: true, latencyMs };

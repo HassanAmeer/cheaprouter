@@ -57,7 +57,7 @@ export default function Home() {
         </a>
       </div>
 
-      <AnnouncementBar />
+      {settings.sectionVisibility?.announcementBar !== false && <AnnouncementBar />}
 
       <SiteNav links={[
         { href: '/', label: 'Home' },
@@ -70,6 +70,7 @@ export default function Home() {
       <div className="container">
 
         {/* ═══════════════ HERO ═══════════════ */}
+        {settings.sectionVisibility?.hero !== false && <>
         <div className={styles.heroBackground}>
           {mounted && [...Array(30)].map((_, i) => (
             <div key={i} className={styles.particle} style={{ left: `${Math.random() * 100}%`, width: `${Math.random() * 3 + 1}px`, height: `${Math.random() * 3 + 1}px`, animationDuration: `${Math.random() * 8 + 4}s`, animationDelay: `${Math.random() * 5}s` }} />
@@ -106,10 +107,12 @@ export default function Home() {
             <HeroTerminal />
           </div>
         </section>
+        </>}
+
       </div>
 
       {/* ═══════════════ PROVIDER MARQUEE ═══════════════ */}
-      <div className={styles.marqueeContainer}>
+      {settings.sectionVisibility?.marquee !== false && <div className={styles.marqueeContainer}>
         <div className={styles.marqueeContent}>
           {[...Array(2)].map((_, index) => (
             <React.Fragment key={index}>
@@ -122,15 +125,15 @@ export default function Home() {
             </React.Fragment>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* ═══════════════ PRODUCT CARDS ═══════════════ */}
-      <div className="container">
+      {settings.sectionVisibility?.productCards !== false && <div className="container">
         <InstallGrid />
-      </div>
+      </div>}
 
         {/* ═══════════════ MODELS TABLE ═══════════════ */}
-        <section id="models" className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.modelsTable !== false && <section id="models" className={`container ${styles.section}`}>
           <div className={styles.sectionHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px', textAlign: 'left' }}>
             <div>
               <h2 className={styles.sectionTitle}>{settings.modelsSection?.title}</h2>
@@ -144,14 +147,13 @@ export default function Home() {
             </Link>
           </div>
           <ModelsTable limit={15} />
-        </section>
-
+        </section>}
 
         {/* ═══════════════ WORKS WITH YOUR STACK ═══════════════ */}
-        <StackSection title={settings.integrationsSection?.title} subtitle="Integrations" />
+        {settings.sectionVisibility?.integrations !== false && <StackSection title={settings.integrationsSection?.title} subtitle="Integrations" />}
 
         {/* ═══════════════ SPLIT FEATURE ═══════════════ */}
-        <section className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.featureSplit !== false && <section className={`container ${styles.section}`}>
           <div className={styles.apiSplit}>
             <div className={styles.apiText}>
               <h2 className={styles.apiTitle} dangerouslySetInnerHTML={{ __html: settings.featureSplit?.title || '' }} />
@@ -181,13 +183,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
-
+        </section>}
 
         {/* ═══════════════ PRICING ═══════════════ */}
-        <PricingSection />
+        {settings.sectionVisibility?.pricing !== false && <PricingSection />}
         {/* ═══════════════ BEFORE / AFTER ═══════════════ */}
-        <section className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.comparison !== false && <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle} dangerouslySetInnerHTML={{ __html: settings.comparisonSection?.title || '' }} />
             <p className={styles.sectionSubtitle}>{settings.comparisonSection?.subtitle}</p>
@@ -252,12 +253,12 @@ export default function Home() {
               </ul>
             </div>
           </div>
-        </section>
+        </section>}
 
 
 
         {/* ═══════════════ FEATURES GRID ═══════════════ */}
-        <section className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.featuresGrid !== false && <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{settings.featuresGrid?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.featuresGrid?.subtitle}</p>
@@ -276,11 +277,11 @@ export default function Home() {
               );
             })}
           </div>
-        </section>
+        </section>}
 
 
         {/* ═══════════════ FAQ ═══════════════ */}
-        <section className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.faq !== false && <section className={`container ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{settings.faqSection?.title}</h2>
             <p className={styles.sectionSubtitle}>{settings.faqSection?.subtitle}</p>
@@ -296,9 +297,9 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </section>
+        </section>}
         {/* ═══════════════ DEMAND SECTION (CLEAN PREMIUM) ═══════════════ */}
-        <section id="demand" className={`container ${styles.section}`}>
+        {settings.sectionVisibility?.demand !== false && <section id="demand" className={`container ${styles.section}`}>
           <div className={styles.demandOuter}>
             <div className={styles.demandBgGlow} />
 
@@ -400,10 +401,10 @@ export default function Home() {
               </div>
             )}
           </div>
-        </section>
+        </section>}
 
         {/* ═══════════════ CTA ═══════════════ */}
-        <section id="contact" className={`container ${styles.section}`} style={{ paddingTop: '60px', paddingBottom: '80px' }}>
+        {settings.sectionVisibility?.cta !== false && <section id="contact" className={`container ${styles.section}`} style={{ paddingTop: '60px', paddingBottom: '80px' }}>
           <div className={styles.ctaBlock}>
             {/* Glows */}
             <div className={styles.ctaGlow1} />
@@ -425,7 +426,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </section>}
 
       {/* Footer */}
       <SiteFooter />

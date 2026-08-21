@@ -3,21 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, BellDot, Calendar, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
+import { Notification } from '@/lib/api-types';
 
 function authFetch(path: string, options: RequestInit = {}) {
   const t = typeof window !== 'undefined' ? localStorage.getItem('cm_token') : null;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as any) };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as Record<string, string>) };
   if (t) headers['Authorization'] = `Bearer ${t}`;
   return fetch(path, { ...options, headers });
 }
-
-type Notification = {
-  id: string;
-  title: string;
-  message: string;
-  created_at: string;
-  read: boolean;
-};
 
 export default function UserNotificationsPage() {
   const { user } = useAuth();

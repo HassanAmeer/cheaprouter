@@ -1,28 +1,26 @@
 import { db, genId } from './db.ts';
 
-export function hashKey(key: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(16);
+export async function hashKey(key: string): Promise<string> {
+  const data = new TextEncoder().encode(key);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function generateApiKey(): { full: string; prefix: string; hash: string } {
+export async function generateApiKey(): Promise<{ full: string; prefix: string; hash: string }> {
   const rand = crypto.randomUUID().replace(/-/g, '') + Math.random().toString(36).slice(2, 12);
   const full = `sk-${rand}`;
-  return { full, prefix: full.slice(0, 16), hash: hashKey(full) };
+  return { full, prefix: full.slice(0, 16), hash: await hashKey(full) };
 }
 
 export async function listKeys(userId: string) {
-  const rows = await db`SELECT id, name, key_prefix AS prefix, created_at AS created, last_used AS "lastUsed" FROM api_keys WHERE user_id = ${userId} ORDER BY created_at DESC` as { id: string; name: string; prefix: string; created: string; lastUsed: string | null }[];
+  const rows = await db`SELECT id, name, key_prefix AS prefix, created_at AS created, last_used AS "lastUsed", source FROM api_keys WHERE user_id = ${userId} ORDER BY created_at DESC` as { id: string; name: string; prefix: string; created: string; lastUsed: string | null; source: string }[];
   return rows.map(k => ({
     id: k.id,
     name: k.name,
     secret: maskSecret(k.prefix),
     created: k.created,
     lastUsed: k.lastUsed,
+    source: k.source,
   }));
 }
 
@@ -32,11 +30,11 @@ function maskSecret(prefix: string): string {
   return `sk-••••••••••${tail}`;
 }
 
-export async function createKey(userId: string, name: string) {
-  const { full, prefix, hash } = generateApiKey();
+export async function createKey(userId: string, name: string, source: string = 'api') {
+  const { full, prefix, hash } = await generateApiKey();
   const id = genId('key');
-  await db`INSERT INTO api_keys (id, user_id, name, key_prefix, key_hash) VALUES (${id}, ${userId}, ${name}, ${prefix}, ${hash})`;
-  return { id, name, secret: full, created: new Date().toISOString().slice(0, 10), lastUsed: 'Never' };
+  await db`INSERT INTO api_keys (id, user_id, name, key_prefix, key_hash, source) VALUES (${id}, ${userId}, ${name}, ${prefix}, ${hash}, ${source})`;
+  return { id, name, secret: full, created: new Date().toISOString().slice(0, 10), lastUsed: 'Never', source };
 }
 
 export async function deleteKey(userId: string, id: string) {
@@ -63,7 +61,7 @@ export async function adminDeleteKey(id: string) {
 
 // ── System API: store a key (admin-only) ──
 export async function storeSystemKey(name: string, description?: string) {
-  const { full, prefix, hash } = generateApiKey();
+  const { full, prefix, hash } = await generateApiKey();
   const id = genId('key');
   await db`
     INSERT INTO system_keys (id, name, key_prefix, key_hash, description)

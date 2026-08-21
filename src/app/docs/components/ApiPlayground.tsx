@@ -92,7 +92,9 @@ export default function ApiPlayground({ endpoint, method, defaultPayload, requir
   };
 
   return (
-    <div style={{
+    <div
+      className="api-playground"
+      style={{
       position: 'relative',
       borderRadius: '16px',
       padding: '1px',

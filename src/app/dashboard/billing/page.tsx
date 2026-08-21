@@ -5,63 +5,28 @@ import { Check, CreditCard, ArrowUpRight, Zap, Shield, Crown, Terminal, Plug, Me
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import styles from '../dashboard.module.css';
+import billingStyles from './billing.module.css';
 import { useSiteSettings } from '@/components/settings-provider';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
+import { planFieldFor, parsePrice, parseLimit, money, getMetricInfo, MetricInfo } from '@/lib/utils';
+import { PricingTab, PricingPlan, BillingData, Transaction, TopupRequest, WithdrawalRequest, WithdrawSettings, ReferralSettings } from '@/lib/api-types';
 
 const PRESET_FUNDS = [5, 10, 20, 50, 100];
 
-const WITHDRAW_METHODS = ['Wallet', 'Bank Transfer', 'PayPal', 'JazzCash', 'UPI', 'Crypto (USDT)'];
+const WITHDRAW_METHODS = ['Wallet', 'Bank Transfer', 'PayPal', 'JazzCash', 'UPI', 'Crypto (USDT)'] as const;
 
-// Default mock active plan map per category tab
-const DEFAULT_ACTIVE_PLANS: Record<string, { planId: string; used: number; limit: number }> = {
-  tab_cli: { planId: 'p_cli_3', used: 340, limit: 2000 },
-  tab_api: { planId: 'p_api_2', used: 1240, limit: 10000 },
-  tab_chat: { planId: 'p_chat_3', used: 85, limit: 500 },
-  tab_agents: { planId: 'p_agents_1', used: 12, limit: 100 },
-};
-
-function planFieldFor(id: string): string {
-  const v = String(id || '').toLowerCase();
-  if (v.includes('cli')) return 'plan_cli';
-  if (v.includes('api')) return 'plan_api';
-  if (v.includes('chat')) return 'plan_chat';
-  if (v.includes('agent')) return 'plan_agents';
-  return 'plan';
-}
-
-function parsePrice(price: string | undefined): number {
-  if (price === undefined || price === null) return 0;
-  const n = parseFloat(String(price).replace(/[^0-9.]/g, ''));
-  return isNaN(n) ? 0 : n;
-}
-
-function parseLimit(planId: string): number {
-  if (planId.includes('3')) return 10000;
-  if (planId.includes('2')) return 2000;
-  return 500;
-}
-
-function money(n: number): string {
-  return `$${Number(n || 0).toFixed(2)}`;
-}
-
-function buildActiveFromUser(user: any, tabs: any[]): Record<string, { planId: string; used: number; limit: number }> {
+function buildActiveFromUser(user: any, tabs: PricingTab[]): Record<string, { planId: string; used: number; limit: number }> {
   const map: Record<string, { planId: string; used: number; limit: number }> = {};
   for (const tab of tabs || []) {
     const plans = tab.plans || [];
     const field = planFieldFor(tab.id);
     const currentName = user?.[field] || (field === 'plan' ? user?.plan : null);
-    const found = currentName ? plans.find((p: any) => p.name?.toLowerCase() === String(currentName).toLowerCase()) : undefined;
+    const found = currentName ? plans.find((p: PricingPlan) => p.name?.toLowerCase() === String(currentName).toLowerCase()) : undefined;
     const chosen = found || plans[0] || { id: '' };
-    map[tab.id] = { planId: chosen.id || '', used: 0, limit: choicesLimit(chosen.id, plans) };
+    map[tab.id] = { planId: chosen.id || '', used: 0, limit: parseLimit(chosen) };
   }
-  return Object.keys(map).length ? map : DEFAULT_ACTIVE_PLANS;
-}
-
-function choicesLimit(id: string, plans: any[]): number {
-  if (!id) return 1000;
-  return parseLimit(id);
+  return map;
 }
 
 export default function BillingPage() {
@@ -70,12 +35,12 @@ export default function BillingPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('');
 
-  const [activePlans, setActivePlans] = useState<Record<string, { planId: string; used: number; limit: number }>>(DEFAULT_ACTIVE_PLANS);
+  const [activePlans, setActivePlans] = useState<Record<string, { planId: string; used: number; limit: number }>>({});
 
   // Billing / balance state
-  const [billing, setBilling] = useState<any>(null);
-  const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const [topups, setTopups] = useState<any[]>([]);
+  const [billing, setBilling] = useState<BillingData | null>(null);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [topups, setTopups] = useState<TopupRequest[]>([]);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [fundAmount, setFundAmount] = useState<string>('10');
   const [addingFunds, setAddingFunds] = useState(false);
@@ -86,7 +51,7 @@ export default function BillingPage() {
   const [upgradingId, setUpgradingId] = useState<string | null>(null);
   const fundsRef = useRef<HTMLDivElement | null>(null);
 
-  const withdrawSettings = settings.withdrawSettings || { enabled: true, minAmount: 5, announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.' };
+  const withdrawSettings: WithdrawSettings = settings.withdrawSettings || { enabled: true, minAmount: 5, announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.' };
   const minWithdraw = Number(withdrawSettings.minAmount) || 5;
 
   const loadBilling = () => {
@@ -110,10 +75,10 @@ export default function BillingPage() {
     return 'api';
   };
 
-  const loadUsageForTabs = (tabsList: any[]) => {
+  const loadUsageForTabs = (tabsList: PricingTab[]) => {
     (tabsList || []).forEach((tab) => {
       api.usageBreakdown(sourceForTab(tab.id))
-        .then((d: any) => {
+        .then((d) => {
           setActivePlans((prev) => {
             const cur = prev[tab.id] || { planId: tab.plans?.[0]?.id || '', used: 0, limit: 1000 };
             return { ...prev, [tab.id]: { ...cur, used: d?.totalCalls ?? cur.used } };
@@ -136,20 +101,11 @@ export default function BillingPage() {
   const tabs = settings?.pricingSection?.tabs || [];
   const currentTabObj = tabs.find(t => t.id === activeTab) || tabs[0];
 
-  const getMetricInfo = (tabName: string = '') => {
-    const name = tabName.toLowerCase();
-    if (name.includes('cli')) return { label: 'CLI Requests', unit: 'CLI requests executed', icon: Terminal };
-    if (name.includes('api')) return { label: 'API Hits', unit: 'API hits used', icon: Plug };
-    if (name.includes('chat')) return { label: 'Chats', unit: 'chats completed', icon: MessageSquare };
-    if (name.includes('website')) return { label: 'Websites Built', unit: 'websites deployed', icon: Globe };
-    if (name.includes('agent')) return { label: 'Agent Runs', unit: 'agent runs executed', icon: Bot };
-    return { label: 'Requests', unit: 'requests used', icon: Zap };
-  };
-
   const metricInfo = getMetricInfo(currentTabObj?.name);
   const MetricIcon = metricInfo.icon;
 
-  const activeState = activePlans[activeTab] || { planId: currentTabObj?.plans?.[0]?.id || '', used: 120, limit: 1000 };
+  const firstPlanLimit = currentTabObj?.plans?.[0] ? parseLimit(currentTabObj.plans[0]) : 1000;
+  const activeState = activePlans[activeTab] || { planId: currentTabObj?.plans?.[0]?.id || '', used: 0, limit: firstPlanLimit };
 
   const activePlanObj = currentTabObj?.plans?.find(p => p.id === activeState.planId) || currentTabObj?.plans?.[0] || {
     id: 'default',
@@ -173,14 +129,6 @@ export default function BillingPage() {
     const expiry = key ? user?.[`plan_${key}_expiry`] : null;
     const fmt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     return { start: fmt(start), expiry: fmt(expiry) };
-  };
-
-  const handleSelectPlan = (planId: string, planName: string) => {
-    setActivePlans(prev => ({
-      ...prev,
-      [activeTab]: { planId, used: prev[activeTab]?.used || 0, limit: parseLimit(planId) }
-    }));
-    toast(`Successfully switched to ${planName} plan for ${currentTabObj?.name}!`, 'success');
   };
 
   const handleWithdraw = async () => {
@@ -220,7 +168,7 @@ export default function BillingPage() {
     }
   };
 
-  const handleUpgrade = async (plan: any) => {
+  const handleUpgrade = async (plan: any, tabId?: string) => {
     if (!user) {
       toast('You need to login first to purchase a plan.', 'error');
       window.location.href = '/login';
@@ -231,15 +179,14 @@ export default function BillingPage() {
     const cost = parsePrice(plan.price);
     try {
       const res = await api.upgradePlan({
-        planField: planFieldFor(plan.id),
+        planField: planFieldFor(tabId || plan.id),
         planId: plan.id,
         planName: plan.name,
         price: cost,
-        durationDays: plan.durationDays ?? 30,
       });
       setActivePlans(prev => ({
         ...prev,
-        [activeTab]: { planId: plan.id, used: prev[activeTab]?.used || 0, limit: parseLimit(plan.id) }
+        [activeTab]: { planId: plan.id, used: prev[activeTab]?.used || 0, limit: parseLimit(plan) }
       }));
       await loadBilling();
       toast(
@@ -366,7 +313,7 @@ export default function BillingPage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                        {t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}
+                        {t.created ? new Date(t.created).toLocaleDateString() : ''}
                       </span>
                       <Badge tone={t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'danger' : 'warning'}>
                         {t.status}
@@ -621,7 +568,7 @@ export default function BillingPage() {
                 <Button
                   variant={isCurrentActive ? "ghost" : plan.featured ? "primary" : "secondary"}
                   disabled={isCurrentActive || isUpgrading}
-                  onClick={() => handleUpgrade(plan)}
+                  onClick={() => handleUpgrade(plan, currentTabObj?.id)}
                   style={{ width: '100%' }}
                 >
                   {isUpgrading ? <Loader2 size={15} className="lucide-spin" /> : isCurrentActive ? 'Active Plan' : (plan.cta || 'Select Plan')}

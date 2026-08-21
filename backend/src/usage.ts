@@ -1,6 +1,7 @@
 import { db, genId } from './db.ts';
 import { getBillingSettings } from './billing.ts';
 import { maybeRewardReferral } from './billing.ts';
+import { checkPlanLimit, getPlanLimitFromSettings, SOURCE_TO_PLAN_FIELD, getUserPlanForSource, getMonthlyUsageBySource } from './billing.ts';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -28,44 +29,36 @@ export async function checkMonthlyQuota(userId: string): Promise<{ ok: boolean; 
 }
 
 export async function getAnalytics(userId: string, source?: string, days?: number) {
-  const sourceFilter = source && source !== 'all' ? db`source = ${source}` : null;
-  const daysFilter = days && days > 0 ? db`created_at >= NOW() - INTERVAL '1 day' * ${days}` : null;
+  const conditions: any[] = [db`user_id = ${userId}`];
+  if (source && source !== 'all') conditions.push(db`source = ${source}`);
+  if (days && days > 0) conditions.push(db`created_at >= NOW() - INTERVAL '1 day' * ${days}`);
+  const whereClause = conditions.length > 1 ? db`WHERE ${conditions.reduce((a, b) => db`${a} AND ${b}`)}` : db`WHERE ${conditions[0]}`;
 
   // Usage per day as an actual time series (by date), not weekday buckets.
   const byDate = await db`
     SELECT to_char(created_at, 'YYYY-MM-DD') AS date, SUM(tokens) AS tokens
-    FROM usage WHERE user_id = ${userId}
-    ${sourceFilter ? db`AND source = ${source}` : db``}
-    ${daysFilter ? db`AND ${daysFilter}` : db``}
+    FROM usage ${whereClause}
     GROUP BY date ORDER BY date ASC
   ` as { date: string; tokens: number }[];
 
   const byDay = await db`
-    SELECT day, SUM(tokens) AS tokens FROM usage WHERE user_id = ${userId}
-    ${sourceFilter ? db`AND source = ${source}` : db``}
-    ${daysFilter ? db`AND ${daysFilter}` : db``}
+    SELECT day, SUM(tokens) AS tokens FROM usage ${whereClause}
     GROUP BY day
   ` as { day: string; tokens: number }[];
   const totals = DAYS.map((d) => ({ label: d, value: Number(byDay.find((b) => b.day === d)?.tokens ?? 0) }));
 
   const topModels = await db`
-    SELECT model, SUM(tokens) AS tokens FROM usage WHERE user_id = ${userId}
-    ${sourceFilter ? db`AND source = ${source}` : db``}
-    ${daysFilter ? db`AND ${daysFilter}` : db``}
+    SELECT model, SUM(tokens) AS tokens FROM usage ${whereClause}
     GROUP BY model ORDER BY tokens DESC LIMIT 4
   ` as { model: string; tokens: number }[];
 
   const costRows = await db`
-    SELECT model, SUM(cost) AS cost FROM usage WHERE user_id = ${userId}
-    ${sourceFilter ? db`AND source = ${source}` : db``}
-    ${daysFilter ? db`AND ${daysFilter}` : db``}
+    SELECT model, SUM(cost) AS cost FROM usage ${whereClause}
     GROUP BY model
   ` as { model: string; cost: number }[];
 
   const callsRes = await db`
-    SELECT COUNT(*) AS c FROM usage WHERE user_id = ${userId}
-    ${sourceFilter ? db`AND source = ${source}` : db``}
-    ${daysFilter ? db`AND ${daysFilter}` : db``}
+    SELECT COUNT(*) AS c FROM usage ${whereClause}
   ` as { c: number }[];
 
   const totalTokens = byDay.reduce((s, b) => s + Number(b.tokens), 0);
@@ -86,15 +79,17 @@ export async function getAnalytics(userId: string, source?: string, days?: numbe
 }
 
 export async function getUsageBreakdown(userId: string, source?: string) {
+  const conditions: any[] = [db`user_id = ${userId}`];
+  if (source && source !== 'all') conditions.push(db`source = ${source}`);
+  const whereClause = conditions.length > 1 ? db`WHERE ${conditions.reduce((a, b) => db`${a} AND ${b}`)}` : db`WHERE ${conditions[0]}`;
+
   const rows = await db`
     SELECT model,
            COUNT(*) AS hits,
            COALESCE(SUM(tokens), 0) AS tokens,
            COALESCE(SUM(cost), 0) AS cost,
            MAX(created_at) AS last_used
-    FROM usage
-    WHERE user_id = ${userId}
-    ${source && source !== 'all' ? db`AND source = ${source}` : db``}
+    FROM usage ${whereClause}
     GROUP BY model
     ORDER BY hits DESC
   ` as { model: string; hits: string; tokens: string; cost: string; last_used: string | null }[];
@@ -139,12 +134,26 @@ export async function getSummary(userId: string) {
   const byokRes = await db`SELECT COUNT(*) AS c FROM providers WHERE user_id = ${userId}`;
   const byok = Number(byokRes[0].c);
   
+  // Get per-source plan limits
+  const planLimits: Record<string, { planName: string; limit: number; used: number; remaining: number; percent: number }> = {};
+  for (const source of Object.keys(SOURCE_TO_PLAN_FIELD)) {
+    const check = await checkPlanLimit(userId, source);
+    planLimits[source] = {
+      planName: check.planName,
+      limit: check.limit,
+      used: check.used,
+      remaining: Math.max(0, check.limit - check.used),
+      percent: Math.min(100, Math.round((check.used / check.limit) * 100)),
+    };
+  }
+  
   return {
     limit,
     used,
     remaining: Math.max(0, limit - used),
     percent: Math.min(100, Math.round((used / limit) * 100)),
     providers: byok,
+    planLimits,
   };
 }
 

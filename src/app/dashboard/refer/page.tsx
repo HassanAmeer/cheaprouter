@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
+import { ReferralSettings, Submission } from '@/lib/api-types';
 
 export default function ReferAndEarnPage() {
   const { user } = useAuth();
@@ -16,13 +17,13 @@ export default function ReferAndEarnPage() {
   
   const [videoLink, setVideoLink] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   useEffect(() => {
     api.getSubmissions().then((r) => setSubmissions(r.submissions || [])).catch(() => {});
   }, []);
 
-  const referralSettings = settings.referralSettings || {
+  const referralSettings: ReferralSettings = settings.referralSettings || {
     isEnabled: true,
     standardBonus: '$5.00',
     creatorBonus: '$20.00',

@@ -125,7 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (profile_picture instanceof File) {
       const formData = new FormData();
       formData.append('file', profile_picture);
-      const uploadRes = await fetch('/api/upload/profile', { method: 'POST', body: formData });
+      const uploadRes = await fetch('/api/upload/profile', {
+        method: 'POST',
+        body: formData,
+        headers: { Authorization: `Bearer ${localStorage.getItem('cm_token') || ''}` },
+      });
       if (!uploadRes.ok) throw new Error('Failed to upload profile picture');
       const uploadData = await uploadRes.json();
       finalPicture = uploadData.url;

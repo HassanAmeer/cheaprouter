@@ -1,4 +1,5 @@
 import { db, genId } from './db.ts';
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 
 // Never fall back to a hardcoded secret: if JWT_SECRET is unset, fail loudly at
 // startup so a deploy without a secret can't mint forgeable admin tokens.
@@ -56,8 +57,18 @@ export async function verifyToken(token: string): Promise<{ sub: string; email: 
   }
 }
 
+// ─── Password hashing ─────────────────────────────────────────────────────
+// User passwords were historically stored with a fast, reversible FNV hash
+// (the `hashPassword` below). That is NOT safe — it leaks password length and a
+// 32-bit checksum, so a leaked DB is trivially cracked. All NEW passwords and
+// resets now use PBKDF2-HMAC-SHA256 with a per-user salt. `verifyPassword`
+// still accepts the legacy format so existing accounts keep working, and
+// callers rehash to the strong format on next successful login.
+const PBKDF2_ITER = 100_000;
+
 export function hashPassword(password: string): string {
-  // Deterministic hash for dev use. Swap for bcrypt/argon2 in production.
+  // Legacy FNV — KEPT ONLY to verify old hashes during migration. Do not use
+  // for storing new passwords.
   let h = 2166136261;
   for (let i = 0; i < password.length; i++) {
     h ^= password.charCodeAt(i);
@@ -66,8 +77,33 @@ export function hashPassword(password: string): string {
   return (h >>> 0).toString(16).padStart(8, '0') + '-' + password.length;
 }
 
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+export function hashPasswordStrong(password: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const hash = pbkdf2Sync(password, salt, PBKDF2_ITER, 32, 'sha256').toString('hex');
+  return `pbkdf2$sha256$${PBKDF2_ITER}$${salt}$${hash}`;
+}
+
+export function isLegacyPasswordHash(stored: string): boolean {
+  return !stored.startsWith('pbkdf2$');
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  if (stored.startsWith('pbkdf2$')) {
+    const parts = stored.split('$');
+    const iter = Number(parts[2]);
+    const salt = parts[3];
+    const expected = parts[4];
+    const candidate = pbkdf2Sync(password, salt, iter, 32, 'sha256').toString('hex');
+    const a = Buffer.from(candidate, 'hex');
+    const b = Buffer.from(expected, 'hex');
+    return a.length === b.length && timingSafeEqual(a, b);
+  }
+  // Legacy FNV comparison.
+  return hashPassword(password) === stored;
+}
+
+export async function setUserPassword(userId: string, password: string): Promise<void> {
+  await db`UPDATE users SET password_hash = ${hashPasswordStrong(password)}, password_changed_at = CURRENT_TIMESTAMP WHERE id = ${userId}`;
 }
 
 export async function getUserById(id: string) {
@@ -94,7 +130,7 @@ export async function createUser(
   const id = genId('usr');
   await db`
     INSERT INTO users (id, name, email, password_hash, last_ip, user_agent, hardware_info, referred_by)
-    VALUES (${id}, ${name}, ${email}, ${hashPassword(password)}, ${last_ip ?? null}, ${user_agent ?? null}, ${hardware_info ?? null}, ${referred_by ?? null})
+    VALUES (${id}, ${name}, ${email}, ${hashPasswordStrong(password)}, ${last_ip ?? null}, ${user_agent ?? null}, ${hardware_info ?? null}, ${referred_by ?? null})
   `;
   return { id, name, email, plan: 'free' };
 }
@@ -234,7 +270,7 @@ export async function updateUserProfile(id: string, name: string, profile_pictur
 
 export async function changeUserPassword(id: string, newPassword: string) {
   await db`
-    UPDATE users SET password_hash = ${hashPassword(newPassword)}, password_changed_at = CURRENT_TIMESTAMP WHERE id = ${id}
+    UPDATE users SET password_hash = ${hashPasswordStrong(newPassword)}, password_changed_at = CURRENT_TIMESTAMP WHERE id = ${id}
   `;
 }
 
@@ -265,24 +301,38 @@ export async function saveOnboarding(id: string, data: {
   `;
 }
 
+// Fields an admin may write directly. Used by both single-user update and
+// bulk edit so neither can sneak in arbitrary columns.
+export const ADMIN_USER_FIELDS = [
+  'name', 'email', 'plan', 'status', 'profile_picture',
+  'plan_cli', 'plan_api', 'plan_chat', 'plan_agents',
+  'plan_cli_start', 'plan_cli_expiry',
+  'plan_api_start', 'plan_api_expiry',
+  'plan_chat_start', 'plan_chat_expiry',
+  'plan_agents_start', 'plan_agents_expiry',
+  'created_at', 'last_login',
+  'is_student', 'experience_level', 'use_cases', 'earning_goal', 'onboarding_completed',
+  'balance'
+] as const;
+
 export async function adminUpdateUser(id: string, data: any) {
-  const allowedFields = [
-    'name', 'email', 'plan', 'status', 'profile_picture', 
-    'plan_cli', 'plan_api', 'plan_chat', 'plan_agents',
-    'plan_cli_start', 'plan_cli_expiry',
-    'plan_api_start', 'plan_api_expiry',
-    'plan_chat_start', 'plan_chat_expiry',
-    'plan_agents_start', 'plan_agents_expiry',
-    'created_at', 'last_login',
-    'is_student', 'experience_level', 'use_cases', 'earning_goal', 'onboarding_completed',
-    'balance'
-  ];
+  const allowedFields = ADMIN_USER_FIELDS;
   const updates = Object.keys(data).filter(k => allowedFields.includes(k) && data[k] !== undefined);
   if (updates.length === 0) return;
 
-  for (const field of updates) {
-    await db`UPDATE users SET ${db(field)} = ${data[field]} WHERE id = ${id}`;
+  // Email must stay unique.
+  if (data.email !== undefined) {
+    const clash = await db`SELECT id FROM users WHERE email = ${data.email} AND id != ${id} LIMIT 1` as { id: string }[];
+    if (clash[0]) throw new Error('Email already in use by another user');
   }
+
+  // Apply all field updates atomically so a mid-loop failure can't leave the
+  // user in a half-updated state.
+  await db.begin(async (tx) => {
+    for (const field of updates) {
+      await tx`UPDATE users SET ${tx(field)} = ${data[field]} WHERE id = ${id}`;
+    }
+  });
 }
 
 export async function adminDeleteUser(id: string) {

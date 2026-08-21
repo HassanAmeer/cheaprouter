@@ -1,0 +1,824 @@
+/* Billing Page Styles */
+
+.balanceCard {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--color-card-bg) 0%, rgba(124, 58, 237, 0.05) 100%);
+  border: 1px solid var(--color-border);
+}
+
+.balanceHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.balanceIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+}
+
+.balanceLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.balanceValue {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.balanceDescription {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.addFundsCard {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  transition: border-color 0.2s;
+}
+
+.addFundsCard.active {
+  border-color: var(--color-primary);
+}
+
+.addFundsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.addFundsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.addFundsSubtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.presetButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.presetButton {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.presetButton.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.amountInputWrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.amountInputContainer {
+  position: relative;
+  flex: 1;
+}
+
+.currencyPrefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.amountInput {
+  width: 100%;
+  padding: 11px 14px 11px 30px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+  font-size: 14px;
+  outline: none;
+}
+
+.addFundsButton {
+  width: 100%;
+}
+
+.addFundsNote {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 10px 0 0;
+}
+
+.topupRequests {
+  margin-top: 16px;
+}
+
+.topupRequestsTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.topupRequestItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  margin-bottom: 8px;
+}
+
+.topupRequestInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topupRequestAmount {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.topupRequestMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topupRequestDate {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 20px 0;
+  opacity: 0.6;
+}
+
+.withdrawHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.withdrawTitle {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.withdrawSubtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.withdrawButton {
+  /* Button styles */
+}
+
+.activePlansCard {
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-primary);
+  padding: 24px;
+  background: linear-gradient(135deg, var(--color-card-bg) 0%, rgba(124, 58, 237, 0.03) 100%);
+}
+
+.activePlansHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.activePlansTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.planRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.planInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.planIcon {
+  color: var(--color-primary);
+}
+
+.planCategoryName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.planCurrent {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.tierDots {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  max-width: 360px;
+  min-width: 220px;
+}
+
+.tierDotWrapper {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.tierDotColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tierDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-bg-soft);
+  border: 2px solid var(--color-border);
+}
+
+.tierDot.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.tierDot.current {
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.tierDotLabel {
+  font-size: 10px;
+  margin-top: 5px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tierDotLabel.active {
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.tierDotLabel.reached {
+  color: var(--color-text-main);
+}
+
+.tierConnector {
+  flex: 1;
+  height: 2px;
+  margin-top: 5px;
+  align-self: flex-start;
+  background: var(--color-border);
+}
+
+.tierConnector.active {
+  background: var(--color-primary);
+}
+
+.usageProgress {
+  margin-top: 14px;
+}
+
+.progressBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-bg-soft);
+}
+
+.progressFill {
+  width: 0%;
+  background: linear-gradient(90deg, var(--color-primary), #ff6b6b);
+  border-radius: 3px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+.progressUsed {
+  color: var(--color-text-main);
+}
+
+.progressPercent {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.planDates {
+  display: flex;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.planDateLabel {
+  color: var(--color-text-main);
+}
+
+.dividerHalf {
+  display: flex;
+  justify-content: center;
+  margin: 22px 0;
+}
+
+.dividerLine {
+  width: 50%;
+  height: 1px;
+  background: var(--color-border);
+  opacity: 0.7;
+}
+
+.tabsBar {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tabsContainer {
+  display: flex;
+  gap: 6px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  width: fit-content;
+}
+
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabButton.active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+
+.availablePlansSection {
+  margin-bottom: 36px;
+}
+
+.availablePlansHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.availablePlansTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.availablePlansSubtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.balanceDisplay {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.balanceAmount {
+  color: var(--color-text-main);
+}
+
+.plansGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.planCard {
+  padding: 24px;
+  position: relative;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.planCard.active {
+  border: 2px solid var(--color-primary);
+  background: rgba(124, 58, 237, 0.02);
+}
+
+.planCard.featured {
+  border: 2px solid rgba(124, 58, 237, 0.4);
+}
+
+.planCard:hover {
+  transform: translateY(-2px);
+}
+
+.badgeWrapper {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.planName {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.planDescription {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+
+.planPriceWrapper {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: var(--color-text-main);
+}
+
+.planPeriod {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.planCostInfo {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planFeatures {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  margin-bottom: 24px;
+}
+
+.planFeature {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.planFeatureCheck {
+  color: var(--color-success);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.planActionButton {
+  width: 100%;
+}
+
+.paymentMethodSection {
+  margin-bottom: 36px;
+}
+
+.paymentMethodTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.paymentMethodCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.paymentMethodIcon {
+  width: 48px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1a1f71, #2a2f91);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.paymentMethodInfo {
+  flex: 1;
+}
+
+.paymentMethodName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.paymentMethodDetails {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.transactionHistory {
+  margin-bottom: 36px;
+}
+
+.transactionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.transactionTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.transactionCount {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.transactionTable {
+  /* table styles */
+}
+
+.transactionEmpty {
+  padding: 28px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.transactionRow {
+  /* row styles */
+}
+
+.transactionType {
+  text-transform: capitalize;
+}
+
+.transactionTypeStrong {
+  font-size: 13px;
+}
+
+.transactionDate {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.transactionDescription {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.transactionAmount {
+  font-weight: 600;
+  text-align: right;
+}
+
+.transactionAmount.credit {
+  color: var(--color-success);
+}
+
+.transactionAmount.debit {
+  color: var(--color-danger);
+}
+
+.withdrawHistory {
+  /* withdraw history styles */
+}
+
+.withdrawHistoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.withdrawHistoryTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.withdrawHistoryCount {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.withdrawSheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.withdrawSheetContent {
+  width: 420px;
+  max-width: 92vw;
+  height: 100%;
+  background: var(--color-card-bg);
+  border-left: 1px solid var(--color-border);
+  padding: 28px;
+  overflow-y: auto;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.3);
+}
+
+.withdrawSheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.withdrawSheetTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.withdrawSheetClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.withdrawSheetDescription {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.withdrawFormLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.withdrawInputWrapper {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.withdrawInputPrefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.withdrawInput {
+  width: 100%;
+  padding: 11px 14px 11px 30px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+  font-size: 14px;
+  outline: none;
+}
+
+.withdrawMethodSelect {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.withdrawBalanceInfo {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.withdrawBalanceAmount {
+  color: var(--color-text-main);
+}
+
+.withdrawAnnouncement {
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+  line-height: 1.7;
+}
+
+.withdrawSubmitButton {
+  width: 100%;
+}

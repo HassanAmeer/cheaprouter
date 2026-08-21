@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
 import { Activity, Zap, Wallet, Cpu, Terminal, MessageSquare, Globe, Hammer, Braces, MessagesSquare } from 'lucide-react';
+import { getMetricInfo } from '@/lib/utils';
+import { UsageBreakdown, UsageModel } from '@/lib/api-types';
 
 const TABS = [
   { key: 'cli', label: 'CLI / Code Editor', icon: <Terminal size={15} /> },
@@ -22,7 +24,7 @@ const TAB_META: Record<string, { description: string }> = {
 };
 
 export default function UsagePage() {
-  const [breakdown, setBreakdown] = useState<any>(null);
+  const [breakdown, setBreakdown] = useState<UsageBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('cli');
 
@@ -40,7 +42,7 @@ export default function UsagePage() {
     return () => { active = false; clearInterval(id); };
   }, [activeTab]);
 
-  const b = breakdown ?? { models: [], totalModels: 0, totalCalls: 0, totalTokens: 0, totalCost: 0, conversations: 0, messages: 0 };
+  const b: UsageBreakdown = breakdown ?? { models: [], totalModels: 0, totalCalls: 0, totalTokens: 0, totalCost: 0, conversations: 0, messages: 0 };
 
   const cardsFor = (key: string) => {
     if (key === 'chat') {

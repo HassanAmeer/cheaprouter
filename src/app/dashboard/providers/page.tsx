@@ -1,22 +1,16 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Layers, X, Lock } from 'lucide-react';
+import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Layers, X, Lock, Loader2, Check, AlertCircle } from 'lucide-react';
 import styles from '../dashboard.module.css';
+import providersStyles from './providers.module.css';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
 import { useSiteSettings } from '@/components/settings-provider';
 import ModelsTable from '@/components/ModelsTable';
+import { Provider as ProviderType } from '@/lib/api-types';
 
-type Provider = {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  masked: string;
-  status: 'active' | 'paused';
-  added: string;
-};
+type Provider = ProviderType;
 
 const PROVIDER_META: Record<string, { name: string; icon: string; color: string; desc: string }> = {
   openai: { name: 'OpenAI', icon: 'https://cdn.simpleicons.org/openai/10A37F', color: '#10A37F', desc: 'GPT-4o, GPT-4 Turbo, o1' },
@@ -43,6 +37,23 @@ export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [availableProviders, setAvailableProviders] = useState<{ id: string; name: string; key: string; icon: string; color: string; desc: string }[]>([]);
+  const testConnection = async (p: Provider) => {
+    setTestingId(p.id);
+    try {
+      const result = await api.testProvider(p.id);
+      if (result.ok) {
+        toast(`${p.name} connection OK (${result.latencyMs}ms)`, 'success');
+      } else {
+        toast(result.error || `${p.name} connection failed`, 'error');
+      }
+    } catch (e: any) {
+      toast(e.message || 'Connection test failed', 'error');
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const [testingId, setTestingId] = useState<string | null>(null);
   const [showModelsModal, setShowModelsModal] = useState<Provider | null>(null);
   const [providerModels, setProviderModels] = useState<any[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -51,15 +62,17 @@ export default function ProvidersPage() {
     // List user's connected providers
     api.listProviders().then((r) => setProviders(r.providers)).catch((e) => toast(e.message, 'error')).finally(() => setLoading(false));
 
-    // Load active admin providers
-    fetch('/api/admin/providers')
+    // Load active admin providers via the PUBLIC endpoint (the /api/admin one
+    // requires admin auth and returns a bare array, so it never worked here).
+    fetch('/api/public/providers')
       .then(res => res.json())
-      .then(data => {
-        if (data.providers) {
-          const list = data.providers
-            .filter((p: any) => p.status)
-            .map((p: any) => {
-              const nameLower = p.name.toLowerCase();
+      .then((data: any[] | { providers?: any[] }) => {
+        const rows = Array.isArray(data) ? data : data.providers;
+        if (rows) {
+          const list = rows
+            .filter((p) => p.status)
+            .map((p) => {
+              const nameLower = String(p.name ?? '').toLowerCase();
               let key = 'custom';
               let icon = 'https://logo.clearbit.com/openai.com'; 
               let color = '#8b5cf6';
@@ -116,7 +129,7 @@ export default function ProvidersPage() {
       const r = await api.createProvider(selected, keyValue.trim());
       const meta = availableProviders.find(p => p.key === selected) || { name: 'Custom AI', icon: '', color: '#8b5cf6' };
       setProviders((prev) => [
-        { id: 'tmp_' + Date.now(), name: meta.name, icon: meta.icon, color: meta.color, masked: `••••••••••••${keyValue.trim().slice(-4)}`, status: 'active', added: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+        { id: 'tmp_' + Date.now(), provider: selected, name: meta.name, icon: meta.icon, color: meta.color, masked: `••••••••••••${keyValue.trim().slice(-4)}`, status: 'active', added: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
         ...prev.filter((p) => p.name !== meta.name),
       ]);
       setSelected('');
@@ -158,15 +171,15 @@ export default function ProvidersPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 8 }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: 6 }}>Providers</h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>
+      <div className={providersStyles.pageHeader}>
+        <h1 className={providersStyles.pageTitle}>Providers</h1>
+        <p className={providersStyles.pageSubtitle}>
           Choose how you want to access AI models — use ours or connect your own provider keys.
         </p>
       </div>
 
       {/* Tab Selector */}
-      <div role="tablist" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxWidth: '640px', marginBottom: '32px', marginTop: '24px' }}>
+      <div role="tablist" className={providersStyles.tabContainer}>
         {([
           { key: 'sub', icon: '📦', title: 'Use Our Models', sub: 'Ready to use, no setup' },
           { key: 'own', icon: '🔑', title: 'Use Own API Keys', sub: 'BYOK — pay providers direct' },
@@ -174,29 +187,23 @@ export default function ProvidersPage() {
           const active = activeTab === opt.key;
           const disabled = opt.key === 'own' && !allowByok;
           return (
-            <button key={opt.key} role="tab" aria-selected={active} onClick={() => setActiveTab(opt.key)} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px',
-              borderRadius: 'var(--radius-lg)', border: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              background: active ? 'var(--color-primary-soft)' : 'var(--color-card-bg)', cursor: 'pointer', textAlign: 'left',
-              transition: 'all 0.2s ease', boxShadow: active ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
-              opacity: 1
-            }}>
-              <span style={{ flexShrink: 0, width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: active ? 'var(--color-primary)' : 'var(--color-bg-soft)' }}>
+            <button key={opt.key} role="tab" aria-selected={active} onClick={() => setActiveTab(opt.key)} className={`${providersStyles.tabButton} ${active ? providersStyles.active : ''} ${disabled ? providersStyles.disabled : ''}`}>
+              <span className={providersStyles.tabIconWrapper}>
                 {opt.icon}
               </span>
-              <span style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: active ? 'var(--color-primary)' : 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={providersStyles.tabContent}>
+                <span className={providersStyles.tabTitle}>
                   {opt.title}
                 </span>
-                <span style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>{opt.sub}</span>
+                <span className={providersStyles.tabSubtitle}>{opt.sub}</span>
               </span>
               {!disabled && (
-                <span style={{ position: 'absolute', top: '14px', right: '14px', width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`, background: active ? 'var(--color-primary)' : 'transparent' }}>
-                  {active && <span style={{ position: 'absolute', top: '3px', left: '5px', width: '4px', height: '8px', border: 'solid #fff', borderWidth: '0 2px 2px 0', transform: 'rotate(45deg)' }} />}
+                <span className={`${providersStyles.tabIndicator} ${active ? providersStyles.active : ''}`}>
+                  {active && <span className={providersStyles.tabIndicatorCheck} />}
                 </span>
               )}
               {disabled && (
-                <div style={{ position: 'absolute', bottom: '-1px', right: '-1px', background: 'var(--color-bg-alt)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: '10px', padding: '2px 8px', fontWeight: 600, borderBottomRightRadius: 'var(--radius-lg)', borderTopLeftRadius: '8px' }}>
+                <div className={providersStyles.tabDisabledBadge}>
                   Disabled
                 </div>
               )}
@@ -207,9 +214,9 @@ export default function ProvidersPage() {
 
       {activeTab === 'sub' && (
         <div>
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Our Model Catalog</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>These models are managed by CheapRouter. No setup needed — just use our unified API.</p>
+          <div className={providersStyles.sectionHeader}>
+            <h2 className={providersStyles.sectionTitle}>Our Model Catalog</h2>
+            <p className={providersStyles.sectionSubtitle}>These models are managed by CheapRouter. No setup needed — just use our unified API.</p>
           </div>
           <ModelsTable showToggle={true} />
         </div>
@@ -217,56 +224,53 @@ export default function ProvidersPage() {
 
       {activeTab === 'own' && (
         <div>
-          <div style={{ marginBottom: '28px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Bring Your Own Key (BYOK)</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '14px' }}>Connect your own provider keys. You pay them directly — our routing is completely free.</p>
+          <div className={providersStyles.sectionHeader}>
+            <h2 className={providersStyles.sectionTitle}>Bring Your Own Key (BYOK)</h2>
+            <p className={providersStyles.sectionSubtitle}>Connect your own provider keys. You pay them directly — our routing is completely free.</p>
           </div>
 
           {!allowByok && (
-            <div className="shimmer-btn" style={{ background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}><Lock size={20} /></div>
+            <div className={providersStyles.featureMovedAlert}>
+              <div className={providersStyles.featureMovedIcon}><Lock size={20} /></div>
               <div>
-                <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '4px', color: 'var(--color-text-main)' }}>Feature Moved</h4>
-                <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                <h4 className={providersStyles.featureMovedTitle}>Feature Moved</h4>
+                <p className={providersStyles.featureMovedDescription}>
                   This feature has moved to Cheap Code CLI. If you want to enable this option for APIs, please contact the admin.
                 </p>
               </div>
             </div>
           )}
 
-          <div style={{ opacity: !allowByok ? 0.4 : 1, pointerEvents: !allowByok ? 'none' : 'auto', userSelect: !allowByok ? 'none' : 'auto', filter: !allowByok ? 'grayscale(100%)' : 'none' }}>
+          <div className={providersStyles.disabledOverlay}>
             {/* Connect Form */}
-            <div className="card glass-card" style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '20px' }}>
+            <div className={`${styles.card} ${styles.glassCard} ${providersStyles.connectCard}`}>
+            <div className={providersStyles.connectHeader}>
               <Wifi size={18} color="var(--color-primary)" />
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Connect New Provider</h3>
+              <h3 className={providersStyles.connectTitle}>Connect New Provider</h3>
             </div>
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '220px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: 'var(--color-text-muted)' }}>Provider</label>
-                <select value={selected} onChange={(e) => setSelected(e.target.value)} style={{
-                  width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
-                  fontSize: '15px', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontFamily: 'inherit'
-                }}>
+            <div className={providersStyles.connectFormRow}>
+              <div className={providersStyles.providerSelectWrapper}>
+                <label className={providersStyles.providerSelectLabel}>Provider</label>
+                <select value={selected} onChange={(e) => setSelected(e.target.value)} className={providersStyles.providerSelect}>
                   <option value="">Select a provider…</option>
                   {availableProviders.map((p) => <option key={p.id} value={p.key}>{p.name}</option>)}
                 </select>
               </div>
-              <div style={{ flex: 2, minWidth: '300px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)' }}>API Key</label>
+              <div className={providersStyles.keyInputWrapper}>
+                <div className={providersStyles.keyInputHeader}>
+                  <label className={providersStyles.keyInputLabel}>API Key</label>
                   {selected && (
                     <a href={`https://${selected === 'openai' ? 'platform.openai.com' : selected === 'anthropic' ? 'console.anthropic.com' : 'aistudio.google.com'}`} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      className={providersStyles.keyLink}>
                       Get key <ExternalLink size={12} />
                     </a>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className={providersStyles.keyInputRow}>
                   <input
                     type="password" placeholder={selected ? `Enter your ${availableProviders.find(p => p.key === selected)?.name ?? ''} API key` : 'sk-...'}
                     value={keyValue} onChange={(e) => setKeyValue(e.target.value)}
-                    style={{ flex: 1, padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontSize: '15px', background: 'var(--color-input-bg)', color: 'var(--color-text-main)' }}
+                    className={providersStyles.keyInput}
                   />
                   <Button onClick={connect}><Plus size={16} /> Connect</Button>
                 </div>
@@ -275,39 +279,38 @@ export default function ProvidersPage() {
           </div>
 
           {/* Connected Providers */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className={providersStyles.connectedProvidersHeader}>
+            <div className={providersStyles.connectedProvidersInfo}>
+              <div className={providersStyles.connectedProvidersIconWrapper}>
                 <Plug size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 className={providersStyles.connectedProvidersTitle}>
                   Active Connections
-                  <span style={{ fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '100px', background: 'var(--color-bg-muted)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                  <span className={providersStyles.connectedCountBadge}>
                     {filtered.length} connected
                   </span>
                 </h3>
               </div>
             </div>
             {providers.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: '100px', border: '1px solid var(--color-border)', background: 'var(--color-card-bg)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'all 0.2s ease' }}
+              <div className={providersStyles.searchWrapper}
                 onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
                 onBlur={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
               >
                 <Search size={14} color="var(--color-text-muted)" />
-                <input type="text" placeholder="Search providers…" value={search} onChange={(e) => setSearch(e.target.value)}
-                  style={{ border: 'none', background: 'transparent', fontSize: '13px', outline: 'none', color: 'var(--color-text-main)', width: 140 }} />
+                <input type="text" placeholder="Search providers…" value={search} onChange={(e) => setSearch(e.target.value)} className={providersStyles.searchInput} />
               </div>
             )}
           </div>
 
           {loading ? (
-            <div className="card" style={{ textAlign: 'center', padding: 48, color: 'var(--color-text-muted)' }}>Loading providers…</div>
+            <div className={`${styles.card} ${providersStyles.loadingState}`}>Loading providers…</div>
           ) : filtered.length === 0 ? (
             <div className="card">
-              <div className={styles.emptyState}>
-                <div className={styles.emptyStateIcon}><Plus size={24} /></div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)', marginBottom: 8 }}>No providers connected</h3>
+              <div className={`${styles.emptyState} ${providersStyles.emptyState}`}>
+                <div className={`${styles.emptyStateIcon} ${providersStyles.emptyStateIcon}`}><Plus size={24} /></div>
+                <h3 className={providersStyles.emptyStateTitle}>No providers connected</h3>
                 <p>Use the form above to connect your first AI provider.</p>
               </div>
             </div>
@@ -357,8 +360,9 @@ export default function ProvidersPage() {
                     <button className="btn-secondary" style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 600, borderRadius: '8px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)', transition: 'all 0.2s' }} 
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-soft)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-                      onClick={() => toast(`${p.name} connection test OK`, 'success')}>
-                      Test
+                      onClick={() => testConnection(p)}
+                      disabled={testingId === p.id}>
+                      {testingId === p.id ? <><Loader2 size={14} className="lucide-spin" style={{ marginRight: 4, verticalAlign: 'middle' }} /> Testing...</> : <><Check size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Test</>}
                     </button>
                     <button className="btn-secondary" style={{ flex: 1, padding: '10px', fontSize: '13px', fontWeight: 600, borderRadius: '8px', background: p.status === 'active' ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)', color: p.status === 'active' ? 'var(--color-warning)' : 'var(--color-success)', border: `1px solid ${p.status === 'active' ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)'}`, transition: 'all 0.2s' }} 
                       onMouseEnter={e => e.currentTarget.style.background = p.status === 'active' ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)'}

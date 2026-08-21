@@ -8,6 +8,7 @@ import { useSiteSettings } from '@/components/settings-provider';
 import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
 import { User, Mail, Shield, Bell, Globe, Lock, Trash2, AlertTriangle, KeyRound, Sparkles, LogOut, CheckCircle2, GraduationCap, Code2, Target, Compass, Cpu, Pencil, Loader2 } from 'lucide-react';
+import { PricingPlan } from '@/lib/api-types';
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   beginner: 'New / Beginner',
@@ -141,8 +142,8 @@ export default function SettingsPage() {
     ? (user.plan_cli || user.plan_api || user.plan_chat || user.plan_agents)
     : null;
   const activePlan = (settings?.pricingSection?.tabs || [])
-    .flatMap((t: any) => t.plans || [])
-    .find((p: any) => p.id === activePlanId);
+    .flatMap((t) => t.plans || [])
+    .find((p: PricingPlan) => p.id === activePlanId);
   const planPrice = activePlan ? parseFloat(String(activePlan.price ?? '0').replace(/[^0-9.]/g, '')) || 0 : 0;
 
   return (

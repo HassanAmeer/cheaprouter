@@ -9,13 +9,14 @@ import { useSiteSettings } from '@/components/settings-provider';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 import pageStyles from '@/app/page.module.css';
-import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown, Megaphone, X, Bell } from 'lucide-react';
+import { Zap, Key, Plug, LineChart, ArrowUpRight, ArrowDownRight, MessageSquare, Plus, Send, Shield, Activity, Clock, Crown, Megaphone, X, Bell, Terminal, Braces, Users } from 'lucide-react';
+import { SummaryData, PlanLimitData } from '@/lib/api-types';
 
 export default function DashboardOverview() {
   const { user } = useAuth();
   const router = useRouter();
   const { settings } = useSiteSettings();
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
   const [usage, setUsage] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [timeFilter, setTimeFilter] = useState('7D');
@@ -41,7 +42,7 @@ export default function DashboardOverview() {
     api.getNotifications().then((res) => setRecentNotify(res.notifications?.slice(0, 5) || [])).catch(() => {});
   }, [loadAnalytics]);
 
-  const s = summary ?? { limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0 };
+  const s = summary ?? { limit: 1000000, used: 0, remaining: 1000000, percent: 0, providers: 0, planLimits: {} };
   const userName = user?.name?.split(' ')[0] ?? 'Developer';
 
 
@@ -181,6 +182,53 @@ export default function DashboardOverview() {
           </div>
         </div>
       </div>
+
+      {/* Per-Source Plan Limits */}
+      {s.planLimits && Object.keys(s.planLimits).length > 0 && (
+        <div style={{ marginBottom: '28px' }}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Plan Limits by Service</h2>
+          </div>
+          <div className={styles.statsGrid}>
+            {Object.entries(s.planLimits).map(([source, plan]) => (
+              <div key={source} className="card glass-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {source === 'api' && <Braces size={16} />}
+                      {source === 'chat' && <MessageSquare size={16} />}
+                      {source === 'cli' && <Terminal size={16} />}
+                      {source === 'agents' && <Users size={16} />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, textTransform: 'capitalize' }}>{source}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{plan.planName} Plan</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: plan.percent > 80 ? 'var(--color-warning)' : 'var(--color-primary)' }}>
+                    {plan.percent}%
+                  </span>
+                </div>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{
+                      width: `${plan.percent}%`,
+                      background: plan.percent > 80
+                        ? 'linear-gradient(90deg, #D97706, #F59E0B)'
+                        : 'linear-gradient(90deg, var(--color-primary), #ff6b6b)',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{plan.used.toLocaleString()} used</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{plan.limit.toLocaleString()} limit</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div style={{ marginBottom: '28px' }}>

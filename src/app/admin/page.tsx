@@ -48,6 +48,20 @@ export default function AdminDashboard() {
         return null;
       })
       .then(data => {
+        // Prefer the server-computed stats (SQL COUNT(*) over ALL users). The
+        // users array is capped at 50 rows by default, so deriving stats from
+        // it undercounts everything once the platform has more users.
+        const st = data && data.stats;
+        if (st) {
+          setStats({
+            total: Number(st.total) || 0,
+            today: Number(st.today) || 0,
+            last7Days: Number(st.last7Days) || 0,
+            last30Days: Number(st.last30Days) || 0,
+            filteredCount: Number(st.filteredCount) || 0
+          });
+          return;
+        }
         const users: any[] = (data && data.users) || [];
         const now = Date.now();
         const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);

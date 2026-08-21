@@ -20,7 +20,8 @@ export default function DashSettingsPage() {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` },
-        body: JSON.stringify(formData),
+        // Only this editor's section — avoids clobbering concurrent saves elsewhere.
+        body: JSON.stringify({ dashboardSettings: formData.dashboardSettings }),
       });
       if (res.ok) {
         await refreshSettings();

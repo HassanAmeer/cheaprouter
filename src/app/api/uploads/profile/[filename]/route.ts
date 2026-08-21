@@ -9,7 +9,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
     const { filename } = await params;
-    const filepath = path.join(UPLOAD_DIR, filename);
+    // Containment check: reject any path that escapes the upload dir
+    // (e.g. encoded ../ traversal like %2e%2e%2f).
+    const resolved = path.resolve(UPLOAD_DIR, filename);
+    if (!resolved.startsWith(UPLOAD_DIR + path.sep)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const filepath = resolved;
 
     if (!fs.existsSync(filepath)) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });

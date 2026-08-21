@@ -35,7 +35,7 @@ export default function NotificationsPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users', { headers: adminHeaders() });
+      const res = await fetch('/api/admin/users?limit=200', { headers: adminHeaders() });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
     setSuccess(false);
 
     try {
-      const res = await fetch('/api/notifications', {
+      const res = await fetch('/api/admin/notifications', {
         method: 'POST',
         headers: adminHeaders(),
         body: JSON.stringify({ title, message, targetUserIds: selectedUserIds })

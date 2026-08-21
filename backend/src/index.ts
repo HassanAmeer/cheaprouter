@@ -16,21 +16,23 @@ import {
   deleteUser,
   getPasswordHash,
   adminUpdateUser,
+  ADMIN_USER_FIELDS,
   adminDeleteUser,
-  hashPassword,
+  isLegacyPasswordHash,
+  setUserPassword,
   getFilteredUsers,
 } from './auth.ts';
 import { listKeys, createKey, deleteKey, listAllKeysWithUsers, adminDeleteKey, storeSystemKey, listSystemKeys, deleteSystemKey, hashKey } from './keys.ts';
 import { listProviders, upsertProvider, setProviderStatus, deleteProvider, providerMeta, testProviderConnection } from './providers.ts';
+import { computeCost, checkBalanceForCost, deductBalance, checkBalanceAndPlanLimit, getBalance, getBilling, requestTopUp, listUserTopups, listAdminTopups, setTopupStatus, upgradePlan, seedWelcomeBalance, clearBillingCache, getBillingSettings } from './billing.ts';
 import { getAnalytics, getSummary, getUsageBreakdown, getAdminAnalytics, recordUsage, checkMonthlyQuota } from './usage.ts';
-import { getBilling, requestTopUp, listUserTopups, listAdminTopups, setTopupStatus, upgradePlan, seedWelcomeBalance, computeCost, getBalance, checkBalanceForCost, deductBalance, clearBillingCache, getBillingSettings } from './billing.ts';
 import { listUserWithdrawals, createWithdrawalRequest, listAdminWithdrawals, setWithdrawalStatus, getWithdrawSettings, WITHDRAW_STATUSES } from './withdrawals.ts';
 import { MODEL_REGISTRY } from './registry.ts';
 import { listConversations, getMessages, createConversation, addMessage, renameConversation } from './conversations.ts';
 import { handleCompletions, getModelInstance, getSystemPromptForModel, getDefaultModel, tryInstances } from './completions.ts';
 import { getDevLogs, clearDevLogs, addDevLog } from './logger.ts';
 import { generateText, streamText } from 'ai';
-import { db, initDb, DB_URL } from './db.ts';
+import { db, initDb, DB_URL, genId } from './db.ts';
 
 // ---- IN-MEMORY LOGGER ----
 const systemLogs: string[] = [];
@@ -48,26 +50,63 @@ type Bindings = { userId: string; email: string };
 
 const app = new Hono<{ Variables: Bindings }>();
 
-// ---- CORS (allow frontend dev server) ----
+// ---- CORS (allow only configured origins, never wildcard with credentials) ----
+// Default to localhost dev origins. Set CORS_ORIGIN to an explicit comma-separated
+// list in production (e.g. https://app.cheaprouter.com). Set it to '*' only to
+// restore the old open behaviour.
+const rawCors = process.env.CORS_ORIGIN;
+const allowedOrigins = rawCors === '*'
+  ? '*'
+  : (rawCors || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001')
+      .split(',').map((s) => s.trim()).filter(Boolean);
 app.use('*', async (c, next) => {
-  c.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN ?? '*');
+  const origin = c.req.header('origin');
+  if (allowedOrigins === '*') {
+    c.header('Access-Control-Allow-Origin', '*');
+  } else if (origin && allowedOrigins.includes(origin)) {
+    c.header('Access-Control-Allow-Origin', origin);
+  }
+  c.header('Vary', 'Origin');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (c.req.method === 'OPTIONS') return c.body(null, 204);
   await next();
 });
 
-// ---- GLOBAL ERROR HANDLER — always return JSON ----
+// ---- GLOBAL ERROR HANDLER — always return JSON, never leak internals ----
 app.onError((err, c) => {
-  require('fs').appendFileSync('error_stack.log', err.stack + '\n');
+  try {
+    require('fs').appendFileSync('error_stack.log', `${new Date().toISOString()} ${err.stack}\n`);
+  } catch { /* ignore */ }
   console.error('Unhandled error:', err);
-  return c.json({ error: err.message || 'Internal server error' }, 500);
+  return c.json({ error: 'Internal server error' }, 500);
 });
+
+// ---- In-memory rate limiter (per IP + bucket) ----
+// Sliding fixed-window: blocks after `max` attempts within `windowMs`. Override
+// via AUTH_RATE_LIMIT_MAX / AUTH_RATE_LIMIT_WINDOW_MS. For a multi-instance
+// deploy swap for Redis, but it closes the trivial local hole.
+const RATE_MAX = Number(process.env.AUTH_RATE_LIMIT_MAX) || 10;
+const RATE_WINDOW_MS = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 60_000;
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const b = rateBuckets.get(key);
+  if (!b || now > b.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  b.count++;
+  return b.count > RATE_MAX;
+}
+function clientIp(c: any): string {
+  return (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown').split(',')[0].trim();
+}
 
 // Protect all /api routes except auth, models catalog
 app.use('/api/*', async (c, next) => {
   const p = c.req.path;
-  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models' || p === '/api/public/providers' || p === '/api/admin/providers') {
+  if (p.endsWith('/auth/login') || p.endsWith('/auth/signup') || p.endsWith('/auth/admin-login') || p === '/api/models' || p === '/api/public/providers') {
     return next();
   }
   // Settings are readable by anyone (used by the marketing site), but only an admin may write them.
@@ -91,6 +130,12 @@ async function requireAuth(c: any, next: any) {
   const token = header.replace('Bearer ', '');
   const payload = await verifyToken(token);
   if (!payload) return c.json({ error: 'Unauthorized' }, 401);
+  // Enforce account suspension/bans: a suspended user's valid token is still rejected.
+  const userRes = await db`SELECT status FROM users WHERE id = ${payload.sub}`;
+  const status = userRes[0]?.status || 'Active';
+  if (status !== 'Active') {
+    return c.json({ error: status === 'Suspended' ? 'Account suspended' : 'Account inactive' }, 403);
+  }
   c.set('userId', payload.sub);
   c.set('email', payload.email);
   await next();
@@ -113,6 +158,9 @@ const authSchema = z.object({
 });
 
 app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
+  if (rateLimited(`signup:${clientIp(c)}`)) {
+    return c.json({ error: 'Too many attempts, please try again later' }, 429);
+  }
   const { email, password, name, hardwareInfo } = c.req.valid('json');
   const ip = (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '').split(',')[0].trim();
   const userAgent = c.req.header('user-agent') || '';
@@ -125,10 +173,10 @@ app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
   let referredBy: string | undefined;
   if (ref) {
     const referrer = await db`SELECT id FROM users WHERE email = ${ref} OR id = ${ref} LIMIT 1` as { id: string }[];
-    if (!referrer[0]) {
-      return c.json({ error: 'Invalid referral code' }, 400);
+    if (referrer[0]) {
+      referredBy = referrer[0].id;
     }
-    referredBy = referrer[0].id;
+    // A bad/unknown referral code must NOT block signup — just ignore it.
   }
 
   // Create user + seed the welcome credit atomically: if the welcome credit
@@ -146,6 +194,9 @@ app.post('/api/auth/signup', zValidator('json', authSchema), async (c) => {
 });
 
 app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
+  if (rateLimited(`login:${clientIp(c)}`)) {
+    return c.json({ error: 'Too many attempts, please try again later' }, 429);
+  }
   const { email, password, hardwareInfo } = c.req.valid('json');
   const ip = (c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '').split(',')[0].trim();
   const userAgent = c.req.header('user-agent') || '';
@@ -153,7 +204,17 @@ app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
 
   const user = await getUserByEmail(email);
   if (!user || !verifyPassword(password, user.password_hash)) return c.json({ error: 'Invalid credentials' }, 401);
-  
+
+  if (user.status && user.status !== 'Active') {
+    return c.json({ error: user.status === 'Suspended' ? 'Account suspended' : 'Account inactive' }, 403);
+  }
+
+  // Transparently upgrade any legacy (weak FNV) password hash to PBKDF2 on
+  // successful login so the migration completes without forcing resets.
+  if (isLegacyPasswordHash(user.password_hash)) {
+    await setUserPassword(user.id, password).catch(() => {});
+  }
+
   await updateUserLoginInfo(user.id, ip, userAgent, hwInfoStr);
   
   const token = await signToken({ sub: user.id, email: user.email });
@@ -161,6 +222,9 @@ app.post('/api/auth/login', zValidator('json', authSchema), async (c) => {
 });
 
 app.post('/api/auth/admin-login', zValidator('json', z.object({ username: z.string(), password: z.string() })), async (c) => {
+  if (rateLimited(`admin-login:${clientIp(c)}`)) {
+    return c.json({ error: 'Too many attempts, please try again later' }, 429);
+  }
   const { username, password } = c.req.valid('json');
   const adminUser = process.env.ADMIN_USERNAME;
   const adminPass = process.env.ADMIN_PASSWORD;
@@ -263,6 +327,22 @@ app.put('/api/providers/:id', zValidator('json', z.object({ status: z.enum(['act
 app.delete('/api/providers/:id', async (c) => {
   await deleteProvider(c.get('userId'), c.req.param('id'));
   return c.json({ ok: true });
+});
+
+// Test provider connection
+app.post('/api/providers/:id/test', async (c) => {
+  const providerId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  // Get the provider to find its type
+  const providers = await listProviders(userId);
+  const provider = providers.find(p => p.id === providerId);
+  if (!provider) {
+    return c.json({ ok: false, error: 'Provider not found' }, 404);
+  }
+  
+  const result = await testProviderConnection(provider.provider);
+  return c.json(result);
 });
 
 // ---- Analytics & Summary ----
@@ -487,10 +567,24 @@ app.get('/api/admin/users', async (c) => {
   return c.json(result);
 });
 
-app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.string()), data: z.any() })), async (c) => {
+app.put('/api/admin/users/bulk', zValidator('json', z.object({ ids: z.array(z.string()).min(1), data: z.record(z.any()) })), async (c) => {
   const { ids, data } = c.req.valid('json');
-  for (const id of ids) {
-    await adminUpdateUser(id, data);
+  // Whitelist fields (same list as single-user update) and reject bulk email
+  // changes — uniqueness can't be guaranteed per-user in one statement.
+  const updates = Object.entries(data).filter(([k, v]) => ADMIN_USER_FIELDS.includes(k as any) && v !== undefined);
+  if (updates.length === 0) return c.json({ error: 'No valid fields to update' }, 400);
+  if (data.email !== undefined) return c.json({ error: 'Email cannot be changed in bulk edit' }, 400);
+  try {
+    // One transaction across ALL users: either every selected user is updated
+    // or none are (no partial application on mid-loop failure).
+    await db.begin(async (tx) => {
+      for (const [field, value] of updates) {
+        await tx`UPDATE users SET ${tx(field)} = ${value} WHERE id = ANY(${ids})`;
+      }
+    });
+  } catch (e) {
+    console.error('Bulk user update failed:', e);
+    return c.json({ error: 'Bulk update failed; no changes were applied' }, 500);
   }
   return c.json({ ok: true, count: ids.length });
 });
@@ -599,7 +693,31 @@ app.post('/api/submissions', zValidator('json', z.object({ url: z.string().url()
 
 app.put('/api/admin/submissions/:id', zValidator('json', z.object({ status: z.enum(['pending', 'approved', 'rejected']) })), async (c) => {
   const { status } = c.req.valid('json');
-  await db`UPDATE submissions SET status = ${status} WHERE id = ${c.req.param('id')}`;
+  // Claim the pending submission first so two concurrent approvals can never
+  // both pay the creator bonus.
+  const claimed = await db`
+    UPDATE submissions SET status = ${status}
+    WHERE id = ${c.req.param('id')} AND status = 'pending'
+    RETURNING id, user_id
+  `;
+  if (claimed.length === 0) {
+    return c.json({ error: 'Submission not found or already processed' }, 409);
+  }
+  const sub = claimed[0];
+
+  // Pay the creator bonus promised by the referral settings when approved.
+  if (status === 'approved' && sub.user_id) {
+    let bonus = 20; // fallback default
+    try {
+      const res = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+      const raw = Number(String(res[0]?.data?.referralSettings?.creatorBonus ?? '').replace(/[^0-9.]/g, ''));
+      if (raw > 0) bonus = raw;
+    } catch {}
+    const amt = Math.round(bonus * 100) / 100;
+    await db`UPDATE users SET balance = COALESCE(balance, 0) + ${amt} WHERE id = ${sub.user_id}`;
+    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${sub.user_id}, 'bonus', ${amt}, 'Creator bonus — video approved')`;
+    await db`INSERT INTO notifications (id, user_id, title, message) VALUES (${genId('notif')}, ${sub.user_id}, 'Creator Bonus Approved 🎉', ${'Your video was approved and a $' + amt.toFixed(2) + ' credit has been added to your balance.'})`;
+  }
   return c.json({ ok: true });
 });
 
@@ -685,15 +803,19 @@ async function runChatTurn(userId: string, model: string, prompt: string, convId
     const result = await generateText({ model: item.instance, prompt, system: systemPrompt || undefined });
     const tokens = result.usage?.totalTokens ?? 150;
     const cost = await computeCost(tokens);
+    // Record usage + persist the reply FIRST, then move the money. This way a
+    // failure after a successful deduct can never leave the user charged with
+    // no usage record and no saved reply. (Pre-check above already protects
+    // against the common insufficient-balance case.)
+    await recordUsage(userId, model, tokens, cost, 'chat');
+    replyText = result.text;
+    await addMessage(convId, 'assistant', replyText);
     const ded = await deductBalance(userId, cost);
     if (!ded.ok) {
       const e: any = new Error(`Insufficient balance. Current balance: $${ded.balance.toFixed(2)}. Please top up your account.`);
       e.statusCode = 402;
       throw e;
     }
-    await recordUsage(userId, model, tokens, cost, 'chat');
-    replyText = result.text;
-    await addMessage(convId, 'assistant', replyText);
   });
   return replyText;
 }
@@ -709,8 +831,20 @@ app.get('/api/conversations/:id', async (c) => {
 app.post('/api/conversations', zValidator('json', z.object({ title: z.string().optional(), message: z.string().min(1) })), async (c) => {
   const { title, message } = c.req.valid('json');
   const userId = c.get('userId');
-  const bal = await checkBalanceForCost(userId);
+  const bal = await checkBalanceAndPlanLimit(userId, 'chat');
   if (!bal.ok) {
+    if (!bal.planOk) {
+      return c.json({
+        error: {
+          message: `Plan limit reached (${bal.planUsed.toLocaleString()} of ${bal.planLimit.toLocaleString()} tokens used this month on ${bal.planName} plan). Upgrade your plan or wait for reset.`,
+          type: 'insufficient_quota',
+          code: 'plan_limit_reached',
+          planName: bal.planName,
+          planUsed: bal.planUsed,
+          planLimit: bal.planLimit,
+        }
+      }, 402);
+    }
     return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
   }
   const quota = await checkMonthlyQuota(userId);
@@ -736,8 +870,20 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   const userId = c.get('userId');
   const convId = c.req.param('id');
   if (!(await getMessages(convId, userId))) return c.json({ error: 'Not found' }, 404);
-  const bal = await checkBalanceForCost(userId);
+  const bal = await checkBalanceAndPlanLimit(userId, 'chat');
   if (!bal.ok) {
+    if (!bal.planOk) {
+      return c.json({
+        error: {
+          message: `Plan limit reached (${bal.planUsed.toLocaleString()} of ${bal.planLimit.toLocaleString()} tokens used this month on ${bal.planName} plan). Upgrade your plan or wait for reset.`,
+          type: 'insufficient_quota',
+          code: 'plan_limit_reached',
+          planName: bal.planName,
+          planUsed: bal.planUsed,
+          planLimit: bal.planLimit,
+        }
+      }, 402);
+    }
     return c.json({ error: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.` }, 402);
   }
   const quota = await checkMonthlyQuota(userId);
@@ -746,8 +892,15 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   }
   await addMessage(convId, 'user', message);
   const resolvedModel = model || (await getDefaultModel());
-  const replyText = await runChatTurn(userId, resolvedModel, message, convId);
-  return c.json({ message: { role: 'assistant', content: replyText } });
+  try {
+    const replyText = await runChatTurn(userId, resolvedModel, message, convId);
+    return c.json({ message: { role: 'assistant', content: replyText } });
+  } catch (err) {
+    // Roll back the orphaned user message so a failed model call doesn't leave
+    // a dangling prompt with no reply (mirrors the create-conversation path).
+    await db`DELETE FROM messages WHERE conversation_id = ${convId} AND role = 'user' AND content = ${message}`.catch(() => {});
+    throw err;
+  }
 });
 
 // ---- User Model Preferences ----
@@ -791,6 +944,48 @@ app.post('/api/admin/dev-logs', zValidator('json', z.object({
   return c.json({ ok: true });
 });
 
+// Admin Test Models playground: run a one-off completion through the normal
+// provider failover chain WITHOUT billing or recording usage. Returns an
+// OpenAI-shaped response so the frontend can read choices[0].message.content.
+app.post('/api/admin/test-model', async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const model = String(body?.model ?? '').trim();
+  const messages = Array.isArray(body?.messages) ? body.messages : null;
+  if (!model || !messages || messages.length === 0) {
+    return c.json({ error: { message: 'model and messages are required', type: 'invalid_request_error' } }, 400);
+  }
+  const temperature = typeof body.temperature === 'number' ? body.temperature : undefined;
+  const topP = typeof body.top_p === 'number' ? body.top_p : undefined;
+  const maxTokens = typeof body.max_tokens === 'number' ? body.max_tokens : undefined;
+  const sessionId = c.req.header('x-session-id') || undefined;
+
+  try {
+    let content = '';
+    let usage: any = null;
+    await tryInstances('admin-test', model, sessionId, async (item) => {
+      const result = await generateText({
+        model: item.instance,
+        messages: messages as any,
+        temperature,
+        topP,
+        maxTokens,
+      });
+      content = result.text;
+      usage = result.usage ?? null;
+    });
+    return c.json({
+      choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }],
+      usage: usage
+        ? { prompt_tokens: usage.promptTokens ?? 0, completion_tokens: usage.completionTokens ?? 0, total_tokens: (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0) }
+        : undefined,
+    });
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    addDevLog('ERROR', 'AI Request', `Test model '${model}' failed: ${msg}`, undefined, sessionId);
+    return c.json({ error: { message: msg, type: 'upstream_error' } }, 502);
+  }
+});
+
 app.get('/api/v1/account', handleAccount);
 app.get('/v1/account', handleAccount);
 
@@ -802,8 +997,7 @@ async function handleAccount(c: any) {
     }
     const token = authHeader.split(' ')[1];
     const hashedKey = hashKey(token);
-    const legacyHashedKey = hashPassword(token);
-    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey} OR key_hash = ${legacyHashedKey}`;
+    const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey}`;
     if (keyRows.length === 0) {
       return c.json({ error: { message: 'Invalid API key.', type: 'invalid_request_error' } }, 401);
     }
@@ -844,7 +1038,7 @@ async function handleListModels(c: any) {
     return c.json({ error: { message: 'Unauthorized' } }, 401);
   }
   const reqKey = auth.replace('Bearer ', '');
-  const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashKey(reqKey)} OR key_hash = ${hashPassword(reqKey)}`;
+  const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashKey(reqKey)}`;
   const apiUserId = keyRows.length > 0 ? keyRows[0].user_id : null;
   let valid = false;
   if (apiUserId) {
@@ -1041,12 +1235,19 @@ app.get('/api/admin/providers', async (c) => {
 
 app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) => {
   const providers = c.req.valid('json');
-  await db`DELETE FROM admin_providers`;
-  for (const p of providers) {
-    await db`
-      INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon)
-      VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${db.json(p.models ?? [])}, ${db.json(p.headers ?? [])}, ${p.icon ?? null})
-    `;
+  try {
+    await db.begin(async (tx) => {
+      await tx`DELETE FROM admin_providers`;
+      for (const p of providers) {
+        await tx`
+          INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon)
+          VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${tx.json(p.models ?? [])}, ${tx.json(p.headers ?? [])}, ${p.icon ?? null})
+        `;
+      }
+    });
+  } catch (e) {
+    console.error('Failed to save providers (rolled back):', e);
+    return c.json({ error: 'Failed to save providers' }, 500);
   }
   return c.json({ success: true });
 });

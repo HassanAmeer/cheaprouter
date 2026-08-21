@@ -40,7 +40,7 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS use_cases TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS earning_goal TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;`;
-    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance REAL DEFAULT 0;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance NUMERIC(12,4) DEFAULT 0;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_rewarded BOOLEAN DEFAULT FALSE;`;
@@ -65,6 +65,7 @@ export async function initDb() {
       name TEXT NOT NULL,
       key_prefix TEXT NOT NULL,
       key_hash TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'api',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       last_used TIMESTAMP
     );
@@ -96,15 +97,32 @@ export async function initDb() {
   await db`
     CREATE TABLE IF NOT EXISTS usage (
       id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      -- Nullable + SET NULL: deleting a user must not erase platform-wide usage/cost analytics.
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
       model TEXT NOT NULL,
       tokens INTEGER NOT NULL DEFAULT 0,
-      cost REAL NOT NULL DEFAULT 0,
+      cost NUMERIC(14,6) NOT NULL DEFAULT 0,
       day TEXT NOT NULL
     );
   `;
-  await db`ALTER TABLE usage ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'api';`;
+    await db`ALTER TABLE usage ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'api';`;
   await db`ALTER TABLE usage ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
+  try {
+    await db`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'api'`;
+  } catch (e) {
+    console.error('api_keys.source migration error:', e);
+  }
+
+  // Money columns must be exact-decimal, not float. Migrate any existing
+  // REAL columns to NUMERIC so balances/amounts don't drift.
+  try {
+    await db`ALTER TABLE users ALTER COLUMN balance TYPE NUMERIC(12,4) USING balance::numeric(12,4)`;
+    await db`ALTER TABLE transactions ALTER COLUMN amount TYPE NUMERIC(12,4) USING amount::numeric(12,4)`;
+    await db`ALTER TABLE withdraw_requests ALTER COLUMN amount TYPE NUMERIC(12,4) USING amount::numeric(12,4)`;
+    await db`ALTER TABLE topup_requests ALTER COLUMN amount TYPE NUMERIC(12,4) USING amount::numeric(12,4)`;
+  } catch (e) {
+    console.error('Money column migration error:', e);
+  }
 
   await db`
     CREATE TABLE IF NOT EXISTS conversations (
@@ -197,7 +215,7 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       type TEXT NOT NULL,
-      amount REAL NOT NULL DEFAULT 0,
+      amount NUMERIC(12,4) NOT NULL DEFAULT 0,
       description TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -207,7 +225,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS withdraw_requests (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      amount REAL NOT NULL,
+      amount NUMERIC(12,4) NOT NULL,
       method TEXT NOT NULL DEFAULT '',
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -219,7 +237,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS topup_requests (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      amount REAL NOT NULL,
+      amount NUMERIC(12,4) NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       processed_at TIMESTAMP

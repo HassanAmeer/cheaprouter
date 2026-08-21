@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from '../admin.module.css';
 import { 
   Save, Image as ImageIcon, Type, Settings2, HelpCircle, AlignLeft, LayoutPanelLeft, 
-  Plus, X, Upload, Trash2, Globe, Mail, LayoutDashboard, Code, DollarSign, Grid, SplitSquareHorizontal
+  Plus, X, Upload, Trash2, Globe, Mail, LayoutDashboard, Code, DollarSign, Grid, SplitSquareHorizontal, Eye, EyeOff
 } from 'lucide-react';
 import { useSiteSettings, SiteSettings } from '@/components/settings-provider';
 
@@ -35,7 +35,12 @@ function SettingsContent() {
 
   useEffect(() => {
     setFormData(settings);
+    loadedRef.current = settings;
   }, [settings]);
+
+  // Snapshot of the settings this page loaded, used to send only changed
+  // sections on save so concurrent edits by other admins/editors survive.
+  const loadedRef = useRef<SiteSettings>(settings);
 
   const handleChange = (field: keyof SiteSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -56,13 +61,27 @@ function SettingsContent() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Only send top-level sections that actually changed. The backend merges
+      // shallowly, so untouched sections (e.g. billingSettings saved from the
+      // Billing page) are never overwritten with stale copies.
+      const payload: Record<string, any> = {};
+      for (const key of Object.keys(formData)) {
+        if (JSON.stringify((formData as any)[key]) !== JSON.stringify((loadedRef.current as any)[key])) {
+          payload[key] = (formData as any)[key];
+        }
+      }
+      if (Object.keys(payload).length === 0) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+        return;
+      }
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         await refreshSettings();
@@ -327,6 +346,7 @@ function SettingsContent() {
               <SubTabBtn id="demand" label="Demand" icon={AlignLeft} />
               <SubTabBtn id="faq" label="FAQs" icon={HelpCircle} />
               <SubTabBtn id="footer" label="Footer" icon={LayoutPanelLeft} />
+              <SubTabBtn id="sections" label="Visibility & Headings" icon={Eye} />
             </div>
 
             {/* HERO SUB-TAB */}
@@ -679,46 +699,121 @@ function SettingsContent() {
               </section>
             )}
 
-            {/* SECTION TITLES SUB-TAB */}
+            {/* SECTION VISIBILITY SUB-TAB */}
             {landingSubTab === 'sections' && (
-              <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Section Headings & Subtitles</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>Models Table Section</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
-                      <input type="text" value={formData.modelsSection?.title || ''} onChange={(e) => setFormData({...formData, modelsSection: {...(formData.modelsSection || { subtitle: '' }), title: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle</label>
-                      <input type="text" value={formData.modelsSection?.subtitle || ''} onChange={(e) => setFormData({...formData, modelsSection: {...(formData.modelsSection || { title: '' }), subtitle: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                    </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                {/* Visibility Toggles */}
+                <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Eye size={18} color="var(--color-primary)" /> Section Visibility
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+                    Toggle sections on or off on the landing page. Hidden sections are not deleted.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { key: 'announcementBar' as const, label: 'Announcement Bar', desc: 'Top banner with rotating messages' },
+                      { key: 'hero' as const, label: 'Hero Section', desc: 'Main headline, subtitle, install box & terminal' },
+                      { key: 'marquee' as const, label: 'Provider Marquee', desc: 'Scrolling provider logos strip' },
+                      { key: 'productCards' as const, label: 'Product / Install Cards', desc: 'Grid of install method cards (CLI, npm, etc.)' },
+                      { key: 'modelsTable' as const, label: 'Models Table', desc: 'AI models pricing & comparison table' },
+                      { key: 'integrations' as const, label: 'Integrations / Stack', desc: 'Works with your stack section' },
+                      { key: 'featureSplit' as const, label: 'API Feature Split', desc: 'Two-column code snippet + checklist section' },
+                      { key: 'pricing' as const, label: 'Pricing Section', desc: 'Pricing plans & tabs' },
+                      { key: 'comparison' as const, label: 'Before / After Comparison', desc: 'VS layout comparing with/without CheapRouter' },
+                      { key: 'featuresGrid' as const, label: 'Features Grid', desc: '3-column feature cards grid' },
+                      { key: 'faq' as const, label: 'FAQ Section', desc: 'Frequently asked questions accordion' },
+                      { key: 'demand' as const, label: 'Demand / Roadmap', desc: 'Timeline roadmap + request form' },
+                      { key: 'cta' as const, label: 'CTA / Get Started', desc: 'Final call-to-action button section' },
+                    ].map(({ key, label, desc }) => (
+                      <div 
+                        key={key}
+                        style={{ 
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                          padding: '14px 20px', borderRadius: '10px', 
+                          background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)',
+                          transition: 'border-color 0.2s'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {formData.sectionVisibility?.[key] !== false ? (
+                            <Eye size={16} color="var(--color-primary)" />
+                          ) : (
+                            <EyeOff size={16} color="var(--color-text-muted)" />
+                          )}
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-main)' }}>{label}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>{desc}</div>
+                          </div>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.sectionVisibility?.[key] !== false}
+                            onChange={(e) => {
+                              const current = formData.sectionVisibility || {};
+                              setFormData({
+                                ...formData,
+                                sectionVisibility: { ...current, [key]: e.target.checked }
+                              });
+                            }}
+                            style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
+                          />
+                          <span style={{
+                            position: 'absolute', inset: 0, borderRadius: '24px', transition: 'all 0.3s',
+                            background: formData.sectionVisibility?.[key] !== false ? 'var(--color-primary)' : 'var(--color-border)',
+                          }} />
+                          <span style={{
+                            position: 'absolute', top: '2px', left: formData.sectionVisibility?.[key] !== false ? '22px' : '2px',
+                            width: '20px', height: '20px', borderRadius: '50%', background: '#fff', transition: 'all 0.3s',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                          }} />
+                        </label>
+                      </div>
+                    ))}
                   </div>
+                </section>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>Integrations / Stack Section</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
-                      <input type="text" value={formData.integrationsSection?.title || ''} onChange={(e) => setFormData({...formData, integrationsSection: { title: e.target.value }})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                {/* Section Headings */}
+                <section style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '32px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px' }}>Section Headings & Subtitles</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>Models Table Section</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
+                        <input type="text" value={formData.modelsSection?.title || ''} onChange={(e) => setFormData({...formData, modelsSection: {...(formData.modelsSection || { subtitle: '' }), title: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle</label>
+                        <input type="text" value={formData.modelsSection?.subtitle || ''} onChange={(e) => setFormData({...formData, modelsSection: {...(formData.modelsSection || { title: '' }), subtitle: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
                     </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>Integrations / Stack Section</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
+                        <input type="text" value={formData.integrationsSection?.title || ''} onChange={(e) => setFormData({...formData, integrationsSection: { title: e.target.value }})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>FAQ Section</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
+                        <input type="text" value={formData.faqSection?.title || ''} onChange={(e) => setFormData({...formData, faqSection: {...(formData.faqSection || { subtitle: '' }), title: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle</label>
+                        <input type="text" value={formData.faqSection?.subtitle || ''} onChange={(e) => setFormData({...formData, faqSection: {...(formData.faqSection || { title: '' }), subtitle: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
+                      </div>
+                    </div>
+
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg-soft)', padding: '20px', borderRadius: '12px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)' }}>FAQ Section</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Title</label>
-                      <input type="text" value={formData.faqSection?.title || ''} onChange={(e) => setFormData({...formData, faqSection: {...(formData.faqSection || { subtitle: '' }), title: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Subtitle</label>
-                      <input type="text" value={formData.faqSection?.subtitle || ''} onChange={(e) => setFormData({...formData, faqSection: {...(formData.faqSection || { title: '' }), subtitle: e.target.value}})} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 16px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none' }} />
-                    </div>
-                  </div>
-
-                </div>
-              </section>
+                </section>
+              </div>
             )}
           </div>
         )}

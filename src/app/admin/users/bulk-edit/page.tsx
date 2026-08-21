@@ -1,8 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, HardDrive, Zap, Mail, Shield, Calendar } from 'lucide-react';
-import AdminLayout from '../../layout';
+import { ArrowLeft, Save, HardDrive, Zap, Mail, Shield } from 'lucide-react';
 
 export default function BulkEditUsersPage() {
   const router = useRouter();
@@ -25,7 +24,17 @@ export default function BulkEditUsersPage() {
   }, [router]);
 
   const handleUpdate = (field: string, value: any) => {
-    setUpdates((prev: any) => ({ ...prev, [field]: value }));
+    setUpdates((prev: any) => {
+      const next = { ...prev };
+      // Clearing a field (or selecting "-- No Change --") reverts to "no
+      // change" for that field instead of wiping the users' existing value.
+      if (value === undefined || value === null || value === '') {
+        delete next[field];
+      } else {
+        next[field] = value;
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -128,7 +137,7 @@ export default function BulkEditUsersPage() {
                   <input 
                     type="datetime-local" 
                     value={updates[`${pt.key}_start`] ? updates[`${pt.key}_start`].slice(0, 16) : ''} 
-                    onChange={e => handleUpdate(`${pt.key}_start`, e.target.value ? new Date(e.target.value).toISOString() : null)} 
+                    onChange={e => handleUpdate(`${pt.key}_start`, e.target.value ? new Date(e.target.value).toISOString() : undefined)}
                     style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '11px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none' }} 
                   />
                 </div>
@@ -137,7 +146,7 @@ export default function BulkEditUsersPage() {
                   <input 
                     type="datetime-local" 
                     value={updates[`${pt.key}_expiry`] ? updates[`${pt.key}_expiry`].slice(0, 16) : ''} 
-                    onChange={e => handleUpdate(`${pt.key}_expiry`, e.target.value ? new Date(e.target.value).toISOString() : null)} 
+                    onChange={e => handleUpdate(`${pt.key}_expiry`, e.target.value ? new Date(e.target.value).toISOString() : undefined)}
                     style={{ background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', padding: '11px', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '13px', outline: 'none' }} 
                   />
                 </div>

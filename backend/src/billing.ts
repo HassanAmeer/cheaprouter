@@ -114,6 +114,96 @@ export async function deductBalance(userId: string, cost: number): Promise<{ ok:
   return { ok: false, balance };
 }
 
+// ─── Per-Plan Limit Enforcement ───────────────────────────────────────────
+
+// Map usage sources to user plan fields
+export const SOURCE_TO_PLAN_FIELD: Record<string, string> = {
+  api: 'plan_api',
+  chat: 'plan_chat',
+  cli: 'plan_cli',
+  agents: 'plan_agents',
+};
+
+// Get the configured limit for a plan name from pricing section
+export async function getPlanLimitFromSettings(planName: string): Promise<number> {
+  try {
+    const res = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+    const settings = res[0]?.data;
+    const tabs: any[] = settings?.pricingSection?.tabs ?? [];
+    for (const tab of tabs) {
+      const plan = (tab.plans ?? []).find((p: any) => p.name?.toLowerCase() === String(planName).toLowerCase());
+      if (plan) {
+        // Prefer an explicit `limit` configured on the plan; fall back to the
+        // legacy id-substring heuristic only if it isn't set.
+        const explicit = Number(plan.limit);
+        if (explicit > 0) return Math.round(explicit);
+        const planId = plan.id || '';
+        if (planId.includes('3')) return 10000;
+        if (planId.includes('2')) return 2000;
+        return 500;
+      }
+    }
+  } catch (e) {
+    // fall through to defaults
+  }
+  // Default limits by plan name
+  const name = String(planName).toLowerCase();
+  if (name.includes('pro') || name.includes('premium') || name.includes('enterprise')) return 10000;
+  if (name.includes('starter') || name.includes('basic')) return 2000;
+  return 500; // Free tier
+}
+
+// Get the user's active plan name for a source
+export async function getUserPlanForSource(userId: string, source: string): Promise<string> {
+  const planField = SOURCE_TO_PLAN_FIELD[source];
+  if (!planField) return 'Free';
+  
+  const userRes = await db`SELECT ${db(planField)} as plan_name FROM users WHERE id = ${userId}`;
+  return userRes[0]?.plan_name || 'Free';
+}
+
+// Get monthly usage for a specific source
+export async function getMonthlyUsageBySource(userId: string, source: string): Promise<number> {
+  const res = await db`
+    SELECT COALESCE(SUM(tokens), 0) AS t FROM usage
+    WHERE user_id = ${userId} 
+    AND source = ${source}
+    AND created_at >= date_trunc('month', CURRENT_TIMESTAMP)
+  `;
+  return Number(res[0]?.t ?? 0);
+}
+
+// Check if user has exceeded their plan limit for a source
+export async function checkPlanLimit(userId: string, source: string): Promise<{ ok: boolean; used: number; limit: number; planName: string }> {
+  const planName = await getUserPlanForSource(userId, source);
+  const limit = await getPlanLimitFromSettings(planName);
+  const used = await getMonthlyUsageBySource(userId, source);
+  return { ok: used < limit, used, limit, planName };
+}
+
+// Check both balance and plan limit before a request
+export async function checkBalanceAndPlanLimit(userId: string, source: string, maxTokens?: number): Promise<{ 
+  ok: boolean; 
+  balance: number; 
+  estimatedCost: number;
+  planOk: boolean;
+  planUsed: number;
+  planLimit: number;
+  planName: string;
+}> {
+  const balanceCheck = await checkBalanceForCost(userId, maxTokens);
+  const planCheck = await checkPlanLimit(userId, source);
+  return {
+    ok: balanceCheck.ok && planCheck.ok,
+    balance: balanceCheck.balance,
+    estimatedCost: balanceCheck.estimatedCost,
+    planOk: planCheck.ok,
+    planUsed: planCheck.used,
+    planLimit: planCheck.limit,
+    planName: planCheck.planName,
+  };
+}
+
 const PLAN_FIELDS = ['plan', 'plan_cli', 'plan_api', 'plan_chat', 'plan_agents'];
 
 export async function getBilling(userId: string) {
@@ -165,18 +255,25 @@ async function getReferralSettings(): Promise<{ isEnabled: boolean; standardBonu
 // can't double-pay.
 export async function maybeRewardReferral(userId: string) {
   try {
-    const claimed = await db`
-      UPDATE users SET referral_rewarded = TRUE
-      WHERE id = ${userId} AND referred_by IS NOT NULL AND referral_rewarded = FALSE
-      RETURNING referred_by
-    `;
-    if (claimed.length === 0) return;
-    const referrerId = claimed[0].referred_by;
-    if (referrerId === userId) return;
+    // Read the referrer WITHOUT claiming yet.
+    const ref = await db`SELECT referred_by FROM users WHERE id = ${userId}`;
+    const referrerId = ref[0]?.referred_by;
+    if (!referrerId || referrerId === userId) return;
     const { isEnabled, standardBonus } = await getReferralSettings();
+    // Don't claim if referrals are disabled — leaving the flag unset means it
+    // can still be paid later once referrals are re-enabled.
     if (!isEnabled || standardBonus <= 0) return;
 
+    // Atomic claim + credit: the guarded UPDATE only flips referral_rewarded
+    // for an unclaimed user, and if the credit tx fails nothing is marked
+    // claimed, so the bonus is never silently lost.
     await db.begin(async (tx) => {
+      const claimed = await tx`
+        UPDATE users SET referral_rewarded = TRUE
+        WHERE id = ${userId} AND referred_by IS NOT NULL AND referral_rewarded = FALSE
+        RETURNING referred_by
+      `;
+      if (claimed.length === 0) return;
       await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${standardBonus} WHERE id = ${userId}`;
       await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'referral', ${standardBonus}, 'Referral bonus')`;
       await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${standardBonus} WHERE id = ${referrerId}`;
@@ -263,7 +360,6 @@ export interface UpgradeInput {
   planId: string;
   planName: string;
   price: number;
-  durationDays?: number;
 }
 
 function parsePrice(raw: unknown): number {
@@ -289,8 +385,28 @@ async function lookupPlanPrice(planId: string): Promise<number | null> {
   return null;
 }
 
+// Look up the configured duration (days) for a plan id from global settings.
+// Fail-closed to 30 days if the plan has no explicit duration configured.
+async function lookupPlanDuration(planId: string): Promise<number> {
+  try {
+    const res = await db`SELECT data FROM global_settings WHERE id = 'global'`;
+    const settings = res[0]?.data;
+    const tabs: any[] = settings?.pricingSection?.tabs ?? [];
+    for (const tab of tabs) {
+      const plan = (tab.plans ?? []).find((p: any) => p.id === planId);
+      if (plan) {
+        const d = Number(plan.durationDays);
+        if (d > 0) return Math.round(d);
+      }
+    }
+  } catch (e) {
+    // fall through to default
+  }
+  return 30;
+}
+
 export async function upgradePlan(userId: string, input: UpgradeInput) {
-  const { planField, planId, planName, durationDays } = input;
+  const { planField, planId, planName } = input;
   if (!PLAN_FIELDS.includes(planField)) {
     return { ok: false as const, error: 'Invalid plan field' };
   }
@@ -303,37 +419,60 @@ export async function upgradePlan(userId: string, input: UpgradeInput) {
   }
   const cost = Math.round(serverPrice * 100) / 100;
 
-  // Atomic: only deduct if the balance still covers the cost. This avoids the
-  // lost-update race between the balance read and write.
-  const days = durationDays && durationDays > 0 ? Math.round(durationDays) : 30;
+  // Duration is derived from the server-side plan config, never the client.
+  const days = await lookupPlanDuration(planId);
 
-  if (cost > 0) {
-    const ded = await deductBalance(userId, cost);
-    if (!ded.ok) {
-      return { ok: false as const, error: 'Insufficient balance', balance: ded.balance };
+  // Idempotency: if this exact plan is already active (and, for timed plans,
+  // not yet expired), don't charge again — blocks rapid double-clicks / retried
+  // requests from double-deducting the same purchase.
+  const cur = await db`SELECT ${db(planField)} AS cur, ${db(planField + '_expiry')} AS exp FROM users WHERE id = ${userId}`;
+  const alreadyActive = cur[0]?.cur === planName && (planField === 'plan' || (cur[0]?.exp && new Date(String(cur[0].exp)).getTime() > Date.now()));
+  if (alreadyActive) {
+    return { ok: true as const, balance: 0, planField, planId, planName, cost: 0, alreadyActive: true };
+  }
+
+  // Atomic: deduct + plan update + transaction insert all happen in one
+  // transaction so a crash can't leave the user charged without a plan (or a
+  // plan without the charge).
+  try {
+    const result = await db.begin(async (tx) => {
+      if (cost > 0) {
+        const ded = await tx`UPDATE users SET balance = COALESCE(balance, 0) - ${cost} WHERE id = ${userId} AND COALESCE(balance, 0) >= ${cost} RETURNING balance`;
+        if (ded.length === 0) {
+          return { insufficient: true, balance: Number((await tx`SELECT balance FROM users WHERE id = ${userId}`)[0]?.balance ?? 0) };
+        }
+      }
+
+      if (planField === 'plan') {
+        await tx`UPDATE users SET plan = ${planName} WHERE id = ${userId}`;
+      } else {
+        await tx`UPDATE users SET
+          ${tx(planField)} = ${planName},
+          ${tx(planField + '_start')} = CURRENT_TIMESTAMP,
+          ${tx(planField + '_expiry')} = CURRENT_TIMESTAMP + INTERVAL '1 day' * ${days}
+          WHERE id = ${userId}`;
+      }
+
+      if (cost > 0) {
+        await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'upgrade', ${-cost}, ${`Upgraded to ${planName}${planField !== 'plan' ? ' (' + planField.replace('plan_', '') + ')' : ''}`})`;
+      } else {
+        await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'upgrade', 0, ${`Switched to ${planName}`})`;
+      }
+
+      const newUser = await tx`SELECT balance FROM users WHERE id = ${userId}`;
+      return { insufficient: false, balance: Number(newUser[0].balance) };
+    });
+    if (result && (result as any).insufficient) {
+      return { ok: false as const, error: 'Insufficient balance', balance: (result as any).balance };
     }
+  } catch (e) {
+    console.error('upgradePlan failed:', e);
+    return { ok: false as const, error: 'Upgrade failed, please try again' };
   }
 
-  if (planField === 'plan') {
-    await db`UPDATE users SET plan = ${planName} WHERE id = ${userId}`;
-  } else {
-    await db`UPDATE users SET
-      ${db(planField)} = ${planName},
-      ${db(planField + '_start')} = CURRENT_TIMESTAMP,
-      ${db(planField + '_expiry')} = CURRENT_TIMESTAMP + INTERVAL '1 day' * ${days}
-      WHERE id = ${userId}`;
-  }
-
-  if (cost > 0) {
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'upgrade', ${-cost}, ${`Upgraded to ${planName}${planField !== 'plan' ? ' (' + planField.replace('plan_', '') + ')' : ''}`})`;
-  } else {
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${userId}, 'upgrade', 0, ${`Switched to ${planName}`})`;
-  }
-
-  const newUser = await db`SELECT balance FROM users WHERE id = ${userId}`;
   return {
     ok: true as const,
-    balance: Number(newUser[0].balance),
+    balance: 0,
     planField,
     planId,
     planName,

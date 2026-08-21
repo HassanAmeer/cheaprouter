@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Zap, Menu, X } from 'lucide-react';
+import { Zap, Menu, X, ArrowRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Button } from '@/components/ui/primitives';
 import { SpaceButton } from '@/components/ui/space-button';
 import { useSiteSettings } from '@/components/settings-provider';
 import styles from './site-nav.module.css';
@@ -17,6 +17,22 @@ interface NavLink {
 export function SiteNav({ links = [], cta = true }: { links?: NavLink[]; cta?: boolean }) {
   const [open, setOpen] = useState(false);
   const { settings } = useSiteSettings();
+
+  // Lock body scroll while the mobile menu is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  // Close the menu when the viewport grows into desktop layout.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 901px)');
+    const handler = () => { if (mq.matches) setOpen(false); };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const handleAskFounderClick = (e?: React.MouseEvent) => {
     if (typeof window !== 'undefined' && window.location.pathname === '/') {
@@ -64,45 +80,72 @@ export function SiteNav({ links = [], cta = true }: { links?: NavLink[]; cta?: b
               </SpaceButton>
             </>
           )}
-          <ThemeToggle />
         </div>
 
-        <button className={styles.burger} onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className={styles.iconGroup}>
+          <ThemeToggle />
+          <button className={styles.burger} onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open} aria-controls="mobile-nav">
+            {open ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
-      {open && (
-        <div className={styles.mobileMenu}>
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>{l.label}</Link>
-          ))}
-          {cta && (
-            <div className={styles.mobileActions}>
-              <SpaceButton 
-                variant="nav-outline" 
-                href="/login" 
-                onClick={() => setOpen(false)}
-                style={{ height: '42px', width: '100%' }}
-              >
-                Log In
-              </SpaceButton>
-              <SpaceButton 
-                variant="nav-outline" 
-                href="/#demand" 
-                onClick={(e) => {
-                  setOpen(false);
-                  handleAskFounderClick(e);
-                }}
-                style={{ height: '42px', width: '100%' }}
-              >
-                Ask Founder
-              </SpaceButton>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            id="mobile-nav"
+            className={styles.mobileMenu}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className={styles.mobileAccent} />
+            <div className={styles.mobileInner}>
+              <div className={styles.mobileEyebrow}>
+                <span className={styles.mobileSlash}>~/</span>
+                <span>Menu</span>
+              </div>
+
+              <nav className={styles.mobileLinks}>
+                {links.map((l) => (
+                  <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className={styles.mobileLink}>
+                    <span className={styles.mobileLinkLabel}>{l.label}</span>
+                    <ArrowRight size={16} className={styles.mobileLinkArrow} />
+                  </Link>
+                ))}
+              </nav>
+
+              {cta && (
+                <>
+                  <div className={styles.mobileDivider} />
+                  <div className={styles.mobileActions}>
+                    <SpaceButton 
+                      variant="nav-outline" 
+                      href="/login" 
+                      onClick={() => setOpen(false)}
+                      style={{ height: '44px', width: '100%' }}
+                    >
+                      Log In
+                    </SpaceButton>
+                    <SpaceButton 
+                      variant="nav-outline" 
+                      href="/#demand" 
+                      onClick={(e) => {
+                        setOpen(false);
+                        handleAskFounderClick(e);
+                      }}
+                      style={{ height: '44px', width: '100%' }}
+                    >
+                      Ask Founder
+                    </SpaceButton>
+                  </div>
+                </>
+              )}
             </div>
-          )}
-          <div className={styles.mobileTheme}><ThemeToggle /></div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

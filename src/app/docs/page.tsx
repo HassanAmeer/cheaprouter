@@ -52,7 +52,7 @@ export default function DocsPage() {
 
       {/* Docs Layout Container */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <main style={{ 
+        <main className="docs-main" style={{ 
           display: 'flex', 
           gap: '48px', 
           paddingTop: '40px', 
@@ -67,7 +67,7 @@ export default function DocsPage() {
           <DocsSidebar activeView={activeView} setActiveView={setActiveView} />
 
           {/* Main Content Area */}
-          <div style={{ 
+          <div className="docs-content" style={{ 
             flex: 1, 
             position: 'relative',
             overflowY: 'auto',

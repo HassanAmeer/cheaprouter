@@ -126,6 +126,21 @@ export interface SiteSettings {
     chatUrl: string;
     chromeUrl: string;
   };
+  sectionVisibility?: {
+    announcementBar?: boolean;
+    hero?: boolean;
+    marquee?: boolean;
+    productCards?: boolean;
+    modelsTable?: boolean;
+    integrations?: boolean;
+    featureSplit?: boolean;
+    pricing?: boolean;
+    comparison?: boolean;
+    featuresGrid?: boolean;
+    faq?: boolean;
+    demand?: boolean;
+    cta?: boolean;
+  };
 }
 
 const defaultSettings: SiteSettings = {
@@ -142,7 +157,7 @@ const defaultSettings: SiteSettings = {
   },
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
-  heroAnimatedTexts: ['Free Coding', 'Free Chat', 'Cheap API', 'Cheap Agents'],
+  heroAnimatedTexts: ['Cheap Coding', 'Cheap Chat', 'Cheap API', 'Cheap Agents'],
   heroPromoText: 'Buy Just for',
   heroPromoHighlight: '$2 USD / month',
   primaryBtnText: 'Get Started',
@@ -345,6 +360,21 @@ const defaultSettings: SiteSettings = {
     enabled: true,
     minAmount: 5,
     announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.'
+  },
+  sectionVisibility: {
+    announcementBar: true,
+    hero: true,
+    marquee: true,
+    productCards: true,
+    modelsTable: true,
+    integrations: true,
+    featureSplit: true,
+    pricing: true,
+    comparison: true,
+    featuresGrid: true,
+    faq: true,
+    demand: true,
+    cta: true,
   }
 };
 
