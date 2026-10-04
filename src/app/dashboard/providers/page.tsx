@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pause, Play, CheckCircle2, Search, ExternalLink, Wifi, Plug, Key, Layers, X, Lock, Loader2, Check, AlertCircle } from 'lucide-react';
 import styles from '../dashboard.module.css';
-import providersStyles from './providers.module.css';
+import providersStyles from '../providers.module.css';
 import { Button, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
@@ -65,18 +65,24 @@ export default function ProvidersPage() {
     // Load active admin providers via the PUBLIC endpoint (the /api/admin one
     // requires admin auth and returns a bare array, so it never worked here).
     fetch('/api/public/providers')
-      .then(res => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load providers (${res.status})`);
+        return res.json();
+      })
       .then((data: any[] | { providers?: any[] }) => {
         const rows = Array.isArray(data) ? data : data.providers;
         if (rows) {
           const list = rows
-            .filter((p) => p.status)
+            .filter((p) => p.status && p.byok_enabled !== false && p.byokEnabled !== false)
             .map((p) => {
               const nameLower = String(p.name ?? '').toLowerCase();
-              let key = 'custom';
-              let icon = 'https://logo.clearbit.com/openai.com'; 
+              let key = String(p.id || p.name || 'custom')
+                .toLowerCase()
+                .replace(/^ap_/, '')
+                .replace(/[^a-z0-9_-]+/g, '-');
+              let icon = p.icon || 'https://api.iconify.design/lucide:bot.svg';
               let color = '#8b5cf6';
-              let desc = `Custom upstream provider: ${p.baseUrl || 'Default Route'}`;
+              let desc = `Custom upstream provider${p.base_url ? ` at ${p.base_url}` : ''}`;
 
               if (nameLower.includes('openai')) {
                 key = 'openai';
@@ -115,9 +121,18 @@ export default function ProvidersPage() {
               };
             });
           setAvailableProviders(list);
+          setProviders((current) => current.map((provider) => {
+            const meta = list.find((available) => available.key === provider.provider);
+            return meta
+              ? { ...provider, name: meta.name, icon: meta.icon, color: meta.color }
+              : provider;
+          }));
         }
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Failed to load BYOK providers', err);
+        toast('Could not load the available BYOK providers. Please refresh and try again.', 'error');
+      });
   }, []);
 
   const connect = async () => {

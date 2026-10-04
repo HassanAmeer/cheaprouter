@@ -197,9 +197,12 @@ export async function initDb() {
       is_custom BOOLEAN DEFAULT false,
       models JSON,
       headers JSON,
-      icon TEXT
+      icon TEXT,
+      byok_enabled BOOLEAN NOT NULL DEFAULT true
     );
   `;
+
+  await db`ALTER TABLE admin_providers ADD COLUMN IF NOT EXISTS byok_enabled BOOLEAN NOT NULL DEFAULT true;`;
 
   await db`
     CREATE TABLE IF NOT EXISTS user_model_prefs (

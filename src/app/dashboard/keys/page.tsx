@@ -6,7 +6,7 @@ import { Button, Input, Modal, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
-import keysStyles from './keys.module.css';
+import keysStyles from '../keys.module.css';
 import { ApiKey } from '@/lib/api-types';
 
 export default function ApiKeysPage() {

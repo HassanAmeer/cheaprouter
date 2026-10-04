@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Gift, Copy, Video, Send, CheckCircle2, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { Gift, Copy, Video, Send, CheckCircle2, Clock, ArrowDownCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
 import { useToast } from '@/components/ui/toast';
@@ -71,8 +72,14 @@ export default function ReferAndEarnPage() {
   return (
     <div>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Refer & Earn</h1>
-        <p className={styles.pageSubtitle}>Invite friends or create content to earn free platform credits.</p>
+        <div>
+          <h1 className={styles.pageTitle}>Refer & Earn</h1>
+          <p className={styles.pageSubtitle}>Invite friends or create content to earn free platform credits.</p>
+        </div>
+        <Link href="/dashboard/billing" className={styles.withdrawEarningsButton}>
+          <ArrowDownCircle size={16} />
+          Withdraw Earnings
+        </Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>

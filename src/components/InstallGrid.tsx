@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { MessageSquare, Terminal, Code, Zap, Clock, Workflow, Globe, ArrowUpRight } from 'lucide-react';
+import { Terminal, Code, Zap, Clock, MessageSquare, ArrowUpRight } from 'lucide-react';
 import { useSiteSettings } from '@/components/settings-provider';
 import styles from '@/app/page.module.css';
 
@@ -9,7 +9,6 @@ export default function InstallGrid() {
   const { settings } = useSiteSettings();
   const install = settings.install || ({} as NonNullable<typeof settings.install>);
   const apiBase = install.apiBaseUrl || 'https://api.cheaprouter.com/v1';
-  const chromeUrl = install.chromeUrl || 'chrome.cheaprouter.io';
   const cliName = install.cliName || 'cheap-cli';
 
   return (
@@ -181,60 +180,32 @@ export default function InstallGrid() {
             <div className={styles.soonTextShimmer}>Coming Soon</div>
           </div>
 
-          {/* Card 6: CheapAgent - Coming Soon */}
+          {/* Card 6: Cheap Chats - Coming Soon */}
           <div className={`${styles.installCard} ${styles.installCardSoon}`}>
             <div className={styles.soonClockIcon}><Clock size={16} /></div>
             <div className={styles.installCardHeader}>
               <div className={styles.installTitleRow}>
-                <div className={styles.installIcon}><Workflow size={20} /></div>
-                <h3 className={styles.installTitle}>CheapAgent</h3>
+                <div className={styles.installIcon}><MessageSquare size={20} /></div>
+                <h3 className={styles.installTitle}>Cheap Chats</h3>
               </div>
-              <p className={styles.installDesc}>Autonomous AI agent that plans, executes, and iterates on tasks.</p>
+              <p className={styles.installDesc}>Chat with leading AI models from one simple workspace.</p>
             </div>
             <div className={styles.installPreview}>
               <div className={styles.miniTerminal}>
                 <div className={styles.miniTermHeader}>
                   <div className={styles.miniDots}><span className={styles.tRed}/><span className={styles.tYellow}/><span className={styles.tGreen}/></div>
-                  <span className={styles.miniTermTitle}>agent</span>
+                  <span className={styles.miniTermTitle}>cheap chats</span>
                 </div>
                 <div className={styles.miniTermBody}>
-                  <div className={styles.termRow}><span className={styles.termPrompt}>→</span> Analyzing task...</div>
-                  <div className={styles.termRowOk}>✔ Plan generated</div>
-                  <div className={styles.termRow}><span className={styles.termPrompt}>→</span> Executing step 1/3</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>You:</span> Explain this idea</div>
+                  <div className={styles.termRowOk}>Assistant: Here’s a clear breakdown…</div>
+                  <div className={styles.termRow}><span className={styles.termPrompt}>Model:</span> Claude Sonnet</div>
                 </div>
               </div>
             </div>
             <div className={styles.soonTextShimmer}>Coming Soon</div>
           </div>
 
-          {/* Card 7: Cheap Browser Extension - Coming Soon */}
-          <div className={`${styles.installCard} ${styles.installCardSoon}`}>
-            <div className={styles.soonClockIcon}><Clock size={16} /></div>
-            <div className={styles.installCardHeader}>
-              <div className={styles.installTitleRow}>
-                <div className={styles.installIcon}><Globe size={20} /></div>
-                <h3 className={styles.installTitle}>Cheap Extension</h3>
-              </div>
-              <p className={styles.installDesc}>Browser extension for AI summaries, translations & quick answers.</p>
-            </div>
-            <div className={styles.installPreview}>
-              <div className={styles.miniChat}>
-                <div className={styles.miniChatHeader}>
-                  <div className={styles.miniDots}><span/><span/><span/></div>
-                  <div className={styles.miniUrl}>{chromeUrl}</div>
-                </div>
-                <div className={styles.miniChatBody}>
-                  <div className={styles.chatBubbleUser}>Summarize this page</div>
-                  <div className={styles.chatBubbleAi}>Key points: 3 articles...</div>
-                </div>
-                <div className={styles.miniChatInput}>
-                  <div className={styles.miniInputField} />
-                  <div className={styles.miniSendBtn} />
-                </div>
-              </div>
-            </div>
-            <div className={styles.soonTextShimmer}>Coming Soon</div>
-          </div>
         </div>
   );
 }

@@ -1,15 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, MessageSquare, Globe, Code2, Puzzle, Network, Terminal } from 'lucide-react';
+import { Cpu, MessageSquare, Code2, Puzzle, Network, Terminal } from 'lucide-react';
 
 export default function IntroductionView({ baseUrl = 'https://api.cheaprouter.com' }: { baseUrl?: string }) {
   const apiBase = baseUrl.replace(/\/$/, '');
   const features = [
     { icon: <Cpu size={20} className="text-primary" />, title: 'Multiple Models', desc: 'Access a wide variety of state-of-the-art AI models for any use case.' },
     { icon: <MessageSquare size={20} className="text-primary" />, title: 'Chat Capabilities', desc: 'Build engaging conversational agents and chatbots effortlessly.' },
-    { icon: <Globe size={20} className="text-primary" />, title: 'Website Builder', desc: 'Generate and deploy complete websites with AI assistance.' },
     { icon: <Code2 size={20} className="text-primary" />, title: 'Robust APIs', desc: 'Integrate directly into your applications with our RESTful endpoints.' },
-    { icon: <Puzzle size={20} className="text-primary" />, title: 'Browser Extensions', desc: 'Enhance your daily workflow with our official browser extensions.' },
     { icon: <Terminal size={20} className="text-primary" />, title: 'Cheap CLI Code Editor', desc: 'Edit and write code directly from your terminal using AI assistance.' }
   ];
 

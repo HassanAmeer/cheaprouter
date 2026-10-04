@@ -35,7 +35,7 @@ type Model = {
   landingPagePriority?: number; 
 };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
+type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
 const PRESET_ICONS = [
   { name: 'Google Gemini', url: 'https://cdn.simpleicons.org/google/4285F4' },
@@ -90,6 +90,7 @@ export default function ProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [showGlobalModels, setShowGlobalModels] = useState(true);
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
@@ -428,6 +429,7 @@ export default function ProvidersPage() {
           name: p.name,
           icon: p.icon || '',
           status: p.status ?? true,
+          byokEnabled: p.byok_enabled ?? p.byokEnabled ?? true,
           key: p.key || '',
           priority: p.priority ?? 0,
           baseUrl: p.base_url ?? p.baseUrl,
@@ -512,6 +514,11 @@ export default function ProvidersPage() {
     setSaved(false);
   };
 
+  const toggleByokProvider = (id: string) => {
+    setProviders(providers.map(p => p.id === id ? { ...p, byokEnabled: !p.byokEnabled } : p));
+    setSaved(false);
+  };
+
   const updateKey = (id: string, newKey: string) => {
     setProviders(providers.map(p => p.id === id ? { ...p, key: newKey } : p));
     setSaved(false);
@@ -529,6 +536,7 @@ export default function ProvidersPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
       const res = await fetch('/api/admin/providers', {
@@ -536,10 +544,11 @@ export default function ProvidersPage() {
         headers,
         body: JSON.stringify(providers)
       });
+      if (!res.ok) throw new Error(`Could not save providers (${res.status})`);
 
       const openRouterProv = providers.find(p => p.id === 'ap_openrouter' || p.id === 'openrouter');
       if (openRouterProv) {
-        await fetch('/api/admin/openrouter', {
+        const openRouterRes = await fetch('/api/admin/openrouter', {
           method: 'PUT',
           headers,
           body: JSON.stringify({
@@ -548,14 +557,15 @@ export default function ProvidersPage() {
             models: openRouterProv.models
           })
         });
+        if (!openRouterRes.ok) throw new Error(`Could not save OpenRouter settings (${openRouterRes.status})`);
       }
 
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       console.error(e);
+      setSaved(false);
+      setSaveError(e instanceof Error ? e.message : 'Could not save provider settings.');
     } finally {
       setSaving(false);
     }
@@ -589,7 +599,8 @@ export default function ProvidersPage() {
       useModelsApi: newProvUseModelsApi,
       modelsApiLink: newProvModelsApiLink.trim() || undefined,
       headers: newProvHeaders,
-      isCustom: true
+      isCustom: true,
+      byokEnabled: true
     }]);
     setNewProvId('');
     setNewProvName('');
@@ -687,6 +698,22 @@ export default function ProvidersPage() {
       
       {expandedProviders.has(provider.id) && (
         <div style={{ padding: '16px', borderTop: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 14px', marginBottom: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-bg-soft)' }}>
+            <div>
+              <div style={{ color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600 }}>Show in user BYOK dashboard</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '3px' }}>Allow users to connect their own {provider.name} API key.</div>
+            </div>
+            <label className={styles.toggleSwitch}>
+              <input
+                type="checkbox"
+                checked={provider.byokEnabled ?? true}
+                onChange={() => toggleByokProvider(provider.id)}
+                aria-label={`Allow ${provider.name} in user BYOK dashboard`}
+              />
+              <span className={styles.toggleSlider}></span>
+            </label>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Root API Key</label>
             <input 
@@ -1011,6 +1038,12 @@ export default function ProvidersPage() {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div role="alert" style={{ marginBottom: '16px', color: 'var(--color-danger)', fontSize: '13px' }}>
+          {saveError}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '40px', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>

@@ -32,7 +32,7 @@
 /* POSITION 2: MID / CENTER BACKGROUND (Moves from Left into Mid under central hero content) */
 .posMid {
   transform: translate3d(-50%, 15px, -180px) perspective(1200px) scale(0.88);
-  opacity: 0.22;
+  opacity: 0;
   z-index: 1;
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 100%);
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.15) 100%);

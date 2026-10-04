@@ -1,252 +1,311 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, BellDot, Calendar, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Bell, BellDot, CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
-import { Notification } from '@/lib/api-types';
+import type { Notification } from '@/lib/api-types';
+import styles from './notifications.module.css';
+
+const PAGE_SIZE = 20;
+type NotificationFilter = 'all' | 'unread' | 'read';
 
 function authFetch(path: string, options: RequestInit = {}) {
-  const t = typeof window !== 'undefined' ? localStorage.getItem('cm_token') : null;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as Record<string, string>) };
-  if (t) headers['Authorization'] = `Bearer ${t}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('cm_token') : null;
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
   return fetch(path, { ...options, headers });
 }
 
 export default function UserNotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [filter, setFilter] = useState<NotificationFilter>('all');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [user]);
+    let isCurrent = true;
 
-  const fetchNotifications = async () => {
-    try {
-      const res = await authFetch('/api/notifications', { cache: 'no-store' } as RequestInit);
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications || []);
+    const fetchNotifications = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const response = await authFetch('/api/notifications', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
+        const data = await response.json();
+        const items: Notification[] = data.notifications || [];
+        if (isCurrent) {
+          setNotifications(items);
+          setSelectedId(items[0]?.id ?? null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications', error);
+        if (isCurrent) setLoadError('We couldn’t load your notifications. Please try again.');
+      } finally {
+        if (isCurrent) setLoading(false);
       }
-    } catch (e) {
-      console.error('Failed to fetch notifications', e);
-    } finally {
-      setLoading(false);
+    };
+
+    void fetchNotifications();
+    return () => {
+      isCurrent = false;
+    };
+  }, [user?.id, reloadKey]);
+
+  const handleMarkAsRead = async (id: string) => {
+    setActionError(null);
+    setNotifications((previous) => previous.map((item) => item.id === id ? { ...item, read: true } : item));
+    try {
+      const response = await authFetch('/api/notifications', {
+        method: 'PUT',
+        body: JSON.stringify({ action: 'markRead', id }),
+      });
+      if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    } catch (error) {
+      console.error('Failed to mark notification as read', error);
+      setNotifications((previous) => previous.map((item) => item.id === id ? { ...item, read: false } : item));
+      setActionError('Could not mark this notification as read. Please try again.');
     }
   };
 
-  const handleMarkAsRead = async (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    try {
-      await authFetch('/api/notifications', {
-        method: 'PUT',
-        body: JSON.stringify({ action: 'markRead', id })
-      });
-    } catch (e) {
-      console.error('Failed to mark read', e);
-    }
+  const handleSelect = (notification: Notification) => {
+    setSelectedId(notification.id);
+    setMobileDetailOpen(true);
+    if (!notification.read) void handleMarkAsRead(notification.id);
   };
 
   const handleMarkAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const previous = notifications;
+    setActionError(null);
+    setNotifications((items) => items.map((item) => ({ ...item, read: true })));
     try {
-      await authFetch('/api/notifications', {
+      const response = await authFetch('/api/notifications', {
         method: 'PUT',
-        body: JSON.stringify({ action: 'markAllRead', userId: user?.id })
+        body: JSON.stringify({ action: 'markAllRead', userId: user?.id }),
       });
-    } catch (e) {
-      console.error('Failed to mark all read', e);
+      if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read', error);
+      setNotifications(previous);
+      setActionError('Could not mark all notifications as read. Please try again.');
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((item) => !item.read).length;
+  const filteredNotifications = notifications.filter((item) => {
+    if (filter === 'unread') return !item.read;
+    if (filter === 'read') return item.read;
+    return true;
+  });
+  const pageCount = Math.max(1, Math.ceil(filteredNotifications.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageNotifications = filteredNotifications.slice(pageStart, pageStart + PAGE_SIZE);
+  const selectedNotification = notifications.find((item) => item.id === selectedId) || pageNotifications[0] || null;
+
+  const handleFilterChange = (nextFilter: NotificationFilter) => {
+    const nextItems = notifications.filter((item) => {
+      if (nextFilter === 'unread') return !item.read;
+      if (nextFilter === 'read') return item.read;
+      return true;
+    });
+    setFilter(nextFilter);
+    setPage(1);
+    setSelectedId(nextItems[0]?.id ?? null);
+    setMobileDetailOpen(false);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    const safePage = Math.max(1, Math.min(nextPage, pageCount));
+    const start = (safePage - 1) * PAGE_SIZE;
+    setPage(safePage);
+    setSelectedId(filteredNotifications[start]?.id ?? null);
+    setMobileDetailOpen(false);
+  };
 
   return (
-    <div style={{ width: '100%', paddingBottom: '60px', animation: 'fadeIn 0.5s ease-out' }}>
-      {/* Header Section */}
-      <div style={{ 
-        marginBottom: '32px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        background: 'var(--color-card-bg)',
-        padding: '32px 40px',
-        borderRadius: '24px',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--shadow-sm)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Decorative background element */}
-        <div style={{
-          position: 'absolute',
-          top: '-50%',
-          right: '-10%',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, var(--color-primary-soft) 0%, transparent 70%)',
-          borderRadius: '50%',
-          zIndex: 0,
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ 
-            fontSize: '28px', 
-            fontWeight: 800, 
-            color: 'var(--color-text-main)', 
-            marginBottom: '8px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            letterSpacing: '-0.5px'
-          }}>
-            <div style={{ 
-              background: 'var(--color-primary-soft)', 
-              padding: '10px', 
-              borderRadius: '14px',
-              display: 'flex',
-              color: 'var(--color-primary)'
-            }}>
-              <Bell size={24} />
-            </div>
-            Notifications
-          </h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', marginLeft: '56px' }}>Stay updated with the latest alerts and announcements.</p>
+    <main className={`${styles.page} ${mobileDetailOpen ? styles.mobileDetailOpen : ''}`}>
+      <header className={styles.heading}>
+        <div>
+          <div className={styles.eyebrow}><Bell size={13} /> Your inbox</div>
+          <h1 className={styles.title}>Notifications</h1>
+          <p className={styles.subtitle}>Important updates and account activity, all in one place.</p>
         </div>
-        
         {unreadCount > 0 && (
-          <button 
-            onClick={handleMarkAllAsRead}
-            style={{ 
-              position: 'relative',
-              zIndex: 1,
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              padding: '12px 20px', 
-              background: 'var(--color-primary)', 
-              border: 'none', 
-              borderRadius: '14px', 
-              fontSize: '14px', 
-              fontWeight: 700, 
-              color: '#fff', 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              boxShadow: 'var(--shadow-md)' 
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-            }}
-          >
-            <CheckCircle2 size={18} /> Mark all as read
+          <button className={styles.markAllButton} onClick={handleMarkAllAsRead}>
+            <CheckCheck size={16} />
+            Mark all as read
           </button>
         )}
-      </div>
+      </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {loading ? (
-          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontWeight: 500 }}>Loading notifications...</span>
-            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      {actionError && <p className={styles.errorMessage} role="alert">{actionError}</p>}
+
+      {loading ? (
+        <section className={styles.inbox} aria-label="Loading notifications">
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner} />
+            <span>Loading your inbox…</span>
           </div>
-        ) : notifications.length === 0 ? (
-          <div style={{ 
-            padding: '80px 40px', 
-            textAlign: 'center', 
-            background: 'var(--color-card-bg)', 
-            border: '1px dashed var(--color-border)', 
-            borderRadius: '24px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            gap: '20px',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
-              <CheckCircle2 size={40} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '8px' }}>All caught up!</h3>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '15px' }}>You don't have any notifications right now. Check back later.</p>
-            </div>
+        </section>
+      ) : loadError ? (
+        <section className={styles.inbox} aria-label="Notifications unavailable">
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}><Bell size={24} /></div>
+            <h2>Inbox unavailable</h2>
+            <p>{loadError}</p>
+            <button className={styles.markAllButton} onClick={() => setReloadKey((key) => key + 1)}>Try again</button>
           </div>
-        ) : (
-          notifications.map(notif => (
-            <div 
-              key={notif.id}
-              onClick={() => !notif.read && handleMarkAsRead(notif.id)}
-              style={{ 
-                background: notif.read ? 'var(--color-card-bg)' : 'var(--color-bg)',
-                border: `1px solid ${notif.read ? 'var(--color-border)' : 'var(--color-primary)'}`,
-                borderRadius: '20px',
-                padding: '24px 32px',
-                display: 'flex',
-                gap: '24px',
-                cursor: notif.read ? 'default' : 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: notif.read ? 'var(--shadow-sm)' : 'var(--shadow-md), 0 0 0 1px var(--color-primary-soft)',
-                position: 'relative',
-                overflow: 'hidden',
-                transform: 'translateY(0)'
-              }}
-              onMouseOver={(e) => {
-                if(!notif.read) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-lg), 0 0 0 1px var(--color-primary-soft)';
-                } else {
-                  e.currentTarget.style.background = 'var(--color-bg-soft)';
-                }
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                if(!notif.read) {
-                  e.currentTarget.style.boxShadow = 'var(--shadow-md), 0 0 0 1px var(--color-primary-soft)';
-                } else {
-                  e.currentTarget.style.background = 'var(--color-card-bg)';
-                }
-              }}
-            >
-              {!notif.read && (
-                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '6px', background: 'var(--color-primary)' }} />
-              )}
-              
-              <div style={{ 
-                width: '56px', 
-                height: '56px', 
-                borderRadius: '16px', 
-                background: notif.read ? 'var(--color-bg-soft)' : 'var(--color-primary-soft)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                color: notif.read ? 'var(--color-text-muted)' : 'var(--color-primary)', 
-                flexShrink: 0 
-              }}>
-                {notif.read ? <Bell size={26} /> : <BellDot size={26} />}
+        </section>
+      ) : notifications.length === 0 ? (
+        <section className={styles.inbox} aria-label="Notifications">
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}><Inbox size={25} /></div>
+            <h2>All caught up</h2>
+            <p>You don’t have any notifications right now. New updates will show up here.</p>
+          </div>
+        </section>
+      ) : (
+        <section className={styles.inbox} aria-label="Notifications inbox">
+          <aside className={styles.listPanel}>
+            <div className={styles.listHeader}>
+              <h2 className={styles.listTitle}>Inbox</h2>
+              <span className={`${styles.count} ${unreadCount ? styles.countUnread : ''}`}>
+                {filteredNotifications.length}
+              </span>
+            </div>
+            <div className={styles.filterBar} aria-label="Filter notifications">
+              {([
+                ['all', 'All', notifications.length],
+                ['unread', 'Unread', unreadCount],
+                ['read', 'Read', notifications.length - unreadCount],
+              ] as const).map(([value, label, count]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`${styles.filterButton} ${filter === value ? styles.filterButtonActive : ''}`}
+                  onClick={() => handleFilterChange(value)}
+                  aria-pressed={filter === value}
+                >
+                  {label}
+                  <span>{count}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.list}>
+              {pageNotifications.length === 0 ? (
+                <div className={styles.listEmpty}>
+                  <span>{filter === 'unread' ? 'No unread notifications' : 'No read notifications'}</span>
+                  <button type="button" onClick={() => handleFilterChange('all')}>Show all</button>
+                </div>
+              ) : pageNotifications.map((notification) => {
+                const selected = notification.id === selectedNotification?.id;
+                return (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    className={[
+                      styles.notificationItem,
+                      selected ? styles.notificationItemSelected : '',
+                      !notification.read ? styles.itemUnread : '',
+                    ].filter(Boolean).join(' ')}
+                    onClick={() => handleSelect(notification)}
+                    aria-current={selected ? 'true' : undefined}
+                  >
+                    <span className={`${styles.itemIcon} ${!notification.read ? styles.itemIconUnread : ''}`}>
+                      {notification.read ? <Bell size={16} /> : <BellDot size={16} />}
+                    </span>
+                    <span className={styles.itemContent}>
+                      <span className={styles.itemTopline}>
+                        <span className={styles.itemTitle}>{notification.title}</span>
+                        <time className={styles.itemDate} dateTime={notification.created_at}>
+                          {new Date(notification.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </time>
+                      </span>
+                      <span className={styles.itemMessage}>{notification.message}</span>
+                    </span>
+                    {!notification.read && <span className={styles.unreadDot} aria-label="Unread" />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className={styles.pagination}>
+              <span>
+                {filteredNotifications.length === 0
+                  ? '0 notifications'
+                  : `${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filteredNotifications.length)} of ${filteredNotifications.length}`}
+              </span>
+              <div className={styles.pageControls}>
+                <button
+                  type="button"
+                  aria-label="Previous page"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span>{currentPage} / {pageCount}</span>
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  disabled={currentPage === pageCount}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
-              
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <h3 style={{ fontSize: '17px', fontWeight: 700, color: notif.read ? 'var(--color-text-main)' : 'var(--color-primary)' }}>{notif.title}</h3>
-                  <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-bg-soft)', padding: '4px 10px', borderRadius: '12px' }}>
-                    <Calendar size={14} />
-                    {new Date(notif.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          </aside>
+
+          <article className={styles.detailPanel} aria-live="polite">
+            {selectedNotification ? (
+              <>
+                <div className={styles.detailToolbar}>
+                  <button className={styles.backButton} onClick={() => setMobileDetailOpen(false)}>
+                    <ArrowLeft size={15} />
+                    All notifications
+                  </button>
+                  <span className={styles.detailLabel}><Inbox size={14} /> Notification details</span>
+                  <span className={`${styles.statusBadge} ${!selectedNotification.read ? styles.statusUnread : ''}`}>
+                    {!selectedNotification.read ? <><span className={styles.statusDot} /> Unread</> : <><Check size={13} /> Read</>}
                   </span>
                 </div>
-                <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                  {notif.message}
-                </p>
+                <div className={styles.detailBody}>
+                  <div className={styles.detailIcon}><Bell size={23} /></div>
+                  <h2 className={styles.detailTitle}>{selectedNotification.title}</h2>
+                  <time className={styles.detailDate} dateTime={selectedNotification.created_at}>
+                    <CalendarDays size={15} />
+                    {new Date(selectedNotification.created_at).toLocaleString(undefined, {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </time>
+                  <p className={styles.detailMessage}>{selectedNotification.message}</p>
+                </div>
+                <footer className={styles.detailFooter}>
+                  <Check size={14} />
+                  {selectedNotification.read ? 'You’re up to date with this notification.' : 'This notification is unread.'}
+                </footer>
+              </>
+            ) : (
+              <div className={styles.placeholder}>
+                <div className={styles.placeholderIcon}><Bell size={23} /></div>
+                <h2>{filteredNotifications.length ? 'Select a notification' : 'No notifications in this filter'}</h2>
+                <p>{filteredNotifications.length ? 'Choose an item from your inbox to read the full update.' : 'Try another filter to see more updates.'}</p>
               </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+            )}
+          </article>
+        </section>
+      )}
+    </main>
   );
 }

@@ -130,7 +130,7 @@ export default function HeroTerminal() {
                   <br />
                   <div><span className={styles.keyword}>const</span> openai = <span className={styles.keyword}>new</span> <span className={styles.function}>OpenAI</span>({'{'}</div>
                   <div style={{ paddingLeft: '16px' }}>baseURL: <span className={styles.string}>&apos;{apiBase}&apos;</span>,</div>
-                  <div style={{ paddingLeft: '16px' }}>apiKey: process.env.CHEAPAGENTS_API_KEY,</div>
+                  <div style={{ paddingLeft: '16px' }}>apiKey: process.env.CHEAPROUTER_API_KEY,</div>
                   <div>{'}'});</div>
                   <br />
                   <div className={styles.typingApiCmd}>

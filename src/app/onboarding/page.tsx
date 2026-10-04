@@ -22,7 +22,6 @@ const EXPERIENCE_OPTIONS = [
 ];
 const USECASE_OPTIONS = [
   { id: 'vibe-coding', label: 'Vibe Coding', desc: 'Describe it, AI builds it', icon: Sparkles },
-  { id: 'website-builder', label: 'Website Builder', desc: 'Build websites visually', icon: Globe },
   { id: 'agents', label: 'Chat agents', desc: 'Build intelligent AI agents', icon: Target },
   { id: 'chat', label: 'Chat', desc: 'Chat directly with any model', icon: MessageSquare },
   { id: 'api', label: 'API', desc: 'Call models from your own code', icon: Cpu },
@@ -44,7 +43,7 @@ const GOAL_OPTIONS = [
 
 const steps = [
   { key: 'student', title: 'Are you a student?', subtitle: 'Students often get extra perks and free credits — tell us so we can set up your account experience.' },
-  { key: 'useCases', title: 'What do you want to use?', subtitle: 'Pick all that apply: vibe coding, website builder, agents, chat, API, CLI, IDE or extensions. You can change this later.' },
+  { key: 'useCases', title: 'What do you want to use?', subtitle: 'Pick all that apply: vibe coding, agents, chat, API, CLI, IDE or extensions. You can change this later.' },
   { key: 'experience', title: 'Are you a programmer?', subtitle: 'What kind of developer are you — new, intermediate, or pro? This helps us tailor recommendations.' },
   { key: 'goal', title: 'What is your goal?', subtitle: 'Choose what matters most to you on CheapRouter.' },
 ];

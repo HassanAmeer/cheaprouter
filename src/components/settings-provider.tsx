@@ -124,7 +124,6 @@ export interface SiteSettings {
     apiBaseUrl: string;
     websiteUrl: string;
     chatUrl: string;
-    chromeUrl: string;
   };
   sectionVisibility?: {
     announcementBar?: boolean;
@@ -153,11 +152,10 @@ const defaultSettings: SiteSettings = {
     apiBaseUrl: 'https://api.cheaprouter.com/v1',
     websiteUrl: 'https://cheaprouter.com',
     chatUrl: 'chat.cheaprouter.io',
-    chromeUrl: 'chrome.cheaprouter.io',
   },
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
-  heroAnimatedTexts: ['Cheap Coding', 'Cheap Chat', 'Cheap API', 'Cheap Agents'],
+  heroAnimatedTexts: ['Cheap Coding', 'Cheap Chat', 'Cheap API', 'Cheap Chats'],
   heroPromoText: 'Buy Just for',
   heroPromoHighlight: '$2 USD / month',
   primaryBtnText: 'Get Started',
@@ -302,7 +300,7 @@ const defaultSettings: SiteSettings = {
       },
       {
         id: 'tab_agents',
-        name: 'Build Website',
+        name: 'Agents',
         plans: [
           { id: 'p_agents_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
           { id: 'p_agents_2', name: 'Starter', price: '$10', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
@@ -312,7 +310,7 @@ const defaultSettings: SiteSettings = {
     ]
   },
   comparisonSection: {
-    title: 'Without <span class="text-gradient">Cheap Agents</span>',
+    title: 'Without <span class="text-gradient">Cheap Chats</span>',
     subtitle: 'See what changes when you unify your AI infrastructure.',
     beforeLabel: 'Without CheapRouter',
     beforeSubLabel: 'The painful way',
@@ -399,9 +397,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (contentType && contentType.includes('application/json')) {
           const data = await res.json().catch(() => null);
           if (data) {
+            const heroAnimatedTexts = Array.isArray(data.heroAnimatedTexts)
+              ? data.heroAnimatedTexts.map((text: string) => text === 'Cheap Agents' ? 'Cheap Chats' : text)
+              : defaultSettings.heroAnimatedTexts;
+            const comparisonSection = data.comparisonSection
+              ? {
+                  ...data.comparisonSection,
+                  title: typeof data.comparisonSection.title === 'string'
+                    ? data.comparisonSection.title.replaceAll('Cheap Agents', 'Cheap Chats')
+                    : defaultSettings.comparisonSection.title,
+                }
+              : defaultSettings.comparisonSection;
             setSettings({
               ...defaultSettings,
               ...data,
+              heroAnimatedTexts,
+              comparisonSection,
             });
             
             // Dynamically update document title / favicon if we are on client side

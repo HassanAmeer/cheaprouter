@@ -349,8 +349,10 @@ export async function setTopupStatus(id: string, status: 'approved' | 'rejected'
   const req = claimed[0];
   if (status === 'approved') {
     const amt = Number(req.amount);
-    await db`UPDATE users SET balance = COALESCE(balance, 0) + ${amt} WHERE id = ${req.user_id}`;
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'topup', ${amt}, 'Approved top-up')`;
+    await db.begin(async (tx) => {
+      await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${amt} WHERE id = ${req.user_id}`;
+      await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'topup', ${amt}, 'Approved top-up')`;
+    });
   }
   return { ok: true };
 }
@@ -367,17 +369,25 @@ function parsePrice(raw: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-// Look up the real configured price for a plan id from global settings. If the
-// plan is not found, this returns null and the upgrade is REJECTED (fail
-// closed) so clients can never set their own price.
-async function lookupPlanPrice(planId: string): Promise<number | null> {
+// Look up the full configured plan from global settings. The plan id uniquely
+// identifies its pricing tab, so both the plan name and destination plan field
+// are derived server-side instead of being trusted from the request.
+async function lookupPlanConfig(planId: string): Promise<{ price: number; name: string; planField: string } | null> {
   try {
     const res = await db`SELECT data FROM global_settings WHERE id = 'global'`;
     const settings = res[0]?.data;
     const tabs: any[] = settings?.pricingSection?.tabs ?? [];
     for (const tab of tabs) {
+      const tabId = String(tab.id || '').toLowerCase();
+      const planField =
+        tabId.startsWith('cli') ? 'plan_cli' :
+        tabId.startsWith('api') ? 'plan_api' :
+        tabId.startsWith('chat') ? 'plan_chat' :
+        tabId.startsWith('agent') ? 'plan_agents' :
+        'plan';
+      if (!PLAN_FIELDS.includes(planField as any)) return null;
       const plan = (tab.plans ?? []).find((p: any) => p.id === planId);
-      if (plan) return parsePrice(plan.price);
+      if (plan) return { price: parsePrice(plan.price), name: String(plan.name || ''), planField };
     }
   } catch (e) {
     return null;
@@ -406,18 +416,17 @@ async function lookupPlanDuration(planId: string): Promise<number> {
 }
 
 export async function upgradePlan(userId: string, input: UpgradeInput) {
-  const { planField, planId, planName } = input;
+  const { planField, planId } = input;
   if (!PLAN_FIELDS.includes(planField)) {
     return { ok: false as const, error: 'Invalid plan field' };
   }
 
-  // Always use the server-side configured price; a plan that isn't configured
-  // is rejected outright rather than trusting a client-supplied price.
-  const serverPrice = await lookupPlanPrice(planId);
-  if (serverPrice === null) {
+  const planConfig = await lookupPlanConfig(planId);
+  if (!planConfig || planConfig.planField !== planField) {
     return { ok: false as const, error: 'Plan not found or not configured' };
   }
-  const cost = Math.round(serverPrice * 100) / 100;
+  const planName = planConfig.name;
+  const cost = Math.round(planConfig.price * 100) / 100;
 
   // Duration is derived from the server-side plan config, never the client.
   const days = await lookupPlanDuration(planId);

@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import styles from '../dashboard.module.css';
-import { Activity, Zap, Wallet, Cpu, Terminal, MessageSquare, Globe, Hammer, Braces, MessagesSquare } from 'lucide-react';
+import { Activity, Zap, Wallet, Cpu, Terminal, MessageSquare, Hammer, Braces, MessagesSquare } from 'lucide-react';
 import { getMetricInfo } from '@/lib/utils';
 import { UsageBreakdown, UsageModel } from '@/lib/api-types';
 
 const TABS = [
   { key: 'cli', label: 'CLI / Code Editor', icon: <Terminal size={15} /> },
   { key: 'chat', label: 'Cheap Chats', icon: <MessageSquare size={15} /> },
-  { key: 'web', label: 'Web Builder', icon: <Globe size={15} /> },
   { key: 'ide', label: 'IDE Builder', icon: <Hammer size={15} /> },
   { key: 'api', label: 'APIs', icon: <Braces size={15} /> },
 ];
@@ -18,7 +17,6 @@ const TABS = [
 const TAB_META: Record<string, { description: string }> = {
   cli: { description: 'Model calls made from the CheapRouter CLI and code editors via /v1/chat/completions.' },
   chat: { description: 'Messages sent in Cheap Chats through the chat and streaming endpoints.' },
-  web: { description: 'AI usage from the Web Builder (Devonz vibe-coding) while generating web apps.' },
   ide: { description: 'AI usage from the IDE Builder (Devonz code editor) while writing and fixing code.' },
   api: { description: 'Every call made through the /v1/chat/completions API endpoint.' },
 };
@@ -55,7 +53,7 @@ export default function UsagePage() {
     }
     return [
       { label: 'Total AI Models Used', value: b.totalModels.toLocaleString(), icon: <Cpu size={20} />, bg: 'rgba(139,92,246,0.12)', color: '#8B5CF6' },
-      { label: key === 'web' ? 'Total Builds' : key === 'ide' ? 'Total IDE Calls' : key === 'cli' ? 'Total CLI Calls' : 'Total API Calls', value: b.totalCalls.toLocaleString(), icon: <Activity size={20} />, bg: 'var(--color-primary-soft)', color: 'var(--color-primary)' },
+      { label: key === 'ide' ? 'Total IDE Calls' : key === 'cli' ? 'Total CLI Calls' : 'Total API Calls', value: b.totalCalls.toLocaleString(), icon: <Activity size={20} />, bg: 'var(--color-primary-soft)', color: 'var(--color-primary)' },
       { label: 'Tokens Used', value: b.totalTokens.toLocaleString(), icon: <Zap size={20} />, bg: 'var(--color-success-soft)', color: 'var(--color-success)' },
       { label: 'Total Cost', value: `$${b.totalCost.toFixed(4)}`, icon: <Wallet size={20} />, bg: 'rgba(217,119,6,0.1)', color: 'var(--color-warning)' },
     ];
@@ -122,7 +120,7 @@ export default function UsagePage() {
                   <thead>
                     <tr>
                       <th>AI Model</th>
-                      <th style={{ textAlign: 'right' }}>{activeTab === 'web' ? 'Builds' : activeTab === 'chat' ? 'Hits' : 'API Hits'}</th>
+                      <th style={{ textAlign: 'right' }}>{activeTab === 'chat' ? 'Hits' : 'API Hits'}</th>
                       <th style={{ textAlign: 'right' }}>Tokens Used</th>
                       <th style={{ textAlign: 'right' }}>Cost</th>
                       <th style={{ textAlign: 'right' }}>Last Used</th>

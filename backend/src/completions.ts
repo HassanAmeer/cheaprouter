@@ -140,7 +140,7 @@ export async function getModelInstances(userId: string, model: string, sessionId
 
 export async function handleCompletions(c: any) {
   let auth = '';
-  let sessionId = '';
+  let sessionId: string = '';
   try {
     auth = c.req.header('authorization') || '';
     sessionId = c.req.header('x-session-id') || '';
@@ -200,9 +200,10 @@ export async function handleCompletions(c: any) {
     }
     const { model: requestedModel, messages, stream = false, temperature, max_tokens, top_p } = body;
     const model = requestedModel || (await getDefaultModel());
+    const safeSessionId = sessionId || undefined;
 
     if (!messages || !Array.isArray(messages)) {
-      addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, sessionId);
+    addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, safeSessionId);
       return c.json({ error: 'Invalid messages format' }, 400);
     }
 
@@ -214,7 +215,7 @@ export async function handleCompletions(c: any) {
       const bal = await checkBalanceAndPlanLimit(finalUserId, source, max_tokens);
       if (!bal.ok) {
         if (!bal.planOk) {
-          addDevLog('WARNING', 'Billing', `Plan limit reached for ${finalUserId} (${bal.planUsed}/${bal.planLimit} tokens on ${bal.planName} plan)`, undefined, sessionId);
+    addDevLog('WARNING', 'Billing', `Plan limit reached for ${finalUserId} (${bal.planUsed}/${bal.planLimit} tokens on ${bal.planName} plan)`, undefined, safeSessionId);
           return c.json({
             error: {
               message: `Plan limit reached (${bal.planUsed.toLocaleString()} of ${bal.planLimit.toLocaleString()} tokens used this month on ${bal.planName} plan). Upgrade your plan or wait for reset.`,
@@ -226,7 +227,7 @@ export async function handleCompletions(c: any) {
             }
           }, 402);
         }
-        addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance} vs est. $${bal.estimatedCost})`, undefined, sessionId);
+    addDevLog('WARNING', 'Billing', `Insufficient balance for ${finalUserId} ($${bal.balance} vs est. $${bal.estimatedCost})`, undefined, safeSessionId);
         return c.json({
           error: {
             message: `Insufficient balance. Current balance: $${bal.balance.toFixed(2)}. Please top up your account.`,
@@ -237,7 +238,7 @@ export async function handleCompletions(c: any) {
       }
       const q = await checkMonthlyQuota(finalUserId);
       if (!q.ok) {
-        addDevLog('WARNING', 'Billing', `Monthly quota reached for ${finalUserId} (${q.used}/${q.limit})`, undefined, sessionId);
+    addDevLog('WARNING', 'Billing', `Monthly quota reached for ${finalUserId} (${q.used}/${q.limit})`, undefined, safeSessionId);
         return c.json({
           error: {
             message: `Monthly token quota reached (${q.used.toLocaleString()} of ${q.limit.toLocaleString()} tokens used). Quota resets next month.`,
@@ -327,16 +328,16 @@ export async function handleCompletions(c: any) {
       max_tokens, 
       top_p,
       messageCount: coreMessages.length,
-      sessionId
-    }, sessionId);
+      sessionId: safeSessionId
+    }, safeSessionId);
 
-    const aiModelItems = await getModelInstances(finalUserId, model, sessionId);
+    const aiModelItems = await getModelInstances(finalUserId, model, safeSessionId);
     if (!aiModelItems || aiModelItems.length === 0) {
-      addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`, undefined, sessionId);
+    addDevLog('ERROR', 'Model Selection', `Model not available or no active keys found for ${model}`, undefined, safeSessionId);
       return c.json({ error: 'Model not available or no active keys.' }, 500);
     }
     
-    addDevLog('INFO', 'Model Selection', `Found ${aiModelItems.length} active provider instances for fallback loop`, undefined, sessionId);
+    addDevLog('INFO', 'Model Selection', `Found ${aiModelItems.length} active provider instances for fallback loop`, undefined, safeSessionId);
 
     // Check if user has disabled this model
     const prefRows = await db`SELECT enabled FROM user_model_prefs WHERE user_id = ${finalUserId} AND model_id = ${model}`;
@@ -359,7 +360,7 @@ export async function handleCompletions(c: any) {
       const maxTries = 2; // Up to 2 tries per key for transient 503/429 network/endpoint hiccups
       for (let keyTry = 1; keyTry <= maxTries; keyTry++) {
         try {
-          addDevLog('INFO', 'AI Request', `Attempt ${attempt} (try ${keyTry}) on ${item.providerName} [${item.modelId}] starting...`, undefined, sessionId);
+    addDevLog('INFO', 'AI Request', `Attempt ${attempt} (try ${keyTry}) on ${item.providerName} [${item.modelId}] starting...`, undefined, safeSessionId);
           if (stream) {
             const result = await streamText({
               model: item.instance,
@@ -403,10 +404,12 @@ export async function handleCompletions(c: any) {
               await recordUsage(finalUserId, model, tokens, cost, source);
               const ded = await deductBalance(finalUserId, cost);
               if (!ded.ok) {
-                addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
+    addDevLog('WARNING', 'Billing', `Billing failed after stream: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, safeSessionId);
               }
             };
 
+            let streamErrored = false;
+            let deliveredContent = false;
             const stream = new ReadableStream({
               async start(controller) {
                 const sentinel = `chatcmpl-${Date.now()}`;
@@ -416,6 +419,7 @@ export async function handleCompletions(c: any) {
                 try {
                   const handlePart = async (part: any) => {
                     if (part.type === 'text-delta') {
+                      deliveredContent = true;
                       send({ id: sentinel, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: { content: part.delta }, finish_reason: null }] });
                     }
                   };
@@ -431,21 +435,23 @@ export async function handleCompletions(c: any) {
                       send({ id: sentinel, object: 'chat.completion.chunk', created, model, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
                       sendRaw('data: [DONE]');
                       await billOnce(part.totalUsage);
-                      addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { usage: part.totalUsage }, sessionId);
+    addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully streamed response.`, { usage: part.totalUsage }, safeSessionId);
                       return;
                     }
                     await handlePart(part);
                     next = await iterator.next();
                   }
                 } catch (err) {
+                  streamErrored = true;
                   controller.error(err);
                 } finally {
-                  controller.close();
+                  if (!billed && deliveredContent) await billOnce(null);
+                  if (!streamErrored) controller.close();
                 }
               },
-              cancel() {
+              async cancel() {
                 // Client disconnected: still bill at least the minimum.
-                billOnce(null);
+                await billOnce(null);
               },
             });
 
@@ -474,7 +480,7 @@ export async function handleCompletions(c: any) {
               const ded = await deductBalance(finalUserId, cost);
               if (!ded.ok) {
                 // Free-ride backstop: never hand over content that wasn't paid for.
-                addDevLog('WARNING', 'Billing', `Billing failed after generation: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, sessionId);
+    addDevLog('WARNING', 'Billing', `Billing failed after generation: balance $${ded.balance.toFixed(2)} < cost $${cost.toFixed(4)}`, undefined, safeSessionId);
                 return c.json({
                   error: {
                     message: `Insufficient balance. Current balance: $${ded.balance.toFixed(2)}. Please top up your account.`,
@@ -485,7 +491,7 @@ export async function handleCompletions(c: any) {
               }
             }
             
-            addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, sessionId);
+    addDevLog('SUCCESS', 'AI Request', `Attempt ${attempt}: Successfully generated response.`, { tokens }, safeSessionId);
 
             return c.json({
               id: `chatcmpl-${Date.now()}`,
@@ -524,12 +530,12 @@ export async function handleCompletions(c: any) {
             "5. Raw Error Object": err
           };
           
-          addDevLog('WARNING', 'AI Request', `Attempt ${attempt} (try ${keyTry}) failed on ${item.providerName}: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, formattedLogDetails, sessionId);
+    addDevLog('WARNING', 'AI Request', `Attempt ${attempt} (try ${keyTry}) failed on ${item.providerName}: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, formattedLogDetails, safeSessionId);
           console.error(`[Fallback] AI request failed on ${item.providerName} (Status: ${statusCode}). Error:`, rawMsg || err);
           
           // If transient and we have a retry left on this key, wait briefly and retry
           if (isTransient && keyTry < maxTries) {
-            addDevLog('INFO', 'AI Request', `Transient upstream issue on ${item.providerName}. Retrying in 600ms...`, undefined, sessionId);
+    addDevLog('INFO', 'AI Request', `Transient upstream issue on ${item.providerName}. Retrying in 600ms...`, undefined, safeSessionId);
             await sleep(600);
             continue;
           }
@@ -550,10 +556,10 @@ export async function handleCompletions(c: any) {
     }
     
     // If all keys and providers failed, throw the last error so it can be sent to the user
-    addDevLog('ERROR', 'Completions', `All fallback attempts failed.`, undefined, sessionId);
+    addDevLog('ERROR', 'Completions', `All fallback attempts failed.`, undefined, safeSessionId);
     throw lastError;
   } catch (error: any) {
-    addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error }, sessionId);
+    addDevLog('ERROR', 'Completions', `Unhandled exception: ${error?.message || 'Unknown error'}`, { error }, safeSessionId);
     console.error('Chat completions error:', error);
     let msg = 'Error processing request';
     try {
@@ -572,7 +578,7 @@ export async function handleCompletions(c: any) {
 }
 
 export async function getModelInstance(userId: string, model: string, sessionId?: string) {
-  const items = await getModelInstances(userId, model, sessionId);
+  const items = await getModelInstances(userId, model, safeSessionId);
   return items[0]?.instance;
 }
 
@@ -587,7 +593,7 @@ export async function tryInstances(
   call: (item: ModelInstanceItem) => Promise<void>,
   onFail?: (item: ModelInstanceItem, err: any) => void
 ): Promise<void> {
-  const items = await getModelInstances(userId, model, sessionId);
+  const items = await getModelInstances(userId, model, safeSessionId);
   let lastError: any;
   for (const item of items) {
     try {
@@ -607,7 +613,7 @@ export async function tryInstances(
       const modelNotFound = statusCode === 404 || /not supported|does not exist|not found/i.test(rawMsg);
       const hardAbort = statusCode >= 400 && statusCode < 500 && statusCode !== 401 && statusCode !== 403 && statusCode !== 429 && !modelNotFound;
       if (hardAbort) throw err;
-      addDevLog('WARNING', 'AI Request', `Instance failed, trying next provider: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, undefined, sessionId);
+    addDevLog('WARNING', 'AI Request', `Instance failed, trying next provider: ${rawMsg || 'Unknown error'} (Status: ${statusCode})`, undefined, safeSessionId);
     }
   }
   throw lastError || new Error(`Model '${model}' not found or no active provider configured for it.`);

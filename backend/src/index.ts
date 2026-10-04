@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import * as os from 'os';
+import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import {
@@ -132,7 +133,8 @@ async function requireAuth(c: any, next: any) {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401);
   // Enforce account suspension/bans: a suspended user's valid token is still rejected.
   const userRes = await db`SELECT status FROM users WHERE id = ${payload.sub}`;
-  const status = userRes[0]?.status || 'Active';
+  if (userRes.length === 0) return c.json({ error: 'Unauthorized' }, 401);
+  const status = userRes[0]?.status;
   if (status !== 'Active') {
     return c.json({ error: status === 'Suspended' ? 'Account suspended' : 'Account inactive' }, 403);
   }
@@ -233,7 +235,13 @@ app.post('/api/auth/admin-login', zValidator('json', z.object({ username: z.stri
     return c.json({ error: 'Admin login is not configured on this server' }, 503);
   }
 
-  if (username === adminUser && password === adminPass) {
+  const usernameBuffer = Buffer.from(username);
+  const passwordBuffer = Buffer.from(password);
+  const adminUserBuffer = Buffer.from(adminUser);
+  const adminPassBuffer = Buffer.from(adminPass);
+  const usernameMatches = usernameBuffer.length === adminUserBuffer.length && timingSafeEqual(usernameBuffer, adminUserBuffer);
+  const passwordMatches = passwordBuffer.length === adminPassBuffer.length && timingSafeEqual(passwordBuffer, adminPassBuffer);
+  if (usernameMatches && passwordMatches) {
     const token = await signToken({ sub: 'admin', email: 'admin@system' }, 'admin');
     return c.json({ token, user: { role: 'admin' } });
   }
@@ -296,7 +304,9 @@ app.delete('/api/me', async (c) => {
 app.get('/api/keys', async (c) => c.json({ keys: await listKeys(c.get('userId')) }));
 
 app.post('/api/keys', zValidator('json', z.object({ name: z.string().min(1) })), async (c) => {
-  const key = await createKey(c.get('userId'), c.req.valid('json').name);
+  const requestedSource = c.req.query('source');
+  const source = requestedSource === 'api' || requestedSource === 'cli' ? requestedSource : 'api';
+  const key = await createKey(c.get('userId'), c.req.valid('json').name, source);
   return c.json({ key }, 201);
 });
 
@@ -714,9 +724,11 @@ app.put('/api/admin/submissions/:id', zValidator('json', z.object({ status: z.en
       if (raw > 0) bonus = raw;
     } catch {}
     const amt = Math.round(bonus * 100) / 100;
-    await db`UPDATE users SET balance = COALESCE(balance, 0) + ${amt} WHERE id = ${sub.user_id}`;
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${sub.user_id}, 'bonus', ${amt}, 'Creator bonus — video approved')`;
-    await db`INSERT INTO notifications (id, user_id, title, message) VALUES (${genId('notif')}, ${sub.user_id}, 'Creator Bonus Approved 🎉', ${'Your video was approved and a $' + amt.toFixed(2) + ' credit has been added to your balance.'})`;
+    await db.begin(async (tx) => {
+      await tx`UPDATE users SET balance = COALESCE(balance, 0) + ${amt} WHERE id = ${sub.user_id}`;
+      await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${sub.user_id}, 'bonus', ${amt}, 'Creator bonus — video approved')`;
+      await tx`INSERT INTO notifications (id, user_id, title, message) VALUES (${genId('notif')}, ${sub.user_id}, 'Creator Bonus Approved 🎉', ${'Your video was approved and a $' + amt.toFixed(2) + ' credit has been added to your balance.'})`;
+    });
   }
   return c.json({ ok: true });
 });
@@ -890,7 +902,8 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   if (!quota.ok) {
     return c.json({ error: `Monthly token quota reached (${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens used). Quota resets next month.` }, 402);
   }
-  await addMessage(convId, 'user', message);
+  const userMessageId = genId('msg');
+  await db`INSERT INTO messages (id, conversation_id, role, content) VALUES (${userMessageId}, ${convId}, 'user', ${message})`;
   const resolvedModel = model || (await getDefaultModel());
   try {
     const replyText = await runChatTurn(userId, resolvedModel, message, convId);
@@ -898,7 +911,7 @@ app.post('/api/conversations/:id/messages', zValidator('json', z.object({ messag
   } catch (err) {
     // Roll back the orphaned user message so a failed model call doesn't leave
     // a dangling prompt with no reply (mirrors the create-conversation path).
-    await db`DELETE FROM messages WHERE conversation_id = ${convId} AND role = 'user' AND content = ${message}`.catch(() => {});
+    await db`DELETE FROM messages WHERE id = ${userMessageId}`.catch(() => {});
     throw err;
   }
 });
@@ -996,7 +1009,7 @@ async function handleAccount(c: any) {
       return c.json({ error: { message: 'Missing or invalid Authorization header. Must provide Bearer token.', type: 'invalid_request_error' } }, 401);
     }
     const token = authHeader.split(' ')[1];
-    const hashedKey = hashKey(token);
+  const hashedKey = await hashKey(token);
     const keyRows = await db`SELECT user_id FROM api_keys WHERE key_hash = ${hashedKey}`;
     if (keyRows.length === 0) {
       return c.json({ error: { message: 'Invalid API key.', type: 'invalid_request_error' } }, 401);
@@ -1038,7 +1051,7 @@ async function handleListModels(c: any) {
     return c.json({ error: { message: 'Unauthorized' } }, 401);
   }
   const reqKey = auth.replace('Bearer ', '');
-  const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${hashKey(reqKey)}`;
+  const keyRows = await db`SELECT id, user_id FROM api_keys WHERE key_hash = ${await hashKey(reqKey)}`;
   const apiUserId = keyRows.length > 0 ? keyRows[0].user_id : null;
   let valid = false;
   if (apiUserId) {
@@ -1140,13 +1153,14 @@ app.get('/api/stream', async (c) => {
         throw e instanceof Error ? e : new Error(e?.message || 'Stream error');
       }
 
-      // Bill only real usage (never the 150-token minimum for a failed stream).
+      // Bill once for real usage, or at least the minimum billable amount after
+      // content has been delivered (including client disconnects).
       let billed = false;
+      let deliveredContent = false;
       const billOnce = async (usage: any) => {
         if (billed) return;
         billed = true;
-        if (!usage?.totalTokens) return;
-        const tokens = usage.totalTokens;
+        const tokens = Number(usage?.totalTokens) || 0;
         const cost = await computeCost(tokens);
         await recordUsage(userId, model, tokens, cost, 'chat');
         const ded = await deductBalance(userId, cost);
@@ -1159,6 +1173,7 @@ app.get('/api/stream', async (c) => {
         async start(controller) {
           const handlePart = async (part: any) => {
             if (part.type === 'text-delta') {
+              deliveredContent = true;
               controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk: part.delta })}\n\n`));
             }
           };
@@ -1182,8 +1197,12 @@ app.get('/api/stream', async (c) => {
           } catch (err) {
             controller.error(err);
           } finally {
+            if (!billed && deliveredContent) await billOnce(null);
             controller.close();
           }
+        },
+        async cancel() {
+          await billOnce(null);
         },
       });
       streamResponse = new Response(stream, {
@@ -1223,7 +1242,7 @@ app.put('/api/settings', zValidator('json', z.any()), async (c) => {
 
 // ---- Global Public Providers ----
 app.get('/api/public/providers', async (c) => {
-  const result = await db`SELECT id, name, status, models, icon FROM admin_providers WHERE status = true ORDER BY priority ASC`;
+  const result = await db`SELECT id, name, status, models, icon, base_url, byok_enabled FROM admin_providers WHERE status = true ORDER BY priority ASC`;
   return c.json(result);
 });
 
@@ -1240,8 +1259,8 @@ app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) 
       await tx`DELETE FROM admin_providers`;
       for (const p of providers) {
         await tx`
-          INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon)
-          VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${tx.json(p.models ?? [])}, ${tx.json(p.headers ?? [])}, ${p.icon ?? null})
+          INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon, byok_enabled)
+          VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${tx.json(p.models ?? [])}, ${tx.json(p.headers ?? [])}, ${p.icon ?? null}, ${p.byokEnabled ?? true})
         `;
       }
     });
@@ -3263,4 +3282,3 @@ const port = Number(process.env.PORT ?? 4000);
 console.log(`CheapModels backend listening on http://localhost:${port}`);
 await initDb();
 Bun.serve({ fetch: app.fetch, port });
-

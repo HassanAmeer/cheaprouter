@@ -108,12 +108,17 @@ export async function setWithdrawalStatus(id: string, status: WithdrawStatus): P
   // claim back to pending so the admin can retry or reject.
   if (status === 'approved') {
     const amt = Number(req.amount);
-    const ded = await deductBalance(req.user_id, amt);
+    let ded: Awaited<ReturnType<typeof deductBalance>>;
+    await db.begin(async (tx) => {
+      const updated = await tx`UPDATE users SET balance = COALESCE(balance, 0) - ${amt} WHERE id = ${req.user_id} AND COALESCE(balance, 0) >= ${amt} RETURNING balance`;
+      if (updated.length === 0) throw new Error('Insufficient balance');
+      await tx`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'withdraw', ${-amt}, 'Withdrawal payout')`;
+      ded = { ok: true, balance: Number(updated[0].balance) };
+    });
     if (!ded.ok) {
       await db`UPDATE withdraw_requests SET status = 'pending', processed_at = NULL WHERE id = ${id} AND status = 'approved'`;
       return { ok: false, error: 'User does not have enough balance to pay out this withdrawal' };
     }
-    await db`INSERT INTO transactions (id, user_id, type, amount, description) VALUES (${genId('txn')}, ${req.user_id}, 'withdraw', ${-amt}, 'Withdrawal payout')`;
   }
   return { ok: true };
 }

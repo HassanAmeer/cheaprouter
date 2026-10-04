@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   CHEAPAGENTS — PREMIUM LANDING PAGE DESIGN SYSTEM
+   CHEAPROUTER — PREMIUM LANDING PAGE DESIGN SYSTEM
    ═══════════════════════════════════════════════════════════ */
 
 /* ─── NAV (legacy, used by site-nav module) ─── */
@@ -52,9 +52,7 @@
   min-height: 680px;
   overflow: visible;
   text-align: center;
-  background: rgba(10, 10, 14, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: transparent;
   border-radius: 24px;
 }
 
@@ -757,106 +755,6 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
 }
 
-/* ── Mini Chat ── */
-.miniChat {
-  background: #fafbfc;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-[data-theme="dark"] .miniChat {
-  background: #111318;
-}
-
-.miniChatHeader {
-  background: #eee;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-[data-theme="dark"] .miniChatHeader {
-  background: #1e2025;
-  border-color: #2a2d33;
-}
-
-.miniUrl {
-  background: #fff;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.6rem;
-  color: #666;
-  flex: 1;
-  text-align: center;
-}
-
-[data-theme="dark"] .miniUrl {
-  background: #15171b;
-  color: #999;
-}
-
-.miniChatBody {
-  flex: 1;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.chatBubbleUser {
-  align-self: flex-end;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 0.6rem;
-  padding: 4px 9px;
-  border-radius: 8px;
-  max-width: 80%;
-}
-
-.chatBubbleAi {
-  align-self: flex-start;
-  background: #fff;
-  border: 1px solid #eee;
-  font-size: 0.6rem;
-  padding: 4px 9px;
-  border-radius: 8px;
-  color: var(--color-text-main);
-}
-
-[data-theme="dark"] .chatBubbleAi {
-  background: #1e2025;
-  border-color: #333;
-}
-
-.miniChatInput {
-  padding: 6px 8px;
-  display: flex;
-  gap: 4px;
-}
-
-.miniInputField {
-  flex: 1;
-  height: 14px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-[data-theme="dark"] .miniInputField {
-  background: #1e2025;
-  border-color: #333;
-}
-
-.miniSendBtn {
-  width: 14px;
-  height: 14px;
-  background: var(--color-primary);
-  border-radius: 50%;
-}
-
 /* ── Mini Terminal ── */
 .miniTerminal {
   background: #1a1b1e;
@@ -868,6 +766,11 @@
   flex-direction: column;
 }
 
+[data-theme="light"] .miniTerminal {
+  background: #f8fafc;
+  color: #334155;
+}
+
 .miniTermHeader {
   background: #2a2b2e;
   padding: 5px 10px;
@@ -876,9 +779,18 @@
   gap: 8px;
 }
 
+[data-theme="light"] .miniTermHeader {
+  background: #e9edf2;
+  border-bottom: 1px solid #d8dee8;
+}
+
 .miniTermTitle {
   font-size: 0.62rem;
   color: #777;
+}
+
+[data-theme="light"] .miniTermTitle {
+  color: #64748b;
 }
 
 .miniTermBody {
@@ -897,6 +809,10 @@
   color: #58a6ff;
 }
 
+[data-theme="light"] .termPrompt {
+  color: #2563eb;
+}
+
 .termRowOk {
   color: #2ea043;
   font-weight: bold;
@@ -913,11 +829,20 @@
   flex-direction: column;
 }
 
+[data-theme="light"] .miniCode {
+  background: #f8fafc;
+}
+
 .miniCodeHeader {
   background: #252526;
   padding: 5px 12px;
   display: flex;
   gap: 8px;
+}
+
+[data-theme="light"] .miniCodeHeader {
+  background: #e9edf2;
+  border-bottom: 1px solid #d8dee8;
 }
 
 .miniTab {
@@ -927,10 +852,18 @@
   padding: 2px 6px;
 }
 
+[data-theme="light"] .miniTab {
+  color: #1e293b;
+}
+
 .miniTabDim {
   color: #888;
   font-size: 0.6rem;
   padding: 2px 6px;
+}
+
+[data-theme="light"] .miniTabDim {
+  color: #64748b;
 }
 
 .miniCodeBody {
@@ -940,12 +873,24 @@
   flex: 1;
 }
 
+[data-theme="light"] .miniCodeBody {
+  color: #334155;
+}
+
 .kw {
   color: #569cd6;
 }
 
+[data-theme="light"] .kw {
+  color: #2563eb;
+}
+
 .str {
   color: #ce9178;
+}
+
+[data-theme="light"] .str {
+  color: #a14224;
 }
 
 /* ── Mini Dashboard ── */
@@ -1171,9 +1116,17 @@
   color: #dcdcaa;
 }
 
+[data-theme="light"] .fn {
+  color: #8a5a00;
+}
+
 .cm {
   color: #6a9955;
   font-style: italic;
+}
+
+[data-theme="light"] .cm {
+  color: #4b7a3c;
 }
 
 /* Legacy trust bar compat */

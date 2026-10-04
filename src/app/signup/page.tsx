@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, Terminal, MessageSquare, Bot, Globe, Eye, EyeOff } from 'lucide-react';
+import { Zap, Terminal, MessageSquare, Bot, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button, Input } from '@/components/ui/primitives';
@@ -62,10 +62,6 @@ export default function Signup() {
             <div className={styles.featureItem}>
               <div className={styles.featureIcon}><Bot size={20} /></div>
               Build intelligent AI agents
-            </div>
-            <div className={styles.featureItem}>
-              <div className={styles.featureIcon}><Globe size={20} /></div>
-              Create online websites with the web builder
             </div>
           </div>
         </div>
