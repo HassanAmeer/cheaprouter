@@ -7,16 +7,13 @@ import {
   LogOut,
   Shield,
   ChevronRight,
-  Moon,
-  Bell,
   Key,
-  Sliders,
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function UserProfileMenu() {
-  const { user, setActiveModal } = useAppStore();
+  const { user } = useAppStore();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -42,42 +39,31 @@ export default function UserProfileMenu() {
   };
 
   return (
-    <div className="relative" ref={menuRef}>
-      {/* Sleek User Avatar Button */}
+    <div className="relative w-full" ref={menuRef}>
+      {/* Full-width account card button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-9 h-9 rounded-xl bg-[#15191E] hover:bg-[#1A1F26] border border-[#262C34] hover:border-slate-500 flex items-center justify-center font-bold text-xs text-slate-200 transition duration-150 cursor-pointer shadow-sm focus:outline-none"
-        title={`${user?.username || "Account"} — options`}
+        className="w-full flex items-center justify-between p-2 rounded-xl bg-[#15191E] hover:bg-[#1A1F26] border border-[#262C34] hover:border-slate-600 transition cursor-pointer text-left shadow-sm"
       >
-        {userInitials}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-red-600/20 border border-red-500/30 flex items-center justify-center font-bold text-xs text-red-300 flex-shrink-0">
+            {userInitials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-white truncate leading-tight">
+              {user?.username || "Developer"}
+            </p>
+            <p className="text-[10px] text-slate-400 truncate leading-tight mt-0.5">
+              {user?.role === "ADMIN" ? "Admin" : "Free Plan"}
+            </p>
+          </div>
+        </div>
+        <Settings className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu (Opens upwards) */}
       {open && (
-        <div className="absolute bottom-12 left-2 w-60 z-[200] bg-[#15191E] rounded-2xl border border-[#262C34] shadow-2xl shadow-black/90 overflow-hidden text-xs text-slate-200 animate-in fade-in slide-in-from-bottom-2 duration-150">
-          {/* User Info Header */}
-          <div className="px-3.5 py-3 border-b border-[#1E232B] bg-[#0F1217]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center font-bold text-xs text-red-300 flex-shrink-0">
-                {userInitials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white truncate">
-                  {user?.username || "Developer"}
-                </p>
-                <p className="text-slate-400 text-[10px] flex items-center gap-1.5 mt-0.5">
-                  <span
-                    className={`inline-block w-1.5 h-1.5 rounded-full ${
-                      user?.role === "ADMIN" ? "bg-red-400 animate-pulse" : "bg-emerald-400"
-                    }`}
-                  />
-                  {user?.role || "USER"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Menu Items */}
+        <div className="absolute bottom-full mb-2 left-0 right-0 z-[200] bg-[#15191E] rounded-2xl border border-[#262C34] shadow-2xl shadow-black/90 overflow-hidden text-xs text-slate-200 animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="p-1.5 space-y-0.5">
             <button
               onClick={() => {

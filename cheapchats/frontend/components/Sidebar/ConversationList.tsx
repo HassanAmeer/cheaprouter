@@ -205,18 +205,18 @@ export default function ConversationList() {
                 <button
                   onClick={() => router.push(`/chats/c/${conv.id}`)}
                   onMouseEnter={() => prefetchConversation(conv.id)}
-                  className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs text-left font-medium transition cursor-pointer ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left font-medium transition cursor-pointer ${
                     isActive
                       ? "bg-red-500/15 text-white font-semibold border border-red-500/30 shadow-sm"
                       : "text-slate-300 hover:bg-[#15191E] hover:text-white border border-transparent"
                   }`}
                 >
                   <MessageSquare
-                    className={`w-3.5 h-3.5 flex-shrink-0 ${
-                      isActive ? "text-red-400" : "text-slate-500 group-hover:text-slate-300"
+                    className={`w-4 h-4 flex-shrink-0 ${
+                      isActive ? "text-red-400" : "text-slate-400 group-hover:text-slate-200"
                     }`}
                   />
-                  <span className="truncate flex-1 pr-6">{conv.title || "Untitled Chat"}</span>
+                  <span className="truncate flex-1 pr-5 text-xs">{conv.title || "Untitled Chat"}</span>
                 </button>
 
                 {/* More options button */}
