@@ -2,16 +2,29 @@ import type { NextConfig } from "next";
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
 
+// ==========================================
+// CheapChats & CheapRouter Core Configuration
+// ==========================================
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['better-sqlite3'],
+  // CheapChats SQLite engine support (Better-SQLite3 & Bun-SQLite)
+  serverExternalPackages: ['better-sqlite3', 'bun:sqlite'],
   allowedDevOrigins: ['192.168.100.115'],
   devIndicators: false,
+
+  // CheapChats 10MB payload limit for file attachments & audio/images
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+
   async rewrites() {
     return [
       {
         source: '/v1/:path*',
         destination: `${BACKEND_URL}/v1/:path*`,
       },
+      // CheapChats short routes
       {
         source: '/c/:path*',
         destination: '/chats/c/:path*',
@@ -24,6 +37,8 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
   webpack: (config, { webpack, isServer }) => {
+    // CheapChats bun:sqlite external
+    config.externals.push("bun:sqlite");
     config.plugins.push(
       new webpack.DefinePlugin({
         'import.meta.env': JSON.stringify({

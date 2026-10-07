@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "concurrently -k \"next dev\" \"cd backend && bun dev\"",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "seed:chats": "bun cheapchats/backend/db/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",

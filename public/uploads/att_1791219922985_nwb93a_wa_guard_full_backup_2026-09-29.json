@@ -1,0 +1,19 @@
+{
+  "exportedAt": "2026-09-29T10:46:57.924Z",
+  "version": "1.0.0",
+  "settings": {
+    "enabled": true,
+    "autoScreenshot": false,
+    "screenshotMode": "bubble",
+    "screenshotQuality": "medium",
+    "saveVoiceNotes": true,
+    "mediaSizeLimitMB": 15,
+    "inChatRestoration": true,
+    "notifyOnDelete": true,
+    "soundAlertOnDelete": false,
+    "retentionDays": 0,
+    "theme": "dark"
+  },
+  "chats": [],
+  "messages": []
+}
