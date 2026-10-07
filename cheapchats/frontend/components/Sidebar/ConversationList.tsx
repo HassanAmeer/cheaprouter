@@ -1,27 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { useRouter, useParams } from "next/navigation";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import {
   MessageSquare,
   Pin,
+  Bookmark,
   Download,
   Edit2,
   Trash2,
   MoreVertical,
   ChevronDown,
   ChevronRight,
+  Folder,
   Search,
   EyeOff,
   Eye,
   Plus,
   AlertTriangle,
 } from "lucide-react";
-import { SidebarChatsSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
-import { prefetchConversation } from "@cheapchats/frontend/lib/conversationCache";
-import { clearConversationCache } from "@cheapchats/frontend/lib/conversationCache";
+
+interface ProjectFolder {
+  id: string;
+  name: string;
+}
 
 interface Conversation {
   id: string;
@@ -30,7 +33,7 @@ interface Conversation {
   provider: string;
   projectId?: string;
   isPinned: number;
-  isBookmarked?: number;
+  isBookmarked: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -40,56 +43,69 @@ export default function ConversationList() {
   const params = useParams();
   const currentId = params?.id as string;
 
-  const { isIncognito, toggleIncognito } = useAppStore();
-  const [mounted, setMounted] = useState(false);
+  const { isIncognito, toggleIncognito, activeProjectId, setActiveProjectId } = useAppStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  interface MenuTarget {
-    id: string;
-    title: string;
-    isPinned: number;
-    top: number;
-    left: number;
-  }
-  const [menuTarget, setMenuTarget] = useState<MenuTarget | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
+  const [isChatsOpen, setIsChatsOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [confirmDeleteChats, setConfirmDeleteChats] = useState(false);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<"projects" | "chats" | null>(null);
+
+  const [projects, setProjects] = useState<ProjectFolder[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cheapchats_projects");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return [];
+  });
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cheapchats_projects", JSON.stringify(projects));
+    }
+  }, [projects]);
+
+  const handleCreateProject = () => {
+    const name = prompt("Enter new project folder name:");
+    if (name && name.trim()) {
+      const newProj: ProjectFolder = {
+        id: `proj_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        name: name.trim(),
+      };
+      setProjects((prev) => [...prev, newProj]);
+      setExpandedProjects((prev) => ({ ...prev, [newProj.id]: true }));
+      setIsProjectsOpen(true);
+      setActiveProjectId(newProj.id);
+      router.push("/new");
+    }
+  };
+
+  const handleDeleteProject = (projId: string, projName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete the project folder "${projName}"?`)) {
+      setProjects((prev) => prev.filter((p) => p.id !== projId));
+      if (activeProjectId === projId) {
+        setActiveProjectId(null);
+      }
+    }
+  };
 
   const fetchConversations = async () => {
     try {
       const res = await fetch("/api/conversations");
       if (res.ok) {
         const data = await res.json();
-        const list = data.conversations || [];
-        setConversations(list);
-        try {
-          localStorage.setItem("cheapchat_cached_conversations", JSON.stringify(list));
-        } catch {}
+        setConversations(data.conversations || []);
       }
     } catch (err) {
       console.error("Failed to load conversations:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // 1. Instant hydration from cache for 0ms render
-    try {
-      const cached = localStorage.getItem("cheapchat_cached_conversations");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setConversations(parsed);
-          setLoading(false);
-        }
-      }
-    } catch {}
-
     fetchConversations();
     
     const handleRefresh = () => fetchConversations();
@@ -98,18 +114,12 @@ export default function ConversationList() {
   }, [currentId]);
 
   useEffect(() => {
-    const handleClose = () => setMenuTarget(null);
-    if (menuTarget) {
-      window.addEventListener("click", handleClose);
-      window.addEventListener("scroll", handleClose, true);
-      window.addEventListener("resize", handleClose);
+    const handleGlobalClick = () => setActiveMenuId(null);
+    if (activeMenuId) {
+      window.addEventListener("click", handleGlobalClick);
     }
-    return () => {
-      window.removeEventListener("click", handleClose);
-      window.removeEventListener("scroll", handleClose, true);
-      window.removeEventListener("resize", handleClose);
-    };
-  }, [menuTarget]);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, [activeMenuId]);
 
   const handleRename = async (id: string, currentTitle: string) => {
     const newTitle = prompt("Enter new conversation title:", currentTitle);
@@ -121,8 +131,7 @@ export default function ConversationList() {
       body: JSON.stringify({ title: newTitle }),
     });
     fetchConversations();
-    window.dispatchEvent(new Event('refreshConversations'));
-    setMenuTarget(null);
+    setActiveMenuId(null);
   };
 
   const handleTogglePin = async (id: string, currentPinned: number) => {
@@ -132,21 +141,28 @@ export default function ConversationList() {
       body: JSON.stringify({ isPinned: currentPinned ? 0 : 1 }),
     });
     fetchConversations();
-    window.dispatchEvent(new Event('refreshConversations'));
-    setMenuTarget(null);
+    setActiveMenuId(null);
   };
 
+  const handleToggleBookmark = async (id: string, currentBookmarked: number) => {
+    await fetch(`/api/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isBookmarked: currentBookmarked ? 0 : 1 }),
+    });
+    fetchConversations();
+    setActiveMenuId(null);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this chat?")) return;
     await fetch(`/api/conversations/${id}`, { method: "DELETE" });
-    window.dispatchEvent(new Event('refreshConversations'));
     if (currentId === id) {
-      router.push("/chats");
+      router.push("/new");
     } else {
       fetchConversations();
     }
-    setMenuTarget(null);
+    setActiveMenuId(null);
   };
 
   const handleExportJSON = async (id: string, title: string) => {
@@ -160,7 +176,7 @@ export default function ConversationList() {
       a.download = `${title.replace(/\s+/g, "_")}_export.json`;
       a.click();
     }
-    setMenuTarget(null);
+    setActiveMenuId(null);
   };
 
   const handleExportMarkdown = async (id: string, title: string) => {
@@ -178,14 +194,16 @@ export default function ConversationList() {
       a.download = `${title.replace(/\s+/g, "_")}_export.md`;
       a.click();
     }
-    setMenuTarget(null);
+    setActiveMenuId(null);
   };
 
   const filtered = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const normalChats = filtered;
+  // Normal chats are those that do NOT belong to an active project folder
+  const activeProjectIds = new Set(projects.map((p) => p.id));
+  const normalChats = filtered.filter((c) => !c.projectId || !activeProjectIds.has(c.projectId));
 
   const pinned = normalChats.filter((c) => c.isPinned === 1);
   const unpinned = normalChats.filter((c) => c.isPinned !== 1);
@@ -207,13 +225,12 @@ export default function ConversationList() {
         <div className="space-y-0.5 mt-0.5">
           {items.map((conv) => {
             const isActive = currentId === conv.id;
-            const isMenuOpen = menuTarget?.id === conv.id;
+            const isMenuOpen = activeMenuId === conv.id;
 
             return (
               <div key={conv.id} className="relative group">
                 <button
-                  onClick={() => router.push(`/chats/c/${conv.id}`)}
-                  onMouseEnter={() => prefetchConversation(conv.id)}
+                  onClick={() => router.push(`/c/${conv.id}`)}
                   className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-left font-medium transition ${
                     isActive
                       ? "bg-red-500/20 text-white shadow-sm font-semibold border border-red-500/30"
@@ -225,27 +242,14 @@ export default function ConversationList() {
                   />
                   <span className="truncate flex-1 text-[12px]">{conv.title}</span>
                   {conv.isPinned === 1 && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+                  {conv.isBookmarked === 1 && <Bookmark className="w-3 h-3 text-sky-400 flex-shrink-0" />}
                 </button>
 
                 {/* More Actions Toggle */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (isMenuOpen) {
-                      setMenuTarget(null);
-                    } else {
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      const menuHeight = 220;
-                      const menuWidth = 192;
-                      const openUpwards = rect.bottom + menuHeight > window.innerHeight;
-                      setMenuTarget({
-                        id: conv.id,
-                        title: conv.title,
-                        isPinned: conv.isPinned,
-                        top: openUpwards ? Math.max(10, rect.top - menuHeight) : rect.bottom + 4,
-                        left: Math.max(10, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 10)),
-                      });
-                    }
+                    setActiveMenuId(isMenuOpen ? null : conv.id);
                   }}
                   className={`absolute right-2 top-1.5 p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/80 transition ${
                     isMenuOpen || isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -253,6 +257,57 @@ export default function ConversationList() {
                 >
                   <MoreVertical className="w-3.5 h-3.5" />
                 </button>
+
+                {/* iOS Cupertino Style Context Menu Dropdown */}
+                {isMenuOpen && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-2 top-7 w-48 bg-[#180a0d]/95 backdrop-blur-2xl rounded-2xl p-1 z-[100] shadow-2xl border border-red-500/30 flex flex-col text-xs divide-y divide-red-500/15 select-none"
+                  >
+                    <button
+                      onClick={() => handleRename(conv.id, conv.title)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
+                    >
+                      <span>Rename Title</span>
+                      <Edit2 className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => handleTogglePin(conv.id, conv.isPinned)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
+                    >
+                      <span>{conv.isPinned ? "Unpin Chat" : "Pin to Top"}</span>
+                      <Pin className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleBookmark(conv.id, conv.isBookmarked)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
+                    >
+                      <span>{conv.isBookmarked ? "Remove Bookmark" : "Bookmark Chat"}</span>
+                      <Bookmark className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => handleExportJSON(conv.id, conv.title)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
+                    >
+                      <span>Export JSON</span>
+                      <Download className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => handleExportMarkdown(conv.id, conv.title)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
+                    >
+                      <span>Export Markdown</span>
+                      <Download className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(conv.id)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/20 text-red-400 text-left transition font-semibold"
+                    >
+                      <span>Delete Chat</span>
+                      <Trash2 className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -311,37 +366,203 @@ export default function ConversationList() {
       </div>
 
       {/* Live Search Input for Chats */}
-      <div className="relative px-1 mb-1 flex items-center">
-        <Search className="w-3.5 h-3.5 absolute left-3.5 pointer-events-none text-red-400/60" style={{ left: '14px', top: '7px' }} />
+      <div className="relative px-1 mb-1">
+        <Search className="w-3.5 h-3.5 absolute left-3 top-2 text-red-400/60" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Filter chats..."
-          style={{ paddingLeft: '32px' }}
-          className="w-full bg-[#1b1013] border border-red-500/15 rounded-xl pr-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+          className="w-full bg-[#1b1013] border border-red-500/15 rounded-xl pl-8 pr-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
         />
       </div>
 
-      {/* Chats Section with Chronological Grouping */}
-      <div className="mt-1">
-        {loading && conversations.length === 0 ? (
-          <SidebarChatsSkeleton count={7} />
-        ) : normalChats.length === 0 ? (
-          <div className="px-3 py-2 text-[11px] text-slate-500 font-medium">No active chats found</div>
-        ) : (
-          <>
-            {renderChatGroup("Pinned", pinned)}
-            {renderChatGroup("Today", today)}
-            {renderChatGroup("Yesterday", yesterday)}
-            {renderChatGroup("Previous 7 Days", past7Days)}
-            {renderChatGroup("Older", older)}
-          </>
+      {/* Projects Accordion Section (Always Visible) */}
+      <div>
+        <div className="w-full flex items-center justify-between px-2 py-1 rounded-lg hover:bg-[#1f1215] text-slate-300 hover:text-white font-semibold transition select-none">
+          <button
+            onClick={() => {
+              if (isProjectsOpen) {
+                setIsProjectsOpen(false);
+                setActiveProjectId(null);
+              } else {
+                setIsProjectsOpen(true);
+              }
+            }}
+            className="flex items-center gap-1.5 flex-1 text-left"
+          >
+            <span className="font-semibold text-slate-200">Projects</span>
+          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDeleteTarget("projects");
+              }}
+              title="Delete All Projects"
+              className="p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/15 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCreateProject();
+              }}
+              title="Create New Project Folder"
+              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5 text-red-400" />
+            </button>
+            <button
+              onClick={() => {
+                if (isProjectsOpen) {
+                  setIsProjectsOpen(false);
+                  setActiveProjectId(null);
+                } else {
+                  setIsProjectsOpen(true);
+                }
+              }}
+            >
+              {isProjectsOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+            </button>
+          </div>
+        </div>
+
+        {isProjectsOpen && (
+          <div className="pl-1 mt-1 space-y-1">
+            {projects.length === 0 ? (
+              <div className="px-3 py-1.5 text-[10px] text-slate-500 italic">No project folders yet</div>
+            ) : (
+              projects.map((proj) => {
+                const isExpanded = !!expandedProjects[proj.id];
+                const projectChats = conversations.filter((c) => c.projectId === proj.id);
+                const isSelected = activeProjectId === proj.id;
+
+                return (
+                  <div key={proj.id} className="space-y-0.5">
+                    <div
+                      onClick={() => {
+                        setActiveProjectId(proj.id);
+                        setExpandedProjects((prev) => ({ ...prev, [proj.id]: true }));
+                        router.push("/new");
+                      }}
+                      className={`flex items-center justify-between px-2 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition select-none group ${
+                        isSelected
+                          ? "bg-red-500/20 text-white border border-red-500/30"
+                          : "text-slate-300 hover:bg-[#1f1215] hover:text-slate-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        {isExpanded ? (
+                          <ChevronDown className="w-3 h-3 text-red-400 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        )}
+                        <Folder className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                        <span className="truncate font-semibold">{proj.name}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">({projectChats.length})</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteProject(proj.id, proj.name, e)}
+                        title="Delete Project Folder"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/15 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pl-4 space-y-0.5 border-l border-red-500/15 ml-3">
+                        {projectChats.length === 0 ? (
+                          <div className="px-2 py-1 text-[10px] text-slate-500 italic">No chats in project</div>
+                        ) : (
+                          projectChats.map((conv) => {
+                            const isActive = currentId === conv.id;
+                            return (
+                              <button
+                                key={conv.id}
+                                onClick={() => router.push(`/c/${conv.id}`)}
+                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition ${
+                                  isActive
+                                    ? "bg-red-500/25 text-white font-semibold border border-red-500/40"
+                                    : "text-slate-300 hover:bg-[#1f1215] hover:text-white"
+                                }`}
+                              >
+                                <MessageSquare className={`w-3 h-3 flex-shrink-0 ${isActive ? "text-red-400" : "text-slate-400"}`} />
+                                <span className="truncate flex-1 text-[11px]">{conv.title}</span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
       </div>
 
-      {/* Delete All Chats Confirmation Modal */}
-      {confirmDeleteChats && (
+      {/* Chats Accordion Section with Chronological Grouping */}
+      <div>
+        <div className="w-full flex items-center justify-between px-2 py-1 rounded-lg hover:bg-[#1f1215] text-slate-300 hover:text-white font-semibold transition select-none">
+          <button
+            onClick={() => setIsChatsOpen(!isChatsOpen)}
+            className="flex items-center gap-1.5 flex-1 text-left"
+          >
+            <span className="font-semibold text-slate-200">Chats</span>
+          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDeleteTarget("chats");
+              }}
+              title="Delete All Chat History"
+              className="p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/15 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveProjectId(null);
+                router.push("/new");
+              }}
+              title="New Normal Chat"
+              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5 text-red-400" />
+            </button>
+            <button onClick={() => setIsChatsOpen(!isChatsOpen)}>
+              {isChatsOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+            </button>
+          </div>
+        </div>
+
+        {isChatsOpen && (
+          <div className="mt-1">
+            {normalChats.length === 0 ? (
+              <div className="px-3 py-2 text-[11px] text-slate-500 font-medium">No active chats found</div>
+            ) : (
+              <>
+                {renderChatGroup("Pinned", pinned)}
+                {renderChatGroup("Today", today)}
+                {renderChatGroup("Yesterday", yesterday)}
+                {renderChatGroup("Previous 7 Days", past7Days)}
+                {renderChatGroup("Older", older)}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Theme Delete Confirmation Modal */}
+      {confirmDeleteTarget && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
           <div className="bg-[#1a0c0f] border border-red-500/30 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4 select-none animate-in fade-in zoom-in duration-150">
             <div className="flex items-center gap-3">
@@ -349,9 +570,13 @@ export default function ConversationList() {
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white">Clear All Chat History?</h3>
+                <h3 className="font-bold text-sm text-white">
+                  {confirmDeleteTarget === "projects" ? "Delete All Projects?" : "Clear All Chat History?"}
+                </h3>
                 <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  Are you sure you want to delete all chat history and messages? This action cannot be undone.
+                  {confirmDeleteTarget === "projects"
+                    ? "Are you sure you want to delete all project folders? This action cannot be undone."
+                    : "Are you sure you want to delete all chat history and messages? This action cannot be undone."}
                 </p>
               </div>
             </div>
@@ -359,7 +584,7 @@ export default function ConversationList() {
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-red-500/15">
               <button
                 type="button"
-                onClick={() => setConfirmDeleteChats(false)}
+                onClick={() => setConfirmDeleteTarget(null)}
                 className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
               >
                 Cancel
@@ -367,15 +592,22 @@ export default function ConversationList() {
               <button
                 type="button"
                 onClick={async () => {
-                  try {
-                    await fetch("/api/conversations", { method: "DELETE" });
-                    clearConversationCache();
-                    setConversations([]);
-                    router.push("/chats");
-                  } catch (err) {
-                    console.error("Failed to delete chats:", err);
+                  if (confirmDeleteTarget === "projects") {
+                    setProjects([]);
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("cheapchats_projects");
+                    }
+                    setActiveProjectId(null);
+                  } else if (confirmDeleteTarget === "chats") {
+                    try {
+                      await fetch("/api/conversations", { method: "DELETE" });
+                      setConversations([]);
+                      router.push("/new");
+                    } catch (err) {
+                      console.error("Failed to delete chats:", err);
+                    }
                   }
-                  setConfirmDeleteChats(false);
+                  setConfirmDeleteTarget(null);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition shadow-lg shadow-red-900/40"
               >
@@ -384,57 +616,6 @@ export default function ConversationList() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Floating Context Menu (Portaled to document.body to ensure zero clipping and topmost z-index) */}
-      {mounted && menuTarget && typeof document !== "undefined" && createPortal(
-        <div
-          style={{
-            position: "fixed",
-            top: `${menuTarget.top}px`,
-            left: `${menuTarget.left}px`,
-            zIndex: 99999,
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-48 bg-[#180a0d]/95 backdrop-blur-2xl rounded-2xl p-1 shadow-2xl border border-red-500/30 flex flex-col text-xs divide-y divide-red-500/15 select-none animate-in fade-in zoom-in-95 duration-100"
-        >
-          <button
-            onClick={() => handleRename(menuTarget.id, menuTarget.title)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
-          >
-            <span>Rename Title</span>
-            <Edit2 className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
-          </button>
-          <button
-            onClick={() => handleTogglePin(menuTarget.id, menuTarget.isPinned)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
-          >
-            <span>{menuTarget.isPinned ? "Unpin Chat" : "Pin to Top"}</span>
-            <Pin className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-          </button>
-          <button
-            onClick={() => handleExportJSON(menuTarget.id, menuTarget.title)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
-          >
-            <span>Export JSON</span>
-            <Download className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          </button>
-          <button
-            onClick={() => handleExportMarkdown(menuTarget.id, menuTarget.title)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
-          >
-            <span>Export Markdown</span>
-            <Download className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-          </button>
-          <button
-            onClick={() => handleDelete(menuTarget.id)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/20 text-red-400 text-left transition font-semibold"
-          >
-            <span>Delete Chat</span>
-            <Trash2 className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-          </button>
-        </div>,
-        document.body
       )}
     </div>
   );

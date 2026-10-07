@@ -176,7 +176,7 @@ function renderMarkdown(text: string, onOpenArtifact?: (lang: string, code: stri
           className={`my-3 p-3 rounded-2xl backdrop-blur-xl border flex items-center justify-between gap-2.5 cursor-pointer transition group select-none shadow-xl w-full min-w-0 ${
             isPatch
               ? "bg-[#18140a]/90 border-amber-500/30 hover:border-amber-500/60 shadow-amber-950/40"
-              : "bg-[#180a0d]/90 border-red-500/30 hover:border-red-500/60 shadow-black/60"
+              : "bg-[var(--surface-card,#180a0d)]/90 border-red-500/30 hover:border-red-500/60 shadow-black/60"
           }`}
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -628,20 +628,20 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
   if (isUser) {
     return (
       <div className="w-full min-w-0 py-3.5 px-3 sm:px-6 md:px-8 flex justify-end transition duration-150">
-        <div className="max-w-2xl w-full min-w-0 flex items-start gap-3 justify-end">
+        <div className="max-w-3xl w-full min-w-0 flex items-start gap-3 justify-end">
           {/* Edit Mode vs Render Mode */}
           {isEditing ? (
             <div className="w-full min-w-[280px] sm:min-w-[420px] flex flex-col gap-2">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full bg-[#1c1013] border border-red-500/50 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="w-full bg-[var(--surface-input,#1c1013)] border border-red-500/50 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-red-500"
                 rows={4}
               />
               <div className="flex items-center gap-2 justify-end">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1 rounded-lg bg-[#251417] text-xs text-slate-300 hover:bg-[#30181c]"
+                  className="px-3 py-1 rounded-lg bg-[var(--surface-hover,#251417)] text-xs text-slate-300 hover:bg-[var(--surface-hover,#30181c)]"
                 >
                   Cancel
                 </button>
@@ -690,7 +690,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                       return (
                         <div
                           key={att.id || idx}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#221215] border border-red-500/25 text-xs text-slate-200 shadow-sm"
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[var(--surface-card,#221215)] border border-red-500/25 text-xs text-slate-200 shadow-sm"
                         >
                           <div className="w-6 h-6 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center flex-shrink-0 text-red-400">
                             <FileText className="w-3.5 h-3.5" />
