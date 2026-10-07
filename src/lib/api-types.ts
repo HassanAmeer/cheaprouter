@@ -7,6 +7,8 @@ export interface User {
   plan: string;
   created_at?: string;
   password_changed_at?: string | null;
+  plan_start?: string | null;
+  plan_expiry?: string | null;
   plan_cli?: string;
   plan_api?: string;
   plan_chat?: string;
@@ -85,22 +87,48 @@ export interface WithdrawalRequest {
   processed: string | null;
 }
 
+export type UsageSourceType = 'all' | 'cli' | 'ide' | 'chat' | 'api';
+
+export interface UsageTypeSummary {
+  hits: number;
+  tokens: number;
+  cost: number;
+  models: number;
+}
+
 export interface UsageBreakdown {
   models: UsageModel[];
+  byType?: Record<string, UsageTypeSummary>;
   totalModels: number;
   totalCalls: number;
   totalTokens: number;
   totalCost: number;
-  conversations: number;
-  messages: number;
+  conversations?: number;
+  messages?: number;
+  activeUsers?: number;
+  logs?: AdminUsageLog[];
+}
+
+export interface AdminUsageLog {
+  id: string;
+  model: string;
+  source: string;
+  tokens: number;
+  cost: number;
+  created_at: string | null;
+  user_id: string;
+  user_email: string;
+  user_name: string;
 }
 
 export interface UsageModel {
   model: string;
+  source?: string;
   hits: number;
   tokens: number;
   cost: number;
   last_used: string | null;
+  total_users?: number;
 }
 
 export interface AnalyticsData {
@@ -121,6 +149,7 @@ export interface PlanLimitData {
 }
 
 export interface SummaryData {
+  planName?: string;
   limit: number;
   used: number;
   remaining: number;
@@ -193,7 +222,10 @@ export interface SettingsData {
   };
   install?: { websiteUrl?: string };
   pricingSection?: {
-    tabs: PricingTab[];
+    title?: string;
+    subtitle?: string;
+    plans?: PricingPlan[];
+    tabs?: PricingTab[];
   };
   modelsSection?: { title: string; subtitle: string };
   featuresGrid?: { title: string; subtitle: string; features: Feature[] };
@@ -217,6 +249,14 @@ export interface PricingPlan {
   price: string;
   period: string;
   desc: string;
+  tokens?: string;
+  tokensM?: number;
+  tokenLimit?: number;
+  includedModels?: string[];
+  canUseCli?: boolean;
+  canUseIde?: boolean;
+  canUseChat?: boolean;
+  canUseApi?: boolean;
   features: string[];
   cta: string;
   ctaLink: string;

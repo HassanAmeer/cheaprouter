@@ -180,6 +180,8 @@
   clip-path: none;
   border-radius: 8px;
   border: 2px solid var(--color-border) !important;
+  background-origin: border-box !important;
+  background-repeat: no-repeat !important;
   transition: all 0.4s ease;
 }
 
@@ -191,6 +193,8 @@
 .btnContainerNavOutline:hover .spaceBtn {
   background: linear-gradient(80deg, black, red) !important;
   border-color: transparent !important;
+  background-origin: border-box !important;
+  background-repeat: no-repeat !important;
 }
 
 .btnContainerNavOutline:hover .spaceBtn span {

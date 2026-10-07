@@ -1,21 +1,16 @@
 {
-  "name": "Devonz",
-  "short_name": "Devonz",
-  "description": "AI-powered full-stack development agent",
+  "name": "CheapRouter",
+  "short_name": "CheapRouter",
+  "description": "The Most Cost-Effective AI Model Router & Gateway",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
+      "src": "/favicon.ico",
+      "type": "image/x-icon",
       "sizes": "any"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "type": "image/png",
-      "sizes": "180x180"
     }
   ]
 }

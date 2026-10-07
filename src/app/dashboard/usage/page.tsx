@@ -1,152 +1,397 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '@/lib/api';
-import styles from '../dashboard.module.css';
-import { Activity, Zap, Wallet, Cpu, Terminal, MessageSquare, Hammer, Braces, MessagesSquare } from 'lucide-react';
-import { getMetricInfo } from '@/lib/utils';
-import { UsageBreakdown, UsageModel } from '@/lib/api-types';
+import styles from './usage.module.css';
+import { 
+  Activity, Zap, Wallet, Cpu, Terminal, MessageSquare, 
+  Hammer, Braces, Layers, RefreshCw, Search, ArrowUpDown, Filter, Sparkles
+} from 'lucide-react';
+import { UsageBreakdown, UsageModel, UsageSourceType } from '@/lib/api-types';
 
-const TABS = [
-  { key: 'cli', label: 'CLI / Code Editor', icon: <Terminal size={15} /> },
-  { key: 'chat', label: 'Cheap Chats', icon: <MessageSquare size={15} /> },
-  { key: 'ide', label: 'IDE Builder', icon: <Hammer size={15} /> },
-  { key: 'api', label: 'APIs', icon: <Braces size={15} /> },
+interface TabConfig {
+  key: UsageSourceType;
+  label: string;
+  badgeLabel: string;
+  icon: React.ReactNode;
+  color: string;
+  description: string;
+}
+
+const TABS: TabConfig[] = [
+  { 
+    key: 'all', 
+    label: 'All Sources', 
+    badgeLabel: 'All',
+    icon: <Layers size={15} />, 
+    color: '#8B5CF6',
+    description: 'Combined model calls, token usage, and costs across all tools and integrations.' 
+  },
+  { 
+    key: 'cli', 
+    label: 'CLI / Terminal', 
+    badgeLabel: 'CLI',
+    icon: <Terminal size={15} />, 
+    color: '#0891b2',
+    description: 'Model calls made from CheapRouter CLI, Aider, Claude Code, and terminal editors via /v1/chat/completions.' 
+  },
+  { 
+    key: 'ide', 
+    label: 'IDE Builder', 
+    badgeLabel: 'IDE',
+    icon: <Hammer size={15} />, 
+    color: '#6366f1',
+    description: 'AI usage from Devonz Code Editor, Cursor, and IDE coding extensions.' 
+  },
+  { 
+    key: 'chat', 
+    label: 'Cheap Chats', 
+    badgeLabel: 'Chats',
+    icon: <MessageSquare size={15} />, 
+    color: '#10b981',
+    description: 'Messages and model completions generated inside the Cheap Chats web conversation app.' 
+  },
+  { 
+    key: 'api', 
+    label: 'Direct API', 
+    badgeLabel: 'API',
+    icon: <Braces size={15} />, 
+    color: '#d97706',
+    description: 'Direct programmatic REST requests sent to the /v1/chat/completions endpoints.' 
+  },
 ];
-
-const TAB_META: Record<string, { description: string }> = {
-  cli: { description: 'Model calls made from the CheapRouter CLI and code editors via /v1/chat/completions.' },
-  chat: { description: 'Messages sent in Cheap Chats through the chat and streaming endpoints.' },
-  ide: { description: 'AI usage from the IDE Builder (Devonz code editor) while writing and fixing code.' },
-  api: { description: 'Every call made through the /v1/chat/completions API endpoint.' },
-};
 
 export default function UsagePage() {
   const [breakdown, setBreakdown] = useState<UsageBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('cli');
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<UsageSourceType>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<'hits' | 'tokens' | 'cost' | 'last_used'>('hits');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const loadData = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    try {
+      const data = await api.usageBreakdown(activeTab);
+      setBreakdown(data);
+    } catch (err) {
+      console.error('Failed to load usage data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
-    const load = () => {
+    setLoading(true);
+    api.usageBreakdown(activeTab)
+      .then((d) => { if (active) setBreakdown(d); })
+      .catch(() => { if (active) setBreakdown(null); })
+      .finally(() => { if (active) setLoading(false); });
+
+    const interval = setInterval(() => {
       api.usageBreakdown(activeTab)
         .then((d) => { if (active) setBreakdown(d); })
-        .catch(() => { if (active) setBreakdown(null); })
-        .finally(() => { if (active) setLoading(false); });
+        .catch(() => {});
+    }, 12000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
     };
-    setLoading(true);
-    load();
-    const id = setInterval(load, 10000);
-    return () => { active = false; clearInterval(id); };
   }, [activeTab]);
 
-  const b: UsageBreakdown = breakdown ?? { models: [], totalModels: 0, totalCalls: 0, totalTokens: 0, totalCost: 0, conversations: 0, messages: 0 };
-
-  const cardsFor = (key: string) => {
-    if (key === 'chat') {
-      return [
-        { label: 'Total Chats', value: b.conversations.toLocaleString(), icon: <MessagesSquare size={20} />, bg: 'var(--color-primary-soft)', color: 'var(--color-primary)' },
-        { label: 'Total Messages', value: b.messages.toLocaleString(), icon: <MessageSquare size={20} />, bg: 'rgba(139,92,246,0.12)', color: '#8B5CF6' },
-        { label: 'Tokens Used', value: b.totalTokens.toLocaleString(), icon: <Zap size={20} />, bg: 'var(--color-success-soft)', color: 'var(--color-success)' },
-        { label: 'Total Cost', value: `$${b.totalCost.toFixed(4)}`, icon: <Wallet size={20} />, bg: 'rgba(217,119,6,0.1)', color: 'var(--color-warning)' },
-      ];
+  const b: UsageBreakdown = breakdown ?? {
+    models: [],
+    totalModels: 0,
+    totalCalls: 0,
+    totalTokens: 0,
+    totalCost: 0,
+    byType: {
+      all: { hits: 0, tokens: 0, cost: 0, models: 0 },
+      cli: { hits: 0, tokens: 0, cost: 0, models: 0 },
+      ide: { hits: 0, tokens: 0, cost: 0, models: 0 },
+      chat: { hits: 0, tokens: 0, cost: 0, models: 0 },
+      api: { hits: 0, tokens: 0, cost: 0, models: 0 },
     }
-    return [
-      { label: 'Total AI Models Used', value: b.totalModels.toLocaleString(), icon: <Cpu size={20} />, bg: 'rgba(139,92,246,0.12)', color: '#8B5CF6' },
-      { label: key === 'ide' ? 'Total IDE Calls' : key === 'cli' ? 'Total CLI Calls' : 'Total API Calls', value: b.totalCalls.toLocaleString(), icon: <Activity size={20} />, bg: 'var(--color-primary-soft)', color: 'var(--color-primary)' },
-      { label: 'Tokens Used', value: b.totalTokens.toLocaleString(), icon: <Zap size={20} />, bg: 'var(--color-success-soft)', color: 'var(--color-success)' },
-      { label: 'Total Cost', value: `$${b.totalCost.toFixed(4)}`, icon: <Wallet size={20} />, bg: 'rgba(217,119,6,0.1)', color: 'var(--color-warning)' },
-    ];
+  };
+
+  // Filter and sort models
+  const filteredModels = useMemo(() => {
+    let list = b.models || [];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(m => 
+        m.model.toLowerCase().includes(q) || 
+        (m.source && m.source.toLowerCase().includes(q))
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      let valA: any = a[sortField];
+      let valB: any = b[sortField];
+      if (sortField === 'last_used') {
+        valA = valA ? new Date(valA).getTime() : 0;
+        valB = valB ? new Date(valB).getTime() : 0;
+      }
+      return sortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+    });
+  }, [b.models, searchQuery, sortField, sortAsc]);
+
+  const currentTabMeta = TABS.find(t => t.key === activeTab) || TABS[0];
+
+  const handleSort = (field: 'hits' | 'tokens' | 'cost' | 'last_used') => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(false);
+    }
+  };
+
+  const renderTypeBadge = (source?: string) => {
+    const s = (source || 'api').toLowerCase();
+    switch (s) {
+      case 'cli':
+        return <span className={`${styles.typeBadge} ${styles.typeBadgeCli}`}><Terminal size={11} /> CLI</span>;
+      case 'ide':
+        return <span className={`${styles.typeBadge} ${styles.typeBadgeIde}`}><Hammer size={11} /> IDE</span>;
+      case 'chat':
+      case 'chats':
+      case 'web':
+        return <span className={`${styles.typeBadge} ${styles.typeBadgeChat}`}><MessageSquare size={11} /> Chats</span>;
+      case 'api':
+      default:
+        return <span className={`${styles.typeBadge} ${styles.typeBadgeApi}`}><Braces size={11} /> API</span>;
+    }
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Usage Analytics</h2>
-        <p style={{ color: 'var(--color-text-muted)' }}>Track your API calls, token consumption, and spending across all products.</p>
-      </div>
-
-      {/* ─── PRODUCT TABS ─── */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '9px 16px', borderRadius: '9px', fontSize: '13px', fontWeight: 600,
-              border: `1px solid ${activeTab === t.key ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              background: activeTab === t.key ? 'var(--color-primary)' : 'transparent',
-              color: activeTab === t.key ? '#fff' : 'var(--color-text-muted)',
-              cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === t.key ? '0 4px 14px rgba(124,58,237,0.3)' : 'none',
-            }}
+    <div className={styles.container}>
+      {/* ─── PAGE HEADER ─── */}
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.headerTitle}>
+            <Activity size={24} color="var(--color-primary)" /> Usage Analytics
+          </h1>
+          <p className={styles.headerSubtitle}>
+            Comprehensive consumption breakdown by source type — CLI, IDE Builder, Cheap Chats, and REST APIs.
+          </p>
+        </div>
+        <div className={styles.headerActions}>
+          <button 
+            className={styles.refreshBtn}
+            onClick={() => loadData(true)}
+            disabled={refreshing}
+            title="Refresh analytics data"
           >
-            {t.icon} {t.label}
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            <span>Refresh</span>
           </button>
-        ))}
+        </div>
       </div>
 
-      {loading ? (
-        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '14px' }}>Loading usage data…</div>
-      ) : (
-        <>
-          <div className={styles.statsGrid} style={{ marginBottom: '28px' }}>
-            {cardsFor(activeTab).map((s) => (
-              <div className={styles.statCard} key={s.label}>
-                <div className={styles.statIcon} style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                <div className={styles.statLabel}>{s.label}</div>
-                <div className={styles.statValue}>{s.value}</div>
-              </div>
-            ))}
-          </div>
+      {/* ─── FILTER CONTROLS BY TYPE ─── */}
+      <div className={styles.filterBar}>
+        <div className={styles.filterGroup}>
+          {TABS.map((tab) => {
+            const count = b.byType?.[tab.key]?.hits ?? 0;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`${styles.filterBtn} ${isActive ? styles.filterBtnActive : ''}`}
+                title={`Filter by ${tab.label}`}
+              >
+                <span style={{ color: isActive ? tab.color : 'inherit', display: 'flex', alignItems: 'center' }}>
+                  {tab.icon}
+                </span>
+                <span>{tab.label}</span>
+                <span className={styles.filterCountBadge}>
+                  {count.toLocaleString()}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="card glass-card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
-              <h2 className={styles.sectionTitle} style={{ margin: 0 }}>
-                {TABS.find(t => t.key === activeTab)?.label} Usage
-              </h2>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                {TAB_META[activeTab]?.description}
-              </p>
+      {/* ─── METRIC STAT CARDS ─── */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statCardHeader}>
+            <span className={styles.statLabel}>Total Requests</span>
+            <div className={styles.statIconWrap} style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+              <Activity size={18} />
             </div>
-
-            {b.models.length === 0 ? (
-              <div style={{ padding: '48px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '14px' }}>
-                No usage recorded for this product yet.
-              </div>
-            ) : (
-              <div className={styles.tableScroll}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>AI Model</th>
-                      <th style={{ textAlign: 'right' }}>{activeTab === 'chat' ? 'Hits' : 'API Hits'}</th>
-                      <th style={{ textAlign: 'right' }}>Tokens Used</th>
-                      <th style={{ textAlign: 'right' }}>Cost</th>
-                      <th style={{ textAlign: 'right' }}>Last Used</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {b.models.map((m: any, i: number) => (
-                      <tr key={i}>
-                        <td>
-                          <div style={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '13px' }}>{m.model}</div>
-                        </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{m.hits.toLocaleString()}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{m.tokens.toLocaleString()}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace', color: 'var(--color-warning)' }}>${m.cost.toFixed(4)}</td>
-                        <td style={{ textAlign: 'right', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                          {m.last_used ? new Date(m.last_used).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date(m.last_used).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
-        </>
-      )}
+          <div className={styles.statValue}>
+            {loading ? '…' : b.totalCalls.toLocaleString()}
+          </div>
+          <div className={styles.statFootnote}>
+            <span>{currentTabMeta.badgeLabel} execution calls recorded</span>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statCardHeader}>
+            <span className={styles.statLabel}>Tokens Consumed</span>
+            <div className={styles.statIconWrap} style={{ background: 'var(--color-success-soft)', color: 'var(--color-success)' }}>
+              <Zap size={18} />
+            </div>
+          </div>
+          <div className={styles.statValue}>
+            {loading ? '…' : b.totalTokens.toLocaleString()}
+          </div>
+          <div className={styles.statFootnote}>
+            <span>Prompt & completion tokens</span>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statCardHeader}>
+            <span className={styles.statLabel}>Total Cost</span>
+            <div className={styles.statIconWrap} style={{ background: 'rgba(217, 119, 6, 0.12)', color: 'var(--color-warning)' }}>
+              <Wallet size={18} />
+            </div>
+          </div>
+          <div className={styles.statValue} style={{ color: 'var(--color-warning)' }}>
+            {loading ? '…' : `$${b.totalCost.toFixed(4)}`}
+          </div>
+          <div className={styles.statFootnote}>
+            <span>Billed against account balance</span>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statCardHeader}>
+            <span className={styles.statLabel}>AI Models Active</span>
+            <div className={styles.statIconWrap} style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6' }}>
+              <Cpu size={18} />
+            </div>
+          </div>
+          <div className={styles.statValue}>
+            {loading ? '…' : b.totalModels.toLocaleString()}
+          </div>
+          <div className={styles.statFootnote}>
+            <span>Unique models in {currentTabMeta.badgeLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── USAGE BREAKDOWN TABLE CARD ─── */}
+      <div className={styles.tableCard}>
+        <div className={styles.tableHeaderBar}>
+          <div>
+            <h3 className={styles.tableHeaderTitle}>
+              <Filter size={16} color="var(--color-primary)" />
+              {currentTabMeta.label} Usage Breakdown
+            </h3>
+            <p className={styles.tableHeaderDesc}>
+              {currentTabMeta.description}
+            </p>
+          </div>
+
+          <div className={styles.searchBox}>
+            <Search size={15} color="var(--color-text-muted)" />
+            <input
+              type="text"
+              placeholder="Filter by model or type…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className={styles.emptyState}>
+            <div className="animate-spin" style={{ width: 32, height: 32, border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%' }} />
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>Loading usage records…</div>
+          </div>
+        ) : filteredModels.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <Activity size={24} />
+            </div>
+            <div className={styles.emptyTitle}>No usage recorded</div>
+            <div className={styles.emptyDesc}>
+              {searchQuery ? `No results matching "${searchQuery}". Try a different keyword.` : `No requests found for ${currentTabMeta.label}. Start generating completions to see live analytics.`}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.tableScroll}>
+            <table className={styles.usageTable}>
+              <thead>
+                <tr>
+                  <th>AI Model</th>
+                  <th>Type</th>
+                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('hits')}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Hits / Calls <ArrowUpDown size={12} />
+                    </span>
+                  </th>
+                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('tokens')}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Tokens Used <ArrowUpDown size={12} />
+                    </span>
+                  </th>
+                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('cost')}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Cost ($) <ArrowUpDown size={12} />
+                    </span>
+                  </th>
+                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('last_used')}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Last Used <ArrowUpDown size={12} />
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredModels.map((m: UsageModel, idx: number) => (
+                  <tr key={`${m.model}-${m.source || 'api'}-${idx}`}>
+                    <td>
+                      <div className={styles.modelBadge}>
+                        <Sparkles size={13} color="var(--color-primary)" />
+                        <span>{m.model}</span>
+                      </div>
+                    </td>
+                    <td>
+                      {renderTypeBadge(m.source)}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                      {m.hits.toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
+                      {m.tokens.toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: 'var(--color-warning)', fontWeight: 600 }}>
+                      ${m.cost.toFixed(4)}
+                    </td>
+                    <td style={{ textAlign: 'right', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      {m.last_used ? (
+                        <>
+                          {new Date(m.last_used).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {' '}
+                          <span style={{ opacity: 0.7 }}>
+                            {new Date(m.last_used).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

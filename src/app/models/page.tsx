@@ -5,10 +5,11 @@ import { SiteNav } from '../../components/site-nav';
 import { SiteFooter } from '../../components/site-footer';
 import PricingSection from '../../components/PricingSection';
 import ModelsTable from '../../components/ModelsTable';
+import styles from './models.module.css';
 
 export default function AllModelsPage() {
   return (
-    <main>
+    <main className={styles.page}>
       <AnnouncementBar />
 
       <SiteNav links={[
@@ -19,20 +20,9 @@ export default function AllModelsPage() {
         { href: '/cli', label: 'Coding' },
       ]} />
 
-      {/* Page title */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px 32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-text-main)', marginBottom: '8px', letterSpacing: '-0.5px' }}>
-          All Available Models
-        </h1>
-        <p style={{ fontSize: '15px', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-          Browse all models available on this platform, sorted by priority.
-        </p>
-      </div>
-
-      {/* Full table — no limit */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-        <ModelsTable />
-      </div>
+      <section className={styles.catalog}>
+        <ModelsTable libraryMode />
+      </section>
 
       {/* Pricing section */}
       <div id="pricing" style={{ marginTop: '80px' }}>

@@ -7,7 +7,9 @@ export async function GET(req: Request) {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
     const authHeader = req.headers.get('authorization') || '';
 
-    const response = await fetch(`${backendUrl}/api/admin/analytics`, {
+    const { search } = new URL(req.url);
+
+    const response = await fetch(`${backendUrl}/api/admin/analytics${search}`, {
       headers: { 'Authorization': authHeader }
     });
 

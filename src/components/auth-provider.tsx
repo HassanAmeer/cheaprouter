@@ -10,6 +10,8 @@ interface User {
   plan: string;
   created_at?: string;
   password_changed_at?: string | null;
+  plan_start?: string | null;
+  plan_expiry?: string | null;
   plan_cli?: string;
   plan_api?: string;
   plan_chat?: string;
@@ -38,10 +40,11 @@ interface AuthValue {
   signup: (email: string, password: string, name?: string) => Promise<void>;
   updateProfile: (name: string, profile_picture?: string | File) => Promise<void>;
   completeOnboarding: (data: { isStudent: boolean; experienceLevel: string; useCases: string[]; earningGoal: string }) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthValue>({ user: null, loading: true, login: async () => {}, signup: async () => {}, updateProfile: async () => {}, completeOnboarding: async () => {}, logout: () => {} });
+const AuthContext = createContext<AuthValue>({ user: null, loading: true, login: async () => {}, signup: async () => {}, updateProfile: async () => {}, completeOnboarding: async () => {}, refreshUser: async () => {}, logout: () => {} });
 
 function getHardwareSystemInfo() {
   if (typeof window === 'undefined') return {};
@@ -145,13 +148,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(r.user);
   };
 
+  const refreshUser = async () => {
+    try {
+      const u = await api.me();
+      if (u?.user) setUser(u.user);
+      else if (u) setUser(u as any);
+    } catch {}
+  };
+
   const logout = () => {
     localStorage.removeItem('cm_token');
     setUser(null);
     window.location.href = '/login';
   };
 
-  return <AuthContext.Provider value={{ user, loading, login, signup, updateProfile, completeOnboarding, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, signup, updateProfile, completeOnboarding, refreshUser, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -23,6 +23,8 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active';`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_start TIMESTAMP;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expiry TIMESTAMP;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_cli TEXT DEFAULT 'Free';`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_api TEXT DEFAULT 'Free';`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_chat TEXT DEFAULT 'Free';`;
@@ -198,11 +200,13 @@ export async function initDb() {
       models JSON,
       headers JSON,
       icon TEXT,
-      byok_enabled BOOLEAN NOT NULL DEFAULT true
+      byok_enabled BOOLEAN NOT NULL DEFAULT true,
+      chats_enabled BOOLEAN NOT NULL DEFAULT true
     );
   `;
 
   await db`ALTER TABLE admin_providers ADD COLUMN IF NOT EXISTS byok_enabled BOOLEAN NOT NULL DEFAULT true;`;
+  await db`ALTER TABLE admin_providers ADD COLUMN IF NOT EXISTS chats_enabled BOOLEAN NOT NULL DEFAULT true;`;
 
   await db`
     CREATE TABLE IF NOT EXISTS user_model_prefs (

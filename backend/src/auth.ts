@@ -114,7 +114,7 @@ export async function getUserById(id: string) {
 export async function getUserByEmail(email: string) {
   const result = await db`SELECT * FROM users WHERE email = ${email}`;
   return result[0] as
-    | { id: string; name: string; email: string; password_hash: string; plan: string }
+    | { id: string; name: string; email: string; password_hash: string; plan: string; status?: string }
     | undefined;
 }
 
@@ -316,7 +316,7 @@ export const ADMIN_USER_FIELDS = [
 ] as const;
 
 export async function adminUpdateUser(id: string, data: any) {
-  const allowedFields = ADMIN_USER_FIELDS;
+  const allowedFields: readonly string[] = ADMIN_USER_FIELDS;
   const updates = Object.keys(data).filter(k => allowedFields.includes(k) && data[k] !== undefined);
   if (updates.length === 0) return;
 

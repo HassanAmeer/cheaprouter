@@ -1,7 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from '../admin.module.css';
-import { Wallet, FileText, Check, X, Download, Loader2, User, Settings2, Save } from 'lucide-react';
+import { Wallet, FileText, Check, X, Download, Loader2, User, Settings2, Save, Search, Trash2, CheckSquare } from 'lucide-react';
+import { PaginationBar } from '@/components/ui/pagination-bar';
 
 type Withdrawal = {
   id: string;
@@ -50,7 +51,100 @@ export default function AdminBillingPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
+  // Multi-selection states
+  const [selectedWithdrawIds, setSelectedWithdrawIds] = useState<Set<string>>(new Set());
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
+  const [selectedTopupIds, setSelectedTopupIds] = useState<Set<string>>(new Set());
+  const [deletingBulk, setDeletingBulk] = useState(false);
+
+  // Withdrawal pagination & search
+  const [withdrawSearch, setWithdrawSearch] = useState('');
+  const [withdrawStatusFilter, setWithdrawStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [withdrawPage, setWithdrawPage] = useState(1);
+  const [withdrawPageSize, setWithdrawPageSize] = useState(50);
+
+  // Invoices pagination & search
+  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState('all');
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [invoicePageSize, setInvoicePageSize] = useState(50);
+
+  // Topups pagination & search
+  const [topupSearch, setTopupSearch] = useState('');
+  const [topupStatusFilter, setTopupStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [topupPage, setTopupPage] = useState(1);
+  const [topupPageSize, setTopupPageSize] = useState(50);
+
   const adminHeaders = () => ({ 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}`, 'Content-Type': 'application/json' });
+
+  const handleDeleteSelectedWithdrawals = async () => {
+    if (selectedWithdrawIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedWithdrawIds.size} withdrawal request${selectedWithdrawIds.size > 1 ? 's' : ''}?`)) return;
+    setDeletingBulk(true);
+    try {
+      const res = await fetch('/api/admin/withdrawals', {
+        method: 'DELETE',
+        headers: adminHeaders(),
+        body: JSON.stringify({ ids: Array.from(selectedWithdrawIds) })
+      });
+      if (res.ok) {
+        setWithdrawals(prev => prev.filter(w => !selectedWithdrawIds.has(w.id)));
+        setSelectedWithdrawIds(new Set());
+      } else {
+        alert('Failed to delete selected withdrawal requests');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Error deleting withdrawals');
+    } finally {
+      setDeletingBulk(false);
+    }
+  };
+
+  const handleDeleteSelectedInvoices = async () => {
+    if (selectedInvoiceIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedInvoiceIds.size} invoice${selectedInvoiceIds.size > 1 ? 's' : ''}?`)) return;
+    setDeletingBulk(true);
+    try {
+      const res = await fetch('/api/admin/transactions', {
+        method: 'DELETE',
+        headers: adminHeaders(),
+        body: JSON.stringify({ ids: Array.from(selectedInvoiceIds) })
+      });
+      if (res.ok) {
+        setInvoices(prev => prev.filter(inv => !selectedInvoiceIds.has(inv.id)));
+        setSelectedInvoiceIds(new Set());
+      } else {
+        alert('Failed to delete selected invoices');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Error deleting invoices');
+    } finally {
+      setDeletingBulk(false);
+    }
+  };
+
+  const handleDeleteSelectedTopups = async () => {
+    if (selectedTopupIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedTopupIds.size} top-up request${selectedTopupIds.size > 1 ? 's' : ''}?`)) return;
+    setDeletingBulk(true);
+    try {
+      const res = await fetch('/api/admin/topups', {
+        method: 'DELETE',
+        headers: adminHeaders(),
+        body: JSON.stringify({ ids: Array.from(selectedTopupIds) })
+      });
+      if (res.ok) {
+        setTopups(prev => prev.filter(t => !selectedTopupIds.has(t.id)));
+        setSelectedTopupIds(new Set());
+      } else {
+        alert('Failed to delete selected top-up requests');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Error deleting top-up requests');
+    } finally {
+      setDeletingBulk(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/admin/withdrawals', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token') || ''}` } })
@@ -197,9 +291,10 @@ export default function AdminBillingPage() {
   };
 
   const downloadAllInvoices = () => {
+    const listToExport = filteredInvoices.length > 0 ? filteredInvoices : invoices;
     const lines = [
       'Invoice,Date,User,Email,Type,Amount,Notes',
-      ...invoices.map(inv => [inv.id, fmtDate(inv.created), inv.userName, inv.userEmail, inv.type, money(inv.amount), inv.description].join(',')),
+      ...listToExport.map(inv => [inv.id, fmtDate(inv.created), inv.userName, inv.userEmail, inv.type, money(inv.amount), inv.description].join(',')),
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -209,6 +304,77 @@ export default function AdminBillingPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Withdrawals filtering & pagination
+  const filteredWithdrawals = useMemo(() => {
+    return withdrawals.filter(w => {
+      const q = withdrawSearch.trim().toLowerCase();
+      const matchesSearch = !q ||
+        (w.id && w.id.toLowerCase().includes(q)) ||
+        (w.userName && w.userName.toLowerCase().includes(q)) ||
+        (w.userEmail && w.userEmail.toLowerCase().includes(q)) ||
+        (w.method && w.method.toLowerCase().includes(q)) ||
+        (w.amount !== undefined && String(w.amount).includes(q));
+      const matchesStatus = withdrawStatusFilter === 'all' || w.status === withdrawStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [withdrawals, withdrawSearch, withdrawStatusFilter]);
+
+  const totalWithdrawPages = Math.ceil(filteredWithdrawals.length / withdrawPageSize) || 1;
+  const pagedWithdrawals = useMemo(() => {
+    const start = (withdrawPage - 1) * withdrawPageSize;
+    return filteredWithdrawals.slice(start, start + withdrawPageSize);
+  }, [filteredWithdrawals, withdrawPage, withdrawPageSize]);
+
+  // Invoices filtering & pagination
+  const availableInvoiceTypes = useMemo(() => {
+    const set = new Set<string>();
+    invoices.forEach(i => { if (i.type) set.add(i.type); });
+    return Array.from(set);
+  }, [invoices]);
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(inv => {
+      const q = invoiceSearch.trim().toLowerCase();
+      const matchesSearch = !q ||
+        (inv.id && inv.id.toLowerCase().includes(q)) ||
+        (inv.userId && inv.userId.toLowerCase().includes(q)) ||
+        (inv.userName && inv.userName.toLowerCase().includes(q)) ||
+        (inv.userEmail && inv.userEmail.toLowerCase().includes(q)) ||
+        (inv.type && inv.type.toLowerCase().includes(q)) ||
+        (inv.description && inv.description.toLowerCase().includes(q)) ||
+        (inv.amount !== undefined && String(inv.amount).includes(q));
+      const matchesType = invoiceTypeFilter === 'all' || inv.type === invoiceTypeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [invoices, invoiceSearch, invoiceTypeFilter]);
+
+  const totalInvoicePages = Math.ceil(filteredInvoices.length / invoicePageSize) || 1;
+  const pagedInvoices = useMemo(() => {
+    const start = (invoicePage - 1) * invoicePageSize;
+    return filteredInvoices.slice(start, start + invoicePageSize);
+  }, [filteredInvoices, invoicePage, invoicePageSize]);
+
+  // Topups filtering & pagination
+  const filteredTopups = useMemo(() => {
+    return topups.filter(t => {
+      const q = topupSearch.trim().toLowerCase();
+      const matchesSearch = !q ||
+        (t.id && String(t.id).toLowerCase().includes(q)) ||
+        (t.userId && String(t.userId).toLowerCase().includes(q)) ||
+        (t.userName && String(t.userName).toLowerCase().includes(q)) ||
+        (t.userEmail && String(t.userEmail).toLowerCase().includes(q)) ||
+        (t.amount !== undefined && String(t.amount).includes(q));
+      const matchesStatus = topupStatusFilter === 'all' || t.status === topupStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [topups, topupSearch, topupStatusFilter]);
+
+  const totalTopupPages = Math.ceil(filteredTopups.length / topupPageSize) || 1;
+  const pagedTopups = useMemo(() => {
+    const start = (topupPage - 1) * topupPageSize;
+    return filteredTopups.slice(start, start + topupPageSize);
+  }, [filteredTopups, topupPage, topupPageSize]);
 
   return (
     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
@@ -314,7 +480,7 @@ export default function AdminBillingPage() {
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
                   <input
                     type="checkbox"
@@ -324,6 +490,10 @@ export default function AdminBillingPage() {
                   />
                   Withdrawals Enabled
                 </label>
+                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                  When off, the Withdraw button, withdraw history, and the withdraw form are hidden for every
+                  user, and withdrawal requests are rejected.
+                </span>
               </div>
             </div>
             <div style={{ marginBottom: '18px' }}>
@@ -432,10 +602,127 @@ export default function AdminBillingPage() {
           </div>
 
           <div className={styles.tableContainer}>
+            {/* Top Search & Status Toolbar */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 12, padding: '16px 20px', borderBottom: '1px solid var(--color-border)'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Withdrawal Requests</h3>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                  Payout requests awaiting review or completed.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', width: 220 }}>
+                  <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search withdrawal..."
+                    value={withdrawSearch}
+                    onChange={(e) => { setWithdrawSearch(e.target.value); setWithdrawPage(1); }}
+                    style={{
+                      width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px',
+                      border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                      color: 'var(--color-text-main)', fontSize: '12px', outline: 'none'
+                    }}
+                  />
+                  {withdrawSearch && (
+                    <button
+                      onClick={() => { setWithdrawSearch(''); setWithdrawPage(1); }}
+                      style={{
+                        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 2
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+                <select
+                  value={withdrawStatusFilter}
+                  onChange={(e: any) => { setWithdrawStatusFilter(e.target.value); setWithdrawPage(1); }}
+                  style={{
+                    padding: '7px 10px', borderRadius: '8px',
+                    border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                    color: 'var(--color-text-main)', fontSize: '12px', outline: 'none', cursor: 'pointer'
+                  }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Bulk Selection Action Bar */}
+            {selectedWithdrawIds.size > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 20px', background: 'rgba(124, 58, 237, 0.08)',
+                borderBottom: '1px solid rgba(124, 58, 237, 0.25)', animation: 'fadeIn 0.2s ease-out'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <CheckSquare size={16} color="var(--color-primary)" />
+                  <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px' }}>
+                    {selectedWithdrawIds.size} withdrawal request{selectedWithdrawIds.size > 1 ? 's' : ''} selected
+                  </span>
+                  <button
+                    onClick={() => setSelectedWithdrawIds(new Set())}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <button
+                  onClick={handleDeleteSelectedWithdrawals}
+                  disabled={deletingBulk}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                    border: '1px solid rgba(239, 68, 68, 0.3)', padding: '7px 16px',
+                    borderRadius: '8px', cursor: deletingBulk ? 'default' : 'pointer',
+                    fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+                  }}
+                >
+                  {deletingBulk ? <Loader2 size={14} className="lucide-spin" /> : <Trash2 size={14} />} Delete Selected
+                </button>
+              </div>
+            )}
+
+            {/* Top Pagination */}
+            <PaginationBar
+              currentPage={withdrawPage}
+              totalPages={totalWithdrawPages}
+              totalItems={filteredWithdrawals.length}
+              pageSize={withdrawPageSize}
+              onPageChange={setWithdrawPage}
+              onPageSizeChange={(s) => { setWithdrawPageSize(s); setWithdrawPage(1); }}
+              pageSizeOptions={[10, 25, 50]}
+              itemName="withdrawals"
+              position="top"
+            />
+
             <div className={styles.tableScroll}>
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
+                    <th style={{ width: '40px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={pagedWithdrawals.length > 0 && pagedWithdrawals.every(w => selectedWithdrawIds.has(w.id))}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedWithdrawIds);
+                          if (e.target.checked) {
+                            pagedWithdrawals.forEach(w => newSet.add(w.id));
+                          } else {
+                            pagedWithdrawals.forEach(w => newSet.delete(w.id));
+                          }
+                          setSelectedWithdrawIds(newSet);
+                        }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                      />
+                    </th>
                     <th>Request</th>
                     <th>User</th>
                     <th>Date</th>
@@ -447,12 +734,25 @@ export default function AdminBillingPage() {
                 </thead>
                 <tbody>
                   {loadingWithdrawals ? (
-                    <tr><td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading withdrawals…</td></tr>
-                  ) : withdrawals.length === 0 ? (
-                    <tr><td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No withdrawal requests yet.</td></tr>
+                    <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading withdrawals…</td></tr>
+                  ) : filteredWithdrawals.length === 0 ? (
+                    <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No withdrawal requests found.</td></tr>
                   ) : (
-                    withdrawals.map(w => (
-                      <tr key={w.id}>
+                    pagedWithdrawals.map(w => (
+                      <tr key={w.id} style={{ background: selectedWithdrawIds.has(w.id) ? 'rgba(124, 58, 237, 0.06)' : undefined }}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedWithdrawIds.has(w.id)}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedWithdrawIds);
+                              if (e.target.checked) newSet.add(w.id);
+                              else newSet.delete(w.id);
+                              setSelectedWithdrawIds(newSet);
+                            }}
+                            style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                          />
+                        </td>
                         <td style={{ fontWeight: 700 }}>{w.id}</td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -470,38 +770,68 @@ export default function AdminBillingPage() {
                         <td style={{ fontWeight: 600 }}>${Number(w.amount).toFixed(2)}</td>
                         <td>{statusBadge(w.status)}</td>
                         <td style={{ textAlign: 'right' }}>
-                          {w.status === 'pending' ? (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
-                              <button
-                                onClick={() => updateStatus(w.id, 'approved')}
-                                disabled={busyId === w.id}
-                                title="Approve & process this withdrawal (pays out the balance)"
-                                style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                  padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
-                                  cursor: busyId === w.id ? 'default' : 'pointer',
-                                  background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)'
-                                }}
-                              >
-                                <Check size={13} /> Approve
-                              </button>
-                              <button
-                                onClick={() => updateStatus(w.id, 'rejected')}
-                                disabled={busyId === w.id}
-                                title="Reject this withdrawal"
-                                style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                  padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
-                                  cursor: busyId === w.id ? 'default' : 'pointer',
-                                  background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)'
-                                }}
-                              >
-                                <X size={13} /> Reject
-                              </button>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{w.processed ? fmtDate(w.processed) : 'Resolved'}</span>
-                          )}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                            {w.status === 'pending' ? (
+                              <>
+                                <button
+                                  onClick={() => updateStatus(w.id, 'approved')}
+                                  disabled={busyId === w.id}
+                                  title="Approve & process this withdrawal (pays out the balance)"
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                    padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                                    cursor: busyId === w.id ? 'default' : 'pointer',
+                                    background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)'
+                                  }}
+                                >
+                                  <Check size={13} /> Approve
+                                </button>
+                                <button
+                                  onClick={() => updateStatus(w.id, 'rejected')}
+                                  disabled={busyId === w.id}
+                                  title="Reject this withdrawal"
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                    padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                                    cursor: busyId === w.id ? 'default' : 'pointer',
+                                    background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)'
+                                  }}
+                                >
+                                  <X size={13} /> Reject
+                                </button>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{w.processed ? fmtDate(w.processed) : 'Resolved'}</span>
+                            )}
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Delete withdrawal request ${w.id}?`)) return;
+                                try {
+                                  const res = await fetch('/api/admin/withdrawals', {
+                                    method: 'DELETE',
+                                    headers: adminHeaders(),
+                                    body: JSON.stringify({ ids: [w.id] })
+                                  });
+                                  if (res.ok) {
+                                    setWithdrawals(prev => prev.filter(x => x.id !== w.id));
+                                    setSelectedWithdrawIds(prev => { const s = new Set(prev); s.delete(w.id); return s; });
+                                  } else {
+                                    alert('Failed to delete withdrawal');
+                                  }
+                                } catch (e: any) {
+                                  alert(e?.message || 'Error deleting');
+                                }
+                              }}
+                              title="Delete withdrawal record"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                width: 28, height: 28, borderRadius: '6px',
+                                background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -509,6 +839,19 @@ export default function AdminBillingPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Bottom Pagination */}
+            <PaginationBar
+              currentPage={withdrawPage}
+              totalPages={totalWithdrawPages}
+              totalItems={filteredWithdrawals.length}
+              pageSize={withdrawPageSize}
+              onPageChange={setWithdrawPage}
+              onPageSizeChange={(s) => { setWithdrawPageSize(s); setWithdrawPage(1); }}
+              pageSizeOptions={[10, 25, 50]}
+              itemName="withdrawals"
+              position="bottom"
+            />
           </div>
         </div>
       )}
@@ -516,7 +859,49 @@ export default function AdminBillingPage() {
       {/* ── Invoices tab ── */}
       {tab === 'invoices' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', width: 240 }}>
+                <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search invoices..."
+                  value={invoiceSearch}
+                  onChange={(e) => { setInvoiceSearch(e.target.value); setInvoicePage(1); }}
+                  style={{
+                    width: '100%', padding: '8px 12px 8px 32px', borderRadius: '8px',
+                    border: '1px solid var(--color-border)', background: 'var(--color-card-bg)',
+                    color: 'var(--color-text-main)', fontSize: '13px', outline: 'none'
+                  }}
+                />
+                {invoiceSearch && (
+                  <button
+                    onClick={() => { setInvoiceSearch(''); setInvoicePage(1); }}
+                    style={{
+                      position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 2
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <select
+                value={invoiceTypeFilter}
+                onChange={(e) => { setInvoiceTypeFilter(e.target.value); setInvoicePage(1); }}
+                style={{
+                  padding: '8px 12px', borderRadius: '8px',
+                  border: '1px solid var(--color-border)', background: 'var(--color-card-bg)',
+                  color: 'var(--color-text-main)', fontSize: '13px', outline: 'none', cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Types</option>
+                {availableInvoiceTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
             <button
               onClick={downloadAllInvoices}
               disabled={invoices.length === 0}
@@ -530,11 +915,75 @@ export default function AdminBillingPage() {
               <Download size={13} /> Download All
             </button>
           </div>
+
           <div className={styles.tableContainer}>
+            {/* Bulk Selection Action Bar */}
+            {selectedInvoiceIds.size > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 20px', background: 'rgba(124, 58, 237, 0.08)',
+                borderBottom: '1px solid rgba(124, 58, 237, 0.25)', animation: 'fadeIn 0.2s ease-out'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <CheckSquare size={16} color="var(--color-primary)" />
+                  <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px' }}>
+                    {selectedInvoiceIds.size} invoice{selectedInvoiceIds.size > 1 ? 's' : ''} selected
+                  </span>
+                  <button
+                    onClick={() => setSelectedInvoiceIds(new Set())}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <button
+                  onClick={handleDeleteSelectedInvoices}
+                  disabled={deletingBulk}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                    border: '1px solid rgba(239, 68, 68, 0.3)', padding: '7px 16px',
+                    borderRadius: '8px', cursor: deletingBulk ? 'default' : 'pointer',
+                    fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+                  }}
+                >
+                  {deletingBulk ? <Loader2 size={14} className="lucide-spin" /> : <Trash2 size={14} />} Delete Selected
+                </button>
+              </div>
+            )}
+
+            {/* Top Pagination */}
+            <PaginationBar
+              currentPage={invoicePage}
+              totalPages={totalInvoicePages}
+              totalItems={filteredInvoices.length}
+              pageSize={invoicePageSize}
+              onPageChange={setInvoicePage}
+              onPageSizeChange={(s) => { setInvoicePageSize(s); setInvoicePage(1); }}
+              pageSizeOptions={[10, 25, 50]}
+              itemName="invoices"
+              position="top"
+            />
+
             <div className={styles.tableScroll}>
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
+                    <th style={{ width: '40px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={pagedInvoices.length > 0 && pagedInvoices.every(inv => selectedInvoiceIds.has(inv.id))}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedInvoiceIds);
+                          if (e.target.checked) {
+                            pagedInvoices.forEach(inv => newSet.add(inv.id));
+                          } else {
+                            pagedInvoices.forEach(inv => newSet.delete(inv.id));
+                          }
+                          setSelectedInvoiceIds(newSet);
+                        }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                      />
+                    </th>
                     <th>Invoice</th>
                     <th>User ID</th>
                     <th>User</th>
@@ -546,13 +995,26 @@ export default function AdminBillingPage() {
                 </thead>
                 <tbody>
                   {loadingInvoices && (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>Loading invoices…</td></tr>
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>Loading invoices…</td></tr>
                   )}
-                  {!loadingInvoices && invoices.length === 0 && (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No transactions yet</td></tr>
+                  {!loadingInvoices && filteredInvoices.length === 0 && (
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No transactions yet</td></tr>
                   )}
-                  {invoices.map(inv => (
-                    <tr key={inv.id}>
+                  {pagedInvoices.map(inv => (
+                    <tr key={inv.id} style={{ background: selectedInvoiceIds.has(inv.id) ? 'rgba(124, 58, 237, 0.06)' : undefined }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedInvoiceIds.has(inv.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedInvoiceIds);
+                            if (e.target.checked) newSet.add(inv.id);
+                            else newSet.delete(inv.id);
+                            setSelectedInvoiceIds(newSet);
+                          }}
+                          style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                        />
+                      </td>
                       <td style={{ fontWeight: 700 }}>{inv.id}</td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '12px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>
@@ -571,105 +1033,319 @@ export default function AdminBillingPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => setSelectedInvoice(inv)}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600,
-                            background: 'none', border: 'none', cursor: 'pointer'
-                          }}
-                        >
-                          <FileText size={13} /> Detail
-                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            onClick={() => setSelectedInvoice(inv)}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              fontSize: '13px', color: 'var(--color-primary)', fontWeight: 600,
+                              background: 'none', border: 'none', cursor: 'pointer'
+                            }}
+                          >
+                            <FileText size={13} /> Detail
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Delete invoice ${inv.id}?`)) return;
+                              try {
+                                const res = await fetch('/api/admin/transactions', {
+                                  method: 'DELETE',
+                                  headers: adminHeaders(),
+                                  body: JSON.stringify({ ids: [inv.id] })
+                                });
+                                if (res.ok) {
+                                  setInvoices(prev => prev.filter(x => x.id !== inv.id));
+                                  setSelectedInvoiceIds(prev => { const s = new Set(prev); s.delete(inv.id); return s; });
+                                } else {
+                                  alert('Failed to delete invoice');
+                                }
+                              } catch (e: any) {
+                                alert(e?.message || 'Error deleting');
+                              }
+                            }}
+                            title="Delete invoice record"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                              width: 28, height: 28, borderRadius: '6px',
+                              background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* Bottom Pagination */}
+            <PaginationBar
+              currentPage={invoicePage}
+              totalPages={totalInvoicePages}
+              totalItems={filteredInvoices.length}
+              pageSize={invoicePageSize}
+              onPageChange={setInvoicePage}
+              onPageSizeChange={(s) => { setInvoicePageSize(s); setInvoicePage(1); }}
+              pageSizeOptions={[10, 25, 50]}
+              itemName="invoices"
+              position="bottom"
+            />
           </div>
         </div>
       )}
       {/* ── Top-ups tab ── */}
       {tab === 'topups' && (
-        <div className={styles.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div className={styles.tableContainer}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '16px 20px', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid var(--color-border)'
+          }}>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: 4 }}>Top-up Requests</h2>
-              <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0 }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Top-up Requests</h3>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
                 Users request balance top-ups. Approving credits their balance; rejecting does nothing.
               </p>
             </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', width: 220 }}>
+                <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Search top-up..."
+                  value={topupSearch}
+                  onChange={(e) => { setTopupSearch(e.target.value); setTopupPage(1); }}
+                  style={{
+                    width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px',
+                    border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                    color: 'var(--color-text-main)', fontSize: '12px', outline: 'none'
+                  }}
+                />
+                {topupSearch && (
+                  <button
+                    onClick={() => { setTopupSearch(''); setTopupPage(1); }}
+                    style={{
+                      position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 2
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <select
+                value={topupStatusFilter}
+                onChange={(e: any) => { setTopupStatusFilter(e.target.value); setTopupPage(1); }}
+                style={{
+                  padding: '7px 10px', borderRadius: '8px',
+                  border: '1px solid var(--color-border)', background: 'var(--color-bg-soft)',
+                  color: 'var(--color-text-main)', fontSize: '12px', outline: 'none', cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
+
+          {/* Bulk Selection Action Bar */}
+          {selectedTopupIds.size > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 20px', background: 'rgba(124, 58, 237, 0.08)',
+              borderBottom: '1px solid rgba(124, 58, 237, 0.25)', animation: 'fadeIn 0.2s ease-out'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <CheckSquare size={16} color="var(--color-primary)" />
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px' }}>
+                  {selectedTopupIds.size} top-up request{selectedTopupIds.size > 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={() => setSelectedTopupIds(new Set())}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  Clear selection
+                </button>
+              </div>
+              <button
+                onClick={handleDeleteSelectedTopups}
+                disabled={deletingBulk}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                  border: '1px solid rgba(239, 68, 68, 0.3)', padding: '7px 16px',
+                  borderRadius: '8px', cursor: deletingBulk ? 'default' : 'pointer',
+                  fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+                }}
+              >
+                {deletingBulk ? <Loader2 size={14} className="lucide-spin" /> : <Trash2 size={14} />} Delete Selected
+              </button>
+            </div>
+          )}
+
+          {/* Top Pagination */}
+          <PaginationBar
+            currentPage={topupPage}
+            totalPages={totalTopupPages}
+            totalItems={filteredTopups.length}
+            pageSize={topupPageSize}
+            onPageChange={setTopupPage}
+            onPageSizeChange={(s) => { setTopupPageSize(s); setTopupPage(1); }}
+            pageSizeOptions={[10, 25, 50]}
+            itemName="requests"
+            position="top"
+          />
+
+          <div className={styles.tableScroll}>
+            <table className={styles.dataTable}>
               <thead>
                 <tr>
+                  <th style={{ width: '40px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={pagedTopups.length > 0 && pagedTopups.every(t => selectedTopupIds.has(t.id))}
+                      onChange={(e) => {
+                        const newSet = new Set(selectedTopupIds);
+                        if (e.target.checked) {
+                          pagedTopups.forEach(t => newSet.add(t.id));
+                        } else {
+                          pagedTopups.forEach(t => newSet.delete(t.id));
+                        }
+                        setSelectedTopupIds(newSet);
+                      }}
+                      style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                    />
+                  </th>
                   <th>Request</th>
                   <th>User ID</th>
                   <th>User</th>
                   <th>Date</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Action</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {topups.length === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No top-up requests yet</td></tr>
+                {filteredTopups.length === 0 && (
+                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No top-up requests found</td></tr>
                 )}
-                {topups.map(t => (
-                  <tr key={t.id}>
+                {pagedTopups.map(t => (
+                  <tr key={t.id} style={{ background: selectedTopupIds.has(t.id) ? 'rgba(124, 58, 237, 0.06)' : undefined }}>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedTopupIds.has(t.id)}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedTopupIds);
+                          if (e.target.checked) newSet.add(t.id);
+                          else newSet.delete(t.id);
+                          setSelectedTopupIds(newSet);
+                        }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                      />
+                    </td>
                     <td style={{ fontWeight: 700 }}>{t.id}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '12px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>
-                        <User size={12} /> {t.userId}
-                      </div>
+                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      {t.userId}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500 }}>{t.userName || '—'}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t.userEmail || ''}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <User size={14} color="var(--color-text-muted)" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 500 }}>{t.userName || '—'}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t.userEmail || ''}</div>
+                        </div>
+                      </div>
                     </td>
                     <td style={{ color: 'var(--color-text-muted)' }}>{fmtDate(t.created)}</td>
                     <td style={{ fontWeight: 600 }}>{money(t.amount)}</td>
-                    <td>
-                      <span className={`${styles.badge} ${t.status === 'approved' ? styles.badgeActive : t.status === 'rejected' ? styles.badgeInactive : styles.badgePro}`}>
-                        {t.status}
-                      </span>
-                    </td>
+                    <td>{statusBadge(t.status)}</td>
                     <td style={{ textAlign: 'right' }}>
-                      {t.status === 'pending' && (
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => updateTopupStatus(t.id, 'approved')}
-                            disabled={busyId === t.id}
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              fontSize: '13px', color: '#16a34a', fontWeight: 600,
-                              background: 'none', border: 'none', cursor: 'pointer'
-                            }}
-                          >
-                            {busyId === t.id ? <Loader2 size={13} className="lucide-spin" /> : <Check size={13} />} Approve
-                          </button>
-                          <button
-                            onClick={() => updateTopupStatus(t.id, 'rejected')}
-                            disabled={busyId === t.id}
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              fontSize: '13px', color: '#ef4444', fontWeight: 600,
-                              background: 'none', border: 'none', cursor: 'pointer'
-                            }}
-                          >
-                            <X size={13} /> Reject
-                          </button>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                        {t.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => updateTopupStatus(t.id, 'approved')}
+                              disabled={busyId === t.id}
+                              title="Approve & credit this top-up to the user's balance"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                                cursor: busyId === t.id ? 'default' : 'pointer',
+                                background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)'
+                              }}
+                            >
+                              {busyId === t.id ? <Loader2 size={13} className="lucide-spin" /> : <Check size={13} />} Approve
+                            </button>
+                            <button
+                              onClick={() => updateTopupStatus(t.id, 'rejected')}
+                              disabled={busyId === t.id}
+                              title="Reject this top-up"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                                cursor: busyId === t.id ? 'default' : 'pointer',
+                                background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)'
+                              }}
+                            >
+                              <X size={13} /> Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{t.processed ? fmtDate(t.processed) : 'Resolved'}</span>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete top-up request ${t.id}?`)) return;
+                            try {
+                              const res = await fetch('/api/admin/topups', {
+                                method: 'DELETE',
+                                headers: adminHeaders(),
+                                body: JSON.stringify({ ids: [t.id] })
+                              });
+                              if (res.ok) {
+                                setTopups(prev => prev.filter(x => x.id !== t.id));
+                                setSelectedTopupIds(prev => { const s = new Set(prev); s.delete(t.id); return s; });
+                              } else {
+                                alert('Failed to delete top-up request');
+                              }
+                            } catch (e: any) {
+                              alert(e?.message || 'Error deleting');
+                            }
+                          }}
+                          title="Delete top-up record"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 28, height: 28, borderRadius: '6px',
+                            background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Bottom Pagination */}
+          <PaginationBar
+            currentPage={topupPage}
+            totalPages={totalTopupPages}
+            totalItems={filteredTopups.length}
+            pageSize={topupPageSize}
+            onPageChange={setTopupPage}
+            onPageSizeChange={(s) => { setTopupPageSize(s); setTopupPage(1); }}
+            pageSizeOptions={[10, 25, 50]}
+            itemName="requests"
+            position="bottom"
+          />
         </div>
       )}
       {/* Invoice detail right-side sheet */}

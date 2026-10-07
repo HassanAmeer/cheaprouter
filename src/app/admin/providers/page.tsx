@@ -1,7 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from '../admin.module.css';
-import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Settings2, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown, Sparkles, Palette, Check } from 'lucide-react';
+import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown, Sparkles, Palette, Check, CheckSquare } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
 
@@ -35,7 +35,7 @@ type Model = {
   landingPagePriority?: number; 
 };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
+type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; chatsEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
 const PRESET_ICONS = [
   { name: 'Google Gemini', url: 'https://cdn.simpleicons.org/google/4285F4' },
@@ -97,6 +97,7 @@ export default function ProvidersPage() {
   const [iconPickerOpenFor, setIconPickerOpenFor] = useState<string | null>(null);
 
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
+  const [selectedLandingModels, setSelectedLandingModels] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [landingSearchQuery, setLandingSearchQuery] = useState('');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -107,26 +108,6 @@ export default function ProvidersPage() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
-
-  const [showAddCustomModel, setShowAddCustomModel] = useState(false);
-  const [customModelProviderId, setCustomModelProviderId] = useState('');
-  const [customModelOriginalId, setCustomModelOriginalId] = useState('');
-  const [customModelName, setCustomModelName] = useState('');
-  const [customModelShowingId, setCustomModelShowingId] = useState('');
-  const [customModelText, setCustomModelText] = useState(true);
-  const [customModelReasoning, setCustomModelReasoning] = useState(false);
-  const [customModelVision, setCustomModelVision] = useState(false);
-  const [customModelImage, setCustomModelImage] = useState(false);
-  const [customModelVideo, setCustomModelVideo] = useState(false);
-  const [customModelEmbedding, setCustomModelEmbedding] = useState(false);
-  const [customModelAudio, setCustomModelAudio] = useState(false);
-  const [customModelTokenLimit, setCustomModelTokenLimit] = useState('');
-  const [customModelContextWindow, setCustomModelContextWindow] = useState('');
-  const [customModelAccess, setCustomModelAccess] = useState('Free');
-  const [customModelInputPrice, setCustomModelInputPrice] = useState('');
-  const [customModelOutputPrice, setCustomModelOutputPrice] = useState('');
-  const [customModelOffInputPrice, setCustomModelOffInputPrice] = useState('');
-  const [customModelOffOutputPrice, setCustomModelOffOutputPrice] = useState('');
 
   const [editingModelContext, setEditingModelContext] = useState<{
     providerId: string;
@@ -155,7 +136,24 @@ export default function ProvidersPage() {
       };
     }));
     setSelectedModels(new Set());
-    setSelectedModels(new Set());
+    setSaved(false);
+  };
+
+  const handleDeleteSingleModel = (providerId: string, modelId: string, modelName?: string) => {
+    if (!confirm(`Are you sure you want to delete model "${modelName || modelId}"?`)) return;
+
+    setProviders(prevProviders => prevProviders.map(p => {
+      if (p.id !== providerId) return p;
+      return {
+        ...p,
+        models: p.models.filter(m => m.id !== modelId)
+      };
+    }));
+    setSelectedModels(prev => {
+      const next = new Set(prev);
+      next.delete(`${providerId}-${modelId}`);
+      return next;
+    });
     setSaved(false);
   };
 
@@ -185,56 +183,22 @@ export default function ProvidersPage() {
       ...p,
       models: p.models.map(m => ({ ...m, showOnLandingPage: false }))
     })));
+    setSelectedLandingModels(new Set());
     setSaved(false);
   };
 
-  const handleAddCustomModel = () => {
-    if (!customModelProviderId || !customModelOriginalId.trim() || !customModelName.trim()) return;
-    const targetProvider = providers.find(p => p.id === customModelProviderId);
-    if (!targetProvider) return;
-    const showingId = customModelShowingId.trim() || customModelOriginalId.trim();
-    const newModel: Model = {
-      id: showingId,
-      name: customModelName,
-      originalId: customModelOriginalId.trim(),
-      text: customModelText,
-      reasoning: customModelReasoning,
-      vision: customModelVision,
-      image: customModelImage,
-      video: customModelVideo,
-      embedding: customModelEmbedding,
-      audio: customModelAudio,
-      tokenLimit: customModelTokenLimit || 'Unlimited',
-      contextWindow: customModelContextWindow || 'Dynamic',
-      access: customModelAccess,
-      inputPrice: customModelInputPrice || 'Variable',
-      outputPrice: customModelOutputPrice || 'Variable',
-      offInputPrice: customModelOffInputPrice || '',
-      offOutputPrice: customModelOffOutputPrice || '',
-      showOnLandingPage: false
-    };
-    setProviders(prevProviders => prevProviders.map(p => p.id === customModelProviderId ? { ...p, models: [...p.models, newModel] } : p));
-    setCustomModelProviderId('');
-    setCustomModelOriginalId('');
-    setCustomModelName('');
-    setCustomModelShowingId('');
-    setCustomModelText(true);
-    setCustomModelReasoning(false);
-    setCustomModelVision(false);
-    setCustomModelImage(false);
-    setCustomModelVideo(false);
-    setCustomModelEmbedding(false);
-    setCustomModelAudio(false);
-    setCustomModelTokenLimit('');
-    setCustomModelContextWindow('');
-    setCustomModelAccess('Free');
-    setCustomModelInputPrice('');
-    setCustomModelOutputPrice('');
-    setCustomModelOffInputPrice('');
-    setCustomModelOffOutputPrice('');
-    setShowAddCustomModel(false);
+  const handleBulkRemoveLandingPage = () => {
+    if (selectedLandingModels.size === 0) return;
+    if (!confirm(`Remove ${selectedLandingModels.size} selected models from landing page?`)) return;
+    setProviders(prevProviders => prevProviders.map(p => ({
+      ...p,
+      models: p.models.map(m => selectedLandingModels.has(`${p.id}-${m.id}`) ? { ...m, showOnLandingPage: false } : m)
+    })));
+    setSelectedLandingModels(new Set());
     setSaved(false);
   };
+
+
 
   const handleTestModel = async (providerId: string, model: Model) => {
     const key = `${providerId}-${model.id}`;
@@ -430,6 +394,7 @@ export default function ProvidersPage() {
           icon: p.icon || '',
           status: p.status ?? true,
           byokEnabled: p.byok_enabled ?? p.byokEnabled ?? true,
+          chatsEnabled: p.chats_enabled ?? p.chatsEnabled ?? true,
           key: p.key || '',
           priority: p.priority ?? 0,
           baseUrl: p.base_url ?? p.baseUrl,
@@ -519,6 +484,11 @@ export default function ProvidersPage() {
     setSaved(false);
   };
 
+  const toggleChatsProvider = (id: string) => {
+    setProviders(providers.map(p => p.id === id ? { ...p, chatsEnabled: !(p.chatsEnabled ?? true) } : p));
+    setSaved(false);
+  };
+
   const updateKey = (id: string, newKey: string) => {
     setProviders(providers.map(p => p.id === id ? { ...p, key: newKey } : p));
     setSaved(false);
@@ -600,7 +570,8 @@ export default function ProvidersPage() {
       modelsApiLink: newProvModelsApiLink.trim() || undefined,
       headers: newProvHeaders,
       isCustom: true,
-      byokEnabled: true
+      byokEnabled: true,
+      chatsEnabled: true
     }]);
     setNewProvId('');
     setNewProvName('');
@@ -709,6 +680,22 @@ export default function ProvidersPage() {
                 checked={provider.byokEnabled ?? true}
                 onChange={() => toggleByokProvider(provider.id)}
                 aria-label={`Allow ${provider.name} in user BYOK dashboard`}
+              />
+              <span className={styles.toggleSlider}></span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 14px', marginBottom: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-bg-soft)' }}>
+            <div>
+              <div style={{ color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600 }}>Show in CheapChats</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '3px' }}>Allow users to chat and configure API key for {provider.name} in CheapChats.</div>
+            </div>
+            <label className={styles.toggleSwitch}>
+              <input
+                type="checkbox"
+                checked={provider.chatsEnabled ?? true}
+                onChange={() => toggleChatsProvider(provider.id)}
+                aria-label={`Allow ${provider.name} in CheapChats`}
               />
               <span className={styles.toggleSlider}></span>
             </label>
@@ -1011,6 +998,31 @@ export default function ProvidersPage() {
     groupedCurrentPageModels[m.providerId].models.push(m);
   });
 
+  const landingPageModels = useMemo(() => {
+    return providers
+      .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon, providerStatus: p.status })))
+      .filter(m => m.showOnLandingPage)
+      .filter(m => {
+        if (!landingSearchQuery.trim()) return true;
+        const q = landingSearchQuery.toLowerCase();
+        return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || (m.originalId && m.originalId.toLowerCase().includes(q));
+      })
+      .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
+  }, [providers, landingSearchQuery]);
+
+  const allLandingKeys = landingPageModels.map(m => `${m.providerId}-${m.id}`);
+  const isAllLandingSelected = allLandingKeys.length > 0 && allLandingKeys.every(k => selectedLandingModels.has(k));
+
+  const handleSelectAllLanding = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = new Set(selectedLandingModels);
+    if (e.target.checked) {
+      allLandingKeys.forEach(k => next.add(k));
+    } else {
+      allLandingKeys.forEach(k => next.delete(k));
+    }
+    setSelectedLandingModels(next);
+  };
+
   return (
     <div>
       {/* Top Header & Tab Navigation */}
@@ -1027,12 +1039,6 @@ export default function ProvidersPage() {
           >
             <Plus size={15} /> Add & Manage Providers
           </Link>
-          <button
-            onClick={() => setShowAddCustomModel(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', borderRadius: '8px', border: '1.5px solid var(--color-primary)', background: 'transparent', color: 'var(--color-primary)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-          >
-            <Settings2 size={15} /> Add Custom Model
-          </button>
           <button className="btn-primary" onClick={handleSave} disabled={saving || loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 20px', borderRadius: '8px' }}>
             <Save size={16} /> {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
           </button>
@@ -1150,22 +1156,76 @@ export default function ProvidersPage() {
                 </div>
               ) : (
                 <>
+                  {/* Bulk Selection Action Bar */}
+                  {selectedModels.size > 0 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 20px', background: 'rgba(124, 58, 237, 0.08)',
+                      borderBottom: '1px solid rgba(124, 58, 237, 0.25)', animation: 'fadeIn 0.2s ease-out'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <CheckSquare size={16} color="var(--color-primary)" />
+                        <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px' }}>
+                          {selectedModels.size} model{selectedModels.size > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={() => setSelectedModels(new Set())}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button
+                          onClick={handleAddLandingPage}
+                          style={{
+                            background: 'var(--color-bg-soft)', color: 'var(--color-text-main)',
+                            border: '1px solid var(--color-border)', padding: '7px 14px',
+                            borderRadius: '8px', cursor: 'pointer',
+                            fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+                          }}
+                        >
+                          <Sparkles size={14} color="#f59e0b" /> Add to Landing Page
+                        </button>
+                        <button
+                          onClick={handleBulkDelete}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)', padding: '7px 16px',
+                            borderRadius: '8px', cursor: 'pointer',
+                            fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+                          }}
+                        >
+                          <Trash2 size={14} /> Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {renderPagination()}
 
                     <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          <th style={{ padding: '10px 14px', fontWeight: 600, width: '14%' }}>Original Model ID</th>
-                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '14%' }}>Custom Names</th>
+                          <th style={{ width: '40px', textAlign: 'center', padding: '10px 8px' }}>
+                            <input 
+                              type="checkbox"
+                              checked={isAllSelected}
+                              onChange={handleSelectAll}
+                              style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                            />
+                          </th>
+                          <th style={{ padding: '10px 14px', fontWeight: 600, width: '13%' }}>Original Model ID</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 600, width: '13%' }}>Custom Names</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '6%' }}>Context</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '9%' }}>Our Price (1M)</th>
                           <th style={{ padding: '10px 8px', fontWeight: 600, width: '10%' }} title="Competitors / Others Pricing">
                             <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8', color: '#94A3B8' }}>Others Price (1M)</span>
                           </th>
-                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '18%' }}>Alert Msg</th>
-                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '18%' }}>Capabilities</th>
-                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '11%', textAlign: 'right' }}>Action</th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Alert Msg</th>
+                          <th style={{ padding: '10px 10px', fontWeight: 600, width: '17%' }}>Capabilities</th>
+                          <th style={{ padding: '10px 16px', fontWeight: 600, width: '12%', textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1173,7 +1233,7 @@ export default function ProvidersPage() {
                           <React.Fragment key={pId}>
                             {/* Provider Section Row */}
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <td colSpan={8} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
+                              <td colSpan={9} style={{ padding: '8px 16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-soft)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ 
                                     color: 'var(--color-primary, #ef4444)', 
@@ -1192,8 +1252,23 @@ export default function ProvidersPage() {
                             </tr>
                             {/* Model Rows */}
                             {group.models.map((m) => {
+                              const modelKey = `${pId}-${m.id}`;
+                              const isSelected = selectedModels.has(modelKey);
                               return (
-                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <tr key={`${pId}-${m.mIdx}`} style={{ borderBottom: '1px solid var(--color-border)', background: isSelected ? 'rgba(124, 58, 237, 0.06)' : undefined }}>
+                                <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                                  <input 
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const next = new Set(selectedModels);
+                                      if (e.target.checked) next.add(modelKey);
+                                      else next.delete(modelKey);
+                                      setSelectedModels(next);
+                                    }}
+                                    style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                                  />
+                                </td>
                                 <td style={{ padding: '6px 14px' }}>
                                   <code style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-main)', opacity: 0.9, background: 'rgba(255,255,255,0.04)', padding: '3px 7px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
                                     {m.originalId || m.id}
@@ -1422,44 +1497,65 @@ export default function ProvidersPage() {
                                   </div>
                                 </td>
                                 <td style={{ padding: '4px 16px', textAlign: 'right' }}>
-                                  {testResults[`${pId}-${m.id}`] ? (
-                                    <span style={{ 
-                                      display: 'inline-flex', 
-                                      alignItems: 'center', 
-                                      gap: '4px', 
-                                      fontSize: '11px', 
-                                      fontWeight: 600,
-                                      color: testResults[`${pId}-${m.id}`].success ? '#10b981' : '#ef4444', 
-                                      background: testResults[`${pId}-${m.id}`].success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)', 
-                                      border: testResults[`${pId}-${m.id}`].success ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                                      padding: '3px 8px', 
-                                      borderRadius: '6px' 
-                                    }}>
-                                      {testResults[`${pId}-${m.id}`].success ? <CheckCircle2 size={12} /> : <XCircle size={12} />} 
-                                      {testResults[`${pId}-${m.id}`].message}
-                                    </span>
-                                  ) : (
-                                    <button 
-                                      onClick={() => handleTestModel(pId, m)}
-                                      disabled={testingModelId === `${pId}-${m.id}`}
-                                      style={{ 
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                    {testResults[`${pId}-${m.id}`] ? (
+                                      <span style={{ 
                                         display: 'inline-flex', 
                                         alignItems: 'center', 
-                                        gap: '5px', 
-                                        background: 'var(--color-bg-soft)', 
-                                        border: '1px solid var(--color-border)', 
-                                        color: 'var(--color-text-main)', 
-                                        padding: '4px 12px', 
-                                        borderRadius: '6px', 
+                                        gap: '4px', 
                                         fontSize: '11px', 
                                         fontWeight: 600,
-                                        cursor: 'pointer'
+                                        color: testResults[`${pId}-${m.id}`].success ? '#10b981' : '#ef4444', 
+                                        background: testResults[`${pId}-${m.id}`].success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)', 
+                                        border: testResults[`${pId}-${m.id}`].success ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                                        padding: '3px 8px', 
+                                        borderRadius: '6px' 
+                                      }}>
+                                        {testResults[`${pId}-${m.id}`].success ? <CheckCircle2 size={12} /> : <XCircle size={12} />} 
+                                        {testResults[`${pId}-${m.id}`].message}
+                                      </span>
+                                    ) : (
+                                      <button 
+                                        onClick={() => handleTestModel(pId, m)}
+                                        disabled={testingModelId === `${pId}-${m.id}`}
+                                        style={{ 
+                                          display: 'inline-flex', 
+                                          alignItems: 'center', 
+                                          gap: '5px', 
+                                          background: 'var(--color-bg-soft)', 
+                                          border: '1px solid var(--color-border)', 
+                                          color: 'var(--color-text-main)', 
+                                          padding: '4px 10px', 
+                                          borderRadius: '6px', 
+                                          fontSize: '11px', 
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        <Play size={10} fill="currentColor" /> {testingModelId === `${pId}-${m.id}` ? 'Testing...' : 'Test'}
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteSingleModel(pId, m.id, m.name)}
+                                      title="Delete model"
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 26,
+                                        height: 26,
+                                        borderRadius: '6px',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#ef4444',
+                                        cursor: 'pointer',
+                                        opacity: 0.7
                                       }}
                                     >
-                                      <Play size={10} fill="currentColor" /> {testingModelId === `${pId}-${m.id}` ? 'Testing...' : 'Test'}
+                                      <Trash2 size={13} />
                                     </button>
-                                    )}
-                                  </td>
+                                  </div>
+                                </td>
                                 </tr>
                               );
                             })}
@@ -1506,12 +1602,51 @@ export default function ProvidersPage() {
       </div>
 
       <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+        {selectedLandingModels.size > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 20px', background: 'rgba(124, 58, 237, 0.08)',
+            borderBottom: '1px solid rgba(124, 58, 237, 0.25)', animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <CheckSquare size={16} color="var(--color-primary)" />
+              <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px' }}>
+                {selectedLandingModels.size} landing model{selectedLandingModels.size > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={() => setSelectedLandingModels(new Set())}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Clear selection
+              </button>
+            </div>
+            <button
+              onClick={handleBulkRemoveLandingPage}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                border: '1px solid rgba(239, 68, 68, 0.3)', padding: '7px 16px',
+                borderRadius: '8px', cursor: 'pointer',
+                fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px'
+              }}
+            >
+              <Trash2 size={14} /> Remove Selected
+            </button>
+          </div>
+        )}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <th style={{ width: '40px', textAlign: 'center', padding: '12px 8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAllLandingSelected}
+                    onChange={handleSelectAllLanding}
+                    style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                  />
+                </th>
                 <th style={{ padding: '12px 14px', fontWeight: 600, width: '13%' }}>Hidden Provider</th>
-                <th style={{ padding: '12px 14px', fontWeight: 600, width: '31%' }}>Model</th>
+                <th style={{ padding: '12px 14px', fontWeight: 600, width: '29%' }}>Model</th>
                 <th style={{ padding: '12px 10px', fontWeight: 600, width: '8%' }}>Context</th>
                 <th style={{ padding: '12px 10px', fontWeight: 600, width: '13%' }}>Our Price (1M)</th>
                 <th style={{ padding: '12px 10px', fontWeight: 600, width: '13%' }}>
@@ -1522,29 +1657,32 @@ export default function ProvidersPage() {
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const landingPageModels = providers
-                  .flatMap(p => p.models.map(m => ({ ...m, providerName: p.name, providerId: p.id, providerIcon: p.icon, providerStatus: p.status })))
-                  .filter(m => m.showOnLandingPage)
-                  .filter(m => {
-                    if (!landingSearchQuery.trim()) return true;
-                    const q = landingSearchQuery.toLowerCase();
-                    return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || (m.originalId && m.originalId.toLowerCase().includes(q));
-                  })
-                  .sort((a, b) => (a.landingPagePriority || 0) - (b.landingPagePriority || 0));
-                
-                if (landingPageModels.length === 0) {
+              {landingPageModels.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                    No models selected for landing page. Select models from the list above and click "Add to Landing Page".
+                  </td>
+                </tr>
+              ) : (
+                landingPageModels.map((m, index) => {
+                  const landingKey = `${m.providerId}-${m.id}`;
+                  const isSelected = selectedLandingModels.has(landingKey);
                   return (
-                    <tr>
-                      <td colSpan={7} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-                        No models selected for landing page. Select models from the list above and click "Add to Landing Page".
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return landingPageModels.map((m, index) => (
-                  <tr key={`${m.providerId}-${m.id}`} style={{ borderBottom: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.01)', opacity: m.providerStatus === false ? 0.5 : 1 }}>
+                  <tr key={landingKey} style={{ borderBottom: '1px solid var(--color-border)', background: isSelected ? 'rgba(124, 58, 237, 0.06)' : 'rgba(255,255,255,0.01)', opacity: m.providerStatus === false ? 0.5 : 1 }}>
+                    {/* Select Checkbox */}
+                    <td style={{ textAlign: 'center', padding: '12px 8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const next = new Set(selectedLandingModels);
+                          if (e.target.checked) next.add(landingKey);
+                          else next.delete(landingKey);
+                          setSelectedLandingModels(next);
+                        }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                      />
+                    </td>
                     {/* Hidden Provider */}
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1786,97 +1924,12 @@ export default function ProvidersPage() {
                       </div>
                     </td>
                   </tr>
-                ));
-              })()}
+                );
+              }))}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* ===== ADD CUSTOM MODEL MODAL DRAWER ===== */}
-      {showAddCustomModel && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-          <div style={{ width: '480px', maxWidth: '90vw', background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--color-text-main)' }}>Add Custom Model</h3>
-              <button onClick={() => setShowAddCustomModel(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}><X size={18} /></button>
-            </div>
-            
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '75vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Provider</label>
-                <select value={customModelProviderId} onChange={e => setCustomModelProviderId(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
-                  {providers.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.models.length} models)</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original Model ID (Backend)</label>
-                <input type="text" value={customModelOriginalId} onChange={e => setCustomModelOriginalId(e.target.value)} placeholder="e.g. gpt-4o-2024-08-06" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Name (Display)</label>
-                  <input type="text" value={customModelName} onChange={e => setCustomModelName(e.target.value)} placeholder="e.g. GPT-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Custom ID (API Route)</label>
-                  <input type="text" value={customModelShowingId} onChange={e => setCustomModelShowingId(e.target.value)} placeholder="e.g. gpt-4o" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Access Type</label>
-                  <select value={customModelAccess} onChange={e => setCustomModelAccess(e.target.value)} style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}>
-                    <option value="Free">Free</option>
-                    <option value="Standard">Standard</option>
-                    <option value="Premium">Premium</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context Window</label>
-                  <input type="text" value={customModelContextWindow} onChange={e => setCustomModelContextWindow(e.target.value)} placeholder="e.g. 128K" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Our Input Price ($/1M)</label>
-                  <input type="text" value={customModelInputPrice} onChange={e => setCustomModelInputPrice(e.target.value)} placeholder="e.g. 5.00" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Our Output Price ($/1M)</label>
-                  <input type="text" value={customModelOutputPrice} onChange={e => setCustomModelOutputPrice(e.target.value)} placeholder="e.g. 15.00" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>Others Input Price ($/1M)</span>
-                  </label>
-                  <input type="text" value={customModelOffInputPrice} onChange={e => setCustomModelOffInputPrice(e.target.value)} placeholder="e.g. 2.50" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: '#94A3B8', textDecoration: 'line-through', textDecorationColor: '#94A3B8', outline: 'none', fontSize: '13px', fontWeight: 500 }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    <span style={{ textDecoration: 'line-through', textDecorationColor: '#94A3B8' }}>Others Output Price ($/1M)</span>
-                  </label>
-                  <input type="text" value={customModelOffOutputPrice} onChange={e => setCustomModelOffOutputPrice(e.target.value)} placeholder="e.g. 7.50" style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: '#94A3B8', textDecoration: 'line-through', textDecorationColor: '#94A3B8', outline: 'none', fontSize: '13px', fontWeight: 500 }} />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', justifyContent: 'flex-end', background: 'var(--color-card-bg)' }}>
-              <button onClick={() => setShowAddCustomModel(false)} style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleAddCustomModel} className="btn-primary" style={{ padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}>Add Model</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ===== MODEL THEME & DESCRIPTION RIGHT-SIDE DRAWER SHEET ===== */}
       {editingModelContext && (

@@ -61,6 +61,7 @@ export default function Home() {
 
       <SiteNav links={[
         { href: '/', label: 'Home' },
+        { href: '/chats', label: 'Chats' },
         { href: '/models', label: 'Models' },
         { href: '#pricing', label: 'Pricing' },
         { href: '/docs', label: 'API Docs' },

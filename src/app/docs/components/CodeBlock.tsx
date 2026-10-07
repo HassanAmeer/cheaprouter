@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { copyToClipboard } from '@/lib/utils';
+
 export type Language = 'cURL' | 'JavaScript' | 'Python' | 'PHP';
 
 interface CodeSnippet {
@@ -22,12 +24,10 @@ export default function CodeBlock({ snippets, title }: CodeBlockProps) {
   const activeSnippet = snippets.find((s) => s.language === activeTab)?.code || '';
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(activeSnippet);
+    const success = await copyToClipboard(activeSnippet);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text', err);
     }
   };
 

@@ -1,5 +1,29 @@
 import { NextResponse } from 'next/server';
 
+const backendUrl = () => process.env.BACKEND_URL || 'http://localhost:4000';
+
+export async function GET(req: Request) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await fetch(`${backendUrl()}/api/me`, {
+      headers: { 'Authorization': authHeader }
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      return NextResponse.json({ error: data.error || 'Unauthorized' }, { status: response.status });
+    }
+
+    return NextResponse.json(await response.json());
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -7,9 +31,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
-
-    const response = await fetch(`${backendUrl}/api/me`, {
+    const response = await fetch(`${backendUrl()}/api/me`, {
       method: 'DELETE',
       headers: { 'Authorization': authHeader }
     });

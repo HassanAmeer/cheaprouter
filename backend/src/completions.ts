@@ -141,9 +141,11 @@ export async function getModelInstances(userId: string, model: string, sessionId
 export async function handleCompletions(c: any) {
   let auth = '';
   let sessionId: string = '';
+  let safeSessionId: string | undefined;
   try {
     auth = c.req.header('authorization') || '';
     sessionId = c.req.header('x-session-id') || '';
+    safeSessionId = sessionId || undefined;
     const userAgent = (c.req.header('user-agent') || '').toLowerCase();
     const cliUa = ['cli', 'code', 'aider', 'cursor', 'kilocode', 'opencode', 'opencli', 'agent', 'claude-code', 'cmdk', 'terminal', 'windsurf'].some(k => userAgent.includes(k));
     // Quota source is assigned after the key lookup (below) so a spoofed
@@ -200,7 +202,7 @@ export async function handleCompletions(c: any) {
     }
     const { model: requestedModel, messages, stream = false, temperature, max_tokens, top_p } = body;
     const model = requestedModel || (await getDefaultModel());
-    const safeSessionId = sessionId || undefined;
+    safeSessionId = sessionId || undefined;
 
     if (!messages || !Array.isArray(messages)) {
     addDevLog('ERROR', 'Completions', 'Invalid messages format', undefined, safeSessionId);
@@ -578,6 +580,7 @@ export async function handleCompletions(c: any) {
 }
 
 export async function getModelInstance(userId: string, model: string, sessionId?: string) {
+  const safeSessionId = sessionId || undefined;
   const items = await getModelInstances(userId, model, safeSessionId);
   return items[0]?.instance;
 }
@@ -593,6 +596,7 @@ export async function tryInstances(
   call: (item: ModelInstanceItem) => Promise<void>,
   onFail?: (item: ModelInstanceItem, err: any) => void
 ): Promise<void> {
+  const safeSessionId = sessionId || undefined;
   const items = await getModelInstances(userId, model, safeSessionId);
   let lastError: any;
   for (const item of items) {

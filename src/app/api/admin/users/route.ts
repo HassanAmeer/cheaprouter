@@ -24,3 +24,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to communicate with backend' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = request.headers.get('Authorization') || '';
+    const body = await request.text();
+    
+    const response = await fetch(`${backendUrl}/api/admin/users`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: `Backend returned ${response.status}` }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('Error deleting admin users:', error);
+    return NextResponse.json({ error: 'Failed to communicate with backend' }, { status: 500 });
+  }
+}

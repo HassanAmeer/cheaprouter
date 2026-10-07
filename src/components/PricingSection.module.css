@@ -146,3 +146,75 @@
   font-size: 14px;
   font-weight: 500;
 }
+
+.tokenBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid rgba(204, 0, 0, 0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+
+.capabilitiesStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.capabilityChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: var(--color-card-bg);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.includedModelsBox {
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+}
+
+.includedModelsTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.includedModelTag {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: var(--color-card-bg);
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin: 2px;
+  border: 1px solid var(--color-border);
+}

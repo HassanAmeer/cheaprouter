@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   /* Theme Colors */
   --color-primary: #CC0000;
@@ -14,6 +16,7 @@
   --color-bg-muted: #EEF1F4;
   --color-card-bg: #FFFFFF;
   --color-card-bg-2: #FAFBFC;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #1A1A1A;
   --color-text-muted: #666666;
   --color-border: #E5E7EB;
@@ -73,6 +76,7 @@
   --color-bg-muted: #161A1F;
   --color-card-bg: #15191E;
   --color-card-bg-2: #1A1F25;
+  --color-bg-card: #15191E;
   --color-text-main: #F2F4F7;
   --color-text-muted: #9AA4B2;
   --color-border: #262C34;
@@ -606,94 +610,22 @@ a, button {
 }
 
 /* ─── Docs page responsive (inline-style layout) ─── */
+/* LEGACY: These rules only apply to the old inline-style based docs layout.
+   The new Tailwind docs uses className-based layout and doesn't need these. */
 @media (max-width: 900px) {
-  main.docs-main {
+  main.docs-main-legacy {
     flex-direction: column !important;
     gap: 24px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
     padding-top: 24px !important;
   }
-
-  /* Sidebar collapses into a premium horizontal nav on mobile/tablet */
-  aside[style*="width:260px"] {
-    width: 100% !important;
-    flex-shrink: 1 !important;
-    position: static !important;
-    top: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: 0 0 20px 0 !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  aside[style*="width:260px"] > div:first-child > div[style*="margin-bottom:40px"] {
-    display: none;
-  }
-
-  aside[style*="width:260px"] > div:first-child > div[style*="margin-bottom:32px"] {
-    margin-bottom: 14px !important;
-  }
-
-  aside[style*="width:260px"] h3 {
-    display: inline-flex !important;
-    width: auto !important;
-    font-size: 10px !important;
-    margin-bottom: 10px !important;
-    padding: 4px 10px !important;
-    border-radius: var(--radius-full);
-    background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
-    letter-spacing: 0.08em !important;
-  }
-
-  aside[style*="width:260px"] nav[style*="flex-direction:column"] {
-    flex-direction: row !important;
-    gap: 8px !important;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  aside[style*="width:260px"] nav[style*="flex-direction:column"] button {
-    white-space: nowrap;
-    flex-shrink: 0;
-    border-radius: var(--radius-full) !important;
-    padding: 8px 14px !important;
-    border: 1px solid var(--color-border) !important;
-    transition: all 0.2s ease !important;
-  }
-
-  aside[style*="width:260px"] nav[style*="flex-direction:column"] button:hover {
-    border-color: var(--color-primary) !important;
-  }
-
-  aside[style*="width:260px"] > div:last-child {
-    display: none !important;
-  }
-
-  /* Collapse two-column grids to a single column */
-  div[style*="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr)"],
-  div[style*="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"] {
-    grid-template-columns: 1fr !important;
-    gap: 32px !important;
-  }
 }
 
-/* Docs grid children must be able to shrink below their content width
-   (min-width: auto blows the card out on small screens). */
-.docs-content div[style*="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr)"] > div,
-.docs-content div[style*="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"] > div {
+/* Docs grid children must be able to shrink below their content width */
+.docs-content-legacy div[style*="grid-template-columns"] > div {
   min-width: 0;
 }
-
-/* Docs content: fluid type scale + overflow guards */
-.docs-content h2 { font-size: clamp(26px, 4.5vw, 32px) !important; }
-.docs-content h3 { font-size: clamp(19px, 3.4vw, 22px) !important; }
-.docs-content table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.docs-content pre { max-width: 100%; }
 
 /* Docs code block: let the header wrap on small screens */
 .code-block > div:first-child { flex-wrap: wrap; row-gap: 10px; }

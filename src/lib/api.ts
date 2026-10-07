@@ -1,4 +1,4 @@
-import { SummaryData } from '@/lib/api-types';
+import { SummaryData, UsageBreakdown } from '@/lib/api-types';
 
 const BASE = '';
 
@@ -88,7 +88,17 @@ export const api = {
     return request<any>(qs ? `/api/analytics?${qs}` : '/api/analytics');
   },
   summary: () => request<SummaryData>('/api/summary'),
-  usageBreakdown: (source?: string) => request<any>(source ? `/api/analytics/breakdown?source=${source}` : '/api/analytics/breakdown'),
+  usageBreakdown: (source?: string) => request<UsageBreakdown>(source && source !== 'all' ? `/api/analytics/breakdown?source=${source}` : '/api/analytics/breakdown?source=all'),
+  adminUsage: (source?: string, days?: number) => {
+    const params = new URLSearchParams();
+    if (source && source !== 'all') params.set('source', source);
+    if (days && days > 0) params.set('days', String(days));
+    const qs = params.toString();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    return fetch(qs ? `/api/admin/usage?${qs}` : '/api/admin/usage', {
+      headers: { 'Authorization': `Bearer ${token || ''}` }
+    }).then(res => res.json() as Promise<UsageBreakdown>);
+  },
 
   // Billing / Account Balance
   getBilling: () => request<any>('/api/billing'),

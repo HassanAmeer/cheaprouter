@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +12,32 @@ export async function GET(req: Request) {
     });
 
     if (!response.ok) return NextResponse.json({}, { status: response.status });
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const authHeader = req.headers.get('authorization') || '';
+    const body = await req.text();
+
+    const response = await fetch(`${backendUrl}/api/admin/topups`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: 'Failed to delete topups' }, { status: response.status });
+    }
 
     const data = await response.json();
     return NextResponse.json(data);

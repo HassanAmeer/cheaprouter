@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Zap, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import styles from '../admin.module.css';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -67,15 +68,39 @@ export default function AdminLogin() {
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Password</label>
-            <input 
-              type="password" 
-              className={styles.formInput} 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••"
-              autoComplete="new-password"
-              required 
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                className={styles.formInput} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••"
+                autoComplete="new-password"
+                style={{ paddingRight: '42px', width: '100%' }}
+                required 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted, #94a3b8)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  transition: 'color 0.2s',
+                }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className={styles.loginBtn} disabled={loading}>

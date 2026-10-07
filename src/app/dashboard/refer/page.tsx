@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Gift, Copy, Video, Send, CheckCircle2, Clock, ArrowDownCircle } from 'lucide-react';
+import { Gift, Copy, Video, Send, CheckCircle2, Clock, ArrowDownCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
+import { copyToClipboard } from '@/lib/utils';
 import styles from '../dashboard.module.css';
 import { ReferralSettings, Submission } from '@/lib/api-types';
 
@@ -47,8 +48,12 @@ export default function ReferAndEarnPage() {
   const websiteUrl = settings.install?.websiteUrl || 'https://cheaprouter.com';
   const referralLink = `${websiteUrl}/?ref=${user?.id || 'demo_123'}`;
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink);
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(referralLink);
+    if (!ok) {
+      toast('Could not copy to clipboard', 'error');
+      return;
+    }
     toast('Referral link copied to clipboard!', 'success');
   };
 
@@ -108,8 +113,14 @@ export default function ReferAndEarnPage() {
               value={referralLink} 
               style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', color: 'var(--color-text-main)', fontSize: '14px' }} 
             />
-            <Button onClick={handleCopyLink} variant="secondary">
-              <Copy size={16} style={{ marginRight: '6px' }} /> Copy
+            <Button
+              onClick={handleCopyLink}
+              variant="secondary"
+              aria-label="Copy referral link"
+              title="Copy referral link"
+              style={{ padding: '0', width: 42, minWidth: 42, flexShrink: 0 }}
+            >
+              <Copy size={16} />
             </Button>
           </div>
         </section>
@@ -147,8 +158,18 @@ export default function ReferAndEarnPage() {
                 onChange={(e) => setVideoLink(e.target.value)}
                 style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text-main)', fontSize: '14px' }} 
               />
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Sending...' : <><Send size={16} style={{ marginRight: '6px' }} /> Submit</>}
+              <Button
+                type="submit"
+                disabled={submitting}
+                aria-label={submitting ? 'Submitting' : 'Submit'}
+                title={submitting ? 'Submitting…' : 'Submit'}
+                style={{ padding: '0', width: 42, minWidth: 42, flexShrink: 0 }}
+              >
+                {submitting ? (
+                  <Loader2 size={16} className="lucide-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
               </Button>
             </div>
           </form>

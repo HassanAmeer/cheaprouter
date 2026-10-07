@@ -108,7 +108,7 @@ export async function setWithdrawalStatus(id: string, status: WithdrawStatus): P
   // claim back to pending so the admin can retry or reject.
   if (status === 'approved') {
     const amt = Number(req.amount);
-    let ded: Awaited<ReturnType<typeof deductBalance>>;
+    let ded: any = { ok: false };
     await db.begin(async (tx) => {
       const updated = await tx`UPDATE users SET balance = COALESCE(balance, 0) - ${amt} WHERE id = ${req.user_id} AND COALESCE(balance, 0) >= ${amt} RETURNING balance`;
       if (updated.length === 0) throw new Error('Insufficient balance');

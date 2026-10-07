@@ -1,11 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from '../admin.module.css';
-import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, Trash2, Edit3, Users, UserPlus, Calendar, Filter, Monitor, Apple, Smartphone, Terminal, Globe } from 'lucide-react';
-
-const ITEMS_PER_PAGE = 50;
+import { Search, Edit2, Ban, Mail, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2, Edit3, Users, UserPlus, Calendar, Filter, Monitor, Apple, Smartphone, Terminal, Globe } from 'lucide-react';
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   beginner: 'New',
@@ -34,6 +32,227 @@ const OS_META: Record<string, { icon: React.ReactNode; color: string; bg: string
   Unknown: { icon: <Globe size={10} />, color: 'var(--color-text-muted)', bg: 'rgba(150,150,150,0.1)' },
 };
 
+const PLAN_META: Record<'Free' | 'Pro' | 'Premium', { label: string; color: string; bg: string; border: string; dot: string }> = {
+  Free: {
+    label: 'Free',
+    color: 'var(--color-text-muted)',
+    bg: 'rgba(150, 150, 150, 0.1)',
+    border: '1px solid rgba(150, 150, 150, 0.25)',
+    dot: 'var(--color-text-muted)',
+  },
+  Pro: {
+    label: 'Pro',
+    color: '#8B5CF6',
+    bg: 'rgba(139, 92, 246, 0.12)',
+    border: '1px solid rgba(139, 92, 246, 0.3)',
+    dot: '#8B5CF6',
+  },
+  Premium: {
+    label: 'Premium',
+    color: '#F59E0B',
+    bg: 'rgba(245, 158, 11, 0.12)',
+    border: '1px solid rgba(245, 158, 11, 0.35)',
+    dot: '#F59E0B',
+  },
+};
+
+function resolvePlanType(user: any): 'Free' | 'Pro' | 'Premium' {
+  const p = String(user?.plan || user?.plan_api || user?.plan_cli || user?.plan_chat || user?.plan_agents || 'Free').trim().toLowerCase();
+  if (p.includes('prem') || p.includes('enterprise')) return 'Premium';
+  if (p.includes('pro') || p.includes('starter') || p.includes('basic')) return 'Pro';
+  return 'Free';
+}
+
+function PaginationBar({
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  position = 'top'
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (p: number) => void;
+  onPageSizeChange: (s: number) => void;
+  position?: 'top' | 'bottom';
+}) {
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (currentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+    return pages;
+  }, [currentPage, totalPages]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 12,
+      padding: '12px 24px',
+      borderTop: position === 'bottom' ? '1px solid var(--color-border)' : 'none',
+      borderBottom: position === 'top' ? '1px solid var(--color-border)' : 'none',
+      background: 'var(--color-card-bg-2, rgba(255,255,255,0.02))'
+    }}>
+      {/* Left side: Item count info & per-page selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+          Showing <strong style={{ color: 'var(--color-text-main)' }}>{startItem.toLocaleString()}</strong>–<strong style={{ color: 'var(--color-text-main)' }}>{endItem.toLocaleString()}</strong> of <strong style={{ color: 'var(--color-text-main)' }}>{totalItems.toLocaleString()}</strong> users
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', color: 'var(--color-text-muted)' }}>
+          <span>Per page:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            style={{
+              background: 'var(--color-card-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              color: 'var(--color-text-main)',
+              fontSize: '12px',
+              fontWeight: 700,
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100 (Max)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Right side: Page navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* First Page */}
+        <button
+          onClick={() => onPageChange(1)}
+          disabled={currentPage <= 1}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 32, height: 32, borderRadius: '8px',
+            background: 'var(--color-card-bg)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-main)',
+            opacity: currentPage <= 1 ? 0.35 : 1,
+            cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title="First Page"
+        >
+          <ChevronsLeft size={15} />
+        </button>
+
+        {/* Previous Page */}
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 32, height: 32, borderRadius: '8px',
+            background: 'var(--color-card-bg)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-main)',
+            opacity: currentPage <= 1 ? 0.35 : 1,
+            cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title="Previous Page"
+        >
+          <ChevronLeft size={15} />
+        </button>
+
+        {/* Number buttons */}
+        {pageNumbers.map((p, idx) => {
+          if (p === '...') {
+            return (
+              <span key={`dots-${idx}`} style={{ padding: '0 4px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                …
+              </span>
+            );
+          }
+          const isCurrent = p === currentPage;
+          return (
+            <button
+              key={`page-${p}`}
+              onClick={() => onPageChange(Number(p))}
+              style={{
+                minWidth: 32, height: 32, padding: '0 8px', borderRadius: '8px',
+                background: isCurrent ? 'var(--color-primary)' : 'var(--color-card-bg)',
+                color: isCurrent ? '#fff' : 'var(--color-text-main)',
+                border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                fontWeight: isCurrent ? 800 : 600,
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                boxShadow: isCurrent ? '0 2px 8px rgba(124, 58, 237, 0.3)' : 'none'
+              }}
+            >
+              {p}
+            </button>
+          );
+        })}
+
+        {/* Next Page */}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 32, height: 32, borderRadius: '8px',
+            background: 'var(--color-card-bg)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-main)',
+            opacity: currentPage >= totalPages ? 0.35 : 1,
+            cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title="Next Page"
+        >
+          <ChevronRight size={15} />
+        </button>
+
+        {/* Last Page */}
+        <button
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage >= totalPages}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 32, height: 32, borderRadius: '8px',
+            background: 'var(--color-card-bg)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-main)',
+            opacity: currentPage >= totalPages ? 0.35 : 1,
+            cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title="Last Page"
+        >
+          <ChevronsRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -48,10 +267,16 @@ export default function UsersPage() {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
   const handleBulkEdit = () => {
     localStorage.setItem('bulkEditUserIds', JSON.stringify(Array.from(selectedUserIds)));
@@ -85,9 +310,8 @@ export default function UsersPage() {
   const fetchUsers = () => {
     setLoading(true);
     let url = '/api/admin/users?';
-    // Backend caps the page at 200 rows; request the max so admins can see
-    // (and search) more than the 50-row default.
-    url += 'limit=200&';
+    // Backend limit up to 1000 so admin can navigate/search through users
+    url += 'limit=1000&';
     if (activeFilter !== 'all') url += `filter=${activeFilter}&`;
     if (activeFilter === 'custom') {
       if (startDate) url += `startDate=${startDate}&`;
@@ -164,12 +388,13 @@ export default function UsersPage() {
 
   const filteredUsers = users.filter(u => 
     (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    resolvePlanType(u).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
 
   return (
     <div>
@@ -304,25 +529,15 @@ export default function UsersPage() {
       )}
 
       <div className={styles.tableContainer}>
-        {totalPages > 1 && (
-          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
-            </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className={styles.actionBtn} 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              ><ChevronLeft size={16} /></button>
-              <button 
-                className={styles.actionBtn} 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              ><ChevronRight size={16} /></button>
-            </div>
-          </div>
-        )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          pageSize={pageSize}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={handlePageSizeChange}
+          position="top"
+        />
         <div className={styles.tableScroll}>
           <table className={styles.dataTable}>
             <thead>
@@ -349,7 +564,7 @@ export default function UsersPage() {
               <th>Name / Email</th>
               <th>Registered Date</th>
               <th>IP Address</th>
-              <th>Active Plans</th>
+              <th>Active Plan</th>
               <th>Onboarding</th>
               <th>Total API Calls</th>
               <th>Banned</th>
@@ -368,7 +583,7 @@ export default function UsersPage() {
                   </td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '90px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '80px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
-                  <td style={{ padding: '24px' }}><div style={{ height: '20px', width: '150px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
+                  <td style={{ padding: '24px' }}><div style={{ height: '22px', width: '70px', background: 'var(--color-border)', borderRadius: '20px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '14px', width: '60px', background: 'var(--color-border)', borderRadius: '4px' }}></div></td>
                   <td style={{ padding: '24px' }}><div style={{ height: '20px', width: '50px', background: 'var(--color-border)', borderRadius: '12px' }}></div></td>
                   <td style={{ padding: '24px', textAlign: 'right' }}><div style={{ height: '28px', width: '28px', background: 'var(--color-border)', borderRadius: '6px', marginLeft: 'auto' }}></div></td>
@@ -409,25 +624,31 @@ export default function UsersPage() {
                     </div>
                   </td>
                 <td>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 6px', width: 'fit-content', maxWidth: '100%' }}>
-                    {[
-                      { name: 'CLI', val: user.plan_cli || 'Free' },
-                      { name: 'API', val: user.plan_api || 'Free' },
-                      { name: 'Chat', val: user.plan_chat || 'Free' },
-                      { name: 'Web', val: user.plan_agents || 'Free' }
-                    ].map(p => {
-                      const isFree = p.val.toLowerCase() === 'free';
-                      const bg = isFree ? 'rgba(150,150,150,0.1)' : 'var(--color-primary-soft)';
-                      const color = isFree ? 'var(--color-text-muted)' : 'var(--color-primary)';
-                      const border = isFree ? '1px solid rgba(150,150,150,0.2)' : '1px solid var(--color-primary)';
-                      return (
-                        <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '9px', lineHeight: 1.3, background: bg, padding: '1px 5px', borderRadius: '5px', border: border, whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: 500, opacity: 0.8 }}>{p.name}:</span>
-                          <span style={{ fontWeight: 700, color: color }}>{p.val}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {(() => {
+                    const planType = resolvePlanType(user);
+                    const meta = PLAN_META[planType];
+                    return (
+                      <span 
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          fontSize: '11px', 
+                          fontWeight: 700, 
+                          padding: '3px 10px', 
+                          borderRadius: '20px', 
+                          background: meta.bg, 
+                          color: meta.color, 
+                          border: meta.border, 
+                          lineHeight: 1.4, 
+                          whiteSpace: 'nowrap' 
+                        }}
+                      >
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: meta.dot }} />
+                        {meta.label}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td>
                   <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 6px', width: 'fit-content', maxWidth: '100%' }} title={`Student: ${user.is_student ? 'Yes' : 'No'} · Level: ${user.experience_level || '—'} · Uses: ${user.use_cases || '—'} · Goal: ${user.earning_goal || '—'}`}>
@@ -484,26 +705,15 @@ export default function UsersPage() {
           </table>
         </div>
 
-        
-        {totalPages > 1 && (
-          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
-            </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className={styles.actionBtn} 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              ><ChevronLeft size={16} /></button>
-              <button 
-                className={styles.actionBtn} 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              ><ChevronRight size={16} /></button>
-            </div>
-          </div>
-        )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          pageSize={pageSize}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={handlePageSizeChange}
+          position="bottom"
+        />
       </div>
 
       {/* Delete User Modal */}

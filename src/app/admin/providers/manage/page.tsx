@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import styles from '../../admin.module.css';
-import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, ExternalLink, Copy, Upload, History, Check, Download, Edit, Search, Trash2 } from 'lucide-react';
+import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, ExternalLink, Copy, Upload, History, Check, Download, Edit, Search, Trash2, Eye, EyeOff, Code, Layers, ChevronDown, ChevronUp, Sliders, Sparkles, Send, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import { ALL_PROVIDERS_INFO } from './providersInfo';
 import Editor from '@monaco-editor/react';
 import Link from 'next/link';
@@ -51,7 +51,7 @@ import TokenRouterSetup, { TokenRouterSetupRef } from '../TokenRouterSetup';
 
 type Model = { id: string; name: string; originalId?: string; description?: string; themeColor?: string; isWhiteTheme?: boolean; shimmerEffect?: boolean; badgeText?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; offInputPrice?: string; offOutputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
+type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
 const editorOptions: any = {
   minimap: { enabled: false },
@@ -81,6 +81,43 @@ export default function ManageProvidersPage() {
   const [providersData, setProvidersData] = useState(ALL_PROVIDERS_INFO);
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Custom provider testing and keys visibility
+  const [testingCustomKey, setTestingCustomKey] = useState<Record<string, boolean>>({});
+  const [testCustomSuccess, setTestCustomSuccess] = useState<Record<string, boolean | null>>({});
+  const [showCustomKeys, setShowCustomKeys] = useState<Record<string, boolean>>({});
+
+  // Right-side models drawer for Custom Providers
+  const [drawerProviderId, setDrawerProviderId] = useState<string | null>(null);
+  const [drawerAvailableModels, setDrawerAvailableModels] = useState<any[]>([]);
+  const [fetchingDrawerModels, setFetchingDrawerModels] = useState(false);
+  const [drawerSearchQuery, setDrawerSearchQuery] = useState('');
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [drawerManualName, setDrawerManualName] = useState('');
+  const [drawerManualId, setDrawerManualId] = useState('');
+  const [showDrawerManualAdd, setShowDrawerManualAdd] = useState(false);
+  const [drawerTestModelId, setDrawerTestModelId] = useState('');
+  const [drawerTestingCap, setDrawerTestingCap] = useState<string | null>(null);
+  const [drawerTestResult, setDrawerTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // Custom Provider Drawer Tab and Playground states
+  const [customDrawerTab, setCustomDrawerTab] = useState<'manage' | 'test'>('manage');
+  const [customDrawerKeysCollapsed, setCustomDrawerKeysCollapsed] = useState(false);
+  const [customDrawerAvailableCollapsed, setCustomDrawerAvailableCollapsed] = useState(false);
+  const [customDrawerSelectedCollapsed, setCustomDrawerSelectedCollapsed] = useState(false);
+  const [customTestType, setCustomTestType] = useState<'text' | 'vision' | 'image'>('text');
+  const [customTestPrompt, setCustomTestPrompt] = useState('Hello! Please explain what you can do in 2 short sentences.');
+  const [customTestImageUrl, setCustomTestImageUrl] = useState('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=500');
+  const [customIsSendingTest, setCustomIsSendingTest] = useState(false);
+  const [customTestResponse, setCustomTestResponse] = useState<{
+    ok: boolean;
+    message: string;
+    text?: string;
+    imageUrl?: string;
+    latencyMs?: number;
+    status?: number;
+  } | null>(null);
+  const [customCopiedResponse, setCustomCopiedResponse] = useState(false);
 
   const monacoEditorRef = useRef<any>(null);
 
@@ -185,6 +222,7 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
         const rawArray = Array.isArray(data) ? data : (data && Array.isArray(data.providers) ? data.providers : []);
         list = rawArray.map((p: any) => ({
           id: p.id, name: p.name, icon: p.icon || '', status: p.status ?? true,
+          byokEnabled: p.byok_enabled ?? p.byokEnabled ?? true,
           key: p.key || '', priority: p.priority ?? 0,
           baseUrl: p.base_url ?? p.baseUrl,
           useModelsApi: p.use_models_api ?? p.useModelsApi ?? false,
@@ -252,6 +290,44 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
   };
 
   const toggleProvider = (id: string) => { setProviders(providers.map(p => p.id === id ? { ...p, status: !p.status } : p)); setSaved(false); };
+  const toggleByokProvider = async (id: string, defaultName?: string) => {
+    let prov = providers.find(p => p.id === id || (id === 'ap_openrouter' && p.id === 'openrouter') || (id === 'ap_opencode' && p.id === 'opencode'));
+    let updated: Provider[];
+    let targetState = true;
+    if (prov) {
+      targetState = !(prov.byokEnabled ?? true);
+      updated = providers.map(p => (p.id === prov!.id) ? { ...p, byokEnabled: targetState } : p);
+    } else {
+      targetState = false;
+      const newProv: Provider = {
+        id,
+        name: defaultName || id.replace(/^ap_/, '').toUpperCase(),
+        status: false,
+        key: '',
+        priority: providers.length + 1,
+        models: [],
+        byokEnabled: targetState,
+        isCustom: true
+      };
+      updated = [...providers, newProv];
+      prov = newProv;
+    }
+    setProviders(updated);
+    setSaved(false);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+      await fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(updated) });
+      showToast(`BYOK ${targetState ? 'Enabled' : 'Disabled'} for ${prov?.name || id}`);
+    } catch (err) {
+      console.error('Failed to auto-save BYOK status', err);
+      showToast(`Failed to update BYOK for ${prov?.name || id}`);
+    }
+  };
+
+  const getByokStatus = (id: string, altId?: string) => {
+    const prov = providers.find(p => p.id === id || (altId && p.id === altId));
+    return prov?.byokEnabled ?? true;
+  };
   const toggleExpanded = (id: string) => { const next = new Set(expandedProviders); if (next.has(id)) next.delete(id); else next.add(id); setExpandedProviders(next); };
 
   const parseKeys = (keyStr: string): { key: string, active: boolean }[] => {
@@ -326,17 +402,350 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
     } catch (e) { console.error(e); } finally { setSaving(false); }
   };
 
-  const handleAddProvider = () => {
-    if (!newProvName.trim()) return;
+  const handleAddProvider = async () => {
+    if (!newProvName.trim()) {
+      showToast('Please enter a provider name');
+      return;
+    }
     let initialModels: Model[] = [];
     if (!newProvUseModelsApi) {
-      initialModels = newProvModels.filter(m => m.name.trim() && m.id.trim()).map(m => ({ ...m, id: m.id.trim(), name: m.name.trim(), originalId: m.originalId?.trim() || m.id.trim() }));
+      initialModels = newProvModels.filter(m => m.name.trim() && m.id.trim()).map(m => ({
+        ...m,
+        id: m.id.trim(),
+        name: m.name.trim(),
+        originalId: m.originalId?.trim() || m.id.trim(),
+        text: m.text ?? true,
+        reasoning: m.reasoning ?? false,
+        image: m.image ?? false,
+        tokenLimit: m.tokenLimit || 'Unlimited',
+        access: m.access || 'Free'
+      }));
     }
-    const providerId = newProvId.trim() ? newProvId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '') : `prov_${Date.now()}`;
-    setProviders([...providers, { id: providerId, name: newProvName, icon: newProvIcon.trim() || undefined, status: false, key: newProvKey.trim(), priority: providers.length + 1, models: initialModels, baseUrl: newProvBaseUrl.trim() || undefined, apiFormat: newProvApiFormat, useModelsApi: newProvUseModelsApi, modelsApiLink: newProvModelsApiLink.trim() || undefined, headers: newProvHeaders, isCustom: true }]);
-    setNewProvId(''); setNewProvName(''); setNewProvIcon(''); setNewProvBaseUrl(''); setNewProvApiFormat('OpenAI Compatible');
-    setNewProvKey(''); setNewProvHeaders([]); setNewProvUseModelsApi(false); setNewProvModelsApiLink(''); setNewProvModels([]);
-    setShowAddProvider(false); setSaved(false);
+    const providerId = newProvId.trim()
+      ? newProvId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '')
+      : `prov_${Date.now()}`;
+
+    const formattedKey = newProvKey.trim()
+      ? JSON.stringify([{ key: newProvKey.trim(), active: true }])
+      : '[]';
+
+    const newProv: Provider = {
+      id: providerId,
+      name: newProvName.trim(),
+      icon: newProvIcon.trim() || undefined,
+      status: true,
+      byokEnabled: true,
+      key: formattedKey,
+      priority: providers.length + 1,
+      models: initialModels,
+      baseUrl: newProvBaseUrl.trim() || undefined,
+      apiFormat: newProvApiFormat,
+      useModelsApi: newProvUseModelsApi,
+      modelsApiLink: newProvModelsApiLink.trim() || undefined,
+      headers: newProvHeaders,
+      isCustom: true
+    };
+
+    const updated = [...providers, newProv];
+    setProviders(updated);
+    setNewProvId('');
+    setNewProvName('');
+    setNewProvIcon('');
+    setNewProvBaseUrl('');
+    setNewProvApiFormat('OpenAI Compatible');
+    setNewProvKey('');
+    setNewProvHeaders([]);
+    setNewProvUseModelsApi(false);
+    setNewProvModelsApiLink('');
+    setNewProvModels([]);
+    setShowAddProvider(false);
+
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+      await fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(updated) });
+      showToast(`Custom provider "${newProv.name}" created and saved!`);
+      setExpandedProviders(prev => new Set([...prev, providerId]));
+    } catch (e) {
+      console.error('Failed to auto-save new custom provider', e);
+      showToast(`Provider "${newProv.name}" created!`);
+    }
+  };
+
+  const updateProviderName = (id: string, val: string) => {
+    setProviders(providers.map(p => p.id === id ? { ...p, name: val } : p));
+    setSaved(false);
+  };
+
+  const handleSaveCustomProvider = async (targetId: string) => {
+    const prov = providers.find(p => p.id === targetId);
+    if (!prov) return;
+    setSaving(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+      const res = await fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(providers) });
+      if (res.ok) {
+        showToast(`✓ ${prov.name} saved successfully!`);
+      } else {
+        throw new Error('Save failed');
+      }
+    } catch (err) {
+      console.error('Failed to save provider', err);
+      showToast(`Failed to save ${prov.name}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTestCustomKey = async (provider: Provider, keyIndex: number) => {
+    const keys = parseKeys(provider.key);
+    const targetKey = keys[keyIndex]?.key;
+    const testId = `${provider.id}_${keyIndex}`;
+
+    if (!targetKey || !targetKey.trim()) {
+      showToast('Please enter an API Key to test');
+      setTestCustomSuccess(prev => ({ ...prev, [testId]: false }));
+      return;
+    }
+
+    setTestingCustomKey(prev => ({ ...prev, [testId]: true }));
+    setTestCustomSuccess(prev => ({ ...prev, [testId]: null }));
+
+    try {
+      const res = await fetch('/api/admin/providers/custom-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          baseUrl: provider.baseUrl,
+          modelsApiLink: provider.modelsApiLink,
+          key: targetKey,
+          headers: provider.headers,
+          apiFormat: provider.apiFormat
+        })
+      });
+      const data = await res.json();
+      if (res.ok && (data.ok || Array.isArray(data.data))) {
+        setTestCustomSuccess(prev => ({ ...prev, [testId]: true }));
+        showToast(`✓ ${provider.name} connected successfully! (${data.count || data.data?.length || 0} models available)`);
+      } else {
+        setTestCustomSuccess(prev => ({ ...prev, [testId]: false }));
+        showToast(`✗ Test failed: ${data.error || 'Connection error'}`);
+      }
+    } catch (e: any) {
+      setTestCustomSuccess(prev => ({ ...prev, [testId]: false }));
+      showToast(`✗ Test failed: ${e.message || 'Network error'}`);
+    } finally {
+      setTestingCustomKey(prev => ({ ...prev, [testId]: false }));
+    }
+  };
+
+  const handleOpenDrawer = (providerId: string) => {
+    setDrawerProviderId(providerId);
+    setDrawerSearchQuery('');
+    setDrawerError(null);
+    setDrawerAvailableModels([]);
+    setShowDrawerManualAdd(false);
+    setDrawerTestResult(null);
+    setCustomDrawerTab('manage');
+    setCustomDrawerKeysCollapsed(false);
+    setCustomDrawerAvailableCollapsed(false);
+    setCustomDrawerSelectedCollapsed(false);
+    setCustomTestResponse(null);
+    setCustomTestPrompt('Hello! Please explain what you can do in 2 short sentences.');
+    setCustomTestType('text');
+    const prov = providers.find(p => p.id === providerId);
+    if (prov) {
+      setDrawerTestModelId(prov.models[0]?.originalId || prov.models[0]?.id || '');
+      if (prov.baseUrl || prov.modelsApiLink) {
+        handleFetchCustomModels(prov);
+      }
+    }
+  };
+
+  const handleRunCustomCapabilityTest = async (prov: Provider, capType: 'text' | 'vision' | 'image') => {
+    const keys = parseKeys(prov.key);
+    const validKey = keys.find(k => k.active && k.key.trim())?.key || keys[0]?.key || '';
+    if (!validKey) {
+      setCustomTestResponse({ ok: false, message: 'Please add and activate an API key first' });
+      return;
+    }
+    if (!drawerTestModelId) {
+      setCustomTestResponse({ ok: false, message: 'Please select a model to test' });
+      return;
+    }
+
+    setCustomIsSendingTest(true);
+    setCustomTestResponse(null);
+
+    try {
+      const res = await fetch('/api/admin/providers/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          providerId: prov.id,
+          model: drawerTestModelId,
+          originalId: drawerTestModelId,
+          key: validKey,
+          baseUrl: prov.baseUrl,
+          headers: prov.headers,
+          testType: capType,
+          prompt: customTestPrompt,
+          imageUrl: capType === 'vision' ? customTestImageUrl : undefined
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setCustomTestResponse({
+          ok: true,
+          message: data.message || `${capType.toUpperCase()} test completed successfully!`,
+          text: data.preview,
+          imageUrl: data.generatedImageUrl,
+          latencyMs: data.latencyMs,
+          status: 200
+        });
+      } else {
+        setCustomTestResponse({
+          ok: false,
+          message: data.message || `Test failed with status ${res.status}`,
+          status: data.status || res.status,
+          latencyMs: data.latencyMs
+        });
+      }
+    } catch (e: any) {
+      setCustomTestResponse({ ok: false, message: e.message || 'Network error during test execution' });
+    } finally {
+      setCustomIsSendingTest(false);
+    }
+  };
+
+  const handleSelectCustomTestType = (type: 'text' | 'vision' | 'image') => {
+    setCustomTestType(type);
+    setCustomTestResponse(null);
+    if (type === 'text') {
+      setCustomTestPrompt('Hello! Please explain what you can do in 2 short sentences.');
+    } else if (type === 'vision') {
+      setCustomTestPrompt('Describe what you see in this image in detail and list any key features.');
+    } else if (type === 'image') {
+      setCustomTestPrompt('A serene cybernetic garden with glowing neon blossoms at twilight, 8k resolution');
+    }
+  };
+
+  const handleFetchCustomModels = async (prov: Provider) => {
+    setFetchingDrawerModels(true);
+    setDrawerError(null);
+    try {
+      const keys = parseKeys(prov.key);
+      const validKey = keys.find(k => k.active && k.key.trim())?.key || keys[0]?.key || '';
+      const res = await fetch('/api/admin/providers/custom-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          baseUrl: prov.baseUrl,
+          modelsApiLink: prov.modelsApiLink,
+          key: validKey,
+          headers: prov.headers,
+          apiFormat: prov.apiFormat
+        })
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.data)) {
+        setDrawerAvailableModels(data.data);
+        if (!drawerTestModelId && data.data.length > 0) {
+          setDrawerTestModelId(data.data[0].id);
+        }
+      } else {
+        setDrawerError(data.error || 'Failed to fetch models from custom provider');
+      }
+    } catch (e: any) {
+      setDrawerError(e.message || 'Error connecting to provider API');
+    } finally {
+      setFetchingDrawerModels(false);
+    }
+  };
+
+  const toggleCustomDrawerModel = (model: any) => {
+    if (!drawerProviderId) return;
+    const prov = providers.find(p => p.id === drawerProviderId);
+    if (!prov) return;
+
+    const exists = prov.models.find(m => (m.originalId || m.id) === model.id);
+    let nextModels: Model[];
+    if (exists) {
+      nextModels = prov.models.filter(m => (m.originalId || m.id) !== model.id);
+    } else {
+      const cleanId = model.id.split('/').pop()?.replace(/[^a-zA-Z0-9_-]/g, '_') || model.id;
+      const mod = model.architecture?.modality || '';
+      const isImg = mod.includes('image') || mod.includes('vision');
+      const isAud = mod.includes('audio');
+      const isVid = mod.includes('video');
+      const newModel: Model = {
+        id: cleanId,
+        name: model.name || model.id,
+        originalId: model.id,
+        text: true,
+        image: isImg,
+        vision: isImg,
+        audio: isAud,
+        reasoning: false,
+        video: isVid,
+        tokenLimit: 'Unlimited',
+        access: 'Free'
+      };
+      nextModels = [...prov.models, newModel];
+    }
+    const updated = providers.map(p => p.id === drawerProviderId ? { ...p, models: nextModels } : p);
+    setProviders(updated);
+  };
+
+  const updateCustomDrawerModelField = (modelOriginalId: string, field: string, val: any) => {
+    if (!drawerProviderId) return;
+    const updated = providers.map(p => {
+      if (p.id !== drawerProviderId) return p;
+      return {
+        ...p,
+        models: p.models.map(m => (m.originalId || m.id) === modelOriginalId ? { ...m, [field]: val } : m)
+      };
+    });
+    setProviders(updated);
+  };
+
+  const handleAddManualDrawerModel = () => {
+    if (!drawerProviderId || !drawerManualName.trim() || !drawerManualId.trim()) return;
+    const prov = providers.find(p => p.id === drawerProviderId);
+    if (!prov) return;
+
+    const newM: Model = {
+      id: drawerManualId.trim().replace(/[^a-zA-Z0-9_-]/g, '_'),
+      name: drawerManualName.trim(),
+      originalId: drawerManualId.trim(),
+      text: true,
+      reasoning: false,
+      image: false,
+      vision: false,
+      audio: false,
+      video: false,
+      tokenLimit: 'Unlimited',
+      access: 'Free'
+    };
+    const updated = providers.map(p => p.id === drawerProviderId ? { ...p, models: [...p.models, newM] } : p);
+    setProviders(updated);
+    setDrawerManualName('');
+    setDrawerManualId('');
+    setShowDrawerManualAdd(false);
+  };
+
+  const handleCloseDrawer = async () => {
+    if (drawerProviderId) {
+      const prov = providers.find(p => p.id === drawerProviderId);
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+        await fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(providers) });
+        if (prov) showToast(`✓ Saved models for ${prov.name}`);
+      } catch (e) {
+        console.error('Failed to auto-save models on close', e);
+      }
+    }
+    setDrawerProviderId(null);
   };
 
   const handleAddModel = (provId: string) => {
@@ -358,237 +767,446 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
     } catch { return null; }
   };
 
-  const renderProviderTile = (provider: Provider, isCustomGroup: boolean) => (
-    <div key={provider.id} style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
-      <div
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', cursor: 'pointer', background: expandedProviders.has(provider.id) ? 'var(--color-bg-soft)' : 'transparent' }}
-        onClick={() => toggleExpanded(provider.id)}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {getDomainFromUrl(provider.baseUrl) ? (
-              <img src={`https://www.google.com/s2/favicons?domain=${getDomainFromUrl(provider.baseUrl)}&sz=128`} alt={provider.name} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-            ) : (
-              <Globe size={18} color="var(--color-primary)" />
+  const renderProviderTile = (provider: Provider, isCustomGroup: boolean) => {
+    const isExpanded = expandedProviders.has(provider.id);
+    const byokOn = provider.byokEnabled ?? true;
+
+    return (
+      <div key={provider.id} style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden', transition: 'all 0.2s ease' }}>
+        {/* CARD HEADER */}
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', cursor: 'pointer', background: isExpanded ? 'var(--color-bg-soft)' : 'transparent', flexWrap: 'wrap', gap: '12px' }}
+          onClick={() => toggleExpanded(provider.id)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--color-border)', flexShrink: 0 }}>
+              {provider.icon ? (
+                <img src={provider.icon} alt={provider.name} style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+              ) : getDomainFromUrl(provider.baseUrl) ? (
+                <img src={`https://www.google.com/s2/favicons?domain=${getDomainFromUrl(provider.baseUrl)}&sz=128`} alt={provider.name} style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+              ) : (
+                <Globe size={18} color="var(--color-primary)" />
+              )}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--color-text-main)' }}>{provider.name}</span>
+                {isCustomGroup && <span style={{ fontSize: '10px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>Custom</span>}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>{provider.models?.length || 0} models</span>
+                {provider.baseUrl && (
+                  <>
+                    <span>•</span>
+                    <span style={{ fontFamily: 'monospace', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{provider.baseUrl}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }} onClick={e => e.stopPropagation()}>
+            {/* BYOK Toggle Switch */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: byokOn ? '#10b98115' : 'var(--color-bg-soft)',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                border: `1px solid ${byokOn ? '#10b98144' : 'var(--color-border)'}`,
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleByokProvider(provider.id, provider.name)}
+              title="Enable or disable showing this provider in user BYOK dashboard"
+            >
+              <span style={{ fontSize: '11px', fontWeight: 600, color: byokOn ? '#10b981' : 'var(--color-text-muted)' }}>
+                BYOK {byokOn ? 'ON' : 'OFF'}
+              </span>
+              <div style={{
+                width: '26px',
+                height: '15px',
+                background: byokOn ? '#10b981' : 'var(--color-text-muted)',
+                borderRadius: '16px',
+                position: 'relative',
+                transition: 'background 0.3s'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '1.5px',
+                  left: byokOn ? '12.5px' : '1.5px',
+                  width: '12px',
+                  height: '12px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'left 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }} />
+              </div>
+            </div>
+
+            {/* Provider Status Toggle Switch */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: provider.status ? '#10b98115' : 'var(--color-bg-soft)',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                border: `1px solid ${provider.status ? '#10b98144' : 'var(--color-border)'}`,
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleProvider(provider.id)}
+              title="Toggle active status"
+            >
+              <span style={{ fontSize: '11px', fontWeight: 600, color: provider.status ? '#10b981' : 'var(--color-text-muted)' }}>
+                {provider.status ? 'Active' : 'Disabled'}
+              </span>
+              <div style={{
+                width: '26px',
+                height: '15px',
+                background: provider.status ? '#10b981' : 'var(--color-text-muted)',
+                borderRadius: '16px',
+                position: 'relative',
+                transition: 'background 0.3s'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '1.5px',
+                  left: provider.status ? '12.5px' : '1.5px',
+                  width: '12px',
+                  height: '12px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'left 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }} />
+              </div>
+            </div>
+
+            {isCustomGroup && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Are you sure you want to delete ${provider.name}?`)) {
+                    const updated = providers.filter(p => p.id !== provider.id);
+                    setProviders(updated);
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+                    fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(updated) });
+                    showToast(`Deleted ${provider.name}`);
+                  }
+                }}
+                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px', borderRadius: '8px', display: 'flex', cursor: 'pointer', transition: 'all 0.2s' }}
+                title="Delete Custom Provider"
+              >
+                <Trash2 size={15} />
+              </button>
             )}
           </div>
-          <span style={{ fontWeight: 600, fontSize: '15px' }}>{provider.name}</span>
-          {isCustomGroup && <span style={{ fontSize: '11px', background: 'var(--color-primary-soft)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Custom</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }} onClick={e => e.stopPropagation()}>
-          <label className={styles.toggleSwitch}>
-            <input type="checkbox" checked={provider.status} onChange={() => toggleProvider(provider.id)} />
-            <span className={styles.toggleSlider}></span>
-          </label>
-          {isCustomGroup && (
-            <button
-              onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to delete this custom provider?')) { setProviders(providers.filter(p => p.id !== provider.id)); setSaved(false); } }}
-              style={{ background: 'var(--color-primary-soft)', color: 'var(--color-danger)', border: 'none', padding: '6px', borderRadius: '6px', display: 'flex', cursor: 'pointer', transition: 'all 0.2s' }}
-              title="Delete Custom Provider"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
-      </div>
 
-      {expandedProviders.has(provider.id) && (
-        <div style={{ padding: '16px', borderTop: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {parseKeys(provider.key).map((kObj, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: kObj.active ? 1 : 0.6 }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Key {idx + 1} {kObj.active ? '' : '(Paused)'}</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="password" value={kObj.key} onChange={(e) => updateKeyIndex(provider.id, idx, e.target.value)}
-                    placeholder={`Enter ${provider.name} API Key`} disabled={!provider.status || !kObj.active} autoComplete="new-password"
-                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontFamily: 'monospace', fontSize: '13px' }} />
-                  <button onClick={() => toggleKeyActive(provider.id, idx)} disabled={!provider.status} className="btn-secondary" style={{ padding: '10px 12px', display: 'flex', color: kObj.active ? '#eab308' : '#10b981', height: '40px' }} title={kObj.active ? "Pause Key" : "Resume Key"}>
-                    {kObj.active ? <Pause size={16} /> : <Play size={16} />}
-                  </button>
-                  {idx > 0 && (
-                    <button onClick={() => removeKey(provider.id, idx)} disabled={!provider.status} className="btn-secondary" style={{ padding: '10px 12px', display: 'flex', color: '#ef4444', height: '40px' }} title="Remove Key">
-                      <X size={16} />
-                    </button>
-                  )}
-                </div>
+        {/* EXPANDED BODY */}
+        {isExpanded && (
+          <div style={{ padding: '20px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* BYOK Status Banner */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: '10px', background: 'var(--color-bg-soft)' }}>
+              <div>
+                <div style={{ color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600 }}>Show in User BYOK Dashboard</div>
+                <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '2px' }}>Allow users to bring and connect their own {provider.name} API key.</div>
               </div>
-            ))}
-            <button onClick={() => addKey(provider.id)} disabled={!provider.status} className="btn-secondary" style={{ alignSelf: 'flex-start', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginTop: '4px' }}>
-              <Plus size={14} /> Add Another API Key
-            </button>
-          </div>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  checked={byokOn}
+                  onChange={() => toggleByokProvider(provider.id, provider.name)}
+                />
+                <span className={styles.toggleSlider}></span>
+              </label>
+            </div>
 
-          {isCustomGroup && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider API Format</label>
-                <select value={provider.apiFormat || 'OpenAI Compatible'} onChange={(e) => updateApiFormat(provider.id, e.target.value)} disabled={!provider.status}
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px', appearance: 'auto' }}>
+            {/* Provider Configuration */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Name</label>
+                <input
+                  type="text"
+                  value={provider.name}
+                  onChange={(e) => updateProviderName(provider.id, e.target.value)}
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '9px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Base URL</label>
+                <input
+                  type="text"
+                  value={provider.baseUrl || ''}
+                  onChange={(e) => updateBaseUrl(provider.id, e.target.value)}
+                  placeholder="e.g. https://api.openai.com/v1"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '9px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Format</label>
+                <select
+                  value={provider.apiFormat || 'OpenAI Compatible'}
+                  onChange={(e) => updateApiFormat(provider.id, e.target.value)}
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '9px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px', appearance: 'auto' }}
+                >
                   <option value="OpenAI Compatible">OpenAI Compatible</option>
                   <option value="OpenAI Responses">OpenAI Responses</option>
                   <option value="Anthropic Messages">Anthropic Messages</option>
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>API Base URL</label>
-                <input type="text" value={provider.baseUrl || ''} onChange={(e) => updateBaseUrl(provider.id, e.target.value)}
-                  placeholder="e.g. https://api.openai.com/v1" disabled={!provider.status}
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }} />
-              </div>
-
-              {/* Provider Icon */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Icon URL</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="text" value={provider.icon || ''} onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, icon: e.target.value } : p)); setSaved(false); }}
-                    placeholder="e.g. https://cdn.simpleicons.org/openai/10A37F" disabled={!provider.status}
-                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }} />
-                  <select value={provider.icon || ''} onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, icon: e.target.value } : p)); setSaved(false); }} disabled={!provider.status}
-                    style={{ width: '130px', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }}>
-                    <option value="">Custom...</option>
-                    <option value="https://cdn.simpleicons.org/openai/10A37F">OpenAI</option>
-                    <option value="https://cdn.simpleicons.org/anthropic/D97757">Anthropic</option>
-                    <option value="https://cdn.simpleicons.org/google/4285F4">Google</option>
-                    <option value="https://cdn.simpleicons.org/meta/0668E1">Meta</option>
-                    <option value="https://cdn.simpleicons.org/x/000000">X.AI</option>
-                    <option value="https://cdn.simpleicons.org/deepseek/4D8B3D">DeepSeek</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Headers */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Headers (Optional)</label>
-                  <button onClick={() => handleAddHeader(provider.id)} disabled={!provider.status}
-                    style={{ background: 'none', border: 'none', color: provider.status ? 'var(--color-primary)' : 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, cursor: provider.status ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Plus size={14} /> Add Header
-                  </button>
-                </div>
-                {provider.headers?.map(header => (
-                  <div key={header.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="text" value={header.key} onChange={(e) => handleUpdateHeader(provider.id, header.id, 'key', e.target.value)}
-                      placeholder="Header Name (e.g. Authorization)" disabled={!provider.status}
-                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '12px' }} />
-                    <input type="text" value={header.value} onChange={(e) => handleUpdateHeader(provider.id, header.id, 'value', e.target.value)}
-                      placeholder="Value (e.g. Bearer sk-...)" disabled={!provider.status}
-                      style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '12px' }} />
-                    <button onClick={() => handleRemoveHeader(provider.id, header.id)} disabled={!provider.status}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: provider.status ? 'pointer' : 'not-allowed', display: 'flex', padding: '4px' }}>
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Model Management */}
-          <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 600 }}>Models Configuration</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Use API Link</span>
-                <label className={styles.toggleSwitch}>
-                  <input type="checkbox" checked={provider.useModelsApi || false}
-                    onChange={() => { setProviders(providers.map(p => p.id === provider.id ? { ...p, useModelsApi: !(p.useModelsApi || false) } : p)); setSaved(false); }} />
-                  <span className={styles.toggleSlider}></span>
-                </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Provider Icon URL</label>
+                <input
+                  type="text"
+                  value={provider.icon || ''}
+                  onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, icon: e.target.value } : p)); setSaved(false); }}
+                  placeholder="https://cdn.simpleicons.org/..."
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '9px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                />
               </div>
             </div>
 
-            {provider.useModelsApi ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                <label style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Models List API Link</label>
-                <input type="text" value={provider.modelsApiLink || ''}
-                  onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, modelsApiLink: e.target.value } : p)); setSaved(false); }}
-                  placeholder="e.g. https://api.openai.com/v1/models" disabled={!provider.status}
-                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', color: 'var(--color-text-main)', opacity: provider.status ? 1 : 0.5, outline: 'none', fontSize: '13px' }} />
+            {/* API Keys with Test Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700 }}>API Keys &amp; Testing</label>
+                <button type="button" onClick={() => addKey(provider.id)} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Plus size={13} /> Add Key
+                </button>
               </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 600 }}>Active Models</span>
-                  <button onClick={() => setAddingModelTo(provider.id)} disabled={!provider.status}
-                    style={{ background: 'none', border: 'none', color: provider.status ? 'var(--color-primary)' : 'var(--color-text-muted)', fontSize: '12px', fontWeight: 600, cursor: provider.status ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Plus size={14} /> Add Model
-                  </button>
-                </div>
 
-                {addingModelTo === provider.id && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: 'var(--color-bg-soft)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Original Model ID</label>
-                        <input type="text" value={newModelOriginalId} onChange={(e) => setNewModelOriginalId(e.target.value)} placeholder="e.g. gpt-4" autoFocus
-                          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model Name</label>
-                        <input type="text" value={newModelName} onChange={(e) => setNewModelName(e.target.value)} placeholder="e.g. GPT-4"
-                          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }} />
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Model ID</label>
-                      <input type="text" value={newModelShowingId} onChange={(e) => setNewModelShowingId(e.target.value)} placeholder="e.g. cr-gpt-4"
-                        style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }} />
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>* Users calling our API will use this ID, but will see the "Showing Model Name" in the UI.</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={newModelReasoning} onChange={(e) => setNewModelReasoning(e.target.checked)} /> Reasoning
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-main)', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={newModelImage} onChange={(e) => setNewModelImage(e.target.checked)} /> Image
-                      </label>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-                      <button onClick={() => setAddingModelTo(null)} style={{ background: 'transparent', color: 'var(--color-text-muted)', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={() => handleAddModel(provider.id)} style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Add Model</button>
-                    </div>
-                  </div>
-                )}
+              {parseKeys(provider.key).map((kObj, idx) => {
+                const keyId = `${provider.id}_${idx}`;
+                const isTesting = testingCustomKey[keyId];
+                const testStatus = testCustomSuccess[keyId];
+                const isKeyVisible = showCustomKeys[keyId];
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {provider.models.map(model => (
-                    <div key={model.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', minWidth: '200px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)' }}>{model.name}</span>
-                        <button onClick={() => handleRemoveModel(provider.id, model.id)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex' }}>
-                          <X size={14} />
+                return (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: kObj.active ? 1 : 0.6 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type={isKeyVisible ? 'text' : 'password'}
+                          value={kObj.key}
+                          onChange={(e) => updateKeyIndex(provider.id, idx, e.target.value)}
+                          placeholder={`Enter ${provider.name} API Key`}
+                          disabled={!kObj.active}
+                          autoComplete="new-password"
+                          style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '10px 40px 10px 14px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontFamily: 'monospace', fontSize: '13px' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomKeys(prev => ({ ...prev, [keyId]: !prev[keyId] }))}
+                          style={{ position: 'absolute', right: '6px', background: 'transparent', border: 'none', padding: '6px', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                          title={isKeyVisible ? 'Hide Key' : 'Show Key'}
+                        >
+                          {isKeyVisible ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span><strong>Original ID:</strong> {model.originalId || model.id}</span>
-                        <span><strong>Showing ID:</strong> {model.id}</span>
-                        {(model.reasoning || model.image) && (
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
-                            {model.reasoning && <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Reasoning</span>}
-                            {model.image && <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Image</span>}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {provider.models.length === 0 && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>No models added.</span>}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* TOAST NOTIFICATION */}
-      {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', background: '#10B981', color: 'white', padding: '10px 20px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100000, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px', animation: 'fadeInUp 0.3s ease' }}>
-          <Check size={16} />
-          {toastMessage}
-        </div>
-      )}
-    </div>
-  );
+                      <button
+                        type="button"
+                        onClick={() => toggleKeyActive(provider.id, idx)}
+                        className="btn-secondary"
+                        style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', height: '40px', color: kObj.active ? '#eab308' : '#10b981' }}
+                        title={kObj.active ? 'Pause Key' : 'Resume Key'}
+                      >
+                        {kObj.active ? <Pause size={15} /> : <Play size={15} />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTestCustomKey(provider, idx)}
+                        disabled={isTesting || !kObj.active}
+                        className="btn-secondary"
+                        style={{
+                          padding: '10px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '40px',
+                          color: testStatus === true ? '#10b981' : testStatus === false ? '#ef4444' : 'inherit',
+                          borderColor: testStatus === true ? '#10b98144' : testStatus === false ? '#ef444444' : undefined,
+                          background: testStatus === true ? '#10b98115' : testStatus === false ? '#ef444415' : undefined,
+                          fontWeight: 600,
+                          fontSize: '12px'
+                        }}
+                        title="Test API Key & Endpoint"
+                      >
+                        {isTesting ? (
+                          <RefreshCw size={15} className={styles.spin} />
+                        ) : testStatus === true ? (
+                          <>
+                            <Check size={15} /> Tested OK
+                          </>
+                        ) : testStatus === false ? (
+                          <>
+                            <X size={15} /> Test Failed
+                          </>
+                        ) : (
+                          <>
+                            <Play size={14} /> Test
+                          </>
+                        )}
+                      </button>
+
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => removeKey(provider.id, idx)}
+                          className="btn-secondary"
+                          style={{ padding: '10px 12px', display: 'flex', color: '#ef4444', height: '40px' }}
+                          title="Remove Key"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Custom Headers */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '13px', color: 'var(--color-text-main)', fontWeight: 700 }}>Custom Headers (Optional)</label>
+                <button type="button" onClick={() => handleAddHeader(provider.id)} className="btn-secondary" style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Plus size={13} /> Add Header
+                </button>
+              </div>
+              {provider.headers?.map(header => (
+                <div key={header.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input type="text" value={header.key} onChange={(e) => handleUpdateHeader(provider.id, header.id, 'key', e.target.value)}
+                    placeholder="Header Key (e.g. Authorization)"
+                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }} />
+                  <input type="text" value={header.value} onChange={(e) => handleUpdateHeader(provider.id, header.id, 'value', e.target.value)}
+                    placeholder="Header Value"
+                    style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }} />
+                  <button type="button" onClick={() => handleRemoveHeader(provider.id, header.id)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Model Management & Select Models Button */}
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-text-main)' }}>Models Configuration</div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                    {provider.models.length} active model{provider.models.length === 1 ? '' : 's'} configured
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDrawer(provider.id)}
+                    className="btn-primary"
+                    style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px' }}
+                  >
+                    <Layers size={15} /> Select Models ({provider.models.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Direct Models API URL Option */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--color-bg-soft)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-main)', fontWeight: 600, flex: 1 }}>Use Direct Models List API Link</span>
+                <label className={styles.toggleSwitch} style={{ transform: 'scale(0.85)' }}>
+                  <input
+                    type="checkbox"
+                    checked={provider.useModelsApi || false}
+                    onChange={() => { setProviders(providers.map(p => p.id === provider.id ? { ...p, useModelsApi: !(p.useModelsApi || false) } : p)); setSaved(false); }}
+                  />
+                  <span className={styles.toggleSlider}></span>
+                </label>
+              </div>
+
+              {provider.useModelsApi && (
+                <input
+                  type="text"
+                  value={provider.modelsApiLink || ''}
+                  onChange={(e) => { setProviders(providers.map(p => p.id === provider.id ? { ...p, modelsApiLink: e.target.value } : p)); setSaved(false); }}
+                  placeholder="e.g. https://api.openai.com/v1/models"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '9px 12px', borderRadius: '8px', color: 'var(--color-text-main)', outline: 'none', fontSize: '13px' }}
+                />
+              )}
+
+              {/* Active Model Chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {provider.models.map(model => (
+                  <div key={model.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '6px 12px', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-main)' }}>{model.name}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{model.originalId || model.id}</span>
+                    </div>
+                    {(model.reasoning || model.image || model.vision) && (
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {model.reasoning && <span style={{ fontSize: '9px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>Reasoning</span>}
+                        {(model.image || model.vision) && <span style={{ fontSize: '9px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>Vision</span>}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveModel(provider.id, model.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: '2px', marginLeft: '4px' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {provider.models.length === 0 && (
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '4px 0' }}>
+                    No models configured yet. Click "Select Models" to load models from the API.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Card Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => handleSaveCustomProvider(provider.id)}
+                className="btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', fontSize: '13px', borderRadius: '8px' }}
+              >
+                <Save size={14} /> Save Provider Changes
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`Are you sure you want to delete ${provider.name}?`)) {
+                    const updated = providers.filter(p => p.id !== provider.id);
+                    setProviders(updated);
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+                    fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(updated) });
+                    showToast(`Deleted ${provider.name}`);
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '12px', borderRadius: '8px', background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ef4444', cursor: 'pointer' }}
+              >
+                <Trash2 size={14} /> Delete Provider
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
   const handleCopyPrompt = () => {
     let promptText = "Please perform a deep, up-to-date research on the following AI providers to verify their FREE models, rate limits, and context windows.\\n\\n";
     promptText += "CRITICAL INSTRUCTIONS FOR YOU:\\n";
@@ -900,49 +1518,48 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-              <OpenRouterSetup ref={openRouterRef} index={1} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenCodeSetup ref={openCodeRef} index={2} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenAISetup ref={openaiRef} index={3} onModelsUpdated={() => fetchProviders(true)} />
-              <AnthropicSetup ref={anthropicRef} index={4} onModelsUpdated={() => fetchProviders(true)} />
-              <CohereSetup ref={cohereRef} index={5} onModelsUpdated={() => fetchProviders(true)} />
-              <GroqSetup ref={groqRef} index={6} onModelsUpdated={() => fetchProviders(true)} />
-              <GoogleSetup ref={googleRef} index={7} onModelsUpdated={() => fetchProviders(true)} />
-              <CerebrasSetup ref={cerebrasRef} index={8} onModelsUpdated={() => fetchProviders(true)} />
-              <SambaNovaSetup ref={sambanovaRef} index={9} onModelsUpdated={() => fetchProviders(true)} />
-              <XAISetup ref={xaiRef} index={10} onModelsUpdated={() => fetchProviders(true)} />
-              <NovitaSetup ref={novitaRef} index={11} onModelsUpdated={() => fetchProviders(true)} />
-              <BytezSetup ref={bytezRef} index={12} onModelsUpdated={() => fetchProviders(true)} />
-              <AIMLAPISetup ref={aimlapiRef} index={13} onModelsUpdated={() => fetchProviders(true)} />
-              <TokenHarborSetup ref={tokenharborRef} index={14} onModelsUpdated={() => fetchProviders(true)} />
-              <AIANDSetup ref={aiandRef} index={15} onModelsUpdated={() => fetchProviders(true)} />
-              <MistralSetup ref={mistralRef} index={14} onModelsUpdated={() => fetchProviders(true)} />
-              <TogetherSetup ref={togetherRef} index={15} onModelsUpdated={() => fetchProviders(true)} />
-              <DeepSeekSetup ref={deepseekRef} index={16} onModelsUpdated={() => fetchProviders(true)} />
-              <FireworksSetup ref={fireworksRef} index={17} onModelsUpdated={() => fetchProviders(true)} />
-              <PerplexitySetup ref={perplexityRef} index={18} onModelsUpdated={() => fetchProviders(true)} />
-              <AmazonBedrockSetup ref={amazonbedrockRef} index={19} onModelsUpdated={() => fetchProviders(true)} />
-              <GithubSetup ref={githubRef} index={20} onModelsUpdated={() => fetchProviders(true)} />
-              <HuggingFaceSetup ref={huggingfaceRef} index={21} onModelsUpdated={() => fetchProviders(true)} />
-              <HyperbolicSetup ref={hyperbolicRef} index={22} onModelsUpdated={() => fetchProviders(true)} />
-              <MoonshotSetup ref={moonshotRef} index={23} onModelsUpdated={() => fetchProviders(true)} />
-              <ZaiSetup ref={zaiRef} index={24} onModelsUpdated={() => fetchProviders(true)} />
-              <NvidiaSetup ref={nvidiaRef} index={25} onModelsUpdated={() => fetchProviders(true)} />
-              <KiloCodeSetup ref={kilocodeRef} index={26} onModelsUpdated={() => fetchProviders(true)} />
-              <ClineCodeSetup ref={clinecodeRef} index={27} onModelsUpdated={() => fetchProviders(true)} />
-              <PoixeSetup ref={poixeRef} index={28} onModelsUpdated={() => fetchProviders(true)} />
-              <SiliconFlowSetup ref={siliconflowRef} index={29} onModelsUpdated={() => fetchProviders(true)} />
-              <ZenmuxSetup ref={zenmuxRef} index={30} onModelsUpdated={() => fetchProviders(true)} />
-              <UnoRouterSetup ref={unorouterRef} index={31} onModelsUpdated={() => fetchProviders(true)} />
-              <RoutewaySetup ref={routewayRef} index={32} onModelsUpdated={() => fetchProviders(true)} />
-              <StepFunSetup ref={stepfunRef} index={33} onModelsUpdated={() => fetchProviders(true)} />
-              <LLM7Setup ref={llm7Ref} index={34} onModelsUpdated={() => fetchProviders(true)} />
-              <ModelScopeSetup ref={modelscopeRef} index={35} onModelsUpdated={() => fetchProviders(true)} />
-              <AIHordeSetup ref={aihordeRef} index={36} onModelsUpdated={() => fetchProviders(true)} />
-              <PollinationsSetup ref={pollinationsRef} index={37} onModelsUpdated={() => fetchProviders(true)} />
-              <AnyRouterSetup ref={anyrouterRef} index={38} onModelsUpdated={() => fetchProviders(true)} />
-              <AgnesAISetup ref={agnesaiRef} index={39} onModelsUpdated={() => fetchProviders(true)} />
-              <TokenRouterSetup ref={tokenrouterRef} index={40} onModelsUpdated={() => fetchProviders(true)} />
-
+              <OpenRouterSetup ref={openRouterRef} index={1} byokEnabled={getByokStatus('ap_openrouter', 'openrouter')} onToggleByok={() => toggleByokProvider('ap_openrouter', 'OpenRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenCodeSetup ref={openCodeRef} index={2} byokEnabled={getByokStatus('ap_opencode', 'opencode')} onToggleByok={() => toggleByokProvider('ap_opencode', 'OpenCode')} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenAISetup ref={openaiRef} index={3} byokEnabled={getByokStatus('ap_openai')} onToggleByok={() => toggleByokProvider('ap_openai', 'OpenAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <AnthropicSetup ref={anthropicRef} index={4} byokEnabled={getByokStatus('ap_anthropic')} onToggleByok={() => toggleByokProvider('ap_anthropic', 'Anthropic')} onModelsUpdated={() => fetchProviders(true)} />
+              <CohereSetup ref={cohereRef} index={5} byokEnabled={getByokStatus('ap_cohere')} onToggleByok={() => toggleByokProvider('ap_cohere', 'Cohere')} onModelsUpdated={() => fetchProviders(true)} />
+              <GroqSetup ref={groqRef} index={6} byokEnabled={getByokStatus('ap_groq')} onToggleByok={() => toggleByokProvider('ap_groq', 'Groq')} onModelsUpdated={() => fetchProviders(true)} />
+              <GoogleSetup ref={googleRef} index={7} byokEnabled={getByokStatus('ap_google')} onToggleByok={() => toggleByokProvider('ap_google', 'Google')} onModelsUpdated={() => fetchProviders(true)} />
+              <CerebrasSetup ref={cerebrasRef} index={8} byokEnabled={getByokStatus('ap_cerebras')} onToggleByok={() => toggleByokProvider('ap_cerebras', 'Cerebras')} onModelsUpdated={() => fetchProviders(true)} />
+              <SambaNovaSetup ref={sambanovaRef} index={9} byokEnabled={getByokStatus('ap_sambanova')} onToggleByok={() => toggleByokProvider('ap_sambanova', 'SambaNova')} onModelsUpdated={() => fetchProviders(true)} />
+              <XAISetup ref={xaiRef} index={10} byokEnabled={getByokStatus('ap_xai')} onToggleByok={() => toggleByokProvider('ap_xai', 'xAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <NovitaSetup ref={novitaRef} index={11} byokEnabled={getByokStatus('ap_novita')} onToggleByok={() => toggleByokProvider('ap_novita', 'Novita')} onModelsUpdated={() => fetchProviders(true)} />
+              <BytezSetup ref={bytezRef} index={12} byokEnabled={getByokStatus('ap_bytez')} onToggleByok={() => toggleByokProvider('ap_bytez', 'Bytez')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIMLAPISetup ref={aimlapiRef} index={13} byokEnabled={getByokStatus('ap_aimlapi')} onToggleByok={() => toggleByokProvider('ap_aimlapi', 'AIMLAPI')} onModelsUpdated={() => fetchProviders(true)} />
+              <TokenHarborSetup ref={tokenharborRef} index={14} byokEnabled={getByokStatus('ap_tokenharbor')} onToggleByok={() => toggleByokProvider('ap_tokenharbor', 'TokenHarbor')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIANDSetup ref={aiandRef} index={15} byokEnabled={getByokStatus('ap_aiand')} onToggleByok={() => toggleByokProvider('ap_aiand', 'AIAND')} onModelsUpdated={() => fetchProviders(true)} />
+              <MistralSetup ref={mistralRef} index={16} byokEnabled={getByokStatus('ap_mistral')} onToggleByok={() => toggleByokProvider('ap_mistral', 'Mistral')} onModelsUpdated={() => fetchProviders(true)} />
+              <TogetherSetup ref={togetherRef} index={17} byokEnabled={getByokStatus('ap_together')} onToggleByok={() => toggleByokProvider('ap_together', 'Together')} onModelsUpdated={() => fetchProviders(true)} />
+              <DeepSeekSetup ref={deepseekRef} index={18} byokEnabled={getByokStatus('ap_deepseek')} onToggleByok={() => toggleByokProvider('ap_deepseek', 'DeepSeek')} onModelsUpdated={() => fetchProviders(true)} />
+              <FireworksSetup ref={fireworksRef} index={19} byokEnabled={getByokStatus('ap_fireworks')} onToggleByok={() => toggleByokProvider('ap_fireworks', 'Fireworks')} onModelsUpdated={() => fetchProviders(true)} />
+              <PerplexitySetup ref={perplexityRef} index={20} byokEnabled={getByokStatus('ap_perplexity')} onToggleByok={() => toggleByokProvider('ap_perplexity', 'Perplexity')} onModelsUpdated={() => fetchProviders(true)} />
+              <AmazonBedrockSetup ref={amazonbedrockRef} index={21} byokEnabled={getByokStatus('ap_amazonbedrock')} onToggleByok={() => toggleByokProvider('ap_amazonbedrock', 'Amazon Bedrock')} onModelsUpdated={() => fetchProviders(true)} />
+              <GithubSetup ref={githubRef} index={22} byokEnabled={getByokStatus('ap_github')} onToggleByok={() => toggleByokProvider('ap_github', 'GitHub Models')} onModelsUpdated={() => fetchProviders(true)} />
+              <HuggingFaceSetup ref={huggingfaceRef} index={23} byokEnabled={getByokStatus('ap_huggingface')} onToggleByok={() => toggleByokProvider('ap_huggingface', 'Hugging Face')} onModelsUpdated={() => fetchProviders(true)} />
+              <HyperbolicSetup ref={hyperbolicRef} index={24} byokEnabled={getByokStatus('ap_hyperbolic')} onToggleByok={() => toggleByokProvider('ap_hyperbolic', 'Hyperbolic')} onModelsUpdated={() => fetchProviders(true)} />
+              <MoonshotSetup ref={moonshotRef} index={25} byokEnabled={getByokStatus('ap_moonshot')} onToggleByok={() => toggleByokProvider('ap_moonshot', 'Moonshot')} onModelsUpdated={() => fetchProviders(true)} />
+              <ZaiSetup ref={zaiRef} index={26} byokEnabled={getByokStatus('ap_zai')} onToggleByok={() => toggleByokProvider('ap_zai', 'ZAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <NvidiaSetup ref={nvidiaRef} index={27} byokEnabled={getByokStatus('ap_nvidia')} onToggleByok={() => toggleByokProvider('ap_nvidia', 'Nvidia')} onModelsUpdated={() => fetchProviders(true)} />
+              <KiloCodeSetup ref={kilocodeRef} index={28} byokEnabled={getByokStatus('ap_kilocode')} onToggleByok={() => toggleByokProvider('ap_kilocode', 'Kilo Code')} onModelsUpdated={() => fetchProviders(true)} />
+              <ClineCodeSetup ref={clinecodeRef} index={29} byokEnabled={getByokStatus('ap_clinecode')} onToggleByok={() => toggleByokProvider('ap_clinecode', 'Cline Code')} onModelsUpdated={() => fetchProviders(true)} />
+              <PoixeSetup ref={poixeRef} index={30} byokEnabled={getByokStatus('ap_poixe')} onToggleByok={() => toggleByokProvider('ap_poixe', 'Poixe')} onModelsUpdated={() => fetchProviders(true)} />
+              <SiliconFlowSetup ref={siliconflowRef} index={31} byokEnabled={getByokStatus('ap_siliconflow')} onToggleByok={() => toggleByokProvider('ap_siliconflow', 'SiliconFlow')} onModelsUpdated={() => fetchProviders(true)} />
+              <ZenmuxSetup ref={zenmuxRef} index={32} byokEnabled={getByokStatus('ap_zenmux')} onToggleByok={() => toggleByokProvider('ap_zenmux', 'Zenmux')} onModelsUpdated={() => fetchProviders(true)} />
+              <UnoRouterSetup ref={unorouterRef} index={33} byokEnabled={getByokStatus('ap_unorouter')} onToggleByok={() => toggleByokProvider('ap_unorouter', 'UnoRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <RoutewaySetup ref={routewayRef} index={34} byokEnabled={getByokStatus('ap_routeway')} onToggleByok={() => toggleByokProvider('ap_routeway', 'Routeway')} onModelsUpdated={() => fetchProviders(true)} />
+              <StepFunSetup ref={stepfunRef} index={35} byokEnabled={getByokStatus('ap_stepfun')} onToggleByok={() => toggleByokProvider('ap_stepfun', 'StepFun')} onModelsUpdated={() => fetchProviders(true)} />
+              <LLM7Setup ref={llm7Ref} index={36} byokEnabled={getByokStatus('ap_llm7')} onToggleByok={() => toggleByokProvider('ap_llm7', 'LLM7')} onModelsUpdated={() => fetchProviders(true)} />
+              <ModelScopeSetup ref={modelscopeRef} index={37} byokEnabled={getByokStatus('ap_modelscope')} onToggleByok={() => toggleByokProvider('ap_modelscope', 'ModelScope')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIHordeSetup ref={aihordeRef} index={38} byokEnabled={getByokStatus('ap_aihorde')} onToggleByok={() => toggleByokProvider('ap_aihorde', 'AI Horde')} onModelsUpdated={() => fetchProviders(true)} />
+              <PollinationsSetup ref={pollinationsRef} index={39} byokEnabled={getByokStatus('ap_pollinations')} onToggleByok={() => toggleByokProvider('ap_pollinations', 'Pollinations')} onModelsUpdated={() => fetchProviders(true)} />
+              <AnyRouterSetup ref={anyrouterRef} index={40} byokEnabled={getByokStatus('ap_anyrouter')} onToggleByok={() => toggleByokProvider('ap_anyrouter', 'AnyRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <AgnesAISetup ref={agnesaiRef} index={41} byokEnabled={getByokStatus('ap_agnesai')} onToggleByok={() => toggleByokProvider('ap_agnesai', 'Agnes AI')} onModelsUpdated={() => fetchProviders(true)} />
+              <TokenRouterSetup ref={tokenrouterRef} index={42} byokEnabled={getByokStatus('ap_tokenrouter')} onToggleByok={() => toggleByokProvider('ap_tokenrouter', 'TokenRouter')} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>
@@ -1219,6 +1836,956 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
           onClick={() => setShowInfoSheet(false)}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9998, backdropFilter: 'blur(2px)' }}
         />
+      )}
+
+      {/* ===== CUSTOM PROVIDER MODELS RIGHT-SIDE DRAWER ===== */}
+      {drawerProviderId && (() => {
+        const prov = providers.find(p => p.id === drawerProviderId);
+        if (!prov) return null;
+
+        const filteredModels = drawerAvailableModels.filter(m => {
+          const q = drawerSearchQuery.toLowerCase();
+          return (m.id && m.id.toLowerCase().includes(q)) || (m.name && m.name.toLowerCase().includes(q));
+        });
+
+        const rawJsonUrl = prov.modelsApiLink 
+          ? prov.modelsApiLink 
+          : prov.baseUrl 
+            ? `${prov.baseUrl.replace(/\/+$/, '')}/models` 
+            : '';
+
+        const provKeys = parseKeys(prov.key);
+        const activeKeysCount = provKeys.filter(k => k.active && k.key.trim()).length;
+
+        // Combined models for Test tab model selector
+        const combinedModels = [
+          ...drawerAvailableModels.map(m => ({ id: m.id, name: m.name || m.id })),
+          ...prov.models.filter(sm => !drawerAvailableModels.some(am => am.id === (sm.originalId || sm.id))).map(sm => ({ id: sm.originalId || sm.id, name: sm.name || sm.id }))
+        ];
+
+        // Compute capabilities of currently chosen test model
+        const currentTestModelObj = drawerAvailableModels.find(m => m.id === drawerTestModelId) || prov.models.find(m => (m.originalId || m.id) === drawerTestModelId);
+
+        const getCustomModelCapabilities = (modelObj: any): string[] => {
+          if (!modelObj) return ['Text'];
+          const list: string[] = [];
+          if (modelObj.text !== false) list.push('Text');
+          if (modelObj.chat !== false) list.push('Chat');
+          if (modelObj.vision || modelObj.architecture?.modality?.includes('vision')) list.push('Vision');
+          if (modelObj.image || modelObj.architecture?.modality?.includes('image')) list.push('Image');
+          if (modelObj.reasoning) list.push('Thinking');
+          if (modelObj.audio || modelObj.architecture?.modality?.includes('audio')) list.push('Audio');
+          if (modelObj.video || modelObj.architecture?.modality?.includes('video')) list.push('Video');
+          return list.length > 0 ? list : ['Text'];
+        };
+
+        const customCapabilities = getCustomModelCapabilities(currentTestModelObj);
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 10000,
+              display: 'flex',
+              justifyContent: 'flex-end',
+              backdropFilter: 'blur(2px)'
+            }}
+            onClick={handleCloseDrawer}
+          >
+            <div
+              style={{
+                width: '540px',
+                maxWidth: '94vw',
+                background: 'var(--color-card-bg)',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '-5px 0 25px rgba(0,0,0,0.15)',
+                borderLeft: '1px solid var(--color-border)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* DRAWER HEADER WITH TABS: MANAGE vs TEST */}
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-soft)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {prov.icon ? (
+                    <img src={prov.icon} alt={prov.name} style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '4px' }} onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                  ) : (
+                    <Layers size={20} color="var(--color-primary)" />
+                  )}
+                  <div>
+                    <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-text-main)' }}>
+                      {prov.name}
+                    </h2>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                      {prov.baseUrl || 'Custom Endpoint'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* TWO TABS IN HEADER: MANAGE & TEST */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-input-bg)', padding: '3px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <button
+                    onClick={() => setCustomDrawerTab('manage')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: customDrawerTab === 'manage' ? 'var(--color-primary)' : 'transparent',
+                      color: customDrawerTab === 'manage' ? '#ffffff' : 'var(--color-text-muted)',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <Sliders size={13} /> Manage
+                  </button>
+                  <button
+                    onClick={() => setCustomDrawerTab('test')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: customDrawerTab === 'test' ? 'var(--color-primary)' : 'transparent',
+                      color: customDrawerTab === 'test' ? '#ffffff' : 'var(--color-text-muted)',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <Sparkles size={13} /> Test
+                  </button>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseDrawer}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                  title="Close Sheet"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* ============================================================ */}
+              {/* VIEW 1: MANAGE TAB                                           */}
+              {/* ============================================================ */}
+              {customDrawerTab === 'manage' && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  {/* 1. COLLAPSIBLE API KEYS SECTION */}
+                  <div style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-card-bg)' }}>
+                    <div
+                      onClick={() => setCustomDrawerKeysCollapsed(!customDrawerKeysCollapsed)}
+                      style={{
+                        padding: '10px 18px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        background: 'var(--color-bg-soft)',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {customDrawerKeysCollapsed ? <ChevronDown size={15} color="var(--color-text-muted)" /> : <ChevronUp size={15} color="var(--color-text-muted)" />}
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                          API Keys ({provKeys.filter(k => k.key.trim()).length})
+                        </span>
+                        {customDrawerKeysCollapsed && (
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                            • {activeKeysCount} Active
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        {customDrawerKeysCollapsed ? 'Click to expand' : 'Click to collapse'}
+                      </span>
+                    </div>
+
+                    {!customDrawerKeysCollapsed && (
+                      <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {provKeys.map((kObj, idx) => {
+                          const keyId = `${prov.id}_${idx}`;
+                          const isTesting = testingCustomKey[keyId];
+                          const testStatus = testCustomSuccess[keyId];
+                          const isKeyVisible = showCustomKeys[keyId];
+
+                          return (
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: kObj.active ? 1 : 0.6 }}>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <input
+                                    type={isKeyVisible ? 'text' : 'password'}
+                                    value={kObj.key}
+                                    onChange={(e) => updateKeyIndex(prov.id, idx, e.target.value)}
+                                    placeholder="Enter API Key"
+                                    disabled={!kObj.active}
+                                    autoComplete="new-password"
+                                    style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '7px 32px 7px 10px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px', fontFamily: 'monospace' }}
+                                  />
+                                  <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowCustomKeys(prev => ({ ...prev, [keyId]: !prev[keyId] }))}
+                                    style={{ position: 'absolute', right: '4px', background: 'transparent', border: 'none', padding: '4px', color: 'var(--color-text-muted)' }}
+                                    title={isKeyVisible ? 'Hide Key' : 'Show Key'}
+                                  >
+                                    {isKeyVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                                  </button>
+                                </div>
+
+                                <button
+                                  className="btn-secondary"
+                                  onClick={() => toggleKeyActive(prov.id, idx)}
+                                  style={{ padding: '7px 9px', display: 'flex', alignItems: 'center', height: '32px', color: kObj.active ? '#eab308' : '#10b981' }}
+                                  title={kObj.active ? 'Pause Key' : 'Resume Key'}
+                                >
+                                  {kObj.active ? <Pause size={13} /> : <Play size={13} />}
+                                </button>
+
+                                <button
+                                  className="btn-secondary"
+                                  onClick={() => handleTestCustomKey(prov, idx)}
+                                  disabled={isTesting || !kObj.active}
+                                  style={{
+                                    padding: '7px 9px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    height: '32px',
+                                    color: testStatus === true ? '#10b981' : testStatus === false ? '#ef4444' : 'inherit'
+                                  }}
+                                  title="Test Key"
+                                >
+                                  {isTesting ? (
+                                    <RefreshCw size={13} className={styles.spin} />
+                                  ) : testStatus === true ? (
+                                    <Check size={13} />
+                                  ) : testStatus === false ? (
+                                    <X size={13} />
+                                  ) : (
+                                    <Play size={13} />
+                                  )}
+                                </button>
+
+                                {idx > 0 && (
+                                  <button
+                                    className="btn-secondary"
+                                    onClick={() => removeKey(prov.id, idx)}
+                                    style={{ padding: '7px 8px', display: 'flex', alignItems: 'center', height: '32px', color: '#ef4444' }}
+                                    title="Remove Key"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+                          <button
+                            className="btn-secondary"
+                            onClick={() => addKey(prov.id)}
+                            style={{ flex: 1, justifyContent: 'center', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px' }}
+                          >
+                            <Plus size={12} /> Add Key
+                          </button>
+                          <button
+                            className="btn-secondary"
+                            onClick={() => handleSaveCustomProvider(prov.id)}
+                            disabled={saving}
+                            style={{ flex: 1, justifyContent: 'center', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', height: '28px', color: saved ? '#10b981' : undefined, borderColor: saved ? '#10b981' : undefined }}
+                            title="Save All Keys"
+                          >
+                            {saving ? <RefreshCw size={12} className={styles.spin} /> : <Save size={12} />} Save Keys
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. COLLAPSIBLE AVAILABLE MODELS SELECTION */}
+                  <div
+                    style={{
+                      flex: customDrawerAvailableCollapsed ? 'none' : 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      borderBottom: '1px solid var(--color-border)',
+                      minHeight: customDrawerAvailableCollapsed ? 'auto' : '180px'
+                    }}
+                  >
+                    <div
+                      onClick={() => setCustomDrawerAvailableCollapsed(!customDrawerAvailableCollapsed)}
+                      style={{
+                        padding: '8px 18px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        background: 'var(--color-bg-soft)',
+                        borderBottom: customDrawerAvailableCollapsed ? 'none' : '1px solid var(--color-border)',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {customDrawerAvailableCollapsed ? <ChevronDown size={15} color="var(--color-text-muted)" /> : <ChevronUp size={15} color="var(--color-text-muted)" />}
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-main)' }}>
+                          Available Models ({drawerAvailableModels.length})
+                        </span>
+                        {customDrawerAvailableCollapsed && (
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                            • {prov.models.length} Selected
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        {customDrawerAvailableCollapsed ? 'Click to expand' : 'Click to collapse'}
+                      </span>
+                    </div>
+
+                    {!customDrawerAvailableCollapsed && (
+                      <>
+                        <div style={{ padding: '8px 18px', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--color-card-bg)', borderBottom: '1px solid var(--color-border)' }}>
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <Search size={13} style={{ position: 'absolute', left: '10px', top: '8px', color: 'var(--color-text-muted)' }} />
+                            <input
+                              type="text"
+                              placeholder="Search models..."
+                              value={drawerSearchQuery}
+                              onChange={e => setDrawerSearchQuery(e.target.value)}
+                              style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 10px 5px 30px', borderRadius: '6px', color: 'var(--color-text-main)', outline: 'none', fontSize: '12px' }}
+                            />
+                          </div>
+                          <button
+                            className="btn-secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFetchCustomModels(prov);
+                            }}
+                            disabled={fetchingDrawerModels}
+                            style={{ padding: '5px 10px', fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', height: '28px' }}
+                          >
+                            <RefreshCw size={12} className={fetchingDrawerModels ? styles.spin : ''} />
+                            {fetchingDrawerModels ? 'Loading...' : 'Load API'}
+                          </button>
+                          {rawJsonUrl && (
+                            <a
+                              href={rawJsonUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="btn-secondary"
+                              style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', height: '28px', color: 'var(--color-text-muted)' }}
+                              title="View Raw JSON"
+                            >
+                              <Code size={13} />
+                            </a>
+                          )}
+                          <button
+                            className="btn-secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDrawerManualAdd(!showDrawerManualAdd);
+                            }}
+                            style={{ padding: '5px 8px', fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px', height: '28px' }}
+                            title="Add custom model manually"
+                          >
+                            <Plus size={12} /> Manual
+                          </button>
+                        </div>
+
+                        {/* Manual Model Add Form */}
+                        {showDrawerManualAdd && (
+                          <div style={{ padding: '10px 18px', background: 'var(--color-bg-soft)', borderBottom: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)' }}>ADD CUSTOM MODEL MANUALLY</span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input
+                                type="text"
+                                placeholder="Model ID (e.g. gpt-4o)"
+                                value={drawerManualId}
+                                onChange={e => setDrawerManualId(e.target.value)}
+                                style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none' }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Display Name (e.g. GPT-4o)"
+                                value={drawerManualName}
+                                onChange={e => setDrawerManualName(e.target.value)}
+                                style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none' }}
+                              />
+                              <button
+                                className="btn-primary"
+                                onClick={handleAddManualDrawerModel}
+                                disabled={!drawerManualId.trim() || !drawerManualName.trim()}
+                                style={{ padding: '5px 10px', fontSize: '11px', whiteSpace: 'nowrap' }}
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Drawer Error Banner */}
+                        {drawerError && (
+                          <div style={{ margin: '8px 18px', padding: '6px 10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#ef4444', borderRadius: '6px', fontSize: '11px' }}>
+                            {drawerError}
+                          </div>
+                        )}
+
+                        {/* Available models list */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {filteredModels.map(model => {
+                            const isSelected = prov.models.some(m => (m.originalId || m.id) === model.id);
+                            return (
+                              <label
+                                key={model.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '6px 8px',
+                                  background: isSelected ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-bg-soft)',
+                                  border: '1px solid',
+                                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleCustomDrawerModel(model)}
+                                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {model.name || model.id}
+                                    </span>
+                                    {model.context_length ? (
+                                      <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.1)', padding: '1px 4px', borderRadius: '4px', fontWeight: 600 }}>
+                                        {Math.round(model.context_length / 1000)}K
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                                    <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {model.id}
+                                    </span>
+                                    <span style={{ fontSize: '9px', color: 'var(--color-text-muted)', opacity: 0.8, textTransform: 'uppercase' }}>
+                                      {model.architecture?.modality || 'TEXT'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                          {drawerAvailableModels.length === 0 && !fetchingDrawerModels && !drawerError && (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '12px' }}>
+                              Click <strong>&quot;Load API&quot;</strong> to fetch models from {prov.name}, or click <strong>&quot;Manual&quot;</strong> to add one manually.
+                            </div>
+                          )}
+                          {drawerAvailableModels.length > 0 && filteredModels.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '12px' }}>
+                              No models matching &quot;{drawerSearchQuery}&quot;
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* 3. COLLAPSIBLE SELECTED MODELS SECTION */}
+                  <div
+                    style={{
+                      background: 'var(--color-bg-soft)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      flex: customDrawerAvailableCollapsed && !customDrawerSelectedCollapsed ? 1 : undefined,
+                      maxHeight: customDrawerSelectedCollapsed ? 'auto' : (customDrawerAvailableCollapsed ? 'none' : '40%'),
+                      minHeight: customDrawerSelectedCollapsed ? 'auto' : '150px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div
+                      onClick={() => setCustomDrawerSelectedCollapsed(!customDrawerSelectedCollapsed)}
+                      style={{
+                        padding: '8px 18px',
+                        borderBottom: '1px solid var(--color-border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        background: 'var(--color-card-bg)',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {customDrawerSelectedCollapsed ? <ChevronDown size={15} color="var(--color-text-muted)" /> : <ChevronUp size={15} color="var(--color-text-muted)" />}
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Selected Models</span>
+                        <span style={{ background: 'var(--color-primary)', color: '#fff', padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}>
+                          {prov.models.length}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        {customDrawerSelectedCollapsed ? 'Click to expand' : 'Click to collapse'}
+                      </span>
+                    </div>
+
+                    {!customDrawerSelectedCollapsed && (
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {prov.models.map(model => {
+                          const origId = model.originalId || model.id;
+                          return (
+                            <div
+                              key={origId}
+                              style={{
+                                background: 'var(--color-card-bg)',
+                                border: '1px solid var(--color-border)',
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px'
+                              }}
+                            >
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <span>Original: </span>
+                                  <strong style={{ color: 'var(--color-text-main)', fontFamily: 'monospace', fontSize: '11px' }}>
+                                    {origId}
+                                  </strong>
+                                </div>
+                                <button
+                                  onClick={() => toggleCustomDrawerModel({ id: origId })}
+                                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                                  title="Remove Model"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <label style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing Name</label>
+                                  <input
+                                    type="text"
+                                    value={model.name}
+                                    onChange={(e) => updateCustomDrawerModelField(origId, 'name', e.target.value)}
+                                    placeholder="e.g. GPT-4o"
+                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none' }}
+                                  />
+                                </div>
+
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <label style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Showing ID</label>
+                                  <input
+                                    type="text"
+                                    value={model.id}
+                                    onChange={(e) => updateCustomDrawerModelField(origId, 'id', e.target.value)}
+                                    placeholder="e.g. gpt-4o"
+                                    style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none' }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={model.text !== false} onChange={(e) => updateCustomDrawerModelField(origId, 'text', e.target.checked)} />
+                                  Text
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={!!model.image} onChange={(e) => updateCustomDrawerModelField(origId, 'image', e.target.checked)} />
+                                  Image
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={!!model.vision} onChange={(e) => updateCustomDrawerModelField(origId, 'vision', e.target.checked)} />
+                                  Vision
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={!!model.audio} onChange={(e) => updateCustomDrawerModelField(origId, 'audio', e.target.checked)} />
+                                  Audio
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={!!model.reasoning} onChange={(e) => updateCustomDrawerModelField(origId, 'reasoning', e.target.checked)} />
+                                  Reasoning
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', color: 'var(--color-text-main)' }}>
+                                  <input type="checkbox" checked={!!model.video} onChange={(e) => updateCustomDrawerModelField(origId, 'video', e.target.checked)} />
+                                  Video
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {prov.models.length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '12px', color: 'var(--color-text-muted)', fontSize: '12px' }}>
+                            No models selected yet.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Save & Close */}
+                  <div style={{ padding: '10px 18px', borderTop: '1px solid var(--color-border)', background: 'var(--color-card-bg)' }}>
+                    <button
+                      className="btn-primary"
+                      onClick={handleCloseDrawer}
+                      style={{ width: '100%', justifyContent: 'center', padding: '8px 14px', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Check size={14} /> Save &amp; Close Drawer
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ============================================================ */}
+              {/* VIEW 2: TEST TAB (Interactive Model Tester & Playground)     */}
+              {/* ============================================================ */}
+              {customDrawerTab === 'test' && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '16px 18px', gap: '14px', background: 'var(--color-bg-base)' }}>
+                  {/* 1. MODEL SELECTION & RELOAD BAR */}
+                  <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                        Choose Model To Test
+                      </label>
+                      <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        Key: {activeKeysCount > 0 ? 'Active' : 'Missing'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <select
+                        value={drawerTestModelId}
+                        onChange={(e) => {
+                          setDrawerTestModelId(e.target.value);
+                          setCustomTestResponse(null);
+                        }}
+                        style={{ flex: 1, background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '7px 10px', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-main)', outline: 'none' }}
+                      >
+                        <option value="" disabled>Select model...</option>
+                        {combinedModels.map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.id})
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Reload models button */}
+                      <button
+                        className="btn-secondary"
+                        onClick={() => handleFetchCustomModels(prov)}
+                        disabled={fetchingDrawerModels}
+                        style={{ padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', height: '33px' }}
+                        title="Reload models from API"
+                      >
+                        <RefreshCw size={13} className={fetchingDrawerModels ? styles.spin : ''} />
+                        {fetchingDrawerModels ? 'Loading...' : 'Reload'}
+                      </button>
+                    </div>
+
+                    {/* Capabilities display (grey pills separated by commas) */}
+                    {drawerTestModelId && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Capabilities:</span>
+                        {customCapabilities.map((cap, i) => (
+                          <React.Fragment key={cap}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                background: 'var(--color-bg-soft)',
+                                border: '1px solid var(--color-border)',
+                                padding: '1px 7px',
+                                borderRadius: '4px',
+                                color: 'var(--color-text-muted)',
+                                fontWeight: 500
+                              }}
+                            >
+                              {cap}
+                            </span>
+                            {i < customCapabilities.length - 1 && <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>,</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. TEST TYPE SELECTOR (Text vs Vision vs Image) */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleSelectCustomTestType('text')}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid',
+                        borderColor: customTestType === 'text' ? 'var(--color-primary)' : 'var(--color-border)',
+                        background: customTestType === 'text' ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-card-bg)',
+                        color: customTestType === 'text' ? 'var(--color-primary)' : 'var(--color-text-main)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <MessageSquare size={14} /> Text Test
+                    </button>
+                    <button
+                      onClick={() => handleSelectCustomTestType('vision')}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid',
+                        borderColor: customTestType === 'vision' ? 'var(--color-primary)' : 'var(--color-border)',
+                        background: customTestType === 'vision' ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-card-bg)',
+                        color: customTestType === 'vision' ? 'var(--color-primary)' : 'var(--color-text-main)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Eye size={14} /> Vision Test
+                    </button>
+                    <button
+                      onClick={() => handleSelectCustomTestType('image')}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid',
+                        borderColor: customTestType === 'image' ? 'var(--color-primary)' : 'var(--color-border)',
+                        background: customTestType === 'image' ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-card-bg)',
+                        color: customTestType === 'image' ? 'var(--color-primary)' : 'var(--color-text-main)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={14} /> Image Gen
+                    </button>
+                  </div>
+
+                  {/* 3. PROMPT & VISION IMAGE INPUT AREA */}
+                  <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* If Vision Mode, show demo image */}
+                    {customTestType === 'vision' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--color-bg-soft)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)' }}>DEMO IMAGE (FOR VISION ANALYSIS)</span>
+                          <span style={{ fontSize: '10px', color: 'var(--color-primary)' }}>Calendar &amp; Landscape Sample</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <img
+                            src={customTestImageUrl}
+                            alt="Vision Demo"
+                            style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                          />
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <input
+                              type="text"
+                              value={customTestImageUrl}
+                              onChange={(e) => setCustomTestImageUrl(e.target.value)}
+                              placeholder="Image URL..."
+                              style={{ width: '100%', background: 'var(--color-input-bg)', border: '1px solid var(--color-border)', padding: '5px 8px', borderRadius: '4px', fontSize: '11px', color: 'var(--color-text-main)', outline: 'none' }}
+                            />
+                            <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>You can edit or change the image URL above</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Textarea for Prompt */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                        {customTestType === 'text' ? 'Test Prompt' : customTestType === 'vision' ? 'Vision Prompt' : 'Image Generation Prompt'}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={customTestPrompt}
+                        onChange={(e) => setCustomTestPrompt(e.target.value)}
+                        placeholder="Type prompt here..."
+                        style={{
+                          width: '100%',
+                          background: 'var(--color-input-bg)',
+                          border: '1px solid var(--color-border)',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          color: 'var(--color-text-main)',
+                          fontSize: '12px',
+                          outline: 'none',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+
+                    {/* Send Button */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleRunCustomCapabilityTest(prov, customTestType)}
+                        disabled={customIsSendingTest || !customTestPrompt.trim() || !drawerTestModelId}
+                        style={{
+                          padding: '7px 16px',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontWeight: 600,
+                          cursor: customIsSendingTest ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {customIsSendingTest ? <RefreshCw size={13} className={styles.spin} /> : <Send size={13} />}
+                        {customIsSendingTest ? 'Sending Request...' : 'Send Request'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. MODEL RESPONSE BOX */}
+                  <div style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-main)' }}>Response Output</span>
+                        {customTestResponse?.latencyMs && (
+                          <span style={{ fontSize: '10px', background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', padding: '1px 6px', borderRadius: '4px', color: 'var(--color-text-muted)' }}>
+                            {customTestResponse.latencyMs}ms
+                          </span>
+                        )}
+                        {customTestResponse?.status && (
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              background: customTestResponse.ok ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              color: customTestResponse.ok ? '#10b981' : '#ef4444',
+                              border: `1px solid ${customTestResponse.ok ? '#10b98133' : '#ef444433'}`,
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontWeight: 600
+                            }}
+                          >
+                            HTTP {customTestResponse.status}
+                          </span>
+                        )}
+                      </div>
+
+                      {customTestResponse?.text && (
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(customTestResponse.text || '');
+                            setCustomCopiedResponse(true);
+                            setTimeout(() => setCustomCopiedResponse(false), 2000);
+                          }}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}
+                        >
+                          {customCopiedResponse ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                          {customCopiedResponse ? 'Copied' : 'Copy'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Response Body */}
+                    {customIsSendingTest && (
+                      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                        <RefreshCw size={20} className={styles.spin} />
+                        <span style={{ fontSize: '12px' }}>Waiting for model response...</span>
+                      </div>
+                    )}
+
+                    {!customIsSendingTest && !customTestResponse && (
+                      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '12px', border: '1px dashed var(--color-border)', borderRadius: '6px' }}>
+                        Click <strong>&quot;Send Request&quot;</strong> above to test {drawerTestModelId || prov.name} and see the model output here.
+                      </div>
+                    )}
+
+                    {!customIsSendingTest && customTestResponse && (
+                      <>
+                        {customTestResponse.ok ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* If image generated */}
+                            {customTestResponse.imageUrl && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <img
+                                  src={customTestResponse.imageUrl}
+                                  alt="Generated"
+                                  style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--color-border)', maxHeight: '300px', objectFit: 'contain' }}
+                                />
+                                <a href={customTestResponse.imageUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-primary)' }}>
+                                  Open full size ↗
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Text response */}
+                            {customTestResponse.text && (
+                              <div style={{ background: 'var(--color-bg-soft)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '10px 12px', fontSize: '13px', color: 'var(--color-text-main)', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '250px', overflowY: 'auto' }}>
+                                {customTestResponse.text}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '6px', padding: '10px 12px', color: '#ef4444', fontSize: '12px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '2px' }}>Request Failed:</div>
+                            {customTestResponse.message}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Global Toast Message */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'var(--color-primary)',
+          color: '#fff',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          zIndex: 10001,
+          fontSize: '14px',
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <Check size={16} />
+          {toastMessage}
+        </div>
       )}
 
     </div>

@@ -1,188 +1,362 @@
-import React from 'react';
+"use client";
 
-export type ViewType = 'introduction' | 'models' | 'chat-completions' | 'limits';
+import React, { useRef } from "react";
+import { GuideIcon } from "./GuideIcon";
+import { useTheme } from "@/components/theme-provider";
 
-interface DocsSidebarProps {
-  activeView: ViewType;
-  setActiveView: (view: ViewType) => void;
+export interface NavItem {
+  id: string;
+  title: string;
+  iconKey: string;
 }
 
-export default function DocsSidebar({ activeView, setActiveView }: DocsSidebarProps) {
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
 
-  const navGroups = [
-    {
-      groupTitle: 'CORE API',
-      items: [
-        { id: 'introduction', label: 'Introduction', badge: 'INFO', badgeColor: '#3b82f6' },
-        { id: 'models', label: 'List of Models', badge: 'GET', badgeColor: 'var(--color-success)' },
-        { id: 'chat-completions', label: 'Chat Completions', badge: 'POST', badgeColor: 'var(--color-primary)' },
-      ]
-    },
-    {
-      groupTitle: 'ACCOUNT SETTINGS',
-      items: [
-        { id: 'limits', label: 'Account Info', badge: 'GET', badgeColor: 'var(--color-success)' },
-      ]
-    }
-  ];
+interface DocsSidebarProps {
+  activeSection: string;
+  onSelectSection: (id: string) => void;
+  mobileOpen?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+}
 
+export const DOCS_NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Platform & Core API",
+    items: [
+      { id: "overview", title: "Overview", iconKey: "overview" },
+      { id: "models", title: "All Models", iconKey: "models" },
+      { id: "custom-api", title: "Custom API / SDK", iconKey: "custom-api" },
+    ],
+  },
+  {
+    label: "Documentation",
+    items: [
+      { id: "ai-apps", title: "AI Applications", iconKey: "ai-apps" },
+    ],
+  },
+  {
+    label: "Coding agents",
+    items: [
+      { id: "opencode", title: "OpenCode Setup Guide", iconKey: "opencode" },
+      { id: "kilo-code", title: "Kilo Code Setup Guide", iconKey: "kilo-code" },
+      { id: "zed", title: "Zed IDE Setup Guide", iconKey: "zed" },
+      { id: "cline", title: "Cline Setup Guide", iconKey: "cline" },
+      { id: "roo-code", title: "Roo Code Setup Guide", iconKey: "roo-code" },
+      { id: "continue-dev", title: "Continue.dev Setup Guide", iconKey: "continue-dev" },
+      { id: "claude-code", title: "Claude Code Setup Guide", iconKey: "claude-code" },
+      { id: "codex", title: "Codex CLI Setup Guide", iconKey: "codex" },
+      { id: "cursor", title: "Cursor IDE Setup Guide", iconKey: "cursor" },
+      { id: "aider", title: "Aider Setup Guide", iconKey: "aider" },
+      { id: "cc-switch", title: "CC Switch Tool", iconKey: "cc-switch" },
+      { id: "harness", title: "Agent Test Harness", iconKey: "harness" },
+    ],
+  },
+  {
+    label: "Character & fiction clients",
+    items: [
+      { id: "sillytavern", title: "SillyTavern Integration Guide", iconKey: "sillytavern" },
+      { id: "janitor-ai", title: "Janitor.AI Integration Guide", iconKey: "janitor-ai" },
+      { id: "risuai", title: "RisuAI Integration Guide", iconKey: "risuai" },
+      { id: "chub", title: "Chub / Venus Integration Guide", iconKey: "chub" },
+      { id: "nevika", title: "Nevika Integration Guide", iconKey: "nevika" },
+    ],
+  },
+  {
+    label: "Chat & desktop clients",
+    items: [
+      { id: "open-webui", title: "Open WebUI Setup Guide", iconKey: "open-webui" },
+      { id: "librechat", title: "LibreChat Integration Guide", iconKey: "librechat" },
+      { id: "chatbox", title: "Chatbox Setup Guide", iconKey: "chatbox" },
+      { id: "typingmind", title: "TypingMind Integration Guide", iconKey: "typingmind" },
+      { id: "anythingllm", title: "AnythingLLM Setup Guide", iconKey: "anythingllm" },
+    ],
+  },
+];
 
-  return (
-    <aside style={{
-      width: '260px',
-      flexShrink: 0,
-      position: 'sticky',
-      top: '40px',
-      height: 'max-content',
-      padding: '0 16px 24px 0',
-      borderRight: '1px solid var(--color-border)',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      minHeight: 'calc(100vh - 140px)'
-    }}>
-      
-      <div>
-        <div style={{ 
-          marginBottom: '40px', 
-          padding: '16px', 
-          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, transparent 100%)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
-          {/* Subtle background glow */}
-          <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '50px', height: '50px', background: 'var(--color-success)', filter: 'blur(30px)', opacity: 0.15, borderRadius: '50%' }} />
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', position: 'relative', zIndex: 1 }}>
-            <span style={{ 
-              backgroundColor: 'var(--color-success)', 
-              color: '#fff', 
-              fontSize: '11px', 
-              fontWeight: 800, 
-              padding: '4px 8px', 
-              borderRadius: '6px',
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-              letterSpacing: '0.5px'
-            }}>API</span>
-            <span style={{ 
-              color: 'var(--color-text-main)', 
-              fontWeight: 800, 
-              fontSize: '18px', 
-              letterSpacing: '-0.5px'
-            }}>Reference</span>
-          </div>
-          <div style={{ 
-            color: 'var(--color-text-muted)', 
-            fontSize: '12px', 
-            lineHeight: '1.5',
-            fontWeight: 500,
-            position: 'relative', 
-            zIndex: 1 
-          }}>
-            <span style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>CheapRouter</span> REST endpoints
-          </div>
-        </div>
+const SERIF_FONT = "'Newsreader', 'Lora', Georgia, Cambria, 'Times New Roman', serif";
 
-        {navGroups.map((group, gIdx) => (
-          <div key={gIdx} style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'var(--color-text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              marginBottom: '16px',
-              paddingLeft: '12px'
-            }}>
-              {group.groupTitle}
-            </h3>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {group.items.map((item) => {
-                const isActive = activeView === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveView(item.id as ViewType)}
+export function DocsSidebar({
+  activeSection,
+  onSelectSection,
+  mobileOpen = false,
+  searchQuery,
+  onSearchChange,
+}: DocsSidebarProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const renderNavList = () => (
+    <>
+      {/* Persistent Nav scroll area */}
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: "18px 10px 24px 10px",
+          scrollbarWidth: "thin",
+          scrollbarColor: isDark ? "rgba(255,255,255,0.08) transparent" : "rgba(0,0,0,0.08) transparent",
+        }}
+        className="docs-sidebar-scroll"
+      >
+        {DOCS_NAV_GROUPS.map((group, groupIdx) => (
+          <div
+            key={group.label}
+            style={{
+              marginTop: groupIdx === 0 ? "0px" : "22px",
+              marginBottom: "4px",
+            }}
+          >
+            {/* Group label - Serif, Sentence Case, Muted Warm Gray */}
+            <div
+              style={{
+                padding: "4px 12px 6px 12px",
+                fontSize: "13.5px",
+                fontWeight: 400,
+                fontFamily: SERIF_FONT,
+                letterSpacing: "0.01em",
+                color: isDark ? "#8e8a84" : "#64748b",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                userSelect: "none",
+              }}
+            >
+              {group.label}
+            </div>
+
+            {/* Nav items */}
+            {group.items.map((item) => {
+              const isActive =
+                activeSection === item.id ||
+                (item.id === "custom-api" &&
+                  ["custom-api", "apis", "chat-completions"].includes(activeSection));
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onSelectSection(item.id)}
+                  className={`docs-nav-serif-item ${isActive ? "active" : ""}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    width: "100%",
+                    padding: "7px 12px",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    fontFamily: SERIF_FONT,
+                    color: isActive ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#e5e7eb" : "#475569"),
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: "none",
+                    background: isActive ? (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)") : "transparent",
+                    lineHeight: "1.4",
+                    marginBottom: "2px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {/* Icon */}
+                  <span
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: isActive ? 'var(--color-bg-card)' : 'transparent',
-                      border: '1px solid',
-                      borderColor: isActive ? 'var(--color-border)' : 'transparent',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      textAlign: 'left',
-                      width: '100%'
-                    }}
-                    onMouseOver={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'var(--color-bg-card)';
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
+                      width: "18px",
+                      height: "18px",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {/* Badge */}
-                      <span style={{
-                        backgroundColor: isActive ? item.badgeColor : 'var(--color-bg-card)',
-                        color: isActive ? '#fff' : item.badgeColor,
-                        border: `1px solid ${isActive ? 'transparent' : 'var(--color-border)'}`,
-                        fontSize: '9px',
-                        fontWeight: 800,
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        minWidth: '36px',
-                        textAlign: 'center',
-                        textShadow: isActive ? 'none' : 'none'
-                      }}>
-                        {item.badge}
+                    <GuideIcon iconKey={item.iconKey} size={16} />
+                  </span>
+
+                  {/* Title */}
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {item.id === "ai-apps" ? (
+                      <span className="docs-nav-shimmer-red">
+                        {item.title}
                       </span>
-                      {/* Label */}
-                      <span style={{
-                        color: isActive ? 'var(--color-text-main)' : 'var(--color-text-muted)',
-                        fontSize: '13px',
-                        fontWeight: isActive ? 600 : 500
-                      }}>
-                        {item.label}
+                    ) : item.id === "custom-api" ? (
+                      <span>
+                        <span className="docs-nav-shimmer-text">Custom API</span>
+                        <span style={{ opacity: 0.5, margin: "0 3px" }}>/</span>
+                        <span className="docs-nav-sdk-red">SDK</span>
                       </span>
-                    </div>
-                    {/* Active Dot */}
-                    {isActive && (
-                      <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--color-primary)', borderRadius: '50%', boxShadow: '0 0 8px var(--color-primary)' }} />
+                    ) : (
+                      item.title
                     )}
-                  </button>
-                );
-              })}
-            </nav>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>
 
-      {/* Bottom Status Section */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '8px', 
-        padding: '12px 16px', 
-        backgroundColor: 'var(--color-bg-card)', 
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        marginTop: '24px'
-      }}>
-        <div style={{ width: '8px', height: '8px', backgroundColor: 'var(--color-primary)', borderRadius: '50%', boxShadow: '0 0 8px var(--color-primary)' }} />
-        <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: 600 }}>API Server</span>
-        <code style={{ color: 'var(--color-primary)', fontSize: '11px', fontWeight: 700 }}>cheapapi.com</code>
+      {/* Static Footer Tab: Test Playground (Pinned at bottom) */}
+      <div
+        style={{
+          padding: "12px 14px",
+          borderTop: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.08)",
+          backgroundColor: isDark ? "#050505" : "#ffffff",
+          marginTop: "auto",
+          flexShrink: 0,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => onSelectSection("playground")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "9px 12px",
+            borderRadius: "6px",
+            fontSize: "13.5px",
+            fontFamily: SERIF_FONT,
+            fontWeight: activeSection === "playground" ? 600 : 500,
+            color: activeSection === "playground" ? "#ffffff" : isDark ? "#f3f4f6" : "#0f172a",
+            backgroundColor:
+              activeSection === "playground"
+                ? "#ef4444"
+                : isDark
+                ? "rgba(239, 68, 68, 0.08)"
+                : "rgba(239, 68, 68, 0.05)",
+            border:
+              activeSection === "playground"
+                ? "1px solid #ef4444"
+                : isDark
+                ? "1px solid rgba(239, 68, 68, 0.28)"
+                : "1px solid rgba(239, 68, 68, 0.22)",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow:
+              activeSection === "playground"
+                ? "0 2px 12px rgba(239, 68, 68, 0.4)"
+                : "none",
+            textAlign: "left",
+          }}
+          onMouseEnter={(e) => {
+            if (activeSection !== "playground") {
+              e.currentTarget.style.backgroundColor = isDark
+                ? "rgba(239, 68, 68, 0.14)"
+                : "rgba(239, 68, 68, 0.12)";
+              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeSection !== "playground") {
+              e.currentTarget.style.backgroundColor = isDark
+                ? "rgba(239, 68, 68, 0.08)"
+                : "rgba(239, 68, 68, 0.05)";
+              e.currentTarget.style.borderColor = isDark
+                ? "1px solid rgba(239, 68, 68, 0.28)"
+                : "1px solid rgba(239, 68, 68, 0.22)";
+            }
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: activeSection === "playground" ? "#ffffff" : "#ef4444",
+                boxShadow:
+                  activeSection === "playground"
+                    ? "0 0 8px #ffffff"
+                    : "0 0 8px rgba(239, 68, 68, 0.8)",
+                flexShrink: 0,
+              }}
+            />
+            <span>Test Playground</span>
+          </div>
+
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              backgroundColor:
+                activeSection === "playground"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "rgba(239, 68, 68, 0.15)",
+              color: activeSection === "playground" ? "#ffffff" : "#ef4444",
+              border:
+                activeSection === "playground"
+                  ? "1px solid rgba(255, 255, 255, 0.3)"
+                  : "1px solid rgba(239, 68, 68, 0.25)",
+            }}
+          >
+            LIVE
+          </span>
+        </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        style={{
+          position: "sticky",
+          top: "54px",
+          height: "calc(100vh - 54px)",
+          width: "250px",
+          minWidth: "250px",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: isDark ? "#050505" : "#ffffff",
+          borderRight: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.08)",
+          overflow: "hidden",
+          zIndex: 30,
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
+        }}
+        className="hidden md:flex md:flex-col"
+      >
+        {renderNavList()}
+      </aside>
+
+      {/* Mobile sidebar */}
+      <aside
+        style={{
+          position: "fixed",
+          top: "54px",
+          left: 0,
+          bottom: 0,
+          width: "250px",
+          display: mobileOpen ? "flex" : "none",
+          flexDirection: "column",
+          backgroundColor: isDark ? "#050505" : "#ffffff",
+          borderRight: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.08)",
+          overflow: "hidden",
+          zIndex: 50,
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
+        }}
+        className="md:hidden"
+      >
+        {renderNavList()}
+      </aside>
+    </>
   );
 }

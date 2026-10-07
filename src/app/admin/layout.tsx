@@ -3,9 +3,9 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  LayoutDashboard, Users, Settings, LogOut, Zap, Server, DollarSign,
+  LayoutDashboard, Users, Settings, LogOut, Zap, Key, Server, DollarSign,
   ChevronDown, ChevronRight, Sparkles, Image as ImageIcon,
-  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt, ShieldAlert, Menu, X
+  HelpCircle, AlignLeft, LayoutPanelLeft, Globe, Mail, Gift, Video, Bell, Terminal, Database, FileText, Receipt, ShieldAlert, Menu, X, LineChart, Boxes
 } from 'lucide-react';
 import styles from './admin.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -38,10 +38,16 @@ function SidebarNavContent() {
             <Users size={17} /> User Management
           </Link>
           <Link href="/admin/keys" className={`${styles.navItem} ${pathname.startsWith('/admin/keys') ? styles.navItemActive : ''}`}>
-            <Zap size={17} /> Purchased Keys
+            <Key size={17} /> API / BYOK Keys
           </Link>
           <Link href="/admin/providers" className={`${styles.navItem} ${pathname.startsWith('/admin/providers') ? styles.navItemActive : ''}`}>
             <Server size={17} /> Provider Routing
+          </Link>
+          <Link href="/admin/tools-manager" className={`${styles.navItem} ${pathname.startsWith('/admin/tools-manager') ? styles.navItemActive : ''}`}>
+            <Boxes size={17} /> Tools Manager
+          </Link>
+          <Link href="/admin/usage" className={`${styles.navItem} ${pathname.startsWith('/admin/usage') ? styles.navItemActive : ''}`}>
+            <LineChart size={17} /> Usage Analytics
           </Link>
           <Link href="/admin/revenue" className={`${styles.navItem} ${pathname.startsWith('/admin/revenue') ? styles.navItemActive : ''}`}>
             <DollarSign size={17} /> Revenue
@@ -160,8 +166,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const getPageTitle = () => {
     if (pathname === '/admin') return 'Dashboard Overview';
     if (pathname.startsWith('/admin/users')) return 'User Management';
-    if (pathname.startsWith('/admin/keys')) return 'Purchased Keys';
+    if (pathname.startsWith('/admin/keys')) return 'API / BYOK Keys';
     if (pathname.startsWith('/admin/providers')) return 'Provider Routing';
+    if (pathname.startsWith('/admin/tools-manager')) return 'Tools Manager';
     if (pathname.startsWith('/admin/revenue')) return 'Revenue';
     if (pathname.startsWith('/admin/billing')) return 'Billing Management';
     if (pathname.startsWith('/admin/settings')) return 'CMS & Site Settings';

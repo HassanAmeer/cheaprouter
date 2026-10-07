@@ -1,9 +1,0 @@
-// @ts-nocheck
-export interface DevonzArtifactData {
-  id: string;
-  title: string;
-  type?: string | undefined;
-
-  /** When true, files are already on disk (e.g. server-side git clone). */
-  preloaded?: boolean;
-}

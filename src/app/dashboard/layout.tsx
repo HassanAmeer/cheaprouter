@@ -7,7 +7,7 @@ import pageStyles from '@/app/page.module.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/components/auth-provider';
 import { useSiteSettings } from '@/components/settings-provider';
-import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X, Gift, Menu } from 'lucide-react';
+import { BarChart3, Key, Plug, Settings, CreditCard, Search, Bell, LogOut, Zap, LineChart, FileText, Rocket, Megaphone, X, Gift, Menu, MessageSquare } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -55,6 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Billing', path: '/dashboard/billing', icon: <CreditCard size={18} />, badge: null },
     { name: 'Refer & Earn', path: '/dashboard/refer', icon: <Gift size={18} />, badge: 'Bonus' },
     { name: 'Notifications', path: '/dashboard/notifications', icon: <Bell size={18} />, badge: 'New' },
+    { name: 'Cheap Chats', path: '/chats', icon: <MessageSquare size={18} />, badge: 'Free' },
     { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={18} />, badge: null },
     { divider: true },
     { name: 'API Docs', path: '/docs', icon: <FileText size={18} />, badge: null },

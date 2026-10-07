@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "seed": "bun src/seed.ts"
+    "seed": "bun src/seed.ts",
+    "sync:providers": "bun src/providers-engine/sync.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.34",

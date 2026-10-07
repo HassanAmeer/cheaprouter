@@ -1,6 +1,13 @@
 .installBoxWrapper {
   margin-top: 16px;
-  width: 100%;
+  /* Inset from the page edges on every device. Paired with the min-width:0
+     rules below so this width is actually reachable — without them the tab row
+     and the install command set a min-content width wider than the viewport
+     and force horizontal scrolling on phones. */
+  width: 90%;
+  max-width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
   animation: fadeIn 0.8s ease-out 1s both;
 }
 
@@ -61,6 +68,7 @@
   padding: 16px;
   text-align: left;
   position: relative;
+  min-width: 0;
 }
 
 .installBox::before {
@@ -82,6 +90,8 @@
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .installTab {
@@ -112,10 +122,33 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   font-family: monospace;
   font-size: 13px;
   color: #fff;
   position: relative;
+  min-width: 0;
+  /* The command is one long unbreakable URL. Keep it on a single line like a
+     real terminal and let it scroll inside the box, rather than pushing the
+     whole page wider than the viewport. */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.commandBox > span {
+  /* min-width:0 is required: a flex item defaults to min-width:auto and would
+     refuse to shrink below the nowrap command, re-inflating the whole box. */
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* On phones the command has nowhere to go — wrap it instead of scrolling a
+   250px-wide box. Desktop keeps the single-line terminal look. */
+@media (max-width: 600px) {
+  .commandBox > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 .commandBox::before {
@@ -144,6 +177,7 @@
   padding: 4px;
   border-radius: 4px;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .copyBtn:hover {

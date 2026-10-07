@@ -151,6 +151,12 @@
   /* cell styling */
 }
 
+.keySecretWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .keySecret {
   font-family: monospace;
   font-size: 13px;
@@ -159,6 +165,40 @@
   border-radius: var(--radius-sm);
   display: inline-block;
   color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Copy button next to a key. Masked keys can't be copied — the backend only
+   ever stores a SHA-256 hash — so that state is disabled rather than silently
+   copying an unusable mask. */
+.secretCopyBtn {
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.secretCopyBtn:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+
+.secretCopyBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.secretCopyBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .keyCreated {

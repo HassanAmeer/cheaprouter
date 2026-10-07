@@ -33,8 +33,8 @@ const uiToIdMap = {
 };
 
 // Also we should fallback to id generation if not matched exactly
-function getId(name) {
-  if (uiToIdMap[name]) return uiToIdMap[name];
+function getId(name: string) {
+  if ((uiToIdMap as Record<string, string>)[name]) return (uiToIdMap as Record<string, string>)[name];
   return 'ap_' + name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
@@ -51,7 +51,7 @@ if (!blockMatch) {
 
 // Extract existing providers to keep their keys, base_url, api_format, priority
 const existingProvidersStr = blockMatch[1];
-const existingProviders = [];
+const existingProviders: any[] = [];
 const objRegex = /\{([^}]+)\}/g;
 let objMatch;
 while ((objMatch = objRegex.exec(existingProvidersStr)) !== null) {
@@ -74,9 +74,9 @@ while ((objMatch = objRegex.exec(existingProvidersStr)) !== null) {
 
 let newAdminProvidersStr = '';
 
-providersInfo.forEach(p => {
+providersInfo.forEach((p: any) => {
   const id = getId(p.name);
-  const existing = existingProviders.find(ep => ep.id === id);
+  const existing = existingProviders.find((ep: any) => ep.id === id);
   const key = existing ? existing.key : `${id}-••••••••demo`;
   const base_url = existing ? existing.base_url : '';
   const api_format = existing ? existing.api_format : 'openai';
@@ -84,7 +84,7 @@ providersInfo.forEach(p => {
   const status = p.hasFree || p.models.length > 0;
   
   // Format models for the backend (just standard id/name)
-  const formattedModels = p.models.map(m => ({
+  const formattedModels = p.models.map((m: any) => ({
     id: m.id,
     name: m.name
   }));
@@ -93,8 +93,8 @@ providersInfo.forEach(p => {
 });
 
 // Also include any existing providers from seed.ts that weren't in providersInfo
-existingProviders.forEach(ep => {
-  const isInInfo = providersInfo.some(p => getId(p.name) === ep.id);
+existingProviders.forEach((ep: any) => {
+  const isInInfo = providersInfo.some((p: any) => getId(p.name) === ep.id);
   if (!isInInfo) {
     // Find original string for it
     const origRegex = new RegExp(`\\{\\s*id:\\s*'${ep.id}'[^}]+\\}`);

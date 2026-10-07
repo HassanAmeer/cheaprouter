@@ -5,9 +5,14 @@ import { Copy, Check, Trash2, Plus, KeyRound, Shield } from 'lucide-react';
 import { Button, Input, Modal, Badge } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
+import { copyToClipboard } from '@/lib/utils';
 import styles from '../dashboard.module.css';
 import keysStyles from '../keys.module.css';
 import { ApiKey } from '@/lib/api-types';
+
+// The backend stores only a SHA-256 hash of each key, so listed keys come back
+// masked. Those can't be copied — the real secret only exists at creation time.
+const isMasked = (secret: string) => secret.includes('•');
 
 export default function ApiKeysPage() {
   const { toast } = useToast();
@@ -48,8 +53,12 @@ export default function ApiKeysPage() {
     }
   };
 
-  const copy = (secret: string, id: string) => {
-    navigator.clipboard.writeText(secret);
+  const copy = async (secret: string, id: string) => {
+    const ok = await copyToClipboard(secret);
+    if (!ok) {
+      toast('Could not copy to clipboard', 'error');
+      return;
+    }
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
     toast('Copied to clipboard');
@@ -121,7 +130,26 @@ export default function ApiKeysPage() {
                       </div>
                     </td>
                     <td className={keysStyles.keySecretCell}>
-                      <code className={keysStyles.keySecret}>{k.secret}</code>
+                      <div className={keysStyles.keySecretWrapper}>
+                        <code className={keysStyles.keySecret}>{k.secret}</code>
+                        <button
+                          className={keysStyles.secretCopyBtn}
+                          onClick={() => copy(k.secret, k.id)}
+                          disabled={isMasked(k.secret)}
+                          title={
+                            isMasked(k.secret)
+                              ? 'This key is stored as a hash — copy it when you create it, it cannot be shown again.'
+                              : 'Copy key'
+                          }
+                          aria-label={`Copy ${k.name} key`}
+                        >
+                          {copied === k.id ? (
+                            <Check size={14} color="var(--color-success)" />
+                          ) : (
+                            <Copy size={14} />
+                          )}
+                        </button>
+                      </div>
                     </td>
                     <td className={keysStyles.keyCreated}>{k.created}</td>
                   <td>

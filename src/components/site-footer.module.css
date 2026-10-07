@@ -4,6 +4,9 @@
   color: var(--color-text-muted);
   background: var(--color-card-bg);
   border-top: 1px solid var(--color-border);
+  /* Clip the wordmark's bleed at the real viewport edge. Clipping here instead of
+     on .footerHero is what lets the wordmark span past the content column. */
+  overflow: hidden;
 }
 
 .footerGrid {
@@ -129,10 +132,6 @@
 .footerHero {
   position: relative;
   margin-top: 48px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: hidden;
 }
 
 .footerBigText {
@@ -145,8 +144,12 @@
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
+  /* Full-bleed, centred on the container (which is itself viewport-centred).
+     Deliberately not a flex child: flex centring plus a negative-margin
+     full-bleed cancel each other out and leave the wordmark offset. */
   width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  margin-left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   opacity: 0.4;
 }
@@ -155,10 +158,12 @@
   position: absolute;
   bottom: 0;
   right: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: transparent;
+  /* Opaque so the outlined wordmark passing underneath doesn't bleed through. */
+  background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   padding: 10px 20px;
@@ -186,18 +191,14 @@
 }
 
 @media (max-width: 640px) {
-  .footerHero {
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-    text-align: center;
-  }
-
   .footerBigText {
-    font-size: clamp(80px, 22vw, 140px);
+    font-size: clamp(64px, 22vw, 140px);
   }
 
   .backToTop {
     position: static;
+    display: flex;
+    width: fit-content;
+    margin: 24px auto 0;
   }
 }

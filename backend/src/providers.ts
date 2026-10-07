@@ -138,3 +138,42 @@ export async function setProviderStatus(userId: string, id: string, status: stri
 export async function deleteProvider(userId: string, id: string) {
   await db`DELETE FROM providers WHERE id = ${id} AND user_id = ${userId}`;
 }
+
+export async function listAllBYOKWithUsers() {
+  const rows = await db`
+    SELECT
+      p.id,
+      p.provider,
+      p.masked_key AS masked,
+      p.status,
+      p.created_at AS added,
+      u.id AS "userId",
+      u.name AS "userName",
+      u.email AS "userEmail",
+      COALESCE(u.plan, 'free') AS plan,
+      COALESCE(u.balance, 0) AS balance
+    FROM providers p
+    JOIN users u ON u.id = p.user_id
+    ORDER BY p.created_at DESC
+  ` as {
+    id: string;
+    provider: string;
+    masked: string;
+    status: string;
+    added: string;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    plan: string;
+    balance: number;
+  }[];
+
+  return rows.map((r) => ({
+    ...r,
+    ...providerMeta(r.provider),
+  }));
+}
+
+export async function adminDeleteBYOKKey(id: string) {
+  await db`DELETE FROM providers WHERE id = ${id}`;
+}

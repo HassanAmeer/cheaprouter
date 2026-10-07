@@ -44,5 +44,7 @@ next-env.d.ts
 /backend/*.db
 /backend/*.db-wal
 /backend/*.db-shm
+*.db-wal
+*.db-shm
 /backend/cheapmodels.db
 backend/node_modules/

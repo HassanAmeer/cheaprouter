@@ -1,5 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { PricingPlan } from '@/lib/api-types';
+import { ManagedTool, TOOLS_DEFAULT } from '@/lib/tools';
 
 export interface FooterColumn {
   title: string;
@@ -66,21 +68,11 @@ export interface SiteSettings {
   pricingSection: {
     title: string;
     subtitle: string;
-    tabs: {
+    plans?: PricingPlan[];
+    tabs?: {
       id: string;
       name: string;
-      plans: {
-        id: string;
-        name: string;
-        price: string;
-        period: string;
-        desc: string;
-        features: string[];
-        cta: string;
-        ctaLink: string;
-        featured: boolean;
-        durationDays?: number;
-      }[];
+      plans: PricingPlan[];
     }[];
   };
   comparisonSection: {
@@ -108,6 +100,9 @@ export interface SiteSettings {
     enabled: boolean;
     minAmount: number;
     announcement: string;
+  };
+  toolsSettings?: {
+    tools: ManagedTool[];
   };
   billingSettings?: {
     welcomeCredit: number;
@@ -269,42 +264,186 @@ const defaultSettings: SiteSettings = {
   },
   pricingSection: {
     title: 'Simple, honest pricing',
-    subtitle: 'No surprise bills. No hidden token markups. Start free, pay as you grow.',
+    subtitle: 'Transparent per-token plans. Access CLI, IDE Builder, Cheap Chats, and REST APIs with a single unified subscription.',
+    plans: [
+      {
+        id: 'plan_free',
+        name: 'Free',
+        price: '$0',
+        period: '',
+        desc: 'Essential access for personal development & learning',
+        tokens: '10M Tokens/mo',
+        tokensM: 10,
+        tokenLimit: 10000000,
+        includedModels: ['MiniMax-01 (10M context)', 'Llama 3.3 70B', 'Gemini 2.0 Flash', 'DeepSeek V3'],
+        canUseCli: true,
+        canUseIde: true,
+        canUseChat: true,
+        canUseApi: true,
+        features: [
+          '10M Tokens / month included',
+          'Can use Cheap CLI & terminal coding tools',
+          'Can use Cheap Chats (web interface)',
+          'Can use IDE Builder (Devonz code editor)',
+          'Can use Direct REST API (/v1/chat/completions)',
+          'Free Models: MiniMax-01 (10M context), Llama 3.3 70B, Gemini 2.0 Flash',
+          'Community Support',
+        ],
+        cta: 'Get Started Free',
+        ctaLink: '/signup',
+        featured: false,
+        durationDays: 30,
+      },
+      {
+        id: 'plan_pro',
+        name: 'Pro',
+        price: '$19',
+        period: '/mo',
+        desc: 'High-throughput access for builders, developers & power users',
+        tokens: '100M Tokens/mo',
+        tokensM: 100,
+        tokenLimit: 100000000,
+        includedModels: ['GPT-4o Mini', 'Claude 3.5 Haiku', 'DeepSeek R1', 'Llama 3.3 70B', 'MiniMax-01'],
+        canUseCli: true,
+        canUseIde: true,
+        canUseChat: true,
+        canUseApi: true,
+        features: [
+          '100M Tokens / month included',
+          'Can use Cheap CLI (Claude Code, Aider, Cursor)',
+          'Can use Cheap Chats with full history & branching',
+          'Can use IDE Builder with real-time code fixes',
+          'Can use Direct REST API with elevated rate limits',
+          'Pro Models: GPT-4o Mini, Claude 3.5 Haiku, DeepSeek R1, MiniMax',
+          'Faster priority routing & lower latency',
+          'Priority Email Support',
+        ],
+        cta: 'Upgrade to Pro',
+        ctaLink: '/dashboard/billing',
+        featured: true,
+        durationDays: 30,
+      },
+      {
+        id: 'plan_premium',
+        name: 'Premium',
+        price: '$49',
+        period: '/mo',
+        desc: 'Maximum tokens, frontier reasoning models & production-grade scale',
+        tokens: '500M Tokens/mo',
+        tokensM: 500,
+        tokenLimit: 500000000,
+        includedModels: ['GPT-4o', 'Claude 3.5 Sonnet', 'DeepSeek R1', 'o1-preview', 'Gemini 2.0 Flash'],
+        canUseCli: true,
+        canUseIde: true,
+        canUseChat: true,
+        canUseApi: true,
+        features: [
+          '500M Tokens / month included',
+          'Can use Cheap CLI with unlimited concurrent sessions',
+          'Can use Cheap Chats with multi-agent debate mode',
+          'Can use IDE Builder with full project codebase context',
+          'Can use Direct REST API with dedicated rate limits',
+          'Flagship Models: Claude 3.5 Sonnet, GPT-4o, DeepSeek R1, o1-preview',
+          'Dedicated routing queues with zero rate-limit drops',
+          '24/7 Priority engineering support',
+        ],
+        cta: 'Upgrade to Premium',
+        ctaLink: '/dashboard/billing',
+        featured: false,
+        durationDays: 30,
+      },
+    ],
     tabs: [
       {
-        id: 'tab_cli',
-        name: 'Cheap CLI',
+        id: 'tab_unified',
+        name: 'All Access',
         plans: [
-          { id: 'p_cli_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
-          { id: 'p_cli_2', name: 'Starter', price: '$2', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
-          { id: 'p_cli_3', name: 'Pro', price: '$15', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
-        ]
-      },
-      {
-        id: 'tab_api',
-        name: 'API',
-        plans: [
-          { id: 'p_api_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
-          { id: 'p_api_2', name: 'Starter', price: '$5', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
-          { id: 'p_api_3', name: 'Pro', price: '$20', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
-        ]
-      },
-      {
-        id: 'tab_chat',
-        name: 'Chat',
-        plans: [
-          { id: 'p_chat_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
-          { id: 'p_chat_2', name: 'Starter', price: '$3', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
-          { id: 'p_chat_3', name: 'Pro', price: '$10', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
-        ]
-      },
-      {
-        id: 'tab_agents',
-        name: 'Agents',
-        plans: [
-          { id: 'p_agents_1', name: 'Free', price: '$0', period: '', desc: 'For personal projects', features: ['Basic features', 'Community support'], cta: 'Start Free', ctaLink: '/signup', featured: false },
-          { id: 'p_agents_2', name: 'Starter', price: '$10', period: '/mo', desc: 'For indie hackers', features: ['Advanced features', 'Email support'], cta: 'Get Started', ctaLink: '/signup', featured: false },
-          { id: 'p_agents_3', name: 'Pro', price: '$25', period: '/mo', desc: 'For teams', features: ['All features', 'Priority support'], cta: 'Upgrade to Pro', ctaLink: '/signup', featured: true },
+          {
+            id: 'plan_free',
+            name: 'Free',
+            price: '$0',
+            period: '',
+            desc: 'Essential access for personal development & learning',
+            tokens: '10M Tokens/mo',
+            tokensM: 10,
+            tokenLimit: 10000000,
+            includedModels: ['MiniMax-01 (10M context)', 'Llama 3.3 70B', 'Gemini 2.0 Flash', 'DeepSeek V3'],
+            canUseCli: true,
+            canUseIde: true,
+            canUseChat: true,
+            canUseApi: true,
+            features: [
+              '10M Tokens / month included',
+              'Can use Cheap CLI & terminal coding tools',
+              'Can use Cheap Chats (web interface)',
+              'Can use IDE Builder (Devonz code editor)',
+              'Can use Direct REST API (/v1/chat/completions)',
+              'Free Models: MiniMax-01 (10M context), Llama 3.3 70B, Gemini 2.0 Flash',
+              'Community Support',
+            ],
+            cta: 'Get Started Free',
+            ctaLink: '/signup',
+            featured: false,
+            durationDays: 30,
+          },
+          {
+            id: 'plan_pro',
+            name: 'Pro',
+            price: '$19',
+            period: '/mo',
+            desc: 'High-throughput access for builders, developers & power users',
+            tokens: '100M Tokens/mo',
+            tokensM: 100,
+            tokenLimit: 100000000,
+            includedModels: ['GPT-4o Mini', 'Claude 3.5 Haiku', 'DeepSeek R1', 'Llama 3.3 70B', 'MiniMax-01'],
+            canUseCli: true,
+            canUseIde: true,
+            canUseChat: true,
+            canUseApi: true,
+            features: [
+              '100M Tokens / month included',
+              'Can use Cheap CLI (Claude Code, Aider, Cursor)',
+              'Can use Cheap Chats with full history & branching',
+              'Can use IDE Builder with real-time code fixes',
+              'Can use Direct REST API with elevated rate limits',
+              'Pro Models: GPT-4o Mini, Claude 3.5 Haiku, DeepSeek R1, MiniMax',
+              'Faster priority routing & lower latency',
+              'Priority Email Support',
+            ],
+            cta: 'Upgrade to Pro',
+            ctaLink: '/dashboard/billing',
+            featured: true,
+            durationDays: 30,
+          },
+          {
+            id: 'plan_premium',
+            name: 'Premium',
+            price: '$49',
+            period: '/mo',
+            desc: 'Maximum tokens, frontier reasoning models & production-grade scale',
+            tokens: '500M Tokens/mo',
+            tokensM: 500,
+            tokenLimit: 500000000,
+            includedModels: ['GPT-4o', 'Claude 3.5 Sonnet', 'DeepSeek R1', 'o1-preview', 'Gemini 2.0 Flash'],
+            canUseCli: true,
+            canUseIde: true,
+            canUseChat: true,
+            canUseApi: true,
+            features: [
+              '500M Tokens / month included',
+              'Can use Cheap CLI with unlimited concurrent sessions',
+              'Can use Cheap Chats with multi-agent debate mode',
+              'Can use IDE Builder with full project codebase context',
+              'Can use Direct REST API with dedicated rate limits',
+              'Flagship Models: Claude 3.5 Sonnet, GPT-4o, DeepSeek R1, o1-preview',
+              'Dedicated routing queues with zero rate-limit drops',
+              '24/7 Priority engineering support',
+            ],
+            cta: 'Upgrade to Premium',
+            ctaLink: '/dashboard/billing',
+            featured: false,
+            durationDays: 30,
+          },
         ]
       }
     ]
@@ -358,6 +497,9 @@ const defaultSettings: SiteSettings = {
     enabled: true,
     minAmount: 5,
     announcement: 'Withdrawals are processed within 1–3 business days once approved by an admin review.'
+  },
+  toolsSettings: {
+    tools: TOOLS_DEFAULT,
   },
   sectionVisibility: {
     announcementBar: true,

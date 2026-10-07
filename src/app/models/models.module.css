@@ -1,0 +1,16 @@
+.page {
+  background: #0d0f10;
+}
+
+.catalog {
+  min-height: 680px;
+  padding: 34px clamp(18px, 3vw, 48px) 64px;
+  background: #0d0f10;
+  color: #f1f3f3;
+}
+
+@media (max-width: 640px) {
+  .catalog {
+    padding: 24px 12px 40px;
+  }
+}
