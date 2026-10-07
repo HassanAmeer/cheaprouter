@@ -259,7 +259,7 @@ export default function Sidebar() {
 
   if (sidebarView === "agents") {
     return (
-      <aside className="w-80 md:w-[340px] h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-80 md:w-[340px] h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <AgentsSidebarPanel />
       </aside>
     );
@@ -267,7 +267,7 @@ export default function Sidebar() {
 
   if (sidebarView === "prompts") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-72 md:w-80 h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <PromptsSidebarPanel />
       </aside>
     );
@@ -275,7 +275,7 @@ export default function Sidebar() {
 
   if (sidebarView === "skills") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-72 md:w-80 h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <SkillsSidebarPanel />
       </aside>
     );
@@ -283,7 +283,7 @@ export default function Sidebar() {
 
   if (sidebarView === "memory") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-72 md:w-80 h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <MemorySidebarPanel />
       </aside>
     );
@@ -291,7 +291,7 @@ export default function Sidebar() {
 
   if (sidebarView === "files") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-72 md:w-80 h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <FilesSidebarPanel />
       </aside>
     );

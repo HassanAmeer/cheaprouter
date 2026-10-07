@@ -330,10 +330,10 @@ export default function SettingsPage() {
                       <div
                         key={provider.id}
                         onClick={() => openDrawerForProvider(provider)}
-                        className={`group relative p-5 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border transition-all duration-200 cursor-pointer shadow-lg hover:-translate-y-1 hover:shadow-red-600/10 ${
+                        className={`group relative p-5 rounded-2xl bg-[#15191E] border transition-all duration-200 cursor-pointer shadow-md hover:-translate-y-0.5 ${
                           hasKey
-                            ? "border-emerald-500/30 hover:border-emerald-500/60"
-                            : "border-red-500/20 hover:border-red-500/50"
+                            ? "border-emerald-500/40 hover:border-emerald-500/70"
+                            : "border-[#262C34] hover:border-slate-600"
                         }`}
                       >
                         {/* Top Indicator Accent */}
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
+              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
                 {/* Temperature */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs">
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
+              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
                 {/* Speech to Text Toggle */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -579,17 +579,17 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-4">
+              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-4 shadow-md">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-slate-200">Theme Preset</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/40 text-xs font-semibold text-red-200 flex items-center gap-2">
+                    <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-500/40 text-xs font-semibold text-red-200 flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-red-500" />
-                      Cyber Crimson (Default)
+                      Obsidian Crimson
                     </div>
                     <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 text-xs font-medium text-slate-400 flex items-center gap-2 opacity-60 cursor-not-allowed">
                       <span className="w-3 h-3 rounded-full bg-slate-600" />
-                      Obsidian Minimal
+                      Slate Minimal
                     </div>
                   </div>
                 </div>
@@ -610,7 +610,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
+              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
                 {/* Incognito mode */}
                 <div className="flex items-center justify-between">
                   <div>

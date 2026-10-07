@@ -64,8 +64,7 @@ export default function NavRail() {
             onClick={() => {
               useAppStore.getState().setActiveProjectId(null);
               setSidebarView("chats");
-              router.push("/new");
-              router.refresh();
+              router.push("/chats");
             }}
             className={btnClass()}
           >

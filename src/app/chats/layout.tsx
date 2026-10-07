@@ -3,7 +3,6 @@
 import React from "react";
 import "@cheapchats/frontend/styles/globals.css";
 import Header from "@cheapchats/frontend/components/Header/Header";
-import DebugConsoleToggle from "@cheapchats/frontend/components/Header/DebugConsoleToggle";
 import NavRail from "@cheapchats/frontend/components/Sidebar/NavRail";
 import Sidebar from "@cheapchats/frontend/components/Sidebar/Sidebar";
 import DebugConsole from "@cheapchats/frontend/components/Chat/DebugConsole";
@@ -28,9 +27,6 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen w-screen bg-[#0B0D10] text-slate-100 overflow-hidden font-sans">
-      {/* Floating Top-Right Terminal Debug Button */}
-      <DebugConsoleToggle />
-
       {/* Far-Left Narrow Icon Rail */}
       <NavRail />
 
@@ -57,7 +53,7 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* Global Modals (SettingsModal removed in favor of full SettingsPage) */}
+      {/* Global Modals */}
       <AgentBuilderModal />
       <MCPServerModal />
       <PromptsModal />
