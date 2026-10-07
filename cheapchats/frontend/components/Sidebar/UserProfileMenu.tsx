@@ -11,6 +11,7 @@ import {
   Bell,
   Key,
   Sliders,
+  Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -54,9 +55,6 @@ export default function UserProfileMenu() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontWeight: 700,
-          fontSize: '12px',
-          color: '#ffffff',
           boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
           cursor: 'pointer',
           outline: 'none',
@@ -64,7 +62,7 @@ export default function UserProfileMenu() {
         className="hover:scale-105 transition-transform duration-150"
         title={`${user?.username || "Demo User"} — click for account options`}
       >
-        {userInitials}
+        <Zap className="w-4 h-4 text-white fill-white" />
       </button>
 
       {/* Red Glass Dropdown Menu */}

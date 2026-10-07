@@ -10,9 +10,9 @@ import {
   MessageSquare,
   Bot,
   FileText,
-  Sparkles,
   Wrench,
   Brain,
+  Bookmark,
   Paperclip,
   Sliders,
 } from "lucide-react";
@@ -41,7 +41,7 @@ export default function NavRail() {
   const btnClass = (view?: SidebarView) =>
     `p-2.5 rounded-xl transition duration-150 ${
       view && isActive(view)
-        ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/40 shadow-lg shadow-red-600/10"
+        ? "bg-[#2d1217] text-rose-400 border border-red-500/40 shadow-lg shadow-red-950/40"
         : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
     }`;
 
@@ -56,7 +56,7 @@ export default function NavRail() {
           </button>
         </Tooltip>
 
-        <div className="w-8 h-px bg-red-500/15 my-1" />
+        <div className="w-8 h-px bg-red-500/15 my-0.5" />
 
         {/* New Chat */}
         <Tooltip content="New Chat" side="right">
@@ -94,20 +94,26 @@ export default function NavRail() {
           </button>
         </Tooltip>
 
-        {/* Skills */}
-        <Tooltip content="Skills & Rules" side="right">
-          <button onClick={() => navTo("skills")} className={btnClass("skills")}>
-            <Sparkles className="w-5 h-5 text-rose-400" />
+        {/* Tools */}
+        <Tooltip content="Tools" side="right">
+          <button onClick={() => navTo("tools" as any)} className={btnClass("tools" as any)}>
+            <Wrench className="w-5 h-5 text-rose-400" />
           </button>
         </Tooltip>
 
-        {/* Memory */}
-        <Tooltip content="Memory & Knowledge" side="right">
-          <button onClick={() => navTo("memory")} className={btnClass("memory")}>
+        {/* Skills / Memory */}
+        <Tooltip content="Skills & Brain" side="right">
+          <button onClick={() => navTo("skills")} className={btnClass("skills")}>
             <Brain className="w-5 h-5 text-rose-300" />
           </button>
         </Tooltip>
 
+        {/* Saved / Bookmarks */}
+        <Tooltip content="Bookmarks" side="right">
+          <button onClick={() => navTo("bookmarks" as any)} className={btnClass("bookmarks" as any)}>
+            <Bookmark className="w-5 h-5 text-rose-400" />
+          </button>
+        </Tooltip>
 
         {/* Attachments */}
         <Tooltip content="Uploaded Files" side="right">

@@ -281,15 +281,15 @@ export default function AgentsSidebarPanel() {
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
 
   return (
-    <div className="flex flex-col h-full bg-[#121212] text-slate-200 select-none overflow-hidden relative">
+    <div className="flex flex-col h-full bg-[#110c0e] text-slate-200 select-none overflow-hidden relative font-sans">
       {/* ── Top Header Dropdown ────────────────────────────────────────────── */}
-      <div className="p-3 border-b border-white/10 bg-[#161616] relative z-30">
+      <div className="p-3 border-b border-red-500/10 bg-[#140c0f] relative z-30">
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#1e1e1e] hover:bg-[#252525] border border-white/10 text-white transition font-medium text-xs"
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#191013] hover:bg-[#231519] border border-white/10 text-white transition font-medium text-xs shadow-sm"
         >
           <div className="flex items-center gap-2 truncate">
-            <span className="text-base">{selectedAgent?.avatar || (selectedAgentId ? "🤖" : "✨")}</span>
+            <span className="text-base text-amber-400">✨</span>
             <span className="font-semibold text-white truncate text-xs">
               {selectedAgent ? selectedAgent.name : "Create New Agent"}
             </span>
@@ -299,16 +299,16 @@ export default function AgentsSidebarPanel() {
 
         {/* Dropdown menu options */}
         {dropdownOpen && (
-          <div className="absolute top-full left-3 right-3 mt-1 bg-[#1a1a1a] border border-white/10 rounded-2xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-xs">
+          <div className="absolute top-full left-3 right-3 mt-1.5 bg-[#191013] border border-red-500/20 rounded-2xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-xs">
             <button
               onClick={handleCreateNew}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-semibold transition text-left"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 font-semibold transition text-left"
             >
-              <Plus className="w-4 h-4 text-emerald-400" />
+              <Plus className="w-4 h-4 text-red-400" />
               <span>Create New Agent</span>
             </button>
 
-            {agents.length > 0 && <div className="h-px bg-white/10 my-0.5" />}
+            {agents.length > 0 && <div className="h-px bg-red-500/10 my-0.5" />}
 
             <div className="max-h-48 overflow-y-auto space-y-0.5">
               {loading && agents.length === 0 ? (
@@ -321,7 +321,7 @@ export default function AgentsSidebarPanel() {
                     key={ag.id}
                     onClick={() => handleSelectAgent(ag)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition ${
-                      selectedAgentId === ag.id ? "bg-[#282828] text-white" : "hover:bg-[#222222] text-slate-300"
+                      selectedAgentId === ag.id ? "bg-red-950/40 text-white border border-red-500/30" : "hover:bg-white/5 text-slate-300"
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
@@ -344,8 +344,8 @@ export default function AgentsSidebarPanel() {
 
       {/* Success Notification Banner */}
       {successMsg && (
-        <div className="bg-emerald-500/20 border-b border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 flex items-center gap-2">
-          <Check className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="bg-red-500/20 border-b border-red-500/40 text-red-300 text-xs px-3 py-1.5 flex items-center gap-2">
+          <Check className="w-3.5 h-3.5 text-red-400" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -364,12 +364,12 @@ export default function AgentsSidebarPanel() {
                 <button
                   type="button"
                   onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  className="w-12 h-12 rounded-full border-2 border-dashed border-white/20 hover:border-emerald-500/60 bg-[#1c1c1c] flex items-center justify-center text-xl transition flex-shrink-0 text-slate-400 hover:text-white"
+                  className="w-12 h-12 rounded-full border-2 border-dashed border-white/20 hover:border-red-500/60 bg-[#180f12] flex items-center justify-center text-xl transition flex-shrink-0 text-slate-400 hover:text-white"
                 >
                   {avatar || <Plus className="w-5 h-5 text-slate-400" />}
                 </button>
                 {showAvatarPicker && (
-                  <div className="absolute top-14 left-0 bg-[#222222] border border-white/10 rounded-2xl p-2 shadow-2xl z-50 grid grid-cols-5 gap-1.5 w-44">
+                  <div className="absolute top-14 left-0 bg-[#180f12] border border-red-500/20 rounded-2xl p-2 shadow-2xl z-50 grid grid-cols-5 gap-1.5 w-44">
                     {AVATAR_OPTIONS.map((emoji) => (
                       <button
                         key={emoji}
@@ -393,14 +393,14 @@ export default function AgentsSidebarPanel() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Agent name"
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 transition"
+                  className="w-full bg-[#180f12] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition"
                 />
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What this agent does"
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 transition"
+                  className="w-full bg-[#180f12] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition"
                 />
               </div>
             </div>
@@ -410,18 +410,18 @@ export default function AgentsSidebarPanel() {
               {/* MODEL * */}
               <div className="flex flex-col gap-1 relative">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  MODEL <span className="text-red-400">*</span>
+                  MODEL <span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-2.5 py-2 text-xs text-slate-200 flex items-center justify-between hover:border-white/20 transition truncate"
+                  className="w-full bg-[#180f12] border border-white/10 rounded-xl px-2.5 py-2 text-xs text-slate-200 flex items-center justify-between hover:border-white/20 transition truncate"
                 >
                   <span className="truncate">{model}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />
                 </button>
                 {modelDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#222] border border-white/10 rounded-xl p-1 shadow-2xl z-50 space-y-0.5">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#180f12] border border-red-500/20 rounded-xl p-1 shadow-2xl z-50 space-y-0.5">
                     {AVAILABLE_MODELS.map((m) => (
                       <button
                         key={m.id}
@@ -430,11 +430,11 @@ export default function AgentsSidebarPanel() {
                           setModelDropdownOpen(false);
                         }}
                         className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition flex items-center justify-between ${
-                          model === m.id ? "bg-emerald-500/20 text-emerald-400 font-semibold" : "hover:bg-white/5 text-slate-300"
+                          model === m.id ? "bg-red-500/20 text-red-400 font-semibold" : "hover:bg-white/5 text-slate-300"
                         }`}
                       >
                         <span className="truncate">{m.name}</span>
-                        {model === m.id && <Check className="w-3 h-3 text-emerald-400 ml-1" />}
+                        {model === m.id && <Check className="w-3 h-3 text-red-400 ml-1" />}
                       </button>
                     ))}
                   </div>
@@ -444,18 +444,18 @@ export default function AgentsSidebarPanel() {
               {/* CATEGORY * */}
               <div className="flex flex-col gap-1 relative">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  CATEGORY <span className="text-red-400">*</span>
+                  CATEGORY <span className="text-red-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-2.5 py-2 text-xs text-slate-200 flex items-center justify-between hover:border-white/20 transition capitalize"
+                  className="w-full bg-[#180f12] border border-white/10 rounded-xl px-2.5 py-2 text-xs text-slate-200 flex items-center justify-between hover:border-white/20 transition capitalize"
                 >
                   <span>{category}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                 </button>
                 {categoryDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#222] border border-white/10 rounded-xl p-1 shadow-2xl z-50 space-y-0.5">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#180f12] border border-red-500/20 rounded-xl p-1 shadow-2xl z-50 space-y-0.5">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat}
@@ -464,11 +464,11 @@ export default function AgentsSidebarPanel() {
                           setCategoryDropdownOpen(false);
                         }}
                         className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs capitalize transition flex items-center justify-between ${
-                          category === cat ? "bg-emerald-500/20 text-emerald-400 font-semibold" : "hover:bg-white/5 text-slate-300"
+                          category === cat ? "bg-red-500/20 text-red-400 font-semibold" : "hover:bg-white/5 text-slate-300"
                         }`}
                       >
                         <span>{cat}</span>
-                        {category === cat && <Check className="w-3 h-3 text-emerald-400" />}
+                        {category === cat && <Check className="w-3 h-3 text-red-400" />}
                       </button>
                     ))}
                   </div>
@@ -489,7 +489,7 @@ export default function AgentsSidebarPanel() {
                       setInstructions((prev) =>
                         prev
                           ? prev + "\n- Respond clearly and concisely with structured output."
-                          : "You are a professional assistant specialized in system architecture and execution."
+                          : "The system instructions that the agent uses"
                       )
                     }
                     className="p-1 hover:text-white rounded transition"
@@ -512,7 +512,7 @@ export default function AgentsSidebarPanel() {
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="The system instructions that the agent uses"
                 rows={4}
-                className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 font-mono leading-relaxed resize-y"
+                className="w-full bg-[#180f12] border border-white/10 rounded-xl p-3 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:border-red-500/50 font-mono leading-relaxed resize-y"
               />
             </div>
 
@@ -534,22 +534,22 @@ export default function AgentsSidebarPanel() {
               {tools.length === 0 ? (
                 <div
                   onClick={() => setShowToolsPicker(true)}
-                  className="border border-dashed border-white/15 hover:border-white/30 bg-[#161616] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
+                  className="border border-dashed border-white/15 hover:border-red-500/30 bg-[#160d10] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
                 >
-                  <Plus className="w-5 h-5 text-slate-500 mb-1" />
+                  <Plus className="w-4 h-4 text-slate-500 mb-1" />
                   <p className="text-xs font-semibold text-slate-300">No tools yet</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     Add a tool to give your agent extra abilities.
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1.5 p-2 bg-[#161616] border border-white/10 rounded-xl">
+                <div className="flex flex-wrap gap-1.5 p-2 bg-[#160d10] border border-white/10 rounded-xl">
                   {tools.map((t) => (
                     <span
                       key={t}
-                      className="inline-flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-medium"
+                      className="inline-flex items-center gap-1.5 bg-red-500/15 border border-red-500/30 text-red-300 px-2.5 py-1 rounded-lg text-[11px] font-medium"
                     >
-                      <Wrench className="w-3 h-3 text-emerald-400" />
+                      <Wrench className="w-3 h-3 text-red-400" />
                       {t}
                       <button
                         onClick={() => setTools(tools.filter((x) => x !== t))}
@@ -604,7 +604,7 @@ export default function AgentsSidebarPanel() {
                   type="button"
                   onClick={() => setUseAllSkills(!useAllSkills)}
                   className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
-                    useAllSkills ? "bg-emerald-500" : "bg-slate-700"
+                    useAllSkills ? "bg-red-500" : "bg-slate-700/60"
                   }`}
                 >
                   <span
@@ -618,25 +618,22 @@ export default function AgentsSidebarPanel() {
               {skills.length === 0 && !useAllSkills ? (
                 <div
                   onClick={() => setShowSkillsPicker(true)}
-                  className="border border-dashed border-white/15 hover:border-white/30 bg-[#161616] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
+                  className="border border-dashed border-white/15 hover:border-red-500/30 bg-[#160d10] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
                 >
-                  <Plus className="w-5 h-5 text-slate-500 mb-1" />
+                  <Plus className="w-4 h-4 text-slate-500 mb-1" />
                   <p className="text-xs font-semibold text-slate-300">No skills yet</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Add a skill to give your agent reusable instructions.
-                  </p>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1.5 p-2 bg-[#161616] border border-white/10 rounded-xl">
+                <div className="flex flex-wrap gap-1.5 p-2 bg-[#160d10] border border-white/10 rounded-xl">
                   {useAllSkills && (
-                    <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg text-[10px] font-semibold">
+                    <span className="bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-lg text-[10px] font-semibold">
                       ⚡ All System Skills Enabled
                     </span>
                   )}
                   {skills.map((s) => (
                     <span
                       key={s}
-                      className="inline-flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-lg text-[11px] font-medium"
+                      className="inline-flex items-center gap-1.5 bg-red-500/15 border border-red-500/30 text-red-300 px-2.5 py-1 rounded-lg text-[11px] font-medium"
                     >
                       {s}
                       <button
@@ -948,12 +945,12 @@ export default function AgentsSidebarPanel() {
       )}
 
       {/* ── Fixed Bottom Action Buttons ─────────────────────────────── */}
-      <div className="p-3 border-t border-white/10 bg-[#161616] flex gap-2">
+      <div className="p-3 border-t border-white/5 bg-[#140c0f] flex gap-2">
         {selectedAgent && (
           <button
             type="button"
             onClick={handleChatWithAgent}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/20 transition duration-150"
+            className="flex-1 py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg transition duration-150"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Chat
@@ -963,7 +960,7 @@ export default function AgentsSidebarPanel() {
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs flex items-center justify-center shadow-lg shadow-red-900/30 transition duration-150 disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:scale-[0.99] text-white font-bold text-xs tracking-wide shadow-lg shadow-red-950/40 transition duration-150 disabled:opacity-50"
         >
           {isSaving ? "Saving..." : selectedAgentId ? "Update" : "Create"}
         </button>

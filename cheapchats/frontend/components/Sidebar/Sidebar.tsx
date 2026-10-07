@@ -259,7 +259,7 @@ export default function Sidebar() {
 
   if (sidebarView === "agents") {
     return (
-      <aside className="w-80 md:w-[340px] h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="w-80 md:w-[350px] h-full bg-[#110c0e] border-r border-red-500/15 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
         <AgentsSidebarPanel />
       </aside>
     );
