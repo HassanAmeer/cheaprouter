@@ -231,16 +231,16 @@ export default function ConversationList() {
               <div key={conv.id} className="relative group">
                 <button
                   onClick={() => router.push(`/c/${conv.id}`)}
-                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-left font-medium transition ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[13px] font-medium transition-colors ${
                     isActive
-                      ? "bg-red-500/20 text-white shadow-sm font-semibold border border-red-500/30"
-                      : "text-slate-300 hover:bg-[#1f1215] hover:text-slate-100"
+                      ? "bg-red-500/15 text-white font-semibold ring-1 ring-inset ring-red-400/25"
+                      : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                   }`}
                 >
                   <MessageSquare
-                    className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-red-400" : "text-slate-400"}`}
+                    className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-red-400" : "text-slate-500 group-hover:text-slate-300"}`}
                   />
-                  <span className="truncate flex-1 text-[12px]">{conv.title}</span>
+                  <span className="truncate flex-1">{conv.title}</span>
                   {conv.isPinned === 1 && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" />}
                   {conv.isBookmarked === 1 && <Bookmark className="w-3 h-3 text-sky-400 flex-shrink-0" />}
                 </button>
@@ -251,8 +251,8 @@ export default function ConversationList() {
                     e.stopPropagation();
                     setActiveMenuId(isMenuOpen ? null : conv.id);
                   }}
-                  className={`absolute right-2 top-1.5 p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/80 transition ${
-                    isMenuOpen || isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition ${
+                    isMenuOpen || isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                   }`}
                 >
                   <MoreVertical className="w-3.5 h-3.5" />

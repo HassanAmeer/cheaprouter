@@ -259,7 +259,7 @@ export default function Sidebar() {
 
   if (sidebarView === "agents") {
     return (
-      <aside className="w-[426px] h-full bg-[#191919] border-r border-[#2e2326] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-[426px] h-full bg-[#191919] border-r border-[#2e2326] flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-[426px] md:max-w-none">
         <AgentsSidebarPanel />
       </aside>
     );
@@ -267,7 +267,7 @@ export default function Sidebar() {
 
   if (sidebarView === "prompts") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-80 md:max-w-none">
         <PromptsSidebarPanel />
       </aside>
     );
@@ -275,7 +275,7 @@ export default function Sidebar() {
 
   if (sidebarView === "skills") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-80 md:max-w-none">
         <SkillsSidebarPanel />
       </aside>
     );
@@ -283,7 +283,7 @@ export default function Sidebar() {
 
   if (sidebarView === "memory") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-80 md:max-w-none">
         <MemorySidebarPanel />
       </aside>
     );
@@ -291,7 +291,7 @@ export default function Sidebar() {
 
   if (sidebarView === "files") {
     return (
-      <aside className="w-72 md:w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-80 h-full bg-[#121212] border-r border-white/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-80 md:max-w-none">
         <FilesSidebarPanel />
       </aside>
     );
@@ -303,7 +303,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-56 md:w-60 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+    <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-56 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-60 md:max-w-none">
       {/* Dynamic panel content */}
 
       {/* Dynamic panel content */}

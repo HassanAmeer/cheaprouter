@@ -1,4 +1,4 @@
-import create from "zustand";
+import { create } from "zustand";
 
 export type SidebarView = "chats" | "agents" | "prompts" | "skills" | "mcp" | "files" | "memory";
 
@@ -149,7 +149,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-  sidebarView: "agents",
+  sidebarView: "chats",
   setSidebarView: (view) => set({ sidebarView: view, isSidebarOpen: true }),
 
   unreadNotificationsCount: 0,
