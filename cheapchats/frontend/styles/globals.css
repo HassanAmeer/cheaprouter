@@ -191,3 +191,10 @@ body {
 .prose-dark a:hover {
   color: #fca5a5;
 }
+
+/* Hide Next.js dev overlay indicator badge */
+nextjs-portal,
+[data-nextjs-dev-overlay],
+[data-nextjs-toast-wrapper] {
+  display: none !important;
+}

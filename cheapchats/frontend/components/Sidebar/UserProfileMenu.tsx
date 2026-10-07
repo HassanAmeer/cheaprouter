@@ -45,7 +45,23 @@ export default function UserProfileMenu() {
       {/* Red Avatar Button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-700 via-rose-600 to-red-500 border-2 border-red-400/50 flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-red-600/30 hover:scale-105 hover:border-red-300 transition duration-150 focus:outline-none focus:ring-2 focus:ring-red-400/60"
+        style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '9999px',
+          background: 'linear-gradient(135deg, #b91c1c 0%, #e11d48 50%, #dc2626 100%)',
+          border: '2px solid rgba(248, 113, 113, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: '12px',
+          color: '#ffffff',
+          boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
+          cursor: 'pointer',
+          outline: 'none',
+        }}
+        className="hover:scale-105 transition-transform duration-150"
         title={`${user?.username || "Demo User"} — click for account options`}
       >
         {userInitials}

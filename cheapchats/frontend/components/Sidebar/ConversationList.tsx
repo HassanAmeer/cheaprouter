@@ -311,14 +311,15 @@ export default function ConversationList() {
       </div>
 
       {/* Live Search Input for Chats */}
-      <div className="relative px-1 mb-1">
-        <Search className="w-3.5 h-3.5 absolute left-3 top-2 text-red-400/60" />
+      <div className="relative px-1 mb-1 flex items-center">
+        <Search className="w-3.5 h-3.5 absolute left-3.5 pointer-events-none text-red-400/60" style={{ left: '14px', top: '7px' }} />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Filter chats..."
-          className="w-full bg-[#1b1013] border border-red-500/15 rounded-xl pl-8 pr-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+          style={{ paddingLeft: '32px' }}
+          className="w-full bg-[#1b1013] border border-red-500/15 rounded-xl pr-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
         />
       </div>
 
