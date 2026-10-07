@@ -38,24 +38,24 @@ export default function NavRail() {
   const isActive = (view: SidebarView) => isSidebarOpen && sidebarView === view;
 
   const btnClass = (view?: SidebarView) =>
-    `px-1.5 py-2.5 sm:p-2.5 rounded-xl transition duration-150 ${
+    `flex h-9 w-9 items-center justify-center rounded-[5px] border border-transparent p-1.5 transition-none focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#7f1d1d] focus-visible:outline-offset-0 sm:h-auto sm:w-auto sm:rounded-xl sm:p-2.5 sm:transition-all sm:duration-150 ${
       view && isActive(view)
-        ? "bg-[#2b1016] text-rose-400 border border-red-500/40 shadow-lg shadow-red-950/40"
+        ? "border border-red-500/40 bg-[#2b1016] text-rose-400 shadow-sm shadow-red-950/30 sm:shadow-lg sm:shadow-red-950/40"
         : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
     }`;
 
   return (
-    <aside className="w-[56px] sm:w-[68px] h-full bg-[#121011] border-r border-[#2a1b1e] flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
+    <aside className="mobile-nav-rail z-30 flex h-full w-12 flex-shrink-0 select-none flex-col items-center justify-between border-r border-[#2a1b1e] bg-[#121011] py-1.5 sm:w-[68px] sm:py-3">
       {/* Top Icons Section */}
-      <div className="flex flex-col items-center gap-3 w-full">
+      <div className="flex w-full flex-col items-center gap-1.5 sm:gap-3">
         {/* Toggle Secondary Sidebar */}
         <Tooltip content="Toggle Sidebar" side="right">
           <button onClick={toggleSidebar} className={btnClass()}>
-            <PanelLeft className="w-5 h-5" />
+            <PanelLeft className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
-        <div className="w-8 h-px bg-red-500/15 my-0.5" />
+        <div className="my-0 w-6 h-px bg-red-500/15 sm:my-0.5 sm:w-8" />
 
         {/* New Chat */}
         <Tooltip content="New Chat" side="right">
@@ -68,28 +68,28 @@ export default function NavRail() {
             }}
             className={btnClass()}
           >
-            <SquarePen className="w-5 h-5" />
+            <SquarePen className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
         {/* Chats / History */}
         <Tooltip content="Chats & History" side="right">
           <button onClick={() => navTo("chats")} className={btnClass("chats")}>
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
         {/* Agents */}
         <Tooltip content="Agents & Assistants" side="right">
           <button onClick={() => navTo("agents")} className={btnClass("agents")}>
-            <Bot className="w-5 h-5 text-rose-400" />
+            <Bot className="h-[18px] w-[18px] text-rose-400 sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
         {/* System Prompts */}
         <Tooltip content="Prompts Library" side="right">
           <button onClick={() => navTo("prompts")} className={btnClass("prompts")}>
-            <FileText className="w-5 h-5 text-amber-400" />
+            <FileText className="h-[18px] w-[18px] text-amber-400 sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
@@ -97,7 +97,7 @@ export default function NavRail() {
         {/* Skills / Memory */}
         <Tooltip content="Skills & Brain" side="right">
           <button onClick={() => navTo("skills")} className={btnClass("skills")}>
-            <Brain className="w-5 h-5 text-rose-300" />
+            <Brain className="h-[18px] w-[18px] text-rose-300 sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
@@ -108,27 +108,27 @@ export default function NavRail() {
             className={btnClass("favourites")}
             aria-label="Favourites"
           >
-            <Heart className="w-5 h-5 text-rose-400" />
+            <Heart className="h-[18px] w-[18px] text-rose-400 sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 
         {/* Attachments */}
         <Tooltip content="Uploaded Files" side="right">
           <button onClick={() => navTo("files")} className={btnClass("files")}>
-            <Paperclip className="w-5 h-5 text-rose-300" />
+            <Paperclip className="h-[18px] w-[18px] text-rose-300 sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
       </div>
 
       {/* Bottom Section Icons */}
-      <div className="flex flex-col items-center gap-3 w-full">
+      <div className="flex w-full flex-col items-center gap-1.5 sm:gap-3">
         {/* Settings */}
         <Tooltip content="Settings & API Keys" side="right">
           <button
             onClick={() => router.push("/chats/settings")}
             className={btnClass()}
           >
-            <Sliders className="w-5 h-5" />
+            <Sliders className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
           </button>
         </Tooltip>
 

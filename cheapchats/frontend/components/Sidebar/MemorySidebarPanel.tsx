@@ -168,7 +168,7 @@ export default function MemorySidebarPanel() {
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
             placeholder="Search knowledge..."
-            className="w-full bg-[#11080a] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 transition"
+            className="w-full bg-[#11080a] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:outline-none focus:border-red-900/55 focus:ring-0 transition-colors"
           />
           <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
         </div>

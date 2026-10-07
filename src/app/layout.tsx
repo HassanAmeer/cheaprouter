@@ -5,11 +5,12 @@ import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/components/auth-provider";
 
 import { SettingsProvider } from "@/components/settings-provider";
+import { BRAND_CONFIG } from "@/lib/brandConfig";
 
 export const metadata: Metadata = {
   title: {
-    default: "CheapRouter | One API Key, All AI Models",
-    template: "%s | CheapRouter",
+    default: BRAND_CONFIG.cheapRouterTitle,
+    template: `%s | ${BRAND_CONFIG.cheapRouterName}`,
   },
   description: "Access premium AI models like GPT-4, Gemini, and Claude with a single API key at unbeatable prices.",
 };

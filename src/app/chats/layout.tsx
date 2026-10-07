@@ -15,11 +15,20 @@ import ShareModal from "@cheapchats/frontend/components/Modals/ShareModal";
 import PromptEditorView from "@cheapchats/frontend/components/Prompt/PromptEditorView";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { usePathname } from "next/navigation";
+import { BRAND_CONFIG } from "@cheapchats/frontend/lib/brandConfig";
 
 export default function ChatsLayout({ children }: { children: React.ReactNode }) {
   const { sidebarView } = useAppStore();
   const pathname = usePathname();
   const isSettings = pathname === "/chats/settings";
+
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = isSettings
+        ? `${BRAND_CONFIG.cheapChatsName} - Settings`
+        : BRAND_CONFIG.cheapChatsTitle;
+    }
+  }, [isSettings]);
 
   // If on settings page, render the full-screen Settings view directly
   if (isSettings) {
@@ -53,7 +62,7 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
           <ArtifactsViewer />
 
           {/* Debug Console Drawer */}
-          <DebugConsole />
+          {BRAND_CONFIG.showDebugConsole && <DebugConsole />}
         </div>
       </div>
 

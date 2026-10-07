@@ -62,6 +62,7 @@ export interface ChatPreferences {
   systemPrompt: string;
   streamResponse: boolean;
   autoOpenArtifacts: boolean;
+  responseCompletionSound: boolean;
   rollingWindowLimit: number;
 }
 
@@ -333,6 +334,7 @@ export const useAppStore = create<AppState>((set) => ({
       systemPrompt: "You are a helpful, brilliant AI assistant.",
       streamResponse: true,
       autoOpenArtifacts: true,
+      responseCompletionSound: true,
       rollingWindowLimit: 20,
     };
     if (typeof window === "undefined") return defaultPrefs;

@@ -1427,7 +1427,7 @@ app.get('/api/admin/providers', async (c) => {
   const result = await db`SELECT * FROM admin_providers ORDER BY priority ASC`;
   const withIcons = result.map(p => ({
     ...p,
-    icon: p.icon || resolveProviderIcon(p.id, p.name)
+    icon: resolveProviderIcon(p.id, p.icon)
   }));
   return c.json(withIcons);
 });
@@ -1438,7 +1438,7 @@ app.put('/api/admin/providers', zValidator('json', z.array(z.any())), async (c) 
     await db.begin(async (tx) => {
       await tx`DELETE FROM admin_providers`;
       for (const p of providers) {
-        const resolvedIcon = p.icon || resolveProviderIcon(p.id, p.name);
+        const resolvedIcon = resolveProviderIcon(p.id, p.icon);
         await tx`
           INSERT INTO admin_providers (id, name, status, key, priority, base_url, use_models_api, models_api_link, api_format, is_custom, models, headers, icon, byok_enabled, chats_enabled)
           VALUES (${p.id}, ${p.name}, ${p.status ?? true}, ${p.key}, ${p.priority ?? 0}, ${p.baseUrl ?? null}, ${p.useModelsApi ?? false}, ${p.modelsApiLink ?? null}, ${p.apiFormat ?? null}, ${p.isCustom ?? false}, ${tx.json(p.models ?? [])}, ${tx.json(p.headers ?? [])}, ${resolvedIcon}, ${p.byokEnabled ?? true}, ${p.chatsEnabled ?? p.chats_enabled ?? true})

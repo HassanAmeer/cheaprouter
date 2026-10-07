@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { PricingPlan } from '@/lib/api-types';
 import { ManagedTool, TOOLS_DEFAULT } from '@/lib/tools';
+import { BRAND_CONFIG } from '@/lib/brandConfig';
 
 export interface FooterColumn {
   title: string;
@@ -138,19 +139,19 @@ export interface SiteSettings {
 }
 
 const defaultSettings: SiteSettings = {
-  brandName: 'CheapRouter',
+  brandName: BRAND_CONFIG.cheapRouterName,
   install: {
     cliName: 'cheap-cli',
     npmPackage: 'cheap-cli',
     installSh: 'https://cheaprouter.ai/install.sh',
     installPs1: 'https://cheaprouter.ai/install.ps1',
-    apiBaseUrl: 'https://api.cheaprouter.com/v1',
-    websiteUrl: 'https://cheaprouter.com',
+    apiBaseUrl: BRAND_CONFIG.cheapRouterApiBaseUrl,
+    websiteUrl: BRAND_CONFIG.cheapRouterWebsiteUrl,
     chatUrl: 'chat.cheaprouter.io',
   },
   heroHeading: '',
   heroSubtitle: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
-  heroAnimatedTexts: ['Cheap Coding', 'Cheap Chat', 'Cheap API', 'Cheap Chats'],
+  heroAnimatedTexts: ['Cheap Coding', 'Cheap Chat', 'Cheap API', BRAND_CONFIG.cheapChatsName],
   heroPromoText: 'Buy Just for',
   heroPromoHighlight: '$2 USD / month',
   primaryBtnText: 'Get Started',
@@ -158,7 +159,7 @@ const defaultSettings: SiteSettings = {
   faviconUrl: '/favicon.ico',
   logoUrl: '',
   seo: {
-    metaTitle: 'CheapRouter - Unified AI Gateway',
+    metaTitle: BRAND_CONFIG.cheapRouterTitle,
     metaDescription: 'Access OpenAI, Anthropic, Google, and Meta through a single, unified endpoint. Zero margins. Infinite possibilities.',
     ogImage: '',
   },
@@ -559,7 +560,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             
             // Dynamically update document title / favicon if we are on client side
             if (typeof window !== 'undefined') {
-              document.title = (data.brandName || 'CheapRouter') + ' | Unified AI Gateway';
+              document.title = (data.brandName || BRAND_CONFIG.cheapRouterName) + ' | Unified AI Gateway';
               const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
               (link as any).type = 'image/x-icon';
               (link as any).rel = 'shortcut icon';

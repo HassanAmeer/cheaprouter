@@ -5,6 +5,7 @@ import { Save, Plus, X, ChevronLeft, RefreshCw, Play, Pause, Globe, Info, Extern
 import { ALL_PROVIDERS_INFO } from './providersInfo';
 import Editor from '@monaco-editor/react';
 import Link from 'next/link';
+import { BRAND_CONFIG } from '@/lib/brandConfig';
 import OpenRouterSetup, { OpenRouterSetupRef } from '../OpenRouterSetup';
 import OpenCodeSetup, { OpenCodeSetupRef } from '../OpenCodeSetup';
 import OpenAISetup, { OpenAISetupRef } from '../OpenAISetup';
@@ -900,7 +901,7 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
                 cursor: 'pointer'
               }}
               onClick={() => toggleChatsProvider(provider.id, provider.name)}
-              title="Enable or disable showing this provider in CheapChats"
+              title={`Enable or disable showing this provider in ${BRAND_CONFIG.cheapChatsName}`}
             >
               <span style={{ fontSize: '11px', fontWeight: 600, color: (provider.chatsEnabled ?? true) ? '#60a5fa' : 'var(--color-text-muted)' }}>
                 Chats {(provider.chatsEnabled ?? true) ? 'ON' : 'OFF'}

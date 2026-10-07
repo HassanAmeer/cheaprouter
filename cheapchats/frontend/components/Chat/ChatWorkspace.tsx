@@ -8,6 +8,10 @@ import ChatInput from "@cheapchats/frontend/components/Chat/ChatInput";
 import { Message } from "@cheapchats/frontend/components/Chat/MessageItem";
 import { parseAllArtifactFiles } from "@cheapchats/frontend/lib/artifactParser";
 import {
+  playResponseCompletionSound,
+  primeResponseCompletionSound,
+} from "@cheapchats/frontend/lib/responseCompletionSound";
+import {
   CustomProvider,
   isAllowedCustomProviderUrl,
   readCustomProviders,
@@ -99,6 +103,12 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     isRetry = false,
     queuedMsgId?: string
   ) => {
+    let responseFailed = false;
+    let responseHasEnoughContent = false;
+    if (useAppStore.getState().chatPreferences.responseCompletionSound) {
+      primeResponseCompletionSound();
+    }
+
     let customProvider: CustomProvider | undefined;
     if (selectedProvider?.startsWith("custom:")) {
       const customProviderId = selectedProvider.slice("custom:".length);
@@ -426,6 +436,9 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         }
       }
 
+      responseFailed = streamError;
+      responseHasEnoughContent = assistantMsgContent.trim().length >= 1000;
+
       if (!streamError) {
         detectAndOpenArtifact(assistantMsgContent, setActiveArtifact);
         if (customProvider && !isIncognito && assistantMsgContent) {
@@ -482,6 +495,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         }
       }
     } catch (err: any) {
+      responseFailed = true;
       console.error("Stream failed:", err);
       const currentDebug = useAppStore.getState().debugData;
       setDebugData({
@@ -515,6 +529,14 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         return prev;
       });
     } finally {
+      if (
+        (responseFailed || responseHasEnoughContent) &&
+        useAppStore.getState().chatPreferences.responseCompletionSound
+      ) {
+        void playResponseCompletionSound().catch((error) => {
+          console.warn("Could not play response completion sound:", error);
+        });
+      }
       setIsStreaming(false);
       isStreamingRef.current = false;
 

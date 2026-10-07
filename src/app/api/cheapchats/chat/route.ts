@@ -51,11 +51,11 @@ export async function POST(req: Request) {
           .select()
           .from(skills)
           .all()
-          .filter((skill) => selectedSkillNames.includes(skill.name.toLowerCase()) || selectedSkillNames.includes(skill.id.toLowerCase()));
+          .filter((skill: any) => selectedSkillNames.includes(skill?.name?.toLowerCase()) || selectedSkillNames.includes(skill?.id?.toLowerCase()));
 
         if (selectedSkillRows.length > 0) {
           const skillsContext = selectedSkillRows
-            .map((skill) => `### Skill: ${skill.name}\n${skill.description ? `*${skill.description}*\n` : ''}${skill.content || ''}`)
+            .map((skill: any) => `### Skill: ${skill.name}\n${skill.description ? `*${skill.description}*\n` : ''}${skill.content || ''}`)
             .join('\n\n');
           activeSystemPrompt += `\n\n<active_skills>\nFollow these user-selected skills for this response:\n${skillsContext}\n</active_skills>\n`;
         }

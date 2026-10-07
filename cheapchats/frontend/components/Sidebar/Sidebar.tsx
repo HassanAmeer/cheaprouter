@@ -122,7 +122,7 @@ function PromptsPanel() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search prompts..."
-            className="w-full bg-[#1e1e1e] border border-white/5 rounded-xl pl-7 pr-2 py-1.5 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/40"
+            className="w-full bg-[#1e1e1e] border border-white/10 rounded-xl pl-7 pr-2 py-1.5 text-[11px] text-slate-200 placeholder-slate-500 outline-none focus:outline-none focus:border-red-900/55 focus:ring-0 transition-colors"
           />
         </div>
       </div>
@@ -300,7 +300,7 @@ export default function Sidebar() {
   if (sidebarView === "favourites") {
     return (
       <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-56px)] max-w-56 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-60 md:max-w-none">
-        <div className="flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ConversationList favouritesOnly />
         </div>
       </aside>
@@ -312,11 +312,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-56 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-60 md:max-w-none">
+    <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-68px)] max-w-56 h-full min-h-0 bg-[#140d0f] border-r border-red-500/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-60 md:max-w-none">
       {/* Dynamic panel content */}
 
       {/* Dynamic panel content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {renderPanel()}
       </div>
     </aside>

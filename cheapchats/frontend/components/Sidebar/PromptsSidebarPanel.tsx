@@ -102,7 +102,7 @@ export default function PromptsSidebarPanel() {
               setPage(1);
             }}
             placeholder="Filter prompts by name"
-            className="w-full bg-[#1e1e1e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-white/20 transition"
+            className="w-full bg-[#1e1e1e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:outline-none focus:border-white/15 focus:ring-0 transition-colors"
           />
         </div>
 

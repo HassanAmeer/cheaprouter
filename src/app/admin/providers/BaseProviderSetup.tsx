@@ -23,6 +23,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import styles from '../admin.module.css';
+import { BRAND_CONFIG } from '@/lib/brandConfig';
 
 export type SelectedModel = {
   originalId: string;
@@ -576,7 +577,7 @@ const BaseProviderSetup = forwardRef<BaseProviderSetupRef, BaseProviderSetupProp
                   borderRadius: '16px',
                   border: `1px solid ${(chatsEnabled ?? true) ? '#3b82f644' : 'var(--color-border)'}`
                 }}
-                title="Toggle provider visibility in CheapChats"
+                title={`Toggle provider visibility in ${BRAND_CONFIG.cheapChatsName}`}
               >
                 <span style={{ fontSize: '11px', fontWeight: 700, color: (chatsEnabled ?? true) ? '#60a5fa' : 'var(--color-text-muted)' }}>
                   Chats {(chatsEnabled ?? true) ? 'ON' : 'OFF'}

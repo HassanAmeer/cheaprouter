@@ -4,6 +4,7 @@ import styles from '../admin.module.css';
 import { Save, AlertTriangle, Plus, X, ChevronDown, ChevronRight, Globe, Layers, RefreshCw, Play, CheckCircle2, XCircle, Trash2, Search, Filter, Upload, ImageIcon, Type, Brain, Eye, Video, Mic, Database, ArrowUp, ArrowDown, Sparkles, Palette, Check, CheckSquare } from 'lucide-react';
 import Link from 'next/link';
 import OpenRouterSetup from './OpenRouterSetup';
+import { BRAND_CONFIG } from '@/lib/brandConfig';
 
 type Model = { 
   id: string; 
@@ -687,15 +688,15 @@ export default function ProvidersPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 14px', marginBottom: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-bg-soft)' }}>
             <div>
-              <div style={{ color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600 }}>Show in CheapChats</div>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '3px' }}>Allow users to chat and configure API key for {provider.name} in CheapChats.</div>
+              <div style={{ color: 'var(--color-text-main)', fontSize: '13px', fontWeight: 600 }}>Show in {BRAND_CONFIG.cheapChatsName}</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '3px' }}>Allow users to chat and configure API key for {provider.name} in {BRAND_CONFIG.cheapChatsName}.</div>
             </div>
             <label className={styles.toggleSwitch}>
               <input
                 type="checkbox"
                 checked={provider.chatsEnabled ?? true}
                 onChange={() => toggleChatsProvider(provider.id)}
-                aria-label={`Allow ${provider.name} in CheapChats`}
+                aria-label={`Allow ${provider.name} in ${BRAND_CONFIG.cheapChatsName}`}
               />
               <span className={styles.toggleSlider}></span>
             </label>

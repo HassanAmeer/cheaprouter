@@ -290,7 +290,7 @@ export default function FilesSidebarPanel() {
             setCurrentPage(1);
           }}
           placeholder="Filter files by name..."
-          className="w-full bg-[#181818] border border-white/10 rounded-xl pl-8 pr-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-800/70 focus:ring-1 focus:ring-red-900/30 transition"
+          className="w-full bg-[#181818] border border-white/10 rounded-xl pl-8 pr-3.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:outline-none focus:border-red-900/55 focus:ring-0 transition-colors"
         />
       </div>
 

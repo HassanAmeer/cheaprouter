@@ -48,12 +48,9 @@ export default function MessageThread({
         <h1 className="text-2xl font-bold text-white mb-2">
           What can I help with today?
         </h1>
-        <p className="text-xs md:text-sm text-slate-400 max-w-md mb-8">
-          Powered by Next.js, multi-provider AI model selector, and side-by-side Live Preview engine.
-        </p>
 
         {/* Quick Suggestion Chips (Compact, Slim Low-Height, Grey Color) */}
-        <div className="flex flex-wrap items-center justify-center gap-2 max-w-xl w-full">
+        <div className="flex flex-wrap items-center justify-center gap-2 max-w-xl w-full mt-6">
           {/* 1. Web Search */}
           <button
             type="button"

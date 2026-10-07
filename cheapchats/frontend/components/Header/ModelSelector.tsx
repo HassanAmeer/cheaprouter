@@ -9,6 +9,7 @@ import {
   readCustomProviders,
   writeCustomProviders,
 } from "@cheapchats/frontend/lib/customProviders";
+import { getProviderIcon } from "@cheapchats/frontend/lib/providerIcons";
 import {
   ChevronDown,
   Sparkles,
@@ -280,9 +281,16 @@ export default function ModelSelector() {
         }}
         className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/20 hover:bg-white/5 border border-white/5 hover:border-red-500/30 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition duration-150 cursor-pointer focus:outline-none"
       >
-        <Sparkles className="w-4 h-4 text-red-400 flex-shrink-0" />
         {selectedProvider ? (
           <div className="flex items-center gap-1.5 truncate text-xs sm:text-sm">
+            <img
+              src={getProviderIcon(selectedProvider)}
+              alt={providerName(selectedProvider)}
+              className="w-3.5 h-3.5 object-contain flex-shrink-0 rounded-xs"
+              onError={(e) => {
+                (e.currentTarget as any).style.display = "none";
+              }}
+            />
             <span className="text-slate-400 font-medium truncate">{providerName(selectedProvider)}</span>
             <span className="text-slate-500 font-normal">·</span>
             <span className="text-slate-100 font-bold truncate max-w-[140px] sm:max-w-[220px]">
@@ -290,7 +298,10 @@ export default function ModelSelector() {
             </span>
           </div>
         ) : (
-          <span className="text-slate-400 font-medium">Select a provider</span>
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <span className="text-slate-400 font-medium">Select a provider</span>
+          </div>
         )}
         <ChevronDown
           className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
@@ -400,10 +411,13 @@ export default function ModelSelector() {
                       onClick={() => setActiveHoverProvider(providerKey)}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <Icon
-                          className={`w-3.5 h-3.5 flex-shrink-0 ${
-                            isSelected || isCustom ? "text-red-400" : "text-slate-400"
-                          }`}
+                        <img
+                          src={getProviderIcon(providerKey)}
+                          alt={providerName(providerKey)}
+                          className="w-3.5 h-3.5 object-contain flex-shrink-0 rounded-xs"
+                          onError={(e) => {
+                            (e.currentTarget as any).src = "https://api.iconify.design/lucide:server.svg";
+                          }}
                         />
                         <span className={`truncate ${isCustom ? "font-bold text-red-300" : ""}`}>
                           {providerName(providerKey)}
@@ -456,7 +470,7 @@ export default function ModelSelector() {
                   placeholder="Search models..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#200f13] border border-red-500/20 rounded-xl pl-8 pr-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60"
+                  className="w-full bg-[#200f13] border border-red-950/50 rounded-xl pl-8 pr-2 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:outline-none focus:border-red-900/60 focus:ring-0 transition-colors"
                 />
               </div>
 

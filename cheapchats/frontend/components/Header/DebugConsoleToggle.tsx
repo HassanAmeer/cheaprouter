@@ -2,9 +2,14 @@
 
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { Terminal } from "lucide-react";
+import { BRAND_CONFIG } from "@cheapchats/frontend/lib/brandConfig";
 
 export default function DebugConsoleToggle() {
   const { isDebugConsoleOpen, toggleDebugConsole } = useAppStore();
+
+  if (!BRAND_CONFIG.showDebugConsole) {
+    return null;
+  }
 
   return (
     <button

@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Mic,
   Volume2,
+  Play,
   Search,
   CheckCircle2,
   Sliders,
@@ -38,6 +39,8 @@ import {
 } from "@cheapchats/frontend/lib/customProviders";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { useAuth } from "@/components/auth-provider";
+import { playResponseCompletionSound } from "@cheapchats/frontend/lib/responseCompletionSound";
+import { BRAND_CONFIG } from "@cheapchats/frontend/lib/brandConfig";
 
 export type SettingsTab =
   | "account"
@@ -277,22 +280,19 @@ export default function SettingsPage() {
       <aside className="flex h-full w-[4.25rem] flex-shrink-0 select-none flex-col border-r border-white/10 bg-gradient-to-b from-[#171a20] via-[#12151a] to-[#0e1014] sm:w-64 md:w-72">
         {/* Top Header */}
         <div className="border-b border-white/10 p-2.5 sm:p-5">
-          <button
-            onClick={() => router.push("/chats")}
-            className="group mb-3 inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 transition hover:text-white sm:justify-start"
-            aria-label="Back to Chat"
-            title="Back to Chat"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="hidden sm:inline">Back to Chat</span>
-          </button>
           <div className="flex items-center justify-center gap-2.5 sm:justify-start">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/20 bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 shadow-lg shadow-black/30">
-              <Sliders className="w-4 h-4 text-white" />
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/chats")}
+              aria-label="Back to Chat"
+              title="Back to Chat"
+              className="group flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-red-500/35 bg-gradient-to-br from-red-500/30 via-red-950/80 to-[#1a0c0f] text-rose-300 shadow-lg shadow-red-950/40 transition hover:border-red-400/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            </button>
             <div className="hidden min-w-0 sm:block">
               <h1 className="text-sm font-bold text-white tracking-tight">Settings</h1>
-              <p className="text-[11px] text-slate-400">CheapChats Control Center</p>
+              <p className="text-[11px] text-slate-400">{BRAND_CONFIG.cheapChatsTitle}</p>
             </div>
           </div>
         </div>
@@ -368,8 +368,8 @@ export default function SettingsPage() {
 
         {/* Footer info */}
         <div className="hidden border-t border-white/10 p-4 text-[11px] text-slate-500 sm:block">
-          <p className="font-semibold text-slate-400">CheapChats 2.0</p>
-          <p className="mt-0.5">Powered by CheapRouter Engine</p>
+          <p className="font-semibold text-slate-400">{BRAND_CONFIG.cheapChatsName} {BRAND_CONFIG.cheapChatsVersion}</p>
+          <p className="mt-0.5">{BRAND_CONFIG.cheapRouterTagline}</p>
         </div>
       </aside>
 
@@ -385,7 +385,7 @@ export default function SettingsPage() {
                   Account
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
-                  Your CheapRouter profile and plan details.
+                  Your {BRAND_CONFIG.cheapRouterName} profile and plan details.
                 </p>
               </header>
 
@@ -499,7 +499,7 @@ export default function SettingsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search provider or model..."
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.035] py-2 pl-9 pr-4 text-xs text-white outline-none transition placeholder:text-slate-500 focus:border-slate-400/40 focus:ring-1 focus:ring-slate-300/15"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.035] py-2 pl-9 pr-4 text-xs text-white outline-none transition-colors placeholder:text-slate-500 focus:border-red-900/55 focus:ring-0"
                   />
                 </div>
 
@@ -646,7 +646,7 @@ export default function SettingsPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-200">Provider Engine Providers</h3>
                         <p className="mt-0.5 text-[11px] text-slate-400">
-                          Pre-configured providers from CheapRouter engine. Click to connect your BYOK API keys.
+                          Pre-configured providers from {BRAND_CONFIG.cheapRouterName} engine. Click to connect your BYOK API keys.
                         </p>
                       </div>
                       {renderProviderCards(filteredProviders)}
@@ -980,7 +980,7 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                {/* 5. TOGGLES (STREAMING & ARTIFACTS) */}
+                {/* 5. TOGGLES (STREAMING, ARTIFACTS & RESPONSE SOUND) */}
                 <div className="space-y-4 pt-4 border-t border-white/5">
                   {/* Streaming Toggle */}
                   <div className="flex items-center justify-between">
@@ -1020,6 +1020,43 @@ export default function SettingsPage() {
                       }
                       className="w-4 h-4 accent-rose-400 rounded cursor-pointer"
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                    <div className="flex items-start gap-2.5">
+                      <Volume2 className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                      <div>
+                        <p className="text-xs font-semibold text-slate-200">
+                          Response completion sound
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Play a subtle tone for errors or responses of 1,000+ characters. This setting is saved in this browser.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="ml-3 flex shrink-0 items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playResponseCompletionSound().catch((error) => {
+                            console.error("Could not play response completion test sound:", error);
+                          });
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-900/50 bg-red-950/20 px-2.5 py-1.5 text-[11px] font-medium text-rose-200 transition hover:border-red-800 hover:bg-red-950/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-800/50"
+                      >
+                        <Play className="h-3 w-3" />
+                        Play test
+                      </button>
+                      <input
+                        type="checkbox"
+                        checked={chatPreferences.responseCompletionSound}
+                        onChange={(e) =>
+                          setChatPreferences({ responseCompletionSound: e.target.checked })
+                        }
+                        aria-label="Response completion sound"
+                        className="h-4 w-4 shrink-0 cursor-pointer rounded accent-rose-400"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
