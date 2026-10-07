@@ -5,7 +5,10 @@ import { conversations, messages, globalConfig, memories, skills as skillsTable,
 import { providerEndpoints } from "@cheapchats/backend/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { SYSTEM_PROMPT as DEFAULT_SYSTEM_PROMPT } from "@cheapchats/frontend/lib/systemPrompt";
-import { parseAllArtifactFiles } from "@cheapchats/frontend/lib/artifactParser";
+import {
+  isArtifactCodeIncomplete,
+  parseAllArtifactFiles,
+} from "@cheapchats/frontend/lib/artifactParser";
 import fs from "fs";
 import path from "path";
 
@@ -467,11 +470,27 @@ The user is requesting a game or playable interactive experience. You MUST inclu
     }
 
     // MANDATORY ARTIFACT XML GENERATION & SURGICAL CODE PATCHING
-    let hasExistingArtifact = Boolean(activeArtifact && activeArtifact.content);
+    let artifactForPrompt = activeArtifact;
+    let hasExistingArtifact = Boolean(artifactForPrompt && artifactForPrompt.content);
     if (!hasExistingArtifact && conversationId) {
       try {
         const pastMsgs = db.select().from(messages).where(eq(messages.conversationId, conversationId)).all();
         hasExistingArtifact = pastMsgs.some((m: any) => m.sender === "assistant" && (m.content.includes("<cheapchatArtifact") || m.content.includes("```html")));
+        for (let i = pastMsgs.length - 1; i >= 0; i--) {
+          const pastMessage = pastMsgs[i];
+          if (
+            pastMessage.sender !== "assistant" ||
+            !pastMessage.content.includes("<cheapchatArtifact") ||
+            /<cheapchatAction\s+type="patch"/i.test(pastMessage.content)
+          ) {
+            continue;
+          }
+          const parsedArtifact = parseAllArtifactFiles(pastMessage.content);
+          if (parsedArtifact?.content) {
+            artifactForPrompt = parsedArtifact;
+            break;
+          }
+        }
       } catch {}
     }
 
@@ -495,17 +514,13 @@ The user is requesting a game or playable interactive experience. You MUST inclu
       } catch {}
     }
 
-    if (!partialCodeInfo && activeArtifact && activeArtifact.content) {
-      const c = activeArtifact.content.trim();
-      const isHtml = c.includes("<html") || c.includes("<!DOCTYPE");
-      const isComplete = isHtml
-        ? (c.includes("</html>") && c.includes("</script>"))
-        : (c.endsWith("}") || c.endsWith(");") || c.endsWith("```"));
-      if (!isComplete) {
+    if (!partialCodeInfo && artifactForPrompt && artifactForPrompt.content) {
+      const c = artifactForPrompt.content.trim();
+      if (isArtifactCodeIncomplete(c)) {
         partialCodeInfo = {
           code: c,
-          fileName: activeArtifact.files?.[0]?.name || "index.html",
-          title: activeArtifact.title || "Project",
+          fileName: artifactForPrompt.files?.[0]?.name || "index.html",
+          title: artifactForPrompt.title || "Project",
         };
       }
     }
@@ -517,14 +532,14 @@ The user is requesting a game or playable interactive experience. You MUST inclu
     const isCodeModificationRequest =
       hasExistingArtifact &&
       !Boolean(partialCodeInfo) &&
-      /add|change|update|fix|modify|button|color|speed|score|sound|bug|error|style|remove|replace|adjust|tweak|improve|solve|edit/i.test(message);
+      /add|change|update|fix|modify|button|color|speed|score|sound|bug|error|style|remove|replace|adjust|tweak|improve|solve|edit|dark|red|border|padding|margin|gap|scroll|size|width|height|thora|thoda|kar\s*do|kardo|kam\s*karo|zyada|behtar|theek|isko|is\s*ko|rang/i.test(message);
 
     const isProjectOrDesignRequest = Boolean(tools?.artifacts) || /create|build|design|make|project|app|game|website|landing page|3d|html|react|component|salon|airplane/i.test(message);
 
-    if (isContinuationRequest && (partialCodeInfo || activeArtifact?.content)) {
-      const codeToResume = partialCodeInfo?.code || activeArtifact?.content || "";
-      const fileName = partialCodeInfo?.fileName || activeArtifact?.files?.[0]?.name || "index.html";
-      const title = partialCodeInfo?.title || activeArtifact?.title || "Project";
+    if (isContinuationRequest && (partialCodeInfo || artifactForPrompt?.content)) {
+      const codeToResume = partialCodeInfo?.code || artifactForPrompt?.content || "";
+      const fileName = partialCodeInfo?.fileName || artifactForPrompt?.files?.[0]?.name || "index.html";
+      const title = partialCodeInfo?.title || artifactForPrompt?.title || "Project";
       const lastLines = codeToResume.split("\n").slice(-8).join("\n");
 
       finalSystemPrompt += `\n\n<cross_model_code_continuity_instruction>
@@ -568,10 +583,10 @@ The user is requesting to modify, enhance, or fix existing code (e.g., adding a 
 
 DO NOT REWRITE THE ENTIRE FILE FROM SCRATCH!
 Rewriting the whole 300-500 line file is strictly forbidden as it wastes massive time and output tokens.
-Instead, you MUST output a surgical search-and-replace patch using <cheapchatAction type="patch" filePath="index.html">:
+Instead, you MUST output a surgical search-and-replace patch using the exact target path from the active code reference:
 
 <cheapchatArtifact id="updated-project" title="Updated Project">
-<cheapchatAction type="patch" filePath="index.html">
+<cheapchatAction type="patch" filePath="exact/path/from/active/code/reference">
 <<<<<<< SEARCH
 [Exact lines of existing code to find - include 1-2 lines of surrounding context for uniqueness]
 =======
@@ -583,11 +598,17 @@ Instead, you MUST output a surgical search-and-replace patch using <cheapchatAct
 Rules:
 1. The SEARCH block must match existing code lines in the active file EXACTLY (including indentation).
 2. You can provide multiple <<<<<<< SEARCH ... ======= ... >>>>>>> REPLACE blocks within the same patch action if multiple parts of the file need changes.
-3. ONLY use <cheapchatAction type="file" filePath="index.html"> with full code if creating a completely new project from scratch or if the user explicitly asks to "rewrite completely from scratch".
+3. For changes spanning files, output one patch action per affected file, using each exact path listed in the active code reference.
+4. ONLY use <cheapchatAction type="file" filePath="..."> with full code if creating a completely new project from scratch or if the user explicitly asks to "rewrite completely from scratch".
 </incremental_code_patching_instruction>\n`;
 
-      if (activeArtifact && activeArtifact.content) {
-        finalSystemPrompt += `\n\n<active_code_reference filePath="${activeArtifact.files?.[0]?.name || 'index.html'}">\n${activeArtifact.content}\n</active_code_reference>\n`;
+      if (artifactForPrompt && artifactForPrompt.content) {
+        const referenceFiles = artifactForPrompt.files?.length
+          ? artifactForPrompt.files
+          : [{ name: "index.html", content: artifactForPrompt.content }];
+        finalSystemPrompt += `\n\n<active_code_reference title="${artifactForPrompt.title || "Project"}">\n${referenceFiles
+          .map((file: any) => `<active_file filePath="${file.name}">\n${file.content}\n</active_file>`)
+          .join("\n")}\n</active_code_reference>\n`;
       }
     } else if (isProjectOrDesignRequest) {
       finalSystemPrompt += `\n\n<mandatory_artifact_instruction>

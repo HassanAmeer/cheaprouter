@@ -41,6 +41,11 @@ import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { playResponseCompletionSound } from "@cheapchats/frontend/lib/responseCompletionSound";
 import { BRAND_CONFIG } from "@cheapchats/frontend/lib/brandConfig";
+import {
+  SettingsAccountSkeleton,
+  SettingsStatsSkeleton,
+  SettingsProviderGridSkeleton,
+} from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 export type SettingsTab =
   | "account"
@@ -327,11 +332,13 @@ export default function SettingsPage() {
               <Cpu className="w-4 h-4 text-rose-300" />
               <span className="hidden sm:inline">Providers & API Keys</span>
             </div>
-            {configuredCount > 0 && (
+            {loading ? (
+              <span className="hidden sm:inline w-5 h-4 rounded-full shimmer-effect opacity-50" />
+            ) : configuredCount > 0 ? (
               <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-white/10 text-slate-200 border border-white/15">
                 {configuredCount}
               </span>
-            )}
+            ) : null}
           </button>
 
           <button
@@ -389,67 +396,71 @@ export default function SettingsPage() {
                 </p>
               </header>
 
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] shadow-xl shadow-black/20">
-                <div className="flex items-center gap-4 border-b border-white/[0.07] p-5 sm:p-6">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-red-800/70 bg-gradient-to-br from-[#50141d] via-[#321016] to-[#1c0d11] text-lg font-semibold text-rose-100 shadow-[0_4px_18px_rgba(75,8,16,0.28)]">
-                    {accountUser?.profile_picture ? (
-                      <img
-                        src={accountUser.profile_picture}
-                        alt={`${accountUser.name} profile`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      (accountUser?.name || "Demo User")
-                        .split(/\s+/)
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="truncate text-base font-semibold tracking-tight text-white">
-                        {isAccountLoading ? "Loading account…" : accountUser?.name || "Demo User"}
-                      </h3>
-                      {!accountUser && !isAccountLoading && (
-                        <span className="rounded-full border border-rose-300/15 bg-rose-300/[0.07] px-2 py-0.5 text-[10px] font-medium text-rose-200/75">
-                          Sample profile
-                        </span>
+              {isAccountLoading ? (
+                <SettingsAccountSkeleton />
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] shadow-xl shadow-black/20">
+                  <div className="flex items-center gap-4 border-b border-white/[0.07] p-5 sm:p-6">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-red-800/70 bg-gradient-to-br from-[#50141d] via-[#321016] to-[#1c0d11] text-lg font-semibold text-rose-100 shadow-[0_4px_18px_rgba(75,8,16,0.28)]">
+                      {accountUser?.profile_picture ? (
+                        <img
+                          src={accountUser.profile_picture}
+                          alt={`${accountUser.name} profile`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        (accountUser?.name || "Demo User")
+                          .split(/\s+/)
+                          .map((part) => part[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()
                       )}
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-slate-400">
-                      {accountUser?.email || "demo@cheaprouter.ai"}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-base font-semibold tracking-tight text-white">
+                          {accountUser?.name || "Demo User"}
+                        </h3>
+                        {!accountUser && (
+                          <span className="rounded-full border border-rose-300/15 bg-rose-300/[0.07] px-2 py-0.5 text-[10px] font-medium text-rose-200/75">
+                            Sample profile
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                        {accountUser?.email || "demo@cheaprouter.ai"}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
-                  <div className="bg-[#191a1e] p-4 sm:p-5">
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
-                      <Mail className="h-3.5 w-3.5 text-rose-300/80" />
-                      Email address
+                  <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
+                    <div className="bg-[#191a1e] p-4 sm:p-5">
+                      <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                        <Mail className="h-3.5 w-3.5 text-rose-300/80" />
+                        Email address
+                      </div>
+                      <p className="mt-2 break-all text-sm text-slate-100">
+                        {accountUser?.email || "demo@cheaprouter.ai"}
+                      </p>
                     </div>
-                    <p className="mt-2 break-all text-sm text-slate-100">
-                      {accountUser?.email || "demo@cheaprouter.ai"}
-                    </p>
-                  </div>
-                  <div className="bg-[#191a1e] p-4 sm:p-5">
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
-                      <BadgeCheck className="h-3.5 w-3.5 text-rose-300/80" />
-                      Current plan
+                    <div className="bg-[#191a1e] p-4 sm:p-5">
+                      <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                        <BadgeCheck className="h-3.5 w-3.5 text-rose-300/80" />
+                        Current plan
+                      </div>
+                      <p className="mt-2 text-sm capitalize text-slate-100">
+                        {accountUser?.plan || "Free"}
+                      </p>
                     </div>
-                    <p className="mt-2 text-sm capitalize text-slate-100">
-                      {accountUser?.plan || "Free"}
-                    </p>
                   </div>
+                  {!accountUser && (
+                    <p className="border-t border-white/[0.07] px-5 py-3 text-[11px] text-slate-500">
+                      These sample details are placeholders until you log in.
+                    </p>
+                  )}
                 </div>
-                {!accountUser && !isAccountLoading && (
-                  <p className="border-t border-white/[0.07] px-5 py-3 text-[11px] text-slate-500">
-                    These sample details are placeholders until you log in.
-                  </p>
-                )}
-              </div>
+              )}
             </section>
           )}
 
@@ -468,27 +479,31 @@ export default function SettingsPage() {
               </div>
 
               {/* Statistics Row */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-300/[0.09] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
-                  <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/70 via-slate-200/30 to-transparent" />
-                  <div className="text-[11px] font-semibold text-slate-400">Total Providers</div>
-                  <div className="text-2xl font-bold text-white mt-1">{providers.length + customEndpoints.length}</div>
-                  <div className="text-[10px] text-rose-200/70 mt-1">Provider Engine &amp; Custom Providers</div>
-                </div>
+              {loading ? (
+                <SettingsStatsSkeleton />
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-300/[0.09] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
+                    <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/70 via-slate-200/30 to-transparent" />
+                    <div className="text-[11px] font-semibold text-slate-400">Total Providers</div>
+                    <div className="text-2xl font-bold text-white mt-1">{providers.length + customEndpoints.length}</div>
+                    <div className="text-[10px] text-rose-200/70 mt-1">Provider Engine &amp; Custom Providers</div>
+                  </div>
 
-                <div className="relative overflow-hidden rounded-2xl border border-rose-300/15 bg-gradient-to-br from-rose-300/[0.08] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
-                  <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/50 via-slate-200/20 to-transparent" />
-                  <div className="text-[11px] font-semibold text-slate-400">Custom Connected Providers</div>
-                  <div className="mt-1 text-2xl font-bold text-slate-100">{customEndpoints.length}</div>
-                  <div className="mt-1 text-[10px] text-rose-200/70">Custom endpoints &amp; Ollama APIs</div>
-                </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-rose-300/15 bg-gradient-to-br from-rose-300/[0.08] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
+                    <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/50 via-slate-200/20 to-transparent" />
+                    <div className="text-[11px] font-semibold text-slate-400">Custom Connected Providers</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-100">{customEndpoints.length}</div>
+                    <div className="mt-1 text-[10px] text-rose-200/70">Custom endpoints &amp; Ollama APIs</div>
+                  </div>
 
-                <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-400/[0.09] via-slate-700/[0.08] to-[#111419] p-4 shadow-lg shadow-black/20">
-                  <div className="text-[11px] font-semibold text-slate-400">BYOK Configured Providers</div>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1">{configuredCount}</div>
-                  <div className="text-[10px] text-emerald-400/80 mt-1">Active user API keys saved</div>
+                  <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-400/[0.09] via-slate-700/[0.08] to-[#111419] p-4 shadow-lg shadow-black/20">
+                    <div className="text-[11px] font-semibold text-slate-400">BYOK Configured Providers</div>
+                    <div className="text-2xl font-bold text-emerald-400 mt-1">{configuredCount}</div>
+                    <div className="text-[10px] text-emerald-400/80 mt-1">Active user API keys saved</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Search & Actions Bar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
@@ -517,14 +532,7 @@ export default function SettingsPage() {
 
               {/* Providers Grid */}
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-40 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-400/[0.08] to-white/[0.02] animate-pulse"
-                    />
-                  ))}
-                </div>
+                <SettingsProviderGridSkeleton count={6} />
               ) : filteredProviders.length === 0 && filteredCustomEndpoints.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
                   <Cpu className="w-8 h-8 text-slate-500 mx-auto" />

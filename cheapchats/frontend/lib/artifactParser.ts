@@ -1,5 +1,83 @@
 import { Artifact, ArtifactFile, useAppStore } from "./store";
 
+export function isArtifactCodeIncomplete(content: string, language = ""): boolean {
+  const code = content.trim();
+  if (!code) return false;
+
+  const isHtml =
+    /html|svg|xml/i.test(language) ||
+    /<html\b|<!doctype\s+html/i.test(code);
+  if (isHtml) {
+    const tags = code.matchAll(/<\/?([a-z][\w:-]*)\b[^>]*>/gi);
+    const openTags: string[] = [];
+    const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+
+    for (const tag of tags) {
+      const name = tag[1].toLowerCase();
+      if (tag[0].startsWith("</")) {
+        const openIndex = openTags.lastIndexOf(name);
+        if (openIndex !== -1) {
+          if (openIndex !== openTags.length - 1) return true;
+          openTags.pop();
+        }
+      } else if (!voidTags.has(name) && !tag[0].endsWith("/>")) {
+        openTags.push(name);
+      }
+    }
+
+    return openTags.length > 0;
+  }
+
+  if (/(?:[([{]|=>?|[,+*./=]|&&|\|\||\b(?:const|let|var|function|return|if|for|while|class|import|export))\s*$/.test(code)) {
+    return true;
+  }
+
+  const delimiters: string[] = [];
+  const closingToOpening: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
+  let quote = "";
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    const next = code[i + 1];
+
+    if (lineComment) {
+      if (char === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (char === "*" && next === "/") {
+        blockComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "/" && next === "/") {
+      lineComment = true;
+      i++;
+    } else if (char === "/" && next === "*") {
+      blockComment = true;
+      i++;
+    } else if (char === "'" || char === '"' || char === "`") {
+      quote = char;
+    } else if (char === "(" || char === "[" || char === "{") {
+      delimiters.push(char);
+    } else if (char in closingToOpening) {
+      if (delimiters.pop() !== closingToOpening[char]) return true;
+    }
+  }
+
+  return Boolean(quote || blockComment || delimiters.length);
+}
+
 export function applySearchReplacePatch(originalContent: string, patchContent: string): string {
   if (!originalContent) return patchContent;
 
@@ -56,6 +134,90 @@ export function applySearchReplacePatch(originalContent: string, patchContent: s
   }
 
   return result;
+}
+
+function findSuffixPrefixOverlap(existing: string, incoming: string): number {
+  if (!existing || !incoming) return 0;
+
+  const prefixLengths = new Uint32Array(incoming.length);
+  for (let i = 1, length = 0; i < incoming.length; i++) {
+    while (length > 0 && incoming[i] !== incoming[length]) {
+      length = prefixLengths[length - 1];
+    }
+    if (incoming[i] === incoming[length]) length++;
+    prefixLengths[i] = length;
+  }
+
+  const suffixStart = Math.max(0, existing.length - incoming.length);
+  let matched = 0;
+  for (let i = suffixStart; i < existing.length; i++) {
+    while (matched > 0 && existing[i] !== incoming[matched]) {
+      matched = prefixLengths[matched - 1];
+    }
+    if (existing[i] === incoming[matched]) matched++;
+    if (matched === incoming.length && i < existing.length - 1) {
+      matched = prefixLengths[matched - 1];
+    }
+  }
+
+  return matched;
+}
+
+function mergeContinuedCode(existing: string, incoming: string): string {
+  if (!existing) return incoming;
+  if (!incoming || incoming.includes(existing) || existing.includes(incoming)) {
+    return incoming.includes(existing) ? incoming : existing;
+  }
+
+  const overlap = findSuffixPrefixOverlap(existing, incoming);
+  if (overlap > 0) return existing + incoming.slice(overlap);
+
+  const separator = existing.endsWith("\n") || incoming.startsWith("\n") ? "" : "\n";
+  return `${existing}${separator}${incoming}`;
+}
+
+export function mergeContinuedArtifact(existing: Artifact, incoming: Artifact): Artifact {
+  const existingFiles = existing.files?.length
+    ? existing.files
+    : [{
+        id: "continued-main",
+        name: "index.html",
+        content: existing.content,
+        language: existing.language || existing.type,
+      }];
+  const incomingFiles = incoming.files?.length
+    ? incoming.files
+    : [{
+        id: "continued-main",
+        name: existingFiles[0]?.name || "index.html",
+        content: incoming.content,
+        language: incoming.language || incoming.type,
+      }];
+
+  const mergedFiles = incomingFiles.map((incomingFile) => {
+    const existingFile = existingFiles.find((file) => file.name === incomingFile.name);
+    return existingFile
+      ? { ...incomingFile, content: mergeContinuedCode(existingFile.content, incomingFile.content) }
+      : incomingFile;
+  });
+
+  for (const existingFile of existingFiles) {
+    if (!mergedFiles.some((file) => file.name === existingFile.name)) {
+      mergedFiles.push(existingFile);
+    }
+  }
+
+  const incomingMainFile =
+    incomingFiles.find((file) => file.content === incoming.content) ||
+    incomingFiles.find((file) => file.language === "html" || file.name.endsWith(".html")) ||
+    incomingFiles[0];
+  const mergedMainFile = mergedFiles.find((file) => file.name === incomingMainFile?.name);
+
+  return {
+    ...incoming,
+    content: mergedMainFile?.content || mergeContinuedCode(existing.content, incoming.content),
+    files: mergedFiles,
+  };
 }
 
 export function parseAllArtifactFiles(content: string, fallbackTitle = "Interactive Project"): Artifact | null {

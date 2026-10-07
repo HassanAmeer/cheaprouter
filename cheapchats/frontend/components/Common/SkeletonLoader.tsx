@@ -137,3 +137,119 @@ export function SidebarCardsSkeleton({ count = 4 }: { count?: number }) {
     </div>
   );
 }
+
+/**
+ * SettingsAccountSkeleton
+ * Ultra-sleek shimmer skeleton for Settings Account tab
+ */
+export function SettingsAccountSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] shadow-xl shadow-black/20 select-none animate-in fade-in duration-200">
+      <div className="flex items-center gap-4 border-b border-white/[0.07] p-5 sm:p-6">
+        <div className="h-14 w-14 shrink-0 rounded-full shimmer-effect-red border border-red-500/25" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-36 rounded-md shimmer-effect" />
+            <div className="h-4 w-20 rounded-full shimmer-effect opacity-50" />
+          </div>
+          <div className="h-3.5 w-48 rounded shimmer-effect opacity-50" />
+        </div>
+      </div>
+
+      <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
+        <div className="bg-[#191a1e] p-4 sm:p-5 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 rounded shimmer-effect opacity-60" />
+            <div className="h-3 w-24 rounded shimmer-effect opacity-60" />
+          </div>
+          <div className="h-4 w-44 rounded shimmer-effect" />
+        </div>
+        <div className="bg-[#191a1e] p-4 sm:p-5 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 rounded shimmer-effect opacity-60" />
+            <div className="h-3 w-20 rounded shimmer-effect opacity-60" />
+          </div>
+          <div className="h-4 w-20 rounded shimmer-effect" />
+        </div>
+      </div>
+      <div className="border-t border-white/[0.07] px-5 py-3">
+        <div className="h-3 w-56 rounded shimmer-effect opacity-40" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SettingsStatsSkeleton
+ * Shimmer skeleton for Top 3 Analytics Cards
+ */
+export function SettingsStatsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 select-none animate-in fade-in duration-150">
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] p-4 shadow-lg shadow-black/20 space-y-2.5">
+        <div className="h-3 w-24 rounded shimmer-effect opacity-60" />
+        <div className="h-7 w-16 rounded-md shimmer-effect" />
+        <div className="h-2.5 w-44 rounded shimmer-effect opacity-50" />
+      </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] p-4 shadow-lg shadow-black/20 space-y-2.5">
+        <div className="h-3 w-36 rounded shimmer-effect opacity-60" />
+        <div className="h-7 w-12 rounded-md shimmer-effect" />
+        <div className="h-2.5 w-40 rounded shimmer-effect opacity-50" />
+      </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[#122019] via-[#151a1e] to-[#111419] p-4 shadow-lg shadow-black/20 space-y-2.5">
+        <div className="h-3 w-36 rounded shimmer-effect opacity-60" />
+        <div className="h-7 w-14 rounded-md shimmer-effect" />
+        <div className="h-2.5 w-36 rounded shimmer-effect opacity-50" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SettingsProviderGridSkeleton
+ * Ultra-realistic shimmer skeleton for Providers Cards Grid
+ */
+export function SettingsProviderGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 select-none animate-in fade-in duration-200">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={`prov-skel-${i}`}
+          className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-[#242831]/80 via-[#191c22]/80 to-[#111419]/80 p-5 shadow-lg shadow-black/20 overflow-hidden space-y-3.5"
+        >
+          {/* Top subtle accent bar */}
+          <div className="absolute top-0 left-6 right-6 h-0.5 rounded-full shimmer-effect opacity-40" />
+
+          {/* Provider Header (Icon + Name + Key badge) */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="h-10 w-10 flex-shrink-0 rounded-xl shimmer-effect border border-white/10" />
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div
+                  className="h-4 rounded-md shimmer-effect"
+                  style={{ width: `${Math.max(45, 80 - (i % 3) * 12)}%` }}
+                />
+                <div className="h-2.5 w-24 rounded shimmer-effect opacity-60" />
+              </div>
+            </div>
+            <div className="h-5 w-16 rounded-full shimmer-effect opacity-70 flex-shrink-0" />
+          </div>
+
+          {/* Endpoint Section */}
+          <div className="space-y-1.5 pt-1">
+            <div className="h-2.5 w-14 rounded shimmer-effect opacity-50" />
+            <div className="h-3 w-[85%] rounded shimmer-effect opacity-70 font-mono" />
+          </div>
+
+          {/* Footer Action Row */}
+          <div className="flex items-center justify-between border-t border-white/5 pt-3">
+            <div className="h-3 w-28 rounded shimmer-effect opacity-50" />
+            <div className="h-3 w-3 rounded shimmer-effect opacity-40" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

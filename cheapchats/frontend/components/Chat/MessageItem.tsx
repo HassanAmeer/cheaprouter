@@ -2,7 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
-import { parseAllArtifactFiles } from "@cheapchats/frontend/lib/artifactParser";
+import {
+  isArtifactCodeIncomplete,
+  parseAllArtifactFiles,
+} from "@cheapchats/frontend/lib/artifactParser";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import {
   Volume2,
@@ -55,7 +58,12 @@ interface MessageItemProps {
 }
 
 // Simple markdown renderer for assistant messages
-function renderMarkdown(text: string, onOpenArtifact?: (lang: string, code: string) => void): React.ReactNode {
+function renderMarkdown(
+  text: string,
+  onOpenArtifact?: (lang: string, code: string) => void,
+  isStreaming = false,
+  messageHasError = false
+): React.ReactNode {
   // Strip out memory XML tags so they don't show up in the UI (forgiving regex for AI typos)
   const cleanedText = text.replace(/<cheapchat(?:Memory)?[^>]*>[\s\S]*?<\/cheapchat(?:Memory)?>/gi, "");
   const lines = cleanedText.split("\n");
@@ -78,10 +86,14 @@ function renderMarkdown(text: string, onOpenArtifact?: (lang: string, code: stri
       const codeContent = codeLines.join("\n");
 
       const isPatch = cleanLang === "artifact" && (codeContent.includes('type="patch"') || codeContent.includes("<<<<<<< SEARCH") || codeContent.includes("<<<< SEARCH"));
-      const isPartialCode =
-        !isPatch &&
-        (cleanLang === "html" || codeContent.includes("<html") || codeContent.includes("<!DOCTYPE") || codeContent.includes("<script")) &&
-        (!codeContent.includes("</html>") || !codeContent.includes("</script>"));
+      const parsedCodeArtifact = cleanLang === "artifact" && !isPatch
+        ? parseAllArtifactFiles(codeContent)
+        : null;
+      const isPartialCode = !isPatch && (
+        parsedCodeArtifact?.files?.some((file) => isArtifactCodeIncomplete(file.content, file.language)) ??
+        isArtifactCodeIncomplete(codeContent, cleanLang)
+      );
+      const canResume = !isStreaming && !isPatch && (isPartialCode || messageHasError);
 
       // Extract Artifact Title & File Name
       let displayTitle = "";
@@ -201,7 +213,7 @@ function renderMarkdown(text: string, onOpenArtifact?: (lang: string, code: stri
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {isPartialCode && (
+            {canResume && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -871,7 +883,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                       content: code,
                     });
                   }
-                })
+                }, isStreaming, message.isError)
               ) : null}
             </div>
 

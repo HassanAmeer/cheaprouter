@@ -16,6 +16,9 @@ import {
   Zap,
   ShieldCheck,
   Cpu,
+  Terminal,
+  Copy,
+  Check,
 } from "lucide-react";
 
 export interface ProviderItem {
@@ -74,6 +77,12 @@ export default function ProviderKeyDrawer({
     message: string;
   } | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState(false);
+
+  const isOpenCode = Boolean(
+    provider?.id?.toLowerCase().includes("opencode") ||
+    provider?.name?.toLowerCase().includes("opencode")
+  );
 
   // Load existing key from localStorage when provider opens
   useEffect(() => {
@@ -253,6 +262,57 @@ export default function ProviderKeyDrawer({
               </label>
               <div className="px-3 py-2 rounded-lg bg-black/40 border border-white/10 font-mono text-[11px] text-slate-300 truncate">
                 {provider.baseUrl}
+              </div>
+            </div>
+          )}
+
+          {/* Local OpenCode CLI / IDE Extension / Local LLM Quick Guide */}
+          {isOpenCode && (
+            <div className="rounded-xl border border-rose-500/25 bg-gradient-to-br from-[#1c1317] via-[#14151a] to-[#0e1014] p-4 text-xs space-y-3 shadow-inner">
+              <div className="flex items-center gap-2 text-rose-300 font-semibold">
+                <Terminal className="w-4 h-4 text-rose-400" />
+                <span>Local OpenCode CLI / IDE Extension / Local LLM</span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Agar aap apne local laptop par OpenCode CLI, VS Code Extension, ya local model (jaise DeepSeek / Big Pickle) chala rahe hain aur use CheapChats ke sath jorna chahte hain:
+              </p>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                  <span>1. Apne terminal me ye command run karein:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:8080");
+                      setCopiedCommand(true);
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] text-rose-300 hover:text-white px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer"
+                  >
+                    {copiedCommand ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedCommand ? "Copied!" : "Copy Command"}</span>
+                  </button>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-black/60 border border-white/10 font-mono text-[11px] text-emerald-400 break-all select-all">
+                  npx cloudflared tunnel --url http://localhost:8080
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  * (Agar aapka local OpenCode CLI ya model kisi doosre port par chal raha hai to 8080 ko us port se replace karein)
+                </p>
+              </div>
+
+              <div className="space-y-1 text-[11px] text-slate-300 pt-1 border-t border-white/5">
+                <p className="font-semibold text-slate-200">2. URL aur Key Enter Karein:</p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-400 text-[10px] leading-relaxed">
+                  <li>
+                    <strong className="text-slate-200">Cloud API (Default):</strong> Base URL <code className="text-rose-200 font-mono">https://opencode.ai/zen/v1</code> aur upar apna free API key enter karke Test Connection karein.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">Local Model / CLI:</strong> Tunnel command se milne wala live URL (e.g. <code className="text-emerald-300 font-mono">https://xxxx.trycloudflare.com/v1</code>) CheapChats ke <strong>Custom Providers</strong> me Base URL ke tor par enter karein.
+                  </li>
+                </ul>
               </div>
             </div>
           )}

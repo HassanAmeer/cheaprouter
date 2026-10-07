@@ -40,6 +40,7 @@ import {
 
 interface ChatInputProps {
   onSend: (message: string, attachments: any[]) => void;
+  onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
 }
@@ -85,7 +86,7 @@ function getAttachmentIcon(type?: string, name?: string) {
   return <File className="w-3.5 h-3.5 text-slate-400" />;
 }
 
-export default function ChatInput({ onSend, disabled = false, isStreaming = false }: ChatInputProps) {
+export default function ChatInput({ onSend, onStop, disabled = false, isStreaming = false }: ChatInputProps) {
   const {
     activeTools,
     toggleTool,
@@ -933,7 +934,7 @@ export default function ChatInput({ onSend, disabled = false, isStreaming = fals
             </Tooltip>
 
             {/* 3. Send / Mic Button in a styled grey box (Far Right) */}
-            {content.trim() || attachments.length > 0 || activeSuggestionChip || (selectedSkills && selectedSkills.length > 0) ? (
+            {content.trim() || attachments.length > 0 || activeSuggestionChip ? (
               <button
                 type="button"
                 onClick={handleSend}
@@ -942,6 +943,16 @@ export default function ChatInput({ onSend, disabled = false, isStreaming = fals
                 title="Send Message"
               >
                 <ArrowUp className="w-4 h-4" />
+              </button>
+            ) : isStreaming ? (
+              <button
+                type="button"
+                onClick={onStop}
+                className="p-2 rounded-xl border border-red-900/80 bg-red-950/80 text-rose-200 hover:bg-red-900/80 hover:text-white transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
+                title="Stop generating"
+                aria-label="Stop generating"
+              >
+                <Square className="w-4 h-4 fill-current" />
               </button>
             ) : (
               <button

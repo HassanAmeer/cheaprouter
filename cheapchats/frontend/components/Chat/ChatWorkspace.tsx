@@ -6,7 +6,12 @@ import { useAppStore } from "@cheapchats/frontend/lib/store";
 import MessageThread from "@cheapchats/frontend/components/Chat/MessageThread";
 import ChatInput from "@cheapchats/frontend/components/Chat/ChatInput";
 import { Message } from "@cheapchats/frontend/components/Chat/MessageItem";
-import { parseAllArtifactFiles } from "@cheapchats/frontend/lib/artifactParser";
+import {
+  isArtifactCodeIncomplete,
+  mergeContinuedArtifact,
+  parseAllArtifactFiles,
+} from "@cheapchats/frontend/lib/artifactParser";
+import type { Artifact, ArtifactFile } from "@cheapchats/frontend/lib/store";
 import {
   playResponseCompletionSound,
   primeResponseCompletionSound,
@@ -17,13 +22,18 @@ import {
   readCustomProviders,
 } from "@cheapchats/frontend/lib/customProviders";
 
-function detectAndOpenArtifact(content: string, setActiveArtifact: (art: any) => void) {
+function detectAndOpenArtifact(
+  content: string,
+  setActiveArtifact: (artifact: Artifact) => void,
+  continuationBase?: Artifact | null
+) {
   const artifact = parseAllArtifactFiles(content);
   if (artifact && artifact.files && artifact.files.length > 0) {
-    const totalLines = artifact.files.reduce((acc, f) => acc + f.content.split("\n").length, 0);
-    if (totalLines > 3) {
-      setActiveArtifact(artifact);
-    }
+    const resolvedArtifact = continuationBase
+      ? mergeContinuedArtifact(continuationBase, artifact)
+      : artifact;
+    const totalLines = (resolvedArtifact.files || []).reduce((acc, f) => acc + f.content.split("\n").length, 0);
+    if (totalLines > 3) setActiveArtifact(resolvedArtifact);
   }
 }
 
@@ -59,6 +69,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
   }
   const messageQueueRef = useRef<QueuedMessage[]>([]);
   const isStreamingRef = useRef(false);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
 
   // Load conversation if initialConversationId is provided
   useEffect(() => {
@@ -76,6 +87,41 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         .then((data) => {
           if (!isCancelled && data.messages) {
             setMessages(data.messages);
+            let restoredArtifact: Artifact | null = null;
+            for (const message of data.messages as Message[]) {
+              if (
+                message.sender !== "assistant" ||
+                !message.content.includes("<cheapchatArtifact")
+              ) {
+                continue;
+              }
+
+              if (restoredArtifact) {
+                useAppStore.setState({ activeArtifact: restoredArtifact });
+              }
+              const parsedArtifact = parseAllArtifactFiles(message.content);
+              if (parsedArtifact?.files?.length) {
+                const isPatch = /<cheapchatAction\s+type="patch"/i.test(message.content);
+                if (isPatch && restoredArtifact) {
+                  const previousMainFile: ArtifactFile | undefined = restoredArtifact.files?.find(
+                    (file) => file.content === restoredArtifact?.content
+                  );
+                  const updatedMainFile: ArtifactFile | undefined = previousMainFile
+                    ? parsedArtifact.files.find((file) => file.name === previousMainFile.name)
+                    : parsedArtifact.files.find(
+                        (file) => file.language === "html" || file.name.endsWith(".html")
+                      );
+                  restoredArtifact = {
+                    ...parsedArtifact,
+                    content: updatedMainFile?.content || restoredArtifact.content,
+                  };
+                } else {
+                  restoredArtifact = parsedArtifact;
+                }
+              }
+            }
+            if (restoredArtifact) setActiveArtifact(restoredArtifact);
+
             if (data.conversation?.model) {
               setSelectedProviderAndModel(
                 data.conversation.provider || "OpenRouter",
@@ -101,10 +147,21 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     content: string,
     attachments: any[] = [],
     isRetry = false,
-    queuedMsgId?: string
+    queuedMsgId?: string,
+    continuationArtifactOverride?: Artifact
   ) => {
     let responseFailed = false;
     let responseHasEnoughContent = false;
+    const artifactForRequest = continuationArtifactOverride || activeArtifact;
+    const activeArtifactCode =
+      artifactForRequest?.files?.find((file) => file.language === "html" || file.name.endsWith(".html"))?.content ||
+      artifactForRequest?.content ||
+      "";
+    const activeArtifactIsIncomplete = isArtifactCodeIncomplete(activeArtifactCode);
+    const isContinuationRequest =
+      /\bcontinue\b|\baagay\b|\bagay\b|\bresume\b|\bfinish\b|\bincomplete\b|\bhalf\b|\bcarry\s+on\b/i.test(content) ||
+      (isRetry && activeArtifactIsIncomplete);
+    const continuationArtifactBase = isContinuationRequest ? artifactForRequest : null;
     if (useAppStore.getState().chatPreferences.responseCompletionSound) {
       primeResponseCompletionSound();
     }
@@ -158,6 +215,9 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
 
     // Check for user configured BYOK key in localStorage
     let userKey: string | undefined;
+    const abortController = new AbortController();
+    streamAbortControllerRef.current = abortController;
+
     try {
       const raw = localStorage.getItem("cheapchats_provider_keys");
       if (raw) {
@@ -245,6 +305,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         : undefined;
       const res = await fetch(customEndpoint || "/api/cheapchats/chat", {
         method: "POST",
+        signal: abortController.signal,
         headers: {
           "Content-Type": "application/json",
         },
@@ -274,11 +335,11 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           temperature: effTemperature,
           contextWindow: effContextWindow,
           systemPrompt: effSystemPrompt,
-          activeArtifact: activeArtifact
+          activeArtifact: artifactForRequest
             ? {
-                title: activeArtifact.title,
-                files: activeArtifact.files,
-                content: activeArtifact.content,
+                title: artifactForRequest.title,
+                files: artifactForRequest.files,
+                content: artifactForRequest.content,
               }
             : null,
         }),
@@ -380,7 +441,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
                     return updated;
                   });
                   if (assistantMsgContent.includes("```") || assistantMsgContent.includes("<cheapchatArtifact")) {
-                    detectAndOpenArtifact(assistantMsgContent, setActiveArtifact);
+                    detectAndOpenArtifact(assistantMsgContent, setActiveArtifact, continuationArtifactBase);
                   }
                 }
                 continue;
@@ -409,7 +470,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
                   assistantMsgContent.includes("```") ||
                   assistantMsgContent.includes("<cheapchatArtifact")
                 ) {
-                  detectAndOpenArtifact(assistantMsgContent, setActiveArtifact);
+                  detectAndOpenArtifact(assistantMsgContent, setActiveArtifact, continuationArtifactBase);
                 }
               }
 
@@ -440,7 +501,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       responseHasEnoughContent = assistantMsgContent.trim().length >= 1000;
 
       if (!streamError) {
-        detectAndOpenArtifact(assistantMsgContent, setActiveArtifact);
+        detectAndOpenArtifact(assistantMsgContent, setActiveArtifact, continuationArtifactBase);
         if (customProvider && !isIncognito && assistantMsgContent) {
           try {
             let conversationId = activeConvId;
@@ -495,41 +556,52 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         }
       }
     } catch (err: any) {
-      responseFailed = true;
-      console.error("Stream failed:", err);
-      const currentDebug = useAppStore.getState().debugData;
-      setDebugData({
-        ...(currentDebug || {
-          model: selectedModel,
-          provider: selectedProvider || "OpenRouter",
-          latencyMs: Date.now() - reqStartTime,
-          tokens: 0,
-          cost: 0,
-          temperature: 0.7,
-        }),
-        statusState: "error",
-        errorCode: currentDebug?.errorCode || "NETWORK_ERROR",
-        errorText: currentDebug?.errorText || err?.message || "Stream disconnected unexpectedly",
-        errorReason: currentDebug?.errorReason || (err?.message ? `Network/Stream error: ${err.message}` : "Connection stalled or closed unexpectedly"),
-        latencyMs: currentDebug?.latencyMs || (Date.now() - reqStartTime),
-      });
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last && last.sender === "assistant" && !last.content.trim()) {
-          return [
-            ...prev.slice(0, -1),
-            {
-              ...last,
-              content: "Network error occurred while fetching response.",
-              isError: true,
-              canRetry: true,
-            },
-          ];
+      if (abortController.signal.aborted) {
+        const currentDebug = useAppStore.getState().debugData;
+        if (currentDebug) {
+          setDebugData({ ...currentDebug, statusState: "completed", statusText: "Stopped by user" });
         }
-        return prev;
-      });
+      } else {
+        responseFailed = true;
+        console.error("Stream failed:", err);
+        const currentDebug = useAppStore.getState().debugData;
+        setDebugData({
+          ...(currentDebug || {
+            model: selectedModel,
+            provider: selectedProvider || "OpenRouter",
+            latencyMs: Date.now() - reqStartTime,
+            tokens: 0,
+            cost: 0,
+            temperature: 0.7,
+          }),
+          statusState: "error",
+          errorCode: currentDebug?.errorCode || "NETWORK_ERROR",
+          errorText: currentDebug?.errorText || err?.message || "Stream disconnected unexpectedly",
+          errorReason: currentDebug?.errorReason || (err?.message ? `Network/Stream error: ${err.message}` : "Connection stalled or closed unexpectedly"),
+          latencyMs: currentDebug?.latencyMs || (Date.now() - reqStartTime),
+        });
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.sender === "assistant" && !last.content.trim()) {
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...last,
+                content: "Network error occurred while fetching response.",
+                isError: true,
+                canRetry: true,
+              },
+            ];
+          }
+          return prev;
+        });
+      }
     } finally {
+      if (streamAbortControllerRef.current === abortController) {
+        streamAbortControllerRef.current = null;
+      }
       if (
+        !abortController.signal.aborted &&
         (responseFailed || responseHasEnoughContent) &&
         useAppStore.getState().chatPreferences.responseCompletionSound
       ) {
@@ -584,7 +656,11 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     const lastUserMsg = [...messages].reverse().find((m) => m.sender === "user" && !m.queueStatus);
     if (lastUserMsg) {
       const atts = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
-      handleSendMessage(lastUserMsg.content, atts, true);
+      const lastAssistantMsg = [...messages].reverse().find((m) => m.sender === "assistant");
+      const continuationArtifact =
+        activeArtifact || (lastAssistantMsg ? parseAllArtifactFiles(lastAssistantMsg.content) : null);
+      if (continuationArtifact) setActiveArtifact(continuationArtifact);
+      executeSend(lastUserMsg.content, atts, true, undefined, continuationArtifact || undefined);
     }
   };
 
@@ -602,7 +678,11 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           onEditUserMessage={handleEditUserMessage}
           isStreaming={isStreaming}
         />
-        <ChatInput onSend={handleSendMessage} isStreaming={isStreaming} />
+        <ChatInput
+          onSend={handleSendMessage}
+          onStop={() => streamAbortControllerRef.current?.abort()}
+          isStreaming={isStreaming}
+        />
       </div>
     </div>
   );

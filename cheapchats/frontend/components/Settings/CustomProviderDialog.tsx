@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, KeyRound, Loader2, RefreshCw, X } from "lucide-react";
+import { CheckCircle2, ExternalLink, KeyRound, Loader2, RefreshCw, X, Terminal, Copy, Check } from "lucide-react";
 import {
   CustomProvider,
   CustomProviderModel,
@@ -45,6 +45,7 @@ export default function CustomProviderDialog({
   const [error, setError] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [copiedLocalCmd, setCopiedLocalCmd] = useState(false);
   const usesHttp = /^http:\/\//i.test(baseUrl.trim());
 
   useEffect(() => {
@@ -200,6 +201,34 @@ export default function CustomProviderDialog({
                 HTTP traffic between CheapRouter and the provider is unencrypted. Use HTTPS to protect API keys and chat data in transit.
               </span>
             )}
+
+            {/* Quick helper for local OpenCode/Ollama/Local LLM tunnel */}
+            <div className="rounded-xl border border-rose-300/15 bg-white/[0.02] p-2.5 text-[11px] space-y-1.5 text-slate-400">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium text-slate-300 text-[11px]">
+                  <Terminal className="h-3.5 w-3.5 text-rose-300" />
+                  Local OpenCode CLI / IDE / Local LLM connect karna hai?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:8080");
+                    setCopiedLocalCmd(true);
+                    setTimeout(() => setCopiedLocalCmd(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] text-rose-300 hover:text-white px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                >
+                  {copiedLocalCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedLocalCmd ? "Copied" : "Copy"}</span>
+                </button>
+              </div>
+              <div className="p-1.5 rounded bg-black/50 border border-white/5 font-mono text-[10.5px] text-emerald-400 select-all">
+                npx cloudflared tunnel --url http://localhost:8080
+              </div>
+              <p className="text-[10px] text-slate-500 leading-normal">
+                Terminal me run karein aur generated <span className="font-mono text-emerald-300">https://...trycloudflare.com/v1</span> URL upar paste karein.
+              </p>
+            </div>
           </label>
 
           <label className="block space-y-1.5">

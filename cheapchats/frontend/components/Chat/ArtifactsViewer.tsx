@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import {
   X,
@@ -80,9 +81,8 @@ export default function ArtifactsViewer() {
   const [activeFileId, setActiveFileId] = useState<string>("f1");
   const [editedCode, setEditedCode] = useState<string>("");
   const [debouncedHtml, setDebouncedHtml] = useState<string>("");
-  const codeTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const lastCodeScrollDistanceRef = useRef<number>(0);
-  const isStreamingRef = useRef(false);
+  const codeEditorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const consoleActionsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (activeArtifact?.content) {
@@ -107,15 +107,12 @@ export default function ArtifactsViewer() {
 
   useEffect(() => {
     if (!editedCode) return;
-    const textarea = codeTextareaRef.current;
-    if (!textarea) {
-      return;
-    }
+    const editor = codeEditorRef.current;
+    if (!editor) return;
 
-    const isNearBottom = textarea.scrollHeight - textarea.scrollTop - textarea.clientHeight < 120;
-    if (isNearBottom) {
-      textarea.scrollTop = textarea.scrollHeight;
-    }
+    const isNearBottom =
+      editor.getScrollHeight() - editor.getScrollTop() - editor.getLayoutInfo().height < 120;
+    if (isNearBottom) editor.setScrollTop(editor.getScrollHeight());
   }, [editedCode]);
 
   const artifact = activeArtifact || {
@@ -129,6 +126,24 @@ export default function ArtifactsViewer() {
   };
 
   const currentActiveFile = projectFiles.find((f) => f.id === activeFileId) || projectFiles[0];
+  const editorLanguage = useMemo(() => {
+    const extension = currentActiveFile?.name.split(".").pop()?.toLowerCase() || "";
+    const language = (currentActiveFile?.language || "").toLowerCase();
+    const aliases: Record<string, string> = {
+      cjs: "javascript",
+      htm: "html",
+      js: "javascript",
+      jsx: "javascript",
+      mjs: "javascript",
+      py: "python",
+      sh: "shell",
+      svg: "xml",
+      ts: "typescript",
+      tsx: "typescript",
+      txt: "plaintext",
+    };
+    return aliases[extension] || aliases[language] || language || "plaintext";
+  }, [currentActiveFile?.language, currentActiveFile?.name]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(editedCode || currentActiveFile?.content || artifact.content);
@@ -799,11 +814,11 @@ export default function ArtifactsViewer() {
               onClick={() => setActiveTab("preview")}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                 activeTab === "preview"
-                  ? "bg-[#252525] text-white shadow-sm border border-white/10 font-semibold"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  ? "bg-red-950/80 text-rose-100 shadow-sm border border-red-900/70 font-semibold"
+                  : "text-slate-400 hover:text-rose-200 hover:bg-red-950/40"
               }`}
             >
-              <Eye className="w-3.5 h-3.5 text-blue-400" />
+              <Eye className="w-3.5 h-3.5 text-red-400" />
               <span>Preview</span>
             </button>
           </div>
@@ -1083,14 +1098,35 @@ export default function ArtifactsViewer() {
                 </span>
               </div>
             </div>
-            <textarea
-              ref={codeTextareaRef}
-              value={editedCode}
-              onChange={(e) => handleCodeChange(e.target.value)}
-              spellCheck={false}
-              className="w-full flex-1 p-5 bg-[#0a0a0a] font-mono text-[13px] text-slate-300 focus:outline-none focus:ring-inset focus:ring-1 focus:ring-white/10 leading-relaxed resize-none selection:bg-white/20 custom-scrollbar"
-              placeholder="Streaming and editable code content..."
-            />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <Editor
+                height="100%"
+                language={editorLanguage}
+                theme="vs-dark"
+                value={editedCode}
+                onChange={(value) => handleCodeChange(value ?? "")}
+                onMount={(editor) => {
+                  codeEditorRef.current = editor;
+                }}
+                options={{
+                  automaticLayout: true,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  fontSize: 13,
+                  lineHeight: 22,
+                  lineNumbers: "on",
+                  minimap: { enabled: false },
+                  padding: { top: 16, bottom: 16 },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  wordWrap: "off",
+                  scrollbar: {
+                    verticalScrollbarSize: 8,
+                    horizontalScrollbarSize: 8,
+                    alwaysConsumeMouseWheel: false,
+                  },
+                }}
+              />
+            </div>
           </div>
 
           {/* 3. DOCKABLE CONSOLE & INSPECT ELEMENT DRAWER */}
@@ -1098,10 +1134,10 @@ export default function ArtifactsViewer() {
             {/* Drawer Header / Bar */}
             <div
               onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-              className="h-9 px-3 flex items-center justify-between bg-[#141414] hover:bg-[#181818] cursor-pointer select-none border-b border-white/5 transition"
+              className="h-9 min-w-0 px-3 flex items-center justify-between gap-2 overflow-hidden bg-[#141414] hover:bg-[#181818] cursor-pointer select-none border-b border-white/5 transition"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-slate-300">
+                <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-mono font-medium text-slate-300">
                   <Terminal className="w-3.5 h-3.5 text-red-400" />
                   <span>Inspect & Console</span>
                 </div>
@@ -1144,56 +1180,69 @@ export default function ArtifactsViewer() {
               </div>
 
               {/* Header Actions */}
-              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                {errorCount > 0 && (
+              <div
+                ref={consoleActionsRef}
+                className="w-0 min-w-0 flex-1 flex items-center overflow-x-scroll overflow-y-hidden overscroll-x-contain whitespace-nowrap touch-pan-x"
+                onClick={(event) => event.stopPropagation()}
+                onWheel={(event) => {
+                  const actions = consoleActionsRef.current;
+                  if (!actions) return;
+                  actions.scrollLeft += Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+              >
+                <div className="ml-auto flex w-max shrink-0 items-center gap-1.5">
+                  {errorCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleFixWithAI()}
+                      className="flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1 rounded bg-red-600 hover:bg-red-500 text-white text-[11px] font-medium transition shadow-sm cursor-pointer"
+                      title="Send error trace to AI for automatic repair"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Fix with AI</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => handleFixWithAI()}
-                    className="flex items-center gap-1 px-2 py-1 rounded bg-red-600 hover:bg-red-500 text-white text-[11px] font-medium transition shadow-sm cursor-pointer"
-                    title="Send error trace to AI for automatic repair"
+                    onClick={() => handleSaveToMemory()}
+                    className="flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] transition border border-white/5 cursor-pointer"
+                    title="Save errors into AI memory so the model remembers past bugs"
                   >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Fix with AI</span>
+                    <Brain className="w-3 h-3 text-purple-400" />
+                    <span className="hidden sm:inline">Memory</span>
                   </button>
-                )}
 
-                <button
-                  type="button"
-                  onClick={() => handleSaveToMemory()}
-                  className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] transition border border-white/5 cursor-pointer"
-                  title="Save errors into AI memory so the model remembers past bugs"
-                >
-                  <Brain className="w-3 h-3 text-purple-400" />
-                  <span className="hidden sm:inline">Memory</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyAllLogs}
+                    className="flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] transition border border-white/5 cursor-pointer"
+                    title="Copy complete console & error trace"
+                  >
+                    {copiedAllLogs ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span className="hidden sm:inline">{copiedAllLogs ? "Copied" : "Copy"}</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleCopyAllLogs}
-                  className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] transition border border-white/5 cursor-pointer"
-                  title="Copy complete console & error trace"
-                >
-                  {copiedAllLogs ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span className="hidden sm:inline">{copiedAllLogs ? "Copied" : "Copy"}</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setConsoleLogs([])}
+                    className="shrink-0 p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Clear console"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setConsoleLogs([])}
-                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
-                  title="Clear console"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition ml-1 cursor-pointer"
-                  title={isConsoleOpen ? "Collapse drawer" : "Expand drawer"}
-                >
-                  {isConsoleOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+                    className="shrink-0 p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition ml-1 cursor-pointer"
+                    title={isConsoleOpen ? "Collapse drawer" : "Expand drawer"}
+                  >
+                    {isConsoleOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
             </div>
 
