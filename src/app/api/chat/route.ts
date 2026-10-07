@@ -1,1 +1,2 @@
-export { POST, dynamic } from '../cheapchats/chat/route';
+export const dynamic = 'force-dynamic';
+export { POST } from '../cheapchats/chat/route';
