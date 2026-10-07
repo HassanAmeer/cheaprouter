@@ -1,13 +1,9 @@
-/* CheapChats Core Theme Tokens and Custom Glassmorphic Utilities */
-
-@theme {
+:root {
   --color-slate-850: #151f32;
   --color-brand-emerald: #10b981;
   --color-brand-violet: #8b5cf6;
   --color-brand-sky: #0284c7;
-}
 
-:root {
   /* Central Red Theme Tokens */
   --theme-primary: #dc2626;
   --theme-primary-light: #ef4444;
@@ -120,6 +116,7 @@ body {
   background: linear-gradient(90deg, #fca5a5 0%, #ffffff 50%, #f87171 100%);
   background-size: 200% 100%;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmerText 2.5s infinite linear;
 }
