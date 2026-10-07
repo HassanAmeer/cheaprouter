@@ -55,6 +55,7 @@ export default function ModelSelector() {
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoadingCustomModels, setIsLoadingCustomModels] = useState(false);
   const [customModelsError, setCustomModelsError] = useState("");
   const [userKeys, setUserKeys] = useState<Record<string, string>>({});
 

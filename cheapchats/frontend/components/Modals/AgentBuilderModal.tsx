@@ -154,7 +154,7 @@ export default function AgentBuilderModal() {
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold hover:brightness-110 shadow-lg shadow-purple-500/20"
+            className="rounded-xl border border-red-800/80 bg-red-950/35 px-4 py-2 font-semibold text-rose-200 shadow-[0_6px_20px_rgba(70,8,12,0.2)] transition hover:border-red-700 hover:bg-red-950/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
           >
             Create Agent
           </button>

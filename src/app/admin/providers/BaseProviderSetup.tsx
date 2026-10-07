@@ -51,6 +51,7 @@ export interface BaseProviderSetupProps {
   rawModelsUrl?: string;
   baseUrl?: string;
   placeholderKey?: string;
+  index?: number;
   byokEnabled?: boolean;
   chatsEnabled?: boolean;
   onToggleByok?: () => void;

@@ -103,6 +103,8 @@ console.log(`   - OpenAI Base URL:    http://localhost:${PORT}/v1`);
 console.log(`   - Anthropic Base URL: http://localhost:${PORT}`);
 console.log(`   - Model List:         http://localhost:${PORT}/v1/models\n`);
 
+export * from './icons.ts';
+
 export default {
   port: PORT,
   fetch: app.fetch,

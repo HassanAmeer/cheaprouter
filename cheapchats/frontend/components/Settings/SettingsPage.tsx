@@ -25,6 +25,9 @@ import {
   Trash2,
   Server,
   ChevronDown,
+  UserRound,
+  Mail,
+  BadgeCheck,
 } from "lucide-react";
 import ProviderKeyDrawer, { ProviderItem } from "./ProviderKeyDrawer";
 import CustomProviderDialog from "./CustomProviderDialog";
@@ -34,14 +37,17 @@ import {
   writeCustomProviders,
 } from "@cheapchats/frontend/lib/customProviders";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
+import { useAuth } from "@/components/auth-provider";
 
 export type SettingsTab =
+  | "account"
   | "providers"
   | "chat"
   | "speech";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user: accountUser, loading: isAccountLoading } = useAuth();
   const {
     isSttEnabled,
     toggleSttEnabled,
@@ -294,6 +300,20 @@ export default function SettingsPage() {
         {/* Navigation Tabs */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           <button
+            onClick={() => setActiveTab("account")}
+            title="Account"
+            aria-label="Account"
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "account"
+                ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
+                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            }`}
+          >
+            <UserRound className="w-4 h-4 text-rose-300" />
+            <span className="hidden sm:inline">Account</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("providers")}
             title="Providers & API Keys"
             aria-label="Providers & API Keys"
@@ -357,6 +377,82 @@ export default function SettingsPage() {
       <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top_right,rgba(148,163,184,0.08),transparent_45%),#0b0d10]">
         {/* Scrollable Center Body */}
         <div className="mx-auto w-full max-w-6xl flex-1 space-y-7 overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
+          {activeTab === "account" && (
+            <section className="mx-auto w-full max-w-3xl space-y-6">
+              <header>
+                <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-white">
+                  <UserRound className="h-5 w-5 text-rose-300" />
+                  Account
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  Your CheapRouter profile and plan details.
+                </p>
+              </header>
+
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#202126] via-[#191a1e] to-[#17181c] shadow-xl shadow-black/20">
+                <div className="flex items-center gap-4 border-b border-white/[0.07] p-5 sm:p-6">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-red-800/70 bg-gradient-to-br from-[#50141d] via-[#321016] to-[#1c0d11] text-lg font-semibold text-rose-100 shadow-[0_4px_18px_rgba(75,8,16,0.28)]">
+                    {accountUser?.profile_picture ? (
+                      <img
+                        src={accountUser.profile_picture}
+                        alt={`${accountUser.name} profile`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (accountUser?.name || "Demo User")
+                        .split(/\s+/)
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-base font-semibold tracking-tight text-white">
+                        {isAccountLoading ? "Loading account…" : accountUser?.name || "Demo User"}
+                      </h3>
+                      {!accountUser && !isAccountLoading && (
+                        <span className="rounded-full border border-rose-300/15 bg-rose-300/[0.07] px-2 py-0.5 text-[10px] font-medium text-rose-200/75">
+                          Sample profile
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-slate-400">
+                      {accountUser?.email || "demo@cheaprouter.ai"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
+                  <div className="bg-[#191a1e] p-4 sm:p-5">
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                      <Mail className="h-3.5 w-3.5 text-rose-300/80" />
+                      Email address
+                    </div>
+                    <p className="mt-2 break-all text-sm text-slate-100">
+                      {accountUser?.email || "demo@cheaprouter.ai"}
+                    </p>
+                  </div>
+                  <div className="bg-[#191a1e] p-4 sm:p-5">
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                      <BadgeCheck className="h-3.5 w-3.5 text-rose-300/80" />
+                      Current plan
+                    </div>
+                    <p className="mt-2 text-sm capitalize text-slate-100">
+                      {accountUser?.plan || "Free"}
+                    </p>
+                  </div>
+                </div>
+                {!accountUser && !isAccountLoading && (
+                  <p className="border-t border-white/[0.07] px-5 py-3 text-[11px] text-slate-500">
+                    These sample details are placeholders until you log in.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* TAB 1: PROVIDERS & API KEYS (GRID VIEW) */}
           {activeTab === "providers" && (
             <div className="space-y-6">

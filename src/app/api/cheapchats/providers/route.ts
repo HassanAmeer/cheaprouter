@@ -4,36 +4,7 @@ import { MODEL_REGISTRY } from '../../../../../backend/src/registry';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_ICONS: Record<string, string> = {
-  openai: 'https://cdn.simpleicons.org/openai/10A37F',
-  anthropic: 'https://cdn.simpleicons.org/anthropic/D97757',
-  google: 'https://cdn.simpleicons.org/google/4285F4',
-  gemini: 'https://cdn.simpleicons.org/google/4285F4',
-  deepseek: 'https://cdn.simpleicons.org/deepseek/4D6BFE',
-  openrouter: 'https://api.iconify.design/lucide:router.svg',
-  opencode: 'https://api.iconify.design/lucide:code.svg',
-  groq: 'https://cdn.simpleicons.org/groq/F55036',
-  mistral: 'https://cdn.simpleicons.org/mistral/F26625',
-  cohere: 'https://cdn.simpleicons.org/cohere/39594D',
-  meta: 'https://cdn.simpleicons.org/meta/0467DF',
-  huggingface: 'https://cdn.simpleicons.org/huggingface/FFD21E',
-  ollama: 'https://cdn.simpleicons.org/ollama/FFFFFF',
-  cerebras: 'https://api.iconify.design/lucide:brain.svg',
-  sambanova: 'https://api.iconify.design/lucide:server.svg',
-  together: 'https://cdn.simpleicons.org/togetherai/0A66C2',
-  fireworks: 'https://cdn.simpleicons.org/fireworks/000000',
-  xai: 'https://api.iconify.design/lucide:bot.svg',
-  generic: 'https://api.iconify.design/lucide:bot.svg',
-};
-
-function resolveIcon(name: string, customIcon?: string | null): string {
-  if (customIcon && customIcon.trim()) return customIcon.trim();
-  const lower = name.toLowerCase();
-  for (const [k, url] of Object.entries(DEFAULT_ICONS)) {
-    if (lower.includes(k)) return url;
-  }
-  return DEFAULT_ICONS.generic;
-}
+import { resolveProviderIcon } from '../../../../../backend/src/providers-engine/icons';
 
 export async function GET() {
   try {
@@ -67,7 +38,7 @@ export async function GET() {
       return {
         id: p.id,
         name: p.name,
-        icon: resolveIcon(p.name, p.icon),
+        icon: resolveProviderIcon(p.name, p.icon),
         baseUrl: p.base_url || '',
         apiFormat: p.api_format || 'openai',
         isCustom: !!p.is_custom,

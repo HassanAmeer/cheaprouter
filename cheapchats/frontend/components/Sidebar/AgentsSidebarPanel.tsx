@@ -306,9 +306,9 @@ export default function AgentsSidebarPanel() {
           <div className="absolute top-full left-3.5 right-3.5 mt-1.5 bg-[#202020] border border-[#393939] rounded-2xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-xs">
             <button
               onClick={handleCreateNew}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 font-semibold transition text-left"
+              className="flex items-center gap-2.5 rounded-xl border border-red-900/70 bg-red-950/25 px-3 py-2 text-left font-semibold text-rose-200 transition hover:border-red-700 hover:bg-red-950/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
             >
-              <Plus className="w-4 h-4 text-red-400" />
+              <Plus className="w-4 h-4 text-red-300" />
               <span>Create New Agent</span>
             </button>
 
@@ -695,7 +695,7 @@ export default function AgentsSidebarPanel() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 transition"
+                  className="text-xs text-rose-200/75 hover:text-rose-100 font-medium flex items-center gap-1 transition"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add
                 </button>
@@ -712,23 +712,23 @@ export default function AgentsSidebarPanel() {
               {attachedFiles.length === 0 ? (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border border-dashed border-white/15 hover:border-white/30 bg-[#161616] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
+                  className="border border-dashed border-red-900/55 hover:border-red-700/80 bg-[#1b1114] rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition"
                 >
-                  <Paperclip className="w-5 h-5 text-slate-500 mb-1" />
+                  <Paperclip className="w-5 h-5 text-rose-300/70 mb-1" />
                   <p className="text-xs font-semibold text-slate-300">No context files attached</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     Click to upload documents or files for agent context
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-1.5 p-2 bg-[#161616] border border-white/10 rounded-xl">
+                <div className="flex flex-col gap-1.5 p-2 bg-[#1b1114] border border-red-950/60 rounded-xl">
                   {attachedFiles.map((file, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between px-2.5 py-1.5 bg-[#222222] border border-white/5 rounded-lg text-xs"
+                      className="flex items-center justify-between px-2.5 py-1.5 bg-[#24171a] border border-red-950/45 rounded-lg text-xs"
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <FileText className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <FileText className="w-3.5 h-3.5 text-rose-300 flex-shrink-0" />
                         <span className="text-slate-200 truncate">{file.name}</span>
                         <span className="text-[10px] text-slate-500">{file.size}</span>
                       </div>
@@ -964,7 +964,7 @@ export default function AgentsSidebarPanel() {
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex-1 py-3.5 px-4 rounded-2xl bg-[#db2a2a] hover:bg-[#c52424] active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-lg shadow-red-950/40 transition duration-150 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-red-800/80 bg-red-950/35 px-4 py-3.5 text-sm font-bold tracking-wide text-rose-200 shadow-[0_6px_20px_rgba(70,8,12,0.2)] transition duration-150 hover:border-red-700 hover:bg-red-950/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSaving ? "Saving..." : selectedAgentId ? "Update" : "Create"}
         </button>

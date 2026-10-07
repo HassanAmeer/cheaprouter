@@ -40,7 +40,7 @@ function AgentsPanel() {
         <Tooltip content="Create New Agent" side="bottom">
           <button
             onClick={() => setActiveModal("agentBuilder")}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#252525] transition"
+            className="rounded-lg border border-red-900/60 bg-red-950/25 p-1.5 text-rose-300 transition hover:border-red-700 hover:bg-red-950/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -53,7 +53,7 @@ function AgentsPanel() {
             <p className="text-[11px] text-slate-500">No agents yet</p>
             <button
               onClick={() => setActiveModal("agentBuilder")}
-              className="mt-2 text-[11px] text-purple-400 hover:underline"
+              className="mt-2 rounded-lg border border-red-900/70 bg-red-950/25 px-2.5 py-1.5 text-[11px] font-medium text-rose-200 transition hover:border-red-700 hover:bg-red-950/55 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
             >
               Create your first agent
             </button>

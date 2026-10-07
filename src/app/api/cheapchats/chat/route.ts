@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db as sqliteDb } from '../../../../../cheapchats/backend/db';
-import { conversations, messages } from '../../../../../cheapchats/backend/db/schema';
+import { conversations, messages, skills } from '../../../../../cheapchats/backend/db/schema';
 import { db as pgDb } from '../../../../../backend/src/db';
 import { eq } from 'drizzle-orm';
 
@@ -34,10 +34,34 @@ export async function POST(req: Request) {
       temperature = 0.7,
       contextWindow = '128k',
       rollingWindowLimit = 20,
+      selectedSkills = [],
     } = body;
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+    }
+
+    let activeSystemPrompt = systemPrompt;
+    const selectedSkillNames = Array.isArray(selectedSkills)
+      ? selectedSkills.filter((name: unknown): name is string => typeof name === 'string').map((name: string) => name.trim().toLowerCase())
+      : [];
+    if (selectedSkillNames.length > 0) {
+      try {
+        const selectedSkillRows = sqliteDb
+          .select()
+          .from(skills)
+          .all()
+          .filter((skill) => selectedSkillNames.includes(skill.name.toLowerCase()) || selectedSkillNames.includes(skill.id.toLowerCase()));
+
+        if (selectedSkillRows.length > 0) {
+          const skillsContext = selectedSkillRows
+            .map((skill) => `### Skill: ${skill.name}\n${skill.description ? `*${skill.description}*\n` : ''}${skill.content || ''}`)
+            .join('\n\n');
+          activeSystemPrompt += `\n\n<active_skills>\nFollow these user-selected skills for this response:\n${skillsContext}\n</active_skills>\n`;
+        }
+      } catch (error) {
+        console.error('Failed to load selected CheapChats skills:', error);
+      }
     }
 
     // 1. Manage SQLite Conversation
@@ -117,7 +141,7 @@ export async function POST(req: Request) {
 
     // 4. Build message payload
     const formattedMessages: any[] = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: activeSystemPrompt },
     ];
 
     // Load recent SQLite message history if conversation exists

@@ -115,7 +115,7 @@ export default function NavRail() {
         {/* Attachments */}
         <Tooltip content="Uploaded Files" side="right">
           <button onClick={() => navTo("files")} className={btnClass("files")}>
-            <Paperclip className="w-5 h-5 text-slate-400" />
+            <Paperclip className="w-5 h-5 text-rose-300" />
           </button>
         </Tooltip>
       </div>
