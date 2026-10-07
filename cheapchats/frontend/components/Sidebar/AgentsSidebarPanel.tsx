@@ -123,12 +123,16 @@ export default function AgentsSidebarPanel() {
   const loadAgents = async () => {
     try {
       const res = await fetch("/api/agents");
-      const data = await res.json();
-      const list = data.agents || [];
-      setAgents(list);
-      try {
-        localStorage.setItem("cheapchat_cached_agents", JSON.stringify(list));
-      } catch {}
+      if (res.ok) {
+        const data = await res.json();
+        const list = data.agents || [];
+        setAgents(list);
+        try {
+          localStorage.setItem("cheapchat_cached_agents", JSON.stringify(list));
+        } catch {}
+      } else {
+        setAgents([]);
+      }
     } catch (err) {
       console.error("Failed to load agents", err);
     } finally {
