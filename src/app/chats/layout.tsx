@@ -27,7 +27,7 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#12090b] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-[#0d0b0c] text-slate-100 overflow-hidden font-sans">
       {/* Floating Top-Right Terminal Debug Button */}
       <DebugConsoleToggle />
 
@@ -45,7 +45,7 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
           <Sidebar />
 
           {/* Chat Workspace / Prompt Workspace */}
-          <main className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#130a0c]">
+          <main className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#170e10]">
             {sidebarView === "prompts" ? <PromptEditorView /> : children}
           </main>
 
