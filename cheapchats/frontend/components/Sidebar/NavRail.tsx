@@ -38,7 +38,7 @@ export default function NavRail() {
   const isActive = (view: SidebarView) => isSidebarOpen && sidebarView === view;
 
   const btnClass = (view?: SidebarView) =>
-    `flex h-9 w-9 items-center justify-center rounded-[5px] border border-transparent p-1.5 transition-none focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#7f1d1d] focus-visible:outline-offset-0 sm:h-auto sm:w-auto sm:rounded-xl sm:p-2.5 sm:transition-all sm:duration-150 ${
+    `flex h-9 w-full items-center justify-center rounded-[5px] p-1.5 transition-none focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#7f1d1d] focus-visible:outline-offset-0 sm:h-auto sm:w-auto sm:rounded-xl sm:p-2.5 sm:transition-all sm:duration-150 ${
       view && isActive(view)
         ? "border border-red-500/40 bg-[#2b1016] text-rose-400 shadow-sm shadow-red-950/30 sm:shadow-lg sm:shadow-red-950/40"
         : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
@@ -47,7 +47,7 @@ export default function NavRail() {
   return (
     <aside className="mobile-nav-rail z-30 flex h-full w-12 flex-shrink-0 select-none flex-col items-center justify-between border-r border-[#2a1b1e] bg-[#121011] py-1.5 sm:w-[68px] sm:py-3">
       {/* Top Icons Section */}
-      <div className="flex w-full flex-col items-center gap-1.5 sm:gap-3">
+      <div className="flex w-full flex-col items-center gap-2 sm:gap-3">
         {/* Toggle Secondary Sidebar */}
         <Tooltip content="Toggle Sidebar" side="right">
           <button onClick={toggleSidebar} className={btnClass()}>
@@ -121,7 +121,7 @@ export default function NavRail() {
       </div>
 
       {/* Bottom Section Icons */}
-      <div className="flex w-full flex-col items-center gap-1.5 sm:gap-3">
+      <div className="flex w-full flex-col items-center gap-2 sm:gap-3">
         {/* Settings */}
         <Tooltip content="Settings & API Keys" side="right">
           <button

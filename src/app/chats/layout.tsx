@@ -18,7 +18,7 @@ import { usePathname } from "next/navigation";
 import { BRAND_CONFIG } from "@cheapchats/frontend/lib/brandConfig";
 
 export default function ChatsLayout({ children }: { children: React.ReactNode }) {
-  const { sidebarView } = useAppStore();
+  const { sidebarView, isSidebarOpen, setSidebarOpen } = useAppStore();
   const pathname = usePathname();
   const isSettings = pathname === "/chats/settings";
 
@@ -50,6 +50,15 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
 
         {/* Workspace Body */}
         <div className="flex-1 flex overflow-hidden relative min-w-0">
+          {isSidebarOpen && (
+            <button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={() => setSidebarOpen(false)}
+              className="absolute inset-0 z-30 bg-black/25 md:hidden"
+            />
+          )}
+
           {/* Secondary Left Drawer (Projects & Chats) */}
           <Sidebar />
 

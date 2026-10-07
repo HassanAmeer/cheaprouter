@@ -277,16 +277,16 @@ export default function SettingsPage() {
   return (
     <div className={`${styles.settingsRoot} flex h-screen w-screen overflow-hidden bg-[#0b0d10] font-sans text-slate-100`}>
       {/* ──────────────── Left Sidebar ──────────────── */}
-      <aside className="flex h-full w-[4.25rem] flex-shrink-0 select-none flex-col border-r border-white/10 bg-gradient-to-b from-[#171a20] via-[#12151a] to-[#0e1014] sm:w-64 md:w-72">
+      <aside className="flex h-full w-[3.25rem] flex-shrink-0 select-none flex-col border-r border-white/10 bg-gradient-to-b from-[#171a20] via-[#12151a] to-[#0e1014] sm:w-64 md:w-72">
         {/* Top Header */}
-        <div className="border-b border-white/10 p-2.5 sm:p-5">
+        <div className="border-b border-white/10 px-0 py-1.5 sm:p-5">
           <div className="flex items-center justify-center gap-2.5 sm:justify-start">
             <button
               type="button"
               onClick={() => router.push("/chats")}
               aria-label="Back to Chat"
               title="Back to Chat"
-              className="group flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-red-500/35 bg-gradient-to-br from-red-500/30 via-red-950/80 to-[#1a0c0f] text-rose-300 shadow-lg shadow-red-950/40 transition hover:border-red-400/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60"
+              className="group flex h-8 w-full flex-shrink-0 items-center justify-center rounded-[5px] border border-red-500/35 bg-gradient-to-br from-red-500/30 via-red-950/80 to-[#1a0c0f] text-rose-300 shadow-lg shadow-red-950/40 transition hover:border-red-400/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700/60 sm:w-8"
             >
               <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
             </button>
@@ -303,7 +303,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab("account")}
             title="Account"
             aria-label="Account"
-            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-0 sm:px-3 py-2 sm:py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "account"
                 ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
@@ -317,7 +317,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab("providers")}
             title="Providers & API Keys"
             aria-label="Providers & API Keys"
-            className={`w-full flex items-center justify-center sm:justify-between px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            className={`w-full flex items-center justify-center sm:justify-between px-0 sm:px-3 py-2 sm:py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "providers"
                 ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
@@ -338,7 +338,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab("chat")}
             title="Chat Settings"
             aria-label="Chat Settings"
-            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-0 sm:px-3 py-2 sm:py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "chat"
                 ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
@@ -352,7 +352,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab("speech")}
             title="Speech & Audio"
             aria-label="Speech & Audio"
-            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-0 sm:px-3 py-2 sm:py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "speech"
                 ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
