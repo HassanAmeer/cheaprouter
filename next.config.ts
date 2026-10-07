@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
         source: '/v1/:path*',
         destination: `${BACKEND_URL}/v1/:path*`,
       },
+      {
+        source: '/c/:path*',
+        destination: '/chats/c/:path*',
+      },
+      {
+        source: '/new',
+        destination: '/chats',
+      },
     ];
   },
   turbopack: {},

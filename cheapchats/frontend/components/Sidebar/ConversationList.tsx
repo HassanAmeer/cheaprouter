@@ -142,7 +142,7 @@ export default function ConversationList() {
     await fetch(`/api/conversations/${id}`, { method: "DELETE" });
     window.dispatchEvent(new Event('refreshConversations'));
     if (currentId === id) {
-      router.push("/new");
+      router.push("/chats");
     } else {
       fetchConversations();
     }
@@ -212,7 +212,7 @@ export default function ConversationList() {
             return (
               <div key={conv.id} className="relative group">
                 <button
-                  onClick={() => router.push(`/c/${conv.id}`)}
+                  onClick={() => router.push(`/chats/c/${conv.id}`)}
                   onMouseEnter={() => prefetchConversation(conv.id)}
                   className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-left font-medium transition ${
                     isActive
@@ -370,7 +370,7 @@ export default function ConversationList() {
                     await fetch("/api/conversations", { method: "DELETE" });
                     clearConversationCache();
                     setConversations([]);
-                    router.push("/new");
+                    router.push("/chats");
                   } catch (err) {
                     console.error("Failed to delete chats:", err);
                   }

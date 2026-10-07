@@ -257,7 +257,7 @@ export default function AgentsSidebarPanel() {
         const data = await res.json();
         if (data.conversation?.id) {
           setSidebarView("chats");
-          router.push(`/c/${data.conversation.id}`);
+          router.push(`/chats/c/${data.conversation.id}`);
         }
       }
     } catch (err) {
