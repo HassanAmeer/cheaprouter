@@ -2,7 +2,7 @@ import postgres from 'postgres';
 
 export const DB_URL = process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/cheapmodels';
 
-export const db = postgres(DB_URL, { max: 10 });
+export const db = postgres(DB_URL, { max: 10, onnotice: () => {} });
 
 export async function initDb() {
   await db`

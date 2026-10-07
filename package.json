@@ -6,7 +6,7 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"bun --bun x next dev\" \"cd backend && bun dev\"",
+    "dev": "concurrently -k \"next dev\" \"cd backend && bun dev\"",
     "build": "next build",
     "start": "next start"
   },
