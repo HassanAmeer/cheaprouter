@@ -149,7 +149,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-  sidebarView: "chats",
+  sidebarView: "agents",
   setSidebarView: (view) => set({ sidebarView: view, isSidebarOpen: true }),
 
   unreadNotificationsCount: 0,

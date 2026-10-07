@@ -41,12 +41,12 @@ export default function NavRail() {
   const btnClass = (view?: SidebarView) =>
     `p-2.5 rounded-xl transition duration-150 ${
       view && isActive(view)
-        ? "bg-[#2d1217] text-rose-400 border border-red-500/40 shadow-lg shadow-red-950/40"
+        ? "bg-[#2b1016] text-rose-400 border border-red-500/40 shadow-lg shadow-red-950/40"
         : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
     }`;
 
   return (
-    <aside className="w-13 md:w-14 h-full bg-[#0a0708] border-r border-red-500/10 flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
+    <aside className="w-[68px] h-full bg-[#121011] border-r border-[#2a1b1e] flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
       {/* Top Icons Section */}
       <div className="flex flex-col items-center gap-3 w-full">
         {/* Toggle Secondary Sidebar */}
