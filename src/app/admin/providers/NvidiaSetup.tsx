@@ -4,7 +4,7 @@ import BaseProviderSetup, { BaseProviderSetupRef } from './BaseProviderSetup';
 
 export type NvidiaSetupRef = BaseProviderSetupRef;
 
-const NvidiaSetup = forwardRef<NvidiaSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; onToggleByok?: () => void }>((props, ref) => {
+const NvidiaSetup = forwardRef<NvidiaSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; chatsEnabled?: boolean; onToggleByok?: () => void; onToggleChats?: () => void }>((props, ref) => {
   return (
     <BaseProviderSetup
       ref={ref}

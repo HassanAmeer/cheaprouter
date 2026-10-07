@@ -4,7 +4,7 @@ import BaseProviderSetup, { BaseProviderSetupRef } from './BaseProviderSetup';
 
 export type ClineCodeSetupRef = BaseProviderSetupRef;
 
-const ClineCodeSetup = forwardRef<ClineCodeSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; onToggleByok?: () => void }>((props, ref) => {
+const ClineCodeSetup = forwardRef<ClineCodeSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; chatsEnabled?: boolean; onToggleByok?: () => void; onToggleChats?: () => void }>((props, ref) => {
   return (
     <BaseProviderSetup
       ref={ref}

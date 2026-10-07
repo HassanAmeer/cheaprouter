@@ -4,7 +4,7 @@ import BaseProviderSetup, { BaseProviderSetupRef } from './BaseProviderSetup';
 
 export type UnoRouterSetupRef = BaseProviderSetupRef;
 
-const UnoRouterSetup = forwardRef<UnoRouterSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; onToggleByok?: () => void }>((props, ref) => {
+const UnoRouterSetup = forwardRef<UnoRouterSetupRef, { onModelsUpdated?: () => void; index?: number; byokEnabled?: boolean; chatsEnabled?: boolean; onToggleByok?: () => void; onToggleChats?: () => void }>((props, ref) => {
   return (
     <BaseProviderSetup
       ref={ref}

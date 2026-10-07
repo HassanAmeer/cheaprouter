@@ -1,0 +1,171 @@
+.settingsRoot {
+  --cupertino-accent: #8ab4f8;
+  --cupertino-surface: #191a1e;
+  --cupertino-surface-raised: #202126;
+  --cupertino-separator: rgba(255, 255, 255, 0.085);
+  --cupertino-muted: #92949c;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  background: #101114;
+}
+
+.settingsRoot > aside:first-child {
+  background: linear-gradient(180deg, #191a1e 0%, #15161a 100%);
+  border-color: var(--cupertino-separator);
+}
+
+.settingsRoot > aside:first-child > div:first-child {
+  border-color: var(--cupertino-separator);
+}
+
+.settingsRoot > aside:first-child nav {
+  padding: 16px 12px;
+}
+
+.settingsRoot > aside:first-child nav button {
+  min-height: 40px;
+  border-radius: 12px;
+  letter-spacing: -0.01em;
+}
+
+.settingsRoot > aside:first-child nav button[class*="from-rose-400"] {
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  color: #f4f4f6;
+}
+
+.settingsRoot > aside:first-child nav button:focus-visible,
+.settingsRoot button:focus-visible,
+.settingsRoot a:focus-visible {
+  outline: 2px solid var(--cupertino-accent);
+  outline-offset: 2px;
+}
+
+.settingsRoot > main {
+  background: #101114;
+}
+
+.settingsRoot > main > div {
+  max-width: 1100px;
+  padding-top: clamp(24px, 4vh, 44px);
+}
+
+.settingsRoot h2 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.settingsRoot h3 {
+  letter-spacing: -0.015em;
+}
+
+.settingsRoot main p {
+  line-height: 1.55;
+}
+
+.settingsRoot main [class*="text-[10px]"] {
+  font-size: 11px;
+}
+
+.settingsRoot main [class*="rounded-2xl"][class*="bg-gradient-to-br"] {
+  background: linear-gradient(145deg, #202126 0%, #191a1e 58%, #17181c 100%);
+  border-color: var(--cupertino-separator);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.settingsRoot main [class*="rounded-2xl"][class*="bg-gradient-to-br"] [class*="absolute"][class*="top-0"] {
+  opacity: 0.45;
+}
+
+.settingsRoot main [class*="rounded-2xl"][class*="border-dashed"] {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.settingsRoot main input:not([type="checkbox"]):not([type="range"]),
+.settingsRoot main textarea,
+.settingsRoot main select {
+  border-radius: 12px;
+  border-color: rgba(255, 255, 255, 0.11);
+  background-color: #141519;
+}
+
+.settingsRoot main input[type="checkbox"],
+.settingsRoot main input[type="range"] {
+  accent-color: var(--cupertino-accent);
+}
+
+.settingsRoot main button {
+  transition-duration: 160ms;
+}
+
+.settingsRoot main button[class*="rounded-xl"][class*="border"] {
+  border-radius: 11px;
+}
+
+.settingsRoot main button[class*="bg-rose-500/20"],
+.settingsRoot main button[class*="bg-sky-500/15"],
+.settingsRoot main button[class*="bg-emerald-500/20"] {
+  background: rgba(138, 180, 248, 0.13);
+  border-color: rgba(138, 180, 248, 0.28);
+  color: #c4d9ff;
+  box-shadow: none;
+}
+
+.settingsRoot main button[class*="bg-rose-500"] {
+  background: #a9c7ff;
+  border-color: #a9c7ff;
+  color: #15243b;
+  box-shadow: none;
+}
+
+.settingsRoot [role="dialog"] {
+  border-radius: 22px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(160deg, #232429 0%, #191a1e 60%, #17181c 100%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.56), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.settingsRoot [role="dialog"] input,
+.settingsRoot [role="dialog"] textarea {
+  border-radius: 12px;
+  background: #141519;
+}
+
+.settingsRoot > div.fixed > aside {
+  border-color: var(--cupertino-separator);
+  background: linear-gradient(180deg, #1d1e23 0%, #17181c 100%);
+}
+
+.settingsRoot > div.fixed > aside > div:first-of-type {
+  border-color: var(--cupertino-separator);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.settingsRoot > div.fixed > aside input {
+  border-radius: 12px;
+}
+
+.settingsRoot > div.fixed > aside button[class*="from-slate-100"] {
+  background: linear-gradient(180deg, #d8e6ff 0%, #a9c7ff 100%);
+  color: #15243b;
+  box-shadow: 0 5px 16px rgba(80, 130, 220, 0.15);
+}
+
+@media (max-width: 639px) {
+  .settingsRoot > main > div {
+    padding: 20px 16px 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsRoot *,
+  .settingsRoot *::before,
+  .settingsRoot *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

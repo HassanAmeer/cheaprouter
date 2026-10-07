@@ -41,7 +41,7 @@ export async function GET() {
     const rows = await db`
       SELECT id, name, status, models, icon, base_url, api_format, is_custom, byok_enabled, chats_enabled, priority
       FROM admin_providers
-      WHERE status = true AND chats_enabled = true
+      WHERE chats_enabled = true AND (byok_enabled = true OR byok_enabled IS NULL)
       ORDER BY priority ASC, name ASC
     `;
 

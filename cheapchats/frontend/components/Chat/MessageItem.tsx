@@ -429,7 +429,16 @@ function parseSimpleInline(text: string): React.ReactNode {
 }
 
 export default function MessageItem({ message, onRegenerate, onEdit, isStreaming = false }: MessageItemProps) {
-  const { toggleDebugConsole, setActiveArtifact, user, isAutoVoiceEnabled, setIsSpeaking, setHandsFreeMode } = useAppStore();
+  const {
+    toggleDebugConsole,
+    setActiveArtifact,
+    user,
+    isAutoVoiceEnabled,
+    isTtsEnabled,
+    ttsVoice,
+    setIsSpeaking,
+    setHandsFreeMode,
+  } = useAppStore();
   const [copiedText, setCopiedText] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(message.feedback || null);
@@ -479,7 +488,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
   };
 
   const handleToggleAudio = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (!isTtsEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
     if (isPlayingAudio) {
       window.speechSynthesis.cancel();
@@ -496,12 +505,12 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
       const voices = window.speechSynthesis.getVoices();
       const isUrduScript = /[\u0600-\u06FF]/.test(speechText);
       
-      let selectedVoice = null;
-      if (isUrduScript) {
-        selectedVoice = voices.find(v => v.lang.includes("ur") || v.lang.includes("hi"));
-      } else {
-        selectedVoice = voices.find(v => v.name.includes("Google UK English") || v.name.includes("Google US English") || v.lang.includes("en-GB"));
-        if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes("en-US"));
+      let selectedVoice = voices.find((voice) => voice.voiceURI === ttsVoice);
+      if (!selectedVoice && isUrduScript) {
+        selectedVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ur") || voice.lang.toLowerCase().startsWith("hi"));
+      } else if (!selectedVoice) {
+        selectedVoice = voices.find((voice) => voice.lang === navigator.language);
+        if (!selectedVoice) selectedVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
       }
 
       if (selectedVoice) {
@@ -527,13 +536,13 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     // Detect when streaming finishes (isStreaming changes from true to false)
     if (prevStreamingRef.current === true && isStreaming === false) {
       setIsThinkingOpen(false);
-      if (!isUser && isAutoVoiceEnabled && message.content.trim()) {
+      if (!isUser && isAutoVoiceEnabled && isTtsEnabled && message.content.trim()) {
         // Trigger auto speak
         handleToggleAudio();
       }
     }
     prevStreamingRef.current = isStreaming;
-  }, [isStreaming, isAutoVoiceEnabled, isUser, message.content]);
+  }, [isStreaming, isAutoVoiceEnabled, isTtsEnabled, isUser, message.content]);
 
   useEffect(() => {
     if (isUser || !message.content) return;
@@ -883,8 +892,10 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
               <Tooltip content="Read Aloud" side="top">
                 <button
                   onClick={handleToggleAudio}
+                  disabled={!isTtsEnabled}
+                  title={isTtsEnabled ? "Read Aloud" : "Enable text to speech in Settings"}
                   className={`p-1.5 rounded-lg transition ${
-                    isPlayingAudio ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-[#252525] hover:text-white"
+                    !isTtsEnabled ? "cursor-not-allowed opacity-40" : isPlayingAudio ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-[#252525] hover:text-white"
                   }`}
                 >
                   {isPlayingAudio ? <VolumeX className="w-3.5 h-3.5 animate-pulse" /> : <Volume2 className="w-3.5 h-3.5" />}

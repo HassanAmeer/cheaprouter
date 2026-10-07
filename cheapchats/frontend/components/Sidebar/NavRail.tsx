@@ -10,9 +10,8 @@ import {
   MessageSquare,
   Bot,
   FileText,
-  Wrench,
   Brain,
-  Bookmark,
+  Heart,
   Paperclip,
   Sliders,
 } from "lucide-react";
@@ -39,14 +38,14 @@ export default function NavRail() {
   const isActive = (view: SidebarView) => isSidebarOpen && sidebarView === view;
 
   const btnClass = (view?: SidebarView) =>
-    `p-2.5 rounded-xl transition duration-150 ${
+    `px-1.5 py-2.5 sm:p-2.5 rounded-xl transition duration-150 ${
       view && isActive(view)
         ? "bg-[#2b1016] text-rose-400 border border-red-500/40 shadow-lg shadow-red-950/40"
         : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
     }`;
 
   return (
-    <aside className="w-[68px] h-full bg-[#121011] border-r border-[#2a1b1e] flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
+    <aside className="w-[56px] sm:w-[68px] h-full bg-[#121011] border-r border-[#2a1b1e] flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
       {/* Top Icons Section */}
       <div className="flex flex-col items-center gap-3 w-full">
         {/* Toggle Secondary Sidebar */}
@@ -94,12 +93,6 @@ export default function NavRail() {
           </button>
         </Tooltip>
 
-        {/* Tools */}
-        <Tooltip content="Tools" side="right">
-          <button onClick={() => navTo("tools" as any)} className={btnClass("tools" as any)}>
-            <Wrench className="w-5 h-5 text-rose-400" />
-          </button>
-        </Tooltip>
 
         {/* Skills / Memory */}
         <Tooltip content="Skills & Brain" side="right">
@@ -108,10 +101,14 @@ export default function NavRail() {
           </button>
         </Tooltip>
 
-        {/* Saved / Bookmarks */}
-        <Tooltip content="Bookmarks" side="right">
-          <button onClick={() => navTo("bookmarks" as any)} className={btnClass("bookmarks" as any)}>
-            <Bookmark className="w-5 h-5 text-rose-400" />
+        {/* Favourites */}
+        <Tooltip content="Favourites" side="right">
+          <button
+            onClick={() => navTo("favourites")}
+            className={btnClass("favourites")}
+            aria-label="Favourites"
+          >
+            <Heart className="w-5 h-5 text-rose-400" />
           </button>
         </Tooltip>
 

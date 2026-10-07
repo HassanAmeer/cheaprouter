@@ -9,7 +9,7 @@ export async function GET() {
     const rows = await db`
       SELECT id, name, status, models, icon, base_url, api_format, chats_enabled
       FROM admin_providers
-      WHERE status = true AND chats_enabled = true
+      WHERE chats_enabled = true
       ORDER BY priority ASC, name ASC
     `;
 

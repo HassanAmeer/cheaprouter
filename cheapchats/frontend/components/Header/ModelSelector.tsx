@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import {
+  CustomProvider,
+  fetchCustomProviderModels,
+  getCustomProviderKey,
+  readCustomProviders,
+  writeCustomProviders,
+} from "@cheapchats/frontend/lib/customProviders";
+import {
   ChevronDown,
   Sparkles,
   Server,
@@ -44,9 +51,47 @@ export default function ModelSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeHoverProvider, setActiveHoverProvider] = useState<string | null>(null);
   const [providersData, setProvidersData] = useState<Record<string, ModelItem[]>>({});
+  const [customProviderNames, setCustomProviderNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [customModelsError, setCustomModelsError] = useState("");
+  const [userKeys, setUserKeys] = useState<Record<string, string>>({});
+
+  const loadKeys = () => {
+    try {
+      const raw = localStorage.getItem("cheapchats_provider_keys");
+      if (raw) {
+        setUserKeys(JSON.parse(raw));
+      } else {
+        setUserKeys({});
+      }
+    } catch {
+      setUserKeys({});
+    }
+  };
+
+  useEffect(() => {
+    loadKeys();
+    const handleStorage = () => loadKeys();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const mergeCustomProviders = (source: Record<string, ModelItem[]>) => {
+    const next = { ...source };
+    const names: Record<string, string> = {};
+    for (const provider of readCustomProviders()) {
+      const key = getCustomProviderKey(provider.id);
+      names[key] = provider.name;
+      next[key] = provider.models.map((model) => ({
+        ...model,
+        provider: key,
+      }));
+    }
+    setCustomProviderNames(names);
+    return next;
+  };
 
   const fetchModels = async (forceRefresh = false) => {
     try {
@@ -55,7 +100,7 @@ export default function ModelSelector() {
       const res = await fetch(`/api/cheapchats/models${forceRefresh ? "?refresh=true" : ""}`);
       if (res.ok) {
         const data = await res.json();
-        const pData: Record<string, ModelItem[]> = data.providers || {};
+        const pData = mergeCustomProviders(data.providers || {});
         setProvidersData(pData);
         try {
           localStorage.setItem("cheapchat_cached_models", JSON.stringify(pData));
@@ -78,6 +123,56 @@ export default function ModelSelector() {
     }
   };
 
+  const loadCustomProviderModels = async (providerKey: string) => {
+    const providerId = providerKey.startsWith("custom:")
+      ? providerKey.slice("custom:".length)
+      : "";
+    const provider = readCustomProviders().find((item) => item.id === providerId);
+    if (!provider) {
+      setCustomModelsError("This custom provider is no longer saved. Reopen settings and add it again.");
+      return;
+    }
+
+    setIsLoadingCustomModels(true);
+    setCustomModelsError("");
+    try {
+      let apiKey = "";
+      const rawKeys = localStorage.getItem("cheapchats_provider_keys");
+      if (rawKeys) {
+        const keys: unknown = JSON.parse(rawKeys);
+        if (keys && typeof keys === "object" && !Array.isArray(keys)) {
+          const savedKey = (keys as Record<string, unknown>)[provider.id];
+          if (typeof savedKey === "string") apiKey = savedKey;
+        }
+      }
+
+      const models = await fetchCustomProviderModels(provider.baseUrl, apiKey);
+      if (models.length === 0) {
+        setCustomModelsError("The API returned no model IDs from GET /models.");
+        return;
+      }
+
+      const providers: CustomProvider[] = readCustomProviders().map((item) =>
+        item.id === provider.id ? { ...item, models } : item
+      );
+      writeCustomProviders(providers);
+      setProvidersData((current) => ({
+        ...current,
+        [providerKey]: models.map((model) => ({ ...model, provider: providerKey })),
+      }));
+      setCustomModelsError("");
+    } catch (error) {
+      console.error(`Failed to load models for custom provider "${provider.name}":`, error);
+      setCustomModelsError(
+        error instanceof Error
+          ? `${error.message} Check GET /models and that the API is reachable by CheapRouter.`
+          : "Could not load models. Check the API URL and network access."
+      );
+    } finally {
+      setIsLoadingCustomModels(false);
+    }
+  };
+
   useEffect(() => {
     // 1. Instant hydration from cache for 0ms load
     try {
@@ -85,10 +180,11 @@ export default function ModelSelector() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
-          setProvidersData(parsed);
-          const keys = Object.keys(parsed);
+          const merged = mergeCustomProviders(parsed);
+          setProvidersData(merged);
+          const keys = Object.keys(merged);
           if (keys.length > 0) {
-            setActiveHoverProvider((prev) => prev || (selectedProvider && parsed[selectedProvider] ? selectedProvider : keys[0]));
+            setActiveHoverProvider((prev) => prev || (selectedProvider && merged[selectedProvider] ? selectedProvider : keys[0]));
           }
         } else {
           setLoading(true);
@@ -111,12 +207,57 @@ export default function ModelSelector() {
     setIsOpen(false);
   };
 
-  // Ensure "Custom API" is always positioned at the very bottom of the provider list
+  const isProviderConfigured = (pKey: string) => {
+    // 1. All custom providers created by the user are configured
+    if (pKey.startsWith("custom:") || pKey === "Custom API") {
+      return true;
+    }
+    const customList = readCustomProviders();
+    if (
+      customList.some(
+        (c) =>
+          getCustomProviderKey(c.id) === pKey ||
+          c.name.toLowerCase() === pKey.toLowerCase() ||
+          c.id.toLowerCase() === pKey.toLowerCase()
+      )
+    ) {
+      return true;
+    }
+    // 2. Check BYOK userKeys
+    const pNorm = pKey.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const [k, v] of Object.entries(userKeys)) {
+      if (!v || typeof v !== "string" || !v.trim()) continue;
+      const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (
+        k === pKey ||
+        k.toLowerCase() === pKey.toLowerCase() ||
+        k === `ap_${pNorm}` ||
+        (kNorm && pNorm && (kNorm === pNorm || pNorm.includes(kNorm) || kNorm.includes(pNorm)))
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Only display providers that are actively connected / configured
   const allProviderKeys = Object.keys(providersData);
-  const regularProviders = allProviderKeys.filter((p) => p !== "Custom API");
-  const sortedProviderKeys = providersData["Custom API"]
+  const configuredProviderKeys = allProviderKeys.filter(isProviderConfigured);
+  const regularProviders = configuredProviderKeys.filter((p) => p !== "Custom API");
+  const sortedProviderKeys = configuredProviderKeys.includes("Custom API")
     ? [...regularProviders, "Custom API"]
     : regularProviders;
+  const providerName = (provider: string) => customProviderNames[provider] || provider;
+
+  useEffect(() => {
+    if (sortedProviderKeys.length > 0) {
+      if (!activeHoverProvider || !sortedProviderKeys.includes(activeHoverProvider)) {
+        setActiveHoverProvider(sortedProviderKeys[0]);
+      }
+    } else {
+      setActiveHoverProvider(null);
+    }
+  }, [sortedProviderKeys.length, activeHoverProvider]);
 
   const rawList = activeHoverProvider && providersData[activeHoverProvider] ? providersData[activeHoverProvider] : [];
   const filteredList = searchQuery.trim()
@@ -132,13 +273,16 @@ export default function ModelSelector() {
       {/* Selector Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          loadKeys();
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/20 hover:bg-white/5 border border-white/5 hover:border-red-500/30 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition duration-150 cursor-pointer focus:outline-none"
       >
         <Sparkles className="w-4 h-4 text-red-400 flex-shrink-0" />
         {selectedProvider ? (
           <div className="flex items-center gap-1.5 truncate text-xs sm:text-sm">
-            <span className="text-slate-400 font-medium truncate">{selectedProvider}</span>
+            <span className="text-slate-400 font-medium truncate">{providerName(selectedProvider)}</span>
             <span className="text-slate-500 font-normal">·</span>
             <span className="text-slate-100 font-bold truncate max-w-[140px] sm:max-w-[220px]">
               {selectedModel}
@@ -192,8 +336,32 @@ export default function ModelSelector() {
           </div>
 
           {/* Main Dropdown Body: Providers Column (Left) & Models Column (Right) */}
-          <div className="flex flex-col sm:flex-row gap-2.5 p-2.5">
-            {/* Provider List (Left side) */}
+          {sortedProviderKeys.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center">
+                <Server className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-white">No Connected Providers</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
+                  Only providers with connected BYOK keys or custom endpoints appear here. Connect your keys in Settings to get started.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setActiveModal("settings");
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 text-xs font-semibold transition cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Configure in Settings
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-2.5 p-2.5">
+              {/* Provider List (Left side) */}
             <div className="w-full sm:w-48 flex flex-col gap-1 border-b sm:border-b-0 sm:border-r border-red-500/15 pb-2 sm:pb-0 sm:pr-2">
               <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider">
@@ -237,7 +405,7 @@ export default function ModelSelector() {
                           }`}
                         />
                         <span className={`truncate ${isCustom ? "font-bold text-red-300" : ""}`}>
-                          {providerKey}
+                          {providerName(providerKey)}
                         </span>
                       </div>
 
@@ -293,20 +461,33 @@ export default function ModelSelector() {
 
               <div className="flex items-center justify-between px-2 pt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <span className="truncate">
-                  {activeHoverProvider ? `${activeHoverProvider} (${filteredList.length})` : "Select a Provider"}
+                  {activeHoverProvider ? `${providerName(activeHoverProvider)} (${filteredList.length})` : "Select a Provider"}
                 </span>
                 <button
                   type="button"
-                  onClick={() => fetchModels(true)}
-                  disabled={isRefreshing}
+                  onClick={() =>
+                    activeHoverProvider?.startsWith("custom:")
+                      ? loadCustomProviderModels(activeHoverProvider)
+                      : fetchModels(true)
+                  }
+                  disabled={isRefreshing || isLoadingCustomModels}
                   className="flex items-center gap-1 text-slate-400 hover:text-white transition cursor-pointer lowercase font-normal"
                 >
-                  <RotateCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-red-400" : ""}`} />
-                  <span>refresh</span>
+                  <RotateCw className={`w-3 h-3 ${isRefreshing || isLoadingCustomModels ? "animate-spin text-red-400" : ""}`} />
+                  <span>{activeHoverProvider?.startsWith("custom:") ? "load models" : "refresh"}</span>
                 </button>
               </div>
 
-              {loading ? (
+              {activeHoverProvider?.startsWith("custom:") && isLoadingCustomModels ? (
+                <div className="px-3 py-8 text-xs text-slate-400 text-center flex flex-col items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+                  <span>Loading models from API...</span>
+                </div>
+              ) : customModelsError && activeHoverProvider?.startsWith("custom:") ? (
+                <div className="px-3 py-6 text-xs text-amber-200/90 text-center leading-relaxed">
+                  {customModelsError}
+                </div>
+              ) : loading ? (
                 <div className="px-3 py-8 text-xs text-slate-400 text-center flex flex-col items-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin text-red-400" />
                   <span>Loading models...</span>
@@ -338,13 +519,16 @@ export default function ModelSelector() {
                 })
               ) : (
                 <div className="px-3 py-6 text-xs text-slate-400 text-center leading-relaxed">
-                  No matching models found.
+                  {activeHoverProvider?.startsWith("custom:")
+                    ? "No models listed. Select “load models” above to fetch them from this API."
+                    : "No matching models found."}
                 </div>
               )}
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    )}
+  </div>
+);
 }

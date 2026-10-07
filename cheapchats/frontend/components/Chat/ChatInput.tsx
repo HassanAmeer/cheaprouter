@@ -5,6 +5,8 @@ import { useAppStore } from "@cheapchats/frontend/lib/store";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import ModelSelector from "@cheapchats/frontend/components/Header/ModelSelector";
 import UsageQuotaCircle from "@cheapchats/frontend/components/Chat/UsageQuotaCircle";
+import styles from "./ChatInput.module.css";
+import { getSuggestionSkillName } from "@cheapchats/frontend/lib/suggestionSkills";
 import {
   ArrowUp,
   Mic,
@@ -39,6 +41,7 @@ import {
 interface ChatInputProps {
   onSend: (message: string, attachments: any[]) => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface ChatAttachment {
@@ -82,7 +85,7 @@ function getAttachmentIcon(type?: string, name?: string) {
   return <File className="w-3.5 h-3.5 text-slate-400" />;
 }
 
-export default function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled = false, isStreaming = false }: ChatInputProps) {
   const {
     activeTools,
     toggleTool,
@@ -92,6 +95,8 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
     pendingPromptText,
     setPendingPromptText,
     isHandsFreeMode,
+    isSttEnabled,
+    sttLang,
     isSpeaking,
     setIsSpeaking,
     activeSuggestionChip,
@@ -118,6 +123,22 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
     canRetry?: boolean;
   } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const slashMenuRef = useRef<HTMLDivElement>(null);
+  const slashMenuDismissedRef = useRef(false);
+
+  useEffect(() => {
+    if (!showSlashPrompts) return;
+
+    const dismissOnOutsidePointer = (event: PointerEvent) => {
+      if (!slashMenuRef.current?.contains(event.target as Node)) {
+        slashMenuDismissedRef.current = true;
+        setShowSlashPrompts(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", dismissOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+  }, [showSlashPrompts]);
 
   useEffect(() => {
     if (toastInfo) {
@@ -216,15 +237,20 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
-    if (val.startsWith("/")) {
-      setShowSlashPrompts(true);
-    } else {
+    if (!val.startsWith("/")) {
+      slashMenuDismissedRef.current = false;
       setShowSlashPrompts(false);
+    } else if (!content.startsWith("/")) {
+      slashMenuDismissedRef.current = false;
+      setShowSlashPrompts(true);
+    } else if (!slashMenuDismissedRef.current) {
+      setShowSlashPrompts(true);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape" && showSlashPrompts) {
+      slashMenuDismissedRef.current = true;
       setShowSlashPrompts(false);
       return;
     }
@@ -336,6 +362,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
 
   // Speech to text
   const startListening = () => {
+    if (!isSttEnabled) return;
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       alert("Speech recognition is not supported in this browser.");
       return;
@@ -345,7 +372,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = ""; // Auto-detect based on browser / system language
+    recognition.lang = sttLang || navigator.language;
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -515,9 +542,8 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
       prefix: item.prompt,
       type: item.type,
     });
-    if (item.type === "game" || item.title === "HTML page / game" || item.title === "HTML & 2D Game") {
-      addSelectedSkill("HTML Page / Game & Sound");
-    }
+    const skillName = getSuggestionSkillName(item.title, item.type);
+    if (skillName) addSelectedSkill(skillName);
     setContent("");
     setShowSlashPrompts(false);
     textareaRef.current?.focus();
@@ -565,37 +591,37 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
       )}
 
       {/* Slash Menu: 1. Skills Section, 2. Suggestions Section */}
-      {showSlashPrompts && (
-        <div className="absolute bottom-full mb-2 left-4 right-4 bg-[#180d11]/95 backdrop-blur-xl rounded-2xl p-2.5 border border-red-500/25 shadow-2xl z-50 max-h-80 overflow-y-auto">
-          {/* Section 1: Skills */}
-          <div>
-            <div className="px-3 py-1.5 text-[11px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between border-b border-white/5 pb-1 mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono text-zinc-400 font-bold">/</span>
-                <span>Skills</span>
+      {showSlashPrompts && (filteredSkills.length > 0 || filteredSuggestions.length > 0) && (
+        <div
+          ref={slashMenuRef}
+          className="absolute bottom-full mb-2 left-4 right-4 z-50 max-h-80 overflow-y-auto rounded-[18px] border border-white/[0.09] bg-[#202023]/95 p-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+        >
+          {filteredSkills.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-rose-300/80">/</span>
+                  <span>Skills</span>
+                </div>
+                <span className="text-[10px] font-normal normal-case tracking-normal text-white/35">{filteredSkills.length}</span>
               </div>
-              <span className="text-[10px] text-slate-500 font-normal lowercase">({filteredSkills.length} available)</span>
-            </div>
-            {filteredSkills.length === 0 ? (
-              <div className="px-3 py-1 text-xs text-slate-500 italic">No matching skills found</div>
-            ) : (
               <div className="space-y-0.5">
                 {filteredSkills.map((s, idx) => (
                   <button
                     key={`skill-${idx}`}
                     type="button"
                     onClick={() => handleSelectSkill(s)}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-red-500/15 flex items-start gap-2.5 transition group"
+                    className="group flex w-full items-start gap-2 rounded-[11px] px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/[0.07]"
                   >
-                    <div className="w-5 h-5 rounded-md bg-white/5 text-zinc-400 group-hover:bg-red-500 group-hover:text-white transition flex items-center justify-center flex-shrink-0 font-mono text-[11px] font-bold">
+                    <div className="mt-px flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-md bg-white/[0.06] font-mono text-[10px] font-semibold text-white/45 transition-colors group-hover:bg-rose-500/20 group-hover:text-rose-200">
                       /
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-white group-hover:text-rose-200 transition truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium text-white/90 transition-colors group-hover:text-white">
                         {s.name}
                       </div>
                       {s.description && (
-                        <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                        <div className="mt-0.5 truncate text-[10px] leading-tight text-white/45">
                           {s.description}
                         </div>
                       )}
@@ -603,62 +629,59 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
                   </button>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Section 2: Suggestions */}
-          <div className="mt-3 pt-2 border-t border-white/10">
-            <div className="px-3 py-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between border-b border-white/5 pb-1 mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <Command className="w-3.5 h-3.5 text-amber-400" />
-                <span>Suggestions</span>
-              </div>
-              <span className="text-[10px] text-slate-500 font-normal lowercase">({filteredSuggestions.length} prompts)</span>
             </div>
-            {filteredSuggestions.length === 0 ? (
-              <div className="px-3 py-1 text-xs text-slate-500 italic">No matching suggestions found</div>
-            ) : (
+          )}
+
+          {filteredSuggestions.length > 0 && (
+            <div className={filteredSkills.length > 0 ? "mt-1.5 border-t border-white/[0.07] pt-1.5" : ""}>
+              <div className="flex items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
+                <div className="flex items-center gap-1.5">
+                  <Command className="h-3 w-3 text-rose-300/75" />
+                  <span>Suggestions</span>
+                </div>
+                <span className="text-[10px] font-normal normal-case tracking-normal text-white/35">{filteredSuggestions.length}</span>
+              </div>
               <div className="space-y-0.5">
                 {filteredSuggestions.map((item, idx) => (
                   <button
                     key={`sug-${idx}`}
                     type="button"
                     onClick={() => handleSelectSuggestion(item)}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-red-500/15 flex items-start justify-between gap-2 transition group"
+                    className="group flex w-full items-start justify-between gap-2 rounded-[11px] px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/[0.07]"
                   >
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                      <div className="p-1 rounded-lg bg-white/5 text-slate-400 group-hover:bg-red-500 group-hover:text-white transition mt-0.5 flex-shrink-0">
+                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                      <div className="mt-px flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-white/45 transition-colors group-hover:bg-rose-500/20 group-hover:text-rose-200">
                         {item.title === "Web Search" ? (
-                          <Globe className="w-3.5 h-3.5 text-blue-400 group-hover:text-white" />
+                          <Globe className="h-3 w-3" />
                         ) : item.title === "Mermaid Diagram" ? (
-                          <Zap className="w-3.5 h-3.5 text-purple-400 group-hover:text-white" />
+                          <Zap className="h-3 w-3" />
                         ) : (item.title === "HTML page / game" || item.title === "HTML & 2D Game") ? (
-                          <Gamepad2 className="w-3.5 h-3.5 text-emerald-400 group-hover:text-white" />
+                          <Gamepad2 className="h-3 w-3" />
                         ) : item.title === "Summarize" ? (
-                          <FileText className="w-3.5 h-3.5 text-amber-400 group-hover:text-white" />
+                          <FileText className="h-3 w-3" />
                         ) : (
-                          <Command className="w-3.5 h-3.5 text-slate-400 group-hover:text-white" />
+                          <Command className="h-3 w-3" />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-white group-hover:text-rose-200 transition truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-white/90 transition-colors group-hover:text-white">
                           {item.title}
                         </div>
                         {item.description && (
-                          <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                          <div className="mt-0.5 truncate text-[10px] leading-tight text-white/45">
                             {item.description}
                           </div>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono flex-shrink-0 hidden sm:inline-block max-w-[140px] truncate">
+                    <span className="hidden max-w-[140px] flex-shrink-0 truncate pt-0.5 font-mono text-[10px] text-white/35 sm:inline-block">
                       {item.prompt}
                     </span>
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -684,10 +707,13 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
             uploadFiles(e.dataTransfer.files);
           }
         }}
-        className={`bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${isDraggingOver
-            ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-            : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
-          }`}
+        className={`bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
+          isStreaming
+            ? styles.streamingBorder
+            : isDraggingOver
+              ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
+              : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
+        }`}
       >
         {/* Attachments Row */}
         {(attachments.length > 0 || isUploading) && (
@@ -802,12 +828,12 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           onPaste={handlePaste}
           placeholder={
             activeSuggestionChip
-              ? `Add specifics for "${activeSuggestionChip.label}" (or press Enter to send)...`
-              : `Message ${providerName} (paste/drop files, type / for skills & suggestions)...`
+              ? `Add details for ${activeSuggestionChip.label}...`
+              : "Ask anything — / for types or skills"
           }
           rows={1}
           disabled={disabled}
-          className="w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none resize-none max-h-44 leading-relaxed"
+          className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed ${styles.messageTextarea}`}
         />
 
         {/* Bottom Bar: Pinned Tools + Controls */}
@@ -921,11 +947,12 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
               <button
                 type="button"
                 onClick={toggleSpeechRecognition}
+                disabled={!isSttEnabled}
                 className={`p-2 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
                     ? "bg-red-600 text-white border-red-500 animate-pulse shadow-lg shadow-red-600/50"
-                    : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm"
+                    : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                   }`}
-                title={isListening ? "Stop Voice Input" : "Voice Input"}
+                title={!isSttEnabled ? "Enable speech input in Settings" : isListening ? "Stop Voice Input" : "Voice Input"}
               >
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>

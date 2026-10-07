@@ -131,6 +131,39 @@ CRITICAL MANDATORY INSTRUCTIONS FOR GENERATING PLAYABLE GAMES & INTERACTIVE HTML
     isDefault: 1,
     isAlwaysActive: 0,
   },
+  {
+    name: "Web Search & Research",
+    description: "Use current web sources to answer questions with evidence and useful citations.",
+    content: `# Web Search & Research
+- Search for up-to-date, trustworthy sources when the question depends on current information.
+- Prefer primary sources and corroborate important claims with more than one source.
+- Clearly distinguish sourced facts from analysis, and include links or citations when available.
+- If live search is unavailable, say so rather than presenting guesses as current research.`,
+    isDefault: 1,
+    isAlwaysActive: 0,
+  },
+  {
+    name: "Mermaid Diagram Creation",
+    description: "Create clear, valid Mermaid diagrams for architecture, processes, and relationships.",
+    content: `# Mermaid Diagram Creation
+- Identify the diagram type that best represents the requested system or process.
+- Return valid Mermaid syntax in a fenced \`\`\`mermaid code block.
+- Use concise node labels, clear direction, and named participants where appropriate.
+- Avoid unsupported syntax and briefly explain non-obvious relationships after the diagram.`,
+    isDefault: 1,
+    isAlwaysActive: 0,
+  },
+  {
+    name: "Summarization & Key Takeaways",
+    description: "Condense supplied content into an accurate summary and its most useful takeaways.",
+    content: `# Summarization & Key Takeaways
+- Preserve the source's meaning and distinguish its claims from outside knowledge.
+- Lead with a concise summary, then list the most important takeaways.
+- Keep the level of detail proportional to the source and the user's request.
+- Do not invent missing facts; flag ambiguity when it affects the summary.`,
+    isDefault: 1,
+    isAlwaysActive: 0,
+  },
 ];
 
 export async function GET() {

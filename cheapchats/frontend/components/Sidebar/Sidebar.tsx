@@ -297,6 +297,15 @@ export default function Sidebar() {
     );
   }
 
+  if (sidebarView === "favourites") {
+    return (
+      <aside className="absolute inset-y-0 left-0 z-40 w-[calc(100vw-56px)] max-w-56 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col flex-shrink-0 select-none transition-all duration-200 md:relative md:inset-auto md:z-20 md:w-60 md:max-w-none">
+        <div className="flex-1 overflow-hidden">
+          <ConversationList favouritesOnly />
+        </div>
+      </aside>
+    );
+  }
 
   const renderPanel = () => {
     return <ChatsPanel />;

@@ -6,7 +6,6 @@ import { useAppStore } from "@cheapchats/frontend/lib/store";
 import {
   MessageSquare,
   Pin,
-  Bookmark,
   Download,
   Edit2,
   Trash2,
@@ -19,6 +18,7 @@ import {
   Eye,
   Plus,
   AlertTriangle,
+  Heart,
 } from "lucide-react";
 
 interface ProjectFolder {
@@ -38,7 +38,11 @@ interface Conversation {
   updatedAt: number;
 }
 
-export default function ConversationList() {
+interface ConversationListProps {
+  favouritesOnly?: boolean;
+}
+
+export default function ConversationList({ favouritesOnly = false }: ConversationListProps) {
   const router = useRouter();
   const params = useParams();
   const currentId = params?.id as string;
@@ -201,9 +205,10 @@ export default function ConversationList() {
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Normal chats are those that do NOT belong to an active project folder
   const activeProjectIds = new Set(projects.map((p) => p.id));
-  const normalChats = filtered.filter((c) => !c.projectId || !activeProjectIds.has(c.projectId));
+  const normalChats = favouritesOnly
+    ? filtered.filter((conversation) => conversation.isBookmarked === 1)
+    : filtered.filter((c) => !c.projectId || !activeProjectIds.has(c.projectId));
 
   const pinned = normalChats.filter((c) => c.isPinned === 1);
   const unpinned = normalChats.filter((c) => c.isPinned !== 1);
@@ -242,7 +247,7 @@ export default function ConversationList() {
                   />
                   <span className="truncate flex-1">{conv.title}</span>
                   {conv.isPinned === 1 && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" />}
-                  {conv.isBookmarked === 1 && <Bookmark className="w-3 h-3 text-sky-400 flex-shrink-0" />}
+                  {conv.isBookmarked === 1 && <Heart className="w-3 h-3 fill-rose-400 text-rose-400 flex-shrink-0" />}
                 </button>
 
                 {/* More Actions Toggle */}
@@ -282,8 +287,8 @@ export default function ConversationList() {
                       onClick={() => handleToggleBookmark(conv.id, conv.isBookmarked)}
                       className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-red-500/15 text-left transition font-medium text-slate-200"
                     >
-                      <span>{conv.isBookmarked ? "Remove Bookmark" : "Bookmark Chat"}</span>
-                      <Bookmark className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                      <span>{conv.isBookmarked ? "Remove from Favourites" : "Add to Favourites"}</span>
+                      <Heart className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
                     </button>
                     <button
                       onClick={() => handleExportJSON(conv.id, conv.title)}
@@ -319,7 +324,7 @@ export default function ConversationList() {
   return (
     <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-xs text-slate-300">
       {/* Incognito Temporary Chat Toggle Row */}
-      <div
+      {!favouritesOnly && <div
         className={`px-2.5 py-2 rounded-xl border transition-all duration-200 flex items-center justify-between select-none ${
           isIncognito
             ? "bg-red-950/25 border-red-500/30 shadow-sm shadow-red-950/40 opacity-100"
@@ -363,7 +368,7 @@ export default function ConversationList() {
             }`}
           />
         </button>
-      </div>
+      </div>}
 
       {/* Live Search Input for Chats */}
       <div className="relative px-1 mb-1">
@@ -377,8 +382,8 @@ export default function ConversationList() {
         />
       </div>
 
-      {/* Projects Accordion Section (Always Visible) */}
-      <div>
+      {/* Projects Accordion Section */}
+      {!favouritesOnly && <div>
         <div className="w-full flex items-center justify-between px-2 py-1 rounded-lg hover:bg-[#1f1215] text-slate-300 hover:text-white font-semibold transition select-none">
           <button
             onClick={() => {
@@ -395,8 +400,8 @@ export default function ConversationList() {
           </button>
           <div className="flex items-center gap-1">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={(event) => {
+                event.stopPropagation();
                 setConfirmDeleteTarget("projects");
               }}
               title="Delete All Projects"
@@ -405,8 +410,8 @@ export default function ConversationList() {
               <Trash2 className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={(event) => {
+                event.stopPropagation();
                 handleCreateProject();
               }}
               title="Create New Project Folder"
@@ -423,6 +428,7 @@ export default function ConversationList() {
                   setIsProjectsOpen(true);
                 }
               }}
+              aria-label={isProjectsOpen ? "Collapse projects" : "Expand projects"}
             >
               {isProjectsOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
             </button>
@@ -434,17 +440,17 @@ export default function ConversationList() {
             {projects.length === 0 ? (
               <div className="px-3 py-1.5 text-[10px] text-slate-500 italic">No project folders yet</div>
             ) : (
-              projects.map((proj) => {
-                const isExpanded = !!expandedProjects[proj.id];
-                const projectChats = conversations.filter((c) => c.projectId === proj.id);
-                const isSelected = activeProjectId === proj.id;
+              projects.map((project) => {
+                const isExpanded = !!expandedProjects[project.id];
+                const projectChats = conversations.filter((conversation) => conversation.projectId === project.id);
+                const isSelected = activeProjectId === project.id;
 
                 return (
-                  <div key={proj.id} className="space-y-0.5">
+                  <div key={project.id} className="space-y-0.5">
                     <div
                       onClick={() => {
-                        setActiveProjectId(proj.id);
-                        setExpandedProjects((prev) => ({ ...prev, [proj.id]: true }));
+                        setActiveProjectId(project.id);
+                        setExpandedProjects((previous) => ({ ...previous, [project.id]: true }));
                         router.push("/new");
                       }}
                       className={`flex items-center justify-between px-2 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition select-none group ${
@@ -460,13 +466,13 @@ export default function ConversationList() {
                           <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
                         )}
                         <Folder className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-                        <span className="truncate font-semibold">{proj.name}</span>
+                        <span className="truncate font-semibold">{project.name}</span>
                         <span className="text-[10px] text-slate-500 font-mono">({projectChats.length})</span>
                       </div>
 
                       <button
                         type="button"
-                        onClick={(e) => handleDeleteProject(proj.id, proj.name, e)}
+                        onClick={(event) => handleDeleteProject(project.id, project.name, event)}
                         title="Delete Project Folder"
                         className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/15 transition"
                       >
@@ -479,12 +485,12 @@ export default function ConversationList() {
                         {projectChats.length === 0 ? (
                           <div className="px-2 py-1 text-[10px] text-slate-500 italic">No chats in project</div>
                         ) : (
-                          projectChats.map((conv) => {
-                            const isActive = currentId === conv.id;
+                          projectChats.map((conversation) => {
+                            const isActive = currentId === conversation.id;
                             return (
                               <button
-                                key={conv.id}
-                                onClick={() => router.push(`/c/${conv.id}`)}
+                                key={conversation.id}
+                                onClick={() => router.push(`/c/${conversation.id}`)}
                                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition ${
                                   isActive
                                     ? "bg-red-500/25 text-white font-semibold border border-red-500/40"
@@ -492,7 +498,7 @@ export default function ConversationList() {
                                 }`}
                               >
                                 <MessageSquare className={`w-3 h-3 flex-shrink-0 ${isActive ? "text-red-400" : "text-slate-400"}`} />
-                                <span className="truncate flex-1 text-[11px]">{conv.title}</span>
+                                <span className="truncate flex-1 text-[11px]">{conversation.title}</span>
                               </button>
                             );
                           })
@@ -505,7 +511,7 @@ export default function ConversationList() {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Chats Accordion Section with Chronological Grouping */}
       <div>
@@ -514,9 +520,9 @@ export default function ConversationList() {
             onClick={() => setIsChatsOpen(!isChatsOpen)}
             className="flex items-center gap-1.5 flex-1 text-left"
           >
-            <span className="font-semibold text-slate-200">Chats</span>
+            <span className="font-semibold text-slate-200">{favouritesOnly ? "Favourites" : "Chats"}</span>
           </button>
-          <div className="flex items-center gap-1">
+          {!favouritesOnly && <div className="flex items-center gap-1">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -541,20 +547,26 @@ export default function ConversationList() {
             <button onClick={() => setIsChatsOpen(!isChatsOpen)}>
               {isChatsOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
             </button>
-          </div>
+          </div>}
         </div>
 
         {isChatsOpen && (
           <div className="mt-1">
             {normalChats.length === 0 ? (
-              <div className="px-3 py-2 text-[11px] text-slate-500 font-medium">No active chats found</div>
+              <div className="px-3 py-2 text-[11px] text-slate-500 font-medium">
+                {favouritesOnly ? "No favourite chats yet. Add a chat to Favourites from its menu." : "No active chats found"}
+              </div>
             ) : (
               <>
-                {renderChatGroup("Pinned", pinned)}
-                {renderChatGroup("Today", today)}
-                {renderChatGroup("Yesterday", yesterday)}
-                {renderChatGroup("Previous 7 Days", past7Days)}
-                {renderChatGroup("Older", older)}
+                {favouritesOnly
+                  ? renderChatGroup("Favourites", normalChats)
+                  : <>
+                      {renderChatGroup("Pinned", pinned)}
+                      {renderChatGroup("Today", today)}
+                      {renderChatGroup("Yesterday", yesterday)}
+                      {renderChatGroup("Previous 7 Days", past7Days)}
+                      {renderChatGroup("Older", older)}
+                    </>}
               </>
             )}
           </div>

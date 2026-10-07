@@ -31,6 +31,9 @@ export async function POST(req: Request) {
       isIncognito = false,
       systemPrompt = 'You are a helpful, brilliant AI assistant.',
       attachments = [],
+      temperature = 0.7,
+      contextWindow = '128k',
+      rollingWindowLimit = 20,
     } = body;
 
     if (!message || typeof message !== 'string') {
@@ -125,8 +128,8 @@ export async function POST(req: Request) {
           .from(messages)
           .where(eq(messages.conversationId, currentConvId))
           .all();
-        // take last 10 turns
-        const recent = prev.slice(-10);
+        const limit = typeof rollingWindowLimit === 'number' && rollingWindowLimit > 0 ? rollingWindowLimit : 20;
+        const recent = prev.slice(-limit);
         for (const m of recent) {
           if (m.sender === 'user' || m.sender === 'assistant') {
             formattedMessages.push({
@@ -143,17 +146,24 @@ export async function POST(req: Request) {
     // If activeKey is available, stream directly from the upstream provider!
     const apiFormat = (provRow?.api_format || 'openai').toLowerCase();
     const baseUrl = provRow?.base_url;
+    const effectiveTargetUrl = (apiFormat === 'anthropic' || provider.toLowerCase().includes('anthropic'))
+      ? (baseUrl ? `${baseUrl.replace(/\/+$/, '')}/v1/messages` : 'https://api.anthropic.com/v1/messages')
+      : getOpenAIFormatUrl(baseUrl);
+
+    const sanitizedRequestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': activeKey ? `Bearer ${activeKey.slice(0, 4)}...${activeKey.slice(-4)}` : 'None',
+    };
 
     // Upstream streaming handler
     let upstreamRes: Response | null = null;
 
     if (apiFormat === 'anthropic' || provider.toLowerCase().includes('anthropic')) {
-      const anthropicUrl = baseUrl ? `${baseUrl.replace(/\/+$/, '')}/v1/messages` : 'https://api.anthropic.com/v1/messages';
       const anthropicMessages = formattedMessages
         .filter((m) => m.role !== 'system')
         .map((m) => ({ role: m.role, content: m.content }));
 
-      upstreamRes = await fetch(anthropicUrl, {
+      upstreamRes = await fetch(effectiveTargetUrl, {
         method: 'POST',
         headers: {
           'x-api-key': activeKey || '',
@@ -165,12 +175,12 @@ export async function POST(req: Request) {
           system: systemPrompt,
           messages: anthropicMessages,
           stream: true,
+          temperature: typeof temperature === 'number' ? temperature : 0.7,
           max_tokens: 4096,
         }),
       });
     } else {
       // Standard OpenAI / OpenAI-compatible format
-      const targetUrl = getOpenAIFormatUrl(baseUrl);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -183,14 +193,15 @@ export async function POST(req: Request) {
         }
       }
 
-      console.log(`[CheapChats] Proxying to ${targetUrl} with model: ${model}`);
-      upstreamRes = await fetch(targetUrl, {
+      console.log(`[CheapChats] Proxying to ${effectiveTargetUrl} with model: ${model}`);
+      upstreamRes = await fetch(effectiveTargetUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model.includes('/') && !targetUrl.includes('openrouter') ? model.split('/').pop() : model,
+          model: model.includes('/') && !effectiveTargetUrl.includes('openrouter') ? model.split('/').pop() : model,
           messages: formattedMessages,
           stream: true,
+          temperature: typeof temperature === 'number' ? temperature : 0.7,
           max_tokens: 4096,
         }),
       });
@@ -210,6 +221,57 @@ export async function POST(req: Request) {
 
       console.warn('[CheapChats] Upstream Error:', upstreamRes?.status, errMsg);
 
+      const upstreamStatus = upstreamRes?.status || 500;
+      const upstreamStatusText = upstreamRes?.statusText || (upstreamStatus === 401 ? 'Unauthorized' : upstreamStatus === 429 ? 'Too Many Requests' : 'Error');
+      const upstreamHeaders = upstreamRes ? Object.fromEntries(upstreamRes.headers.entries()) : {};
+
+      let errorReason = `Upstream request to ${provider} failed (${upstreamStatus})`;
+      if (!activeKey) {
+        errorReason = `No API key configured for provider '${provider}'. Add your key in Settings → Providers.`;
+      } else if (upstreamStatus === 401) {
+        errorReason = `API key for '${provider}' was rejected (401 Unauthorized). Please verify your key.`;
+      } else if (upstreamStatus === 429) {
+        errorReason = `Rate limit exceeded or insufficient credits on '${provider}' (429 Too Many Requests).`;
+      } else if (upstreamStatus === 404) {
+        errorReason = `Model '${model}' or endpoint not found on '${provider}' (404 Not Found).`;
+      } else if (errText) {
+        errorReason = errMsg;
+      }
+
+      const debugInfo = {
+        timestamp: new Date().toLocaleTimeString(),
+        endpoint: '/api/cheapchats/chat',
+        method: 'POST',
+        model,
+        provider,
+        baseUrl: effectiveTargetUrl,
+        statusCode: upstreamStatus,
+        statusText: upstreamStatusText,
+        statusState: 'error',
+        latencyMs: Date.now() - startTime,
+        tokens: 0,
+        promptTokens: Math.ceil(JSON.stringify(formattedMessages).length / 4),
+        completionTokens: 0,
+        cost: 0,
+        temperature: 0.7,
+        rawSystemPrompt: systemPrompt,
+        rawMessages: formattedMessages,
+        userMessage: message,
+        attachments,
+        requestHeaders: sanitizedRequestHeaders,
+        responseHeaders: upstreamHeaders,
+        requestPayload: {
+          model,
+          provider,
+          messagesCount: formattedMessages.length,
+          stream: true,
+        },
+        rawResponse: errText || errMsg,
+        errorCode: upstreamStatus,
+        errorText: errMsg,
+        errorReason,
+      };
+
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
@@ -220,6 +282,7 @@ export async function POST(req: Request) {
                 error: true,
                 canRetry: true,
                 conversationId: currentConvId,
+                debug: debugInfo,
               })}\n\n`
             )
           );
@@ -229,6 +292,7 @@ export async function POST(req: Request) {
                 done: true,
                 error: true,
                 conversationId: currentConvId,
+                debug: debugInfo,
               })}\n\n`
             )
           );
@@ -323,6 +387,43 @@ export async function POST(req: Request) {
             }
           }
 
+          const promptTokens = Math.ceil(JSON.stringify(formattedMessages).length / 4);
+          const upstreamHeaders = upstreamRes ? Object.fromEntries(upstreamRes.headers.entries()) : {};
+
+          const successDebugInfo = {
+            timestamp: new Date().toLocaleTimeString(),
+            endpoint: '/api/cheapchats/chat',
+            method: 'POST',
+            model,
+            provider,
+            baseUrl: effectiveTargetUrl,
+            statusCode: upstreamRes?.status || 200,
+            statusText: upstreamRes?.statusText || 'OK',
+            statusState: 'completed',
+            latencyMs: latency,
+            tokens: promptTokens + tokens,
+            promptTokens,
+            completionTokens: tokens,
+            cost: 0,
+            temperature: typeof temperature === 'number' ? temperature : 0.7,
+            contextWindow: String(contextWindow || '128k'),
+            rawSystemPrompt: systemPrompt,
+            rawMessages: formattedMessages,
+            userMessage: message,
+            attachments,
+            requestHeaders: sanitizedRequestHeaders,
+            responseHeaders: upstreamHeaders,
+            requestPayload: {
+              model,
+              provider,
+              messagesCount: formattedMessages.length,
+              stream: true,
+              temperature,
+              contextWindow,
+            },
+            rawResponse: fullContent,
+          };
+
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
@@ -330,6 +431,7 @@ export async function POST(req: Request) {
                 latency,
                 tokens,
                 conversationId: isIncognito ? null : currentConvId,
+                debug: successDebugInfo,
               })}\n\n`
             )
           );

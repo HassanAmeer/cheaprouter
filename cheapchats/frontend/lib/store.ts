@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SidebarView = "chats" | "agents" | "prompts" | "skills" | "mcp" | "files" | "memory";
+export type SidebarView = "chats" | "favourites" | "agents" | "prompts" | "skills" | "mcp" | "files" | "memory";
 
 export interface User {
   id: string;
@@ -26,16 +26,43 @@ export interface Artifact {
 }
 
 export interface DebugData {
-  rawSystemPrompt: string;
-  rawMessages: any[];
+  timestamp?: string;
+  endpoint?: string;
+  method?: string;
   model: string;
   provider: string;
-  tokens: number;
-  cost: number;
+  baseUrl?: string;
+  statusCode?: number | string;
+  statusText?: string;
+  statusState?: 'idle' | 'streaming' | 'completed' | 'error';
   latencyMs: number;
+  tokens: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  cost: number;
   temperature: number;
+  contextWindow?: string;
+  rawSystemPrompt?: string;
+  rawMessages?: any[];
+  userMessage?: string;
+  attachments?: any[];
+  tools?: any;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+  requestPayload?: any;
+  rawResponse?: string;
   errorCode?: string | number;
   errorText?: string;
+  errorReason?: string;
+}
+
+export interface ChatPreferences {
+  temperature: number;
+  contextWindow: "64k" | "128k" | "512k" | "1m" | string;
+  systemPrompt: string;
+  streamResponse: boolean;
+  autoOpenArtifacts: boolean;
+  rollingWindowLimit: number;
 }
 
 interface AppState {
@@ -133,6 +160,9 @@ interface AppState {
 
   rollingWindowLimit: number;
   setRollingWindowLimit: (limit: number) => void;
+
+  chatPreferences: ChatPreferences;
+  setChatPreferences: (prefs: Partial<ChatPreferences>) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -271,13 +301,64 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   clearSelectedSkills: () => set({ selectedSkills: [] }),
 
-  rollingWindowLimit: 20,
+  rollingWindowLimit: (() => {
+    if (typeof window === "undefined") return 20;
+    try {
+      const saved = localStorage.getItem("cheapchat_rolling_window_limit");
+      if (saved) return parseInt(saved, 10) || 20;
+      const rawPrefs = localStorage.getItem("cheapchats_chat_preferences");
+      if (rawPrefs) {
+        const p = JSON.parse(rawPrefs);
+        if (p?.rollingWindowLimit) return parseInt(p.rollingWindowLimit, 10) || 20;
+      }
+    } catch {}
+    return 20;
+  })(),
   setRollingWindowLimit: (limit: number) => {
     try {
       if (typeof window !== "undefined") {
         localStorage.setItem("cheapchat_rolling_window_limit", String(limit));
       }
     } catch {}
-    set({ rollingWindowLimit: limit });
+    set((state) => ({
+      rollingWindowLimit: limit,
+      chatPreferences: { ...state.chatPreferences, rollingWindowLimit: limit },
+    }));
+  },
+
+  chatPreferences: (() => {
+    const defaultPrefs: ChatPreferences = {
+      temperature: 0.7,
+      contextWindow: "128k", // Default 128k context window
+      systemPrompt: "You are a helpful, brilliant AI assistant.",
+      streamResponse: true,
+      autoOpenArtifacts: true,
+      rollingWindowLimit: 20,
+    };
+    if (typeof window === "undefined") return defaultPrefs;
+    try {
+      const raw = localStorage.getItem("cheapchats_chat_preferences");
+      if (raw) {
+        return { ...defaultPrefs, ...JSON.parse(raw) };
+      }
+    } catch {}
+    return defaultPrefs;
+  })(),
+  setChatPreferences: (prefs) => {
+    set((state) => {
+      const updated = { ...state.chatPreferences, ...prefs };
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("cheapchats_chat_preferences", JSON.stringify(updated));
+          if (updated.rollingWindowLimit) {
+            localStorage.setItem("cheapchat_rolling_window_limit", String(updated.rollingWindowLimit));
+          }
+        } catch {}
+      }
+      return {
+        chatPreferences: updated,
+        rollingWindowLimit: updated.rollingWindowLimit ?? state.rollingWindowLimit,
+      };
+    });
   },
 }));

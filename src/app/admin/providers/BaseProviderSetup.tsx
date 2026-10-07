@@ -51,9 +51,10 @@ export interface BaseProviderSetupProps {
   rawModelsUrl?: string;
   baseUrl?: string;
   placeholderKey?: string;
-  index?: number;
   byokEnabled?: boolean;
+  chatsEnabled?: boolean;
   onToggleByok?: () => void;
+  onToggleChats?: () => void;
   onModelsUpdated?: () => void;
 }
 
@@ -71,7 +72,9 @@ const BaseProviderSetup = forwardRef<BaseProviderSetupRef, BaseProviderSetupProp
     placeholderKey = 'sk-...',
     index,
     byokEnabled,
+    chatsEnabled,
     onToggleByok,
+    onToggleChats,
     onModelsUpdated
   },
   ref
@@ -543,6 +546,55 @@ const BaseProviderSetup = forwardRef<BaseProviderSetupRef, BaseProviderSetupProp
                       position: 'absolute',
                       top: '1.5px',
                       left: (byokEnabled ?? true) ? '12.5px' : '1.5px',
+                      width: '12px',
+                      height: '12px',
+                      background: 'white',
+                      borderRadius: '50%',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Chats Toggle Switch */}
+            {onToggleChats !== undefined && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleChats();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  background: (chatsEnabled ?? true) ? '#3b82f615' : 'var(--color-bg-soft)',
+                  padding: '3px 8px',
+                  borderRadius: '16px',
+                  border: `1px solid ${(chatsEnabled ?? true) ? '#3b82f644' : 'var(--color-border)'}`
+                }}
+                title="Toggle provider visibility in CheapChats"
+              >
+                <span style={{ fontSize: '11px', fontWeight: 700, color: (chatsEnabled ?? true) ? '#60a5fa' : 'var(--color-text-muted)' }}>
+                  Chats {(chatsEnabled ?? true) ? 'ON' : 'OFF'}
+                </span>
+                <div
+                  style={{
+                    width: '26px',
+                    height: '15px',
+                    background: (chatsEnabled ?? true) ? '#3b82f6' : 'var(--color-text-muted)',
+                    borderRadius: '16px',
+                    position: 'relative',
+                    transition: 'background 0.3s'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '1.5px',
+                      left: (chatsEnabled ?? true) ? '12.5px' : '1.5px',
                       width: '12px',
                       height: '12px',
                       background: 'white',

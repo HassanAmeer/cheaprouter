@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import MessageItem, { Message } from "./MessageItem";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
+import { getSuggestionSkillName } from "@cheapchats/frontend/lib/suggestionSkills";
 import { Sparkles, Code, Globe, Zap, ArrowDown, FileText, Workflow, Gamepad2 } from "lucide-react";
 
 interface MessageThreadProps {
@@ -33,9 +34,8 @@ export default function MessageThread({
 
   const handleSelectSuggestion = (label: string, prefix: string, type?: string) => {
     setActiveSuggestionChip({ label, prefix, type });
-    if (type === "game" || label === "HTML page / game") {
-      addSelectedSkill("HTML Page / Game & Sound");
-    }
+    const skillName = getSuggestionSkillName(label, type);
+    if (skillName) addSelectedSkill(skillName);
   };
 
   if (messages.length === 0) {

@@ -51,7 +51,7 @@ import TokenRouterSetup, { TokenRouterSetupRef } from '../TokenRouterSetup';
 
 type Model = { id: string; name: string; originalId?: string; description?: string; themeColor?: string; isWhiteTheme?: boolean; shimmerEffect?: boolean; badgeText?: string; text?: boolean; reasoning?: boolean; vision?: boolean; image?: boolean; video?: boolean; embedding?: boolean; audio?: boolean; contextWindow?: string; tokenLimit?: string; access?: string; inputPrice?: string; outputPrice?: string; offInputPrice?: string; offOutputPrice?: string; showOnLandingPage?: boolean; };
 type Header = { id: string; key: string; value: string };
-type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
+type Provider = { id: string; name: string; status: boolean; byokEnabled?: boolean; chatsEnabled?: boolean; key: string; priority: number; models: Model[]; baseUrl?: string; useModelsApi?: boolean; modelsApiLink?: string; headers?: Header[]; isCustom?: boolean; apiFormat?: string; icon?: string };
 
 const editorOptions: any = {
   minimap: { enabled: false },
@@ -223,6 +223,7 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
         list = rawArray.map((p: any) => ({
           id: p.id, name: p.name, icon: p.icon || '', status: p.status ?? true,
           byokEnabled: p.byok_enabled ?? p.byokEnabled ?? true,
+          chatsEnabled: p.chats_enabled ?? p.chatsEnabled ?? true,
           key: p.key || '', priority: p.priority ?? 0,
           baseUrl: p.base_url ?? p.baseUrl,
           useModelsApi: p.use_models_api ?? p.useModelsApi ?? false,
@@ -327,6 +328,46 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
   const getByokStatus = (id: string, altId?: string) => {
     const prov = providers.find(p => p.id === id || (altId && p.id === altId));
     return prov?.byokEnabled ?? true;
+  };
+
+  const toggleChatsProvider = async (id: string, defaultName?: string) => {
+    let prov = providers.find(p => p.id === id || (id === 'ap_openrouter' && p.id === 'openrouter') || (id === 'ap_opencode' && p.id === 'opencode'));
+    let updated: Provider[];
+    let targetState = true;
+    if (prov) {
+      targetState = !(prov.chatsEnabled ?? true);
+      updated = providers.map(p => (p.id === prov!.id) ? { ...p, chatsEnabled: targetState } : p);
+    } else {
+      targetState = false;
+      const newProv: Provider = {
+        id,
+        name: defaultName || id.replace(/^ap_/, '').toUpperCase(),
+        status: false,
+        key: '',
+        priority: providers.length + 1,
+        models: [],
+        byokEnabled: true,
+        chatsEnabled: targetState,
+        isCustom: true
+      };
+      updated = [...providers, newProv];
+      prov = newProv;
+    }
+    setProviders(updated);
+    setSaved(false);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+      await fetch('/api/admin/providers', { method: 'PUT', headers, body: JSON.stringify(updated) });
+      showToast(`Chats ${targetState ? 'Enabled' : 'Disabled'} for ${prov?.name || id}`);
+    } catch (err) {
+      console.error('Failed to auto-save Chats status', err);
+      showToast(`Failed to update Chats for ${prov?.name || id}`);
+    }
+  };
+
+  const getChatsStatus = (id: string, altId?: string) => {
+    const prov = providers.find(p => p.id === id || (altId && p.id === altId));
+    return prov?.chatsEnabled ?? true;
   };
   const toggleExpanded = (id: string) => { const next = new Set(expandedProviders); if (next.has(id)) next.delete(id); else next.add(id); setExpandedProviders(next); };
 
@@ -836,6 +877,46 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
                   position: 'absolute',
                   top: '1.5px',
                   left: byokOn ? '12.5px' : '1.5px',
+                  width: '12px',
+                  height: '12px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  transition: 'left 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }} />
+              </div>
+            </div>
+
+            {/* Chats Toggle Switch */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: (provider.chatsEnabled ?? true) ? '#3b82f615' : 'var(--color-bg-soft)',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                border: `1px solid ${(provider.chatsEnabled ?? true) ? '#3b82f644' : 'var(--color-border)'}`,
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleChatsProvider(provider.id, provider.name)}
+              title="Enable or disable showing this provider in CheapChats"
+            >
+              <span style={{ fontSize: '11px', fontWeight: 600, color: (provider.chatsEnabled ?? true) ? '#60a5fa' : 'var(--color-text-muted)' }}>
+                Chats {(provider.chatsEnabled ?? true) ? 'ON' : 'OFF'}
+              </span>
+              <div style={{
+                width: '26px',
+                height: '15px',
+                background: (provider.chatsEnabled ?? true) ? '#3b82f6' : 'var(--color-text-muted)',
+                borderRadius: '16px',
+                position: 'relative',
+                transition: 'background 0.3s'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '1.5px',
+                  left: (provider.chatsEnabled ?? true) ? '12.5px' : '1.5px',
                   width: '12px',
                   height: '12px',
                   background: 'white',
@@ -1518,48 +1599,48 @@ const res = await fetch('/api/admin/providers/get-backup', { headers: getAuthHea
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-              <OpenRouterSetup ref={openRouterRef} index={1} byokEnabled={getByokStatus('ap_openrouter', 'openrouter')} onToggleByok={() => toggleByokProvider('ap_openrouter', 'OpenRouter')} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenCodeSetup ref={openCodeRef} index={2} byokEnabled={getByokStatus('ap_opencode', 'opencode')} onToggleByok={() => toggleByokProvider('ap_opencode', 'OpenCode')} onModelsUpdated={() => fetchProviders(true)} />
-              <OpenAISetup ref={openaiRef} index={3} byokEnabled={getByokStatus('ap_openai')} onToggleByok={() => toggleByokProvider('ap_openai', 'OpenAI')} onModelsUpdated={() => fetchProviders(true)} />
-              <AnthropicSetup ref={anthropicRef} index={4} byokEnabled={getByokStatus('ap_anthropic')} onToggleByok={() => toggleByokProvider('ap_anthropic', 'Anthropic')} onModelsUpdated={() => fetchProviders(true)} />
-              <CohereSetup ref={cohereRef} index={5} byokEnabled={getByokStatus('ap_cohere')} onToggleByok={() => toggleByokProvider('ap_cohere', 'Cohere')} onModelsUpdated={() => fetchProviders(true)} />
-              <GroqSetup ref={groqRef} index={6} byokEnabled={getByokStatus('ap_groq')} onToggleByok={() => toggleByokProvider('ap_groq', 'Groq')} onModelsUpdated={() => fetchProviders(true)} />
-              <GoogleSetup ref={googleRef} index={7} byokEnabled={getByokStatus('ap_google')} onToggleByok={() => toggleByokProvider('ap_google', 'Google')} onModelsUpdated={() => fetchProviders(true)} />
-              <CerebrasSetup ref={cerebrasRef} index={8} byokEnabled={getByokStatus('ap_cerebras')} onToggleByok={() => toggleByokProvider('ap_cerebras', 'Cerebras')} onModelsUpdated={() => fetchProviders(true)} />
-              <SambaNovaSetup ref={sambanovaRef} index={9} byokEnabled={getByokStatus('ap_sambanova')} onToggleByok={() => toggleByokProvider('ap_sambanova', 'SambaNova')} onModelsUpdated={() => fetchProviders(true)} />
-              <XAISetup ref={xaiRef} index={10} byokEnabled={getByokStatus('ap_xai')} onToggleByok={() => toggleByokProvider('ap_xai', 'xAI')} onModelsUpdated={() => fetchProviders(true)} />
-              <NovitaSetup ref={novitaRef} index={11} byokEnabled={getByokStatus('ap_novita')} onToggleByok={() => toggleByokProvider('ap_novita', 'Novita')} onModelsUpdated={() => fetchProviders(true)} />
-              <BytezSetup ref={bytezRef} index={12} byokEnabled={getByokStatus('ap_bytez')} onToggleByok={() => toggleByokProvider('ap_bytez', 'Bytez')} onModelsUpdated={() => fetchProviders(true)} />
-              <AIMLAPISetup ref={aimlapiRef} index={13} byokEnabled={getByokStatus('ap_aimlapi')} onToggleByok={() => toggleByokProvider('ap_aimlapi', 'AIMLAPI')} onModelsUpdated={() => fetchProviders(true)} />
-              <TokenHarborSetup ref={tokenharborRef} index={14} byokEnabled={getByokStatus('ap_tokenharbor')} onToggleByok={() => toggleByokProvider('ap_tokenharbor', 'TokenHarbor')} onModelsUpdated={() => fetchProviders(true)} />
-              <AIANDSetup ref={aiandRef} index={15} byokEnabled={getByokStatus('ap_aiand')} onToggleByok={() => toggleByokProvider('ap_aiand', 'AIAND')} onModelsUpdated={() => fetchProviders(true)} />
-              <MistralSetup ref={mistralRef} index={16} byokEnabled={getByokStatus('ap_mistral')} onToggleByok={() => toggleByokProvider('ap_mistral', 'Mistral')} onModelsUpdated={() => fetchProviders(true)} />
-              <TogetherSetup ref={togetherRef} index={17} byokEnabled={getByokStatus('ap_together')} onToggleByok={() => toggleByokProvider('ap_together', 'Together')} onModelsUpdated={() => fetchProviders(true)} />
-              <DeepSeekSetup ref={deepseekRef} index={18} byokEnabled={getByokStatus('ap_deepseek')} onToggleByok={() => toggleByokProvider('ap_deepseek', 'DeepSeek')} onModelsUpdated={() => fetchProviders(true)} />
-              <FireworksSetup ref={fireworksRef} index={19} byokEnabled={getByokStatus('ap_fireworks')} onToggleByok={() => toggleByokProvider('ap_fireworks', 'Fireworks')} onModelsUpdated={() => fetchProviders(true)} />
-              <PerplexitySetup ref={perplexityRef} index={20} byokEnabled={getByokStatus('ap_perplexity')} onToggleByok={() => toggleByokProvider('ap_perplexity', 'Perplexity')} onModelsUpdated={() => fetchProviders(true)} />
-              <AmazonBedrockSetup ref={amazonbedrockRef} index={21} byokEnabled={getByokStatus('ap_amazonbedrock')} onToggleByok={() => toggleByokProvider('ap_amazonbedrock', 'Amazon Bedrock')} onModelsUpdated={() => fetchProviders(true)} />
-              <GithubSetup ref={githubRef} index={22} byokEnabled={getByokStatus('ap_github')} onToggleByok={() => toggleByokProvider('ap_github', 'GitHub Models')} onModelsUpdated={() => fetchProviders(true)} />
-              <HuggingFaceSetup ref={huggingfaceRef} index={23} byokEnabled={getByokStatus('ap_huggingface')} onToggleByok={() => toggleByokProvider('ap_huggingface', 'Hugging Face')} onModelsUpdated={() => fetchProviders(true)} />
-              <HyperbolicSetup ref={hyperbolicRef} index={24} byokEnabled={getByokStatus('ap_hyperbolic')} onToggleByok={() => toggleByokProvider('ap_hyperbolic', 'Hyperbolic')} onModelsUpdated={() => fetchProviders(true)} />
-              <MoonshotSetup ref={moonshotRef} index={25} byokEnabled={getByokStatus('ap_moonshot')} onToggleByok={() => toggleByokProvider('ap_moonshot', 'Moonshot')} onModelsUpdated={() => fetchProviders(true)} />
-              <ZaiSetup ref={zaiRef} index={26} byokEnabled={getByokStatus('ap_zai')} onToggleByok={() => toggleByokProvider('ap_zai', 'ZAI')} onModelsUpdated={() => fetchProviders(true)} />
-              <NvidiaSetup ref={nvidiaRef} index={27} byokEnabled={getByokStatus('ap_nvidia')} onToggleByok={() => toggleByokProvider('ap_nvidia', 'Nvidia')} onModelsUpdated={() => fetchProviders(true)} />
-              <KiloCodeSetup ref={kilocodeRef} index={28} byokEnabled={getByokStatus('ap_kilocode')} onToggleByok={() => toggleByokProvider('ap_kilocode', 'Kilo Code')} onModelsUpdated={() => fetchProviders(true)} />
-              <ClineCodeSetup ref={clinecodeRef} index={29} byokEnabled={getByokStatus('ap_clinecode')} onToggleByok={() => toggleByokProvider('ap_clinecode', 'Cline Code')} onModelsUpdated={() => fetchProviders(true)} />
-              <PoixeSetup ref={poixeRef} index={30} byokEnabled={getByokStatus('ap_poixe')} onToggleByok={() => toggleByokProvider('ap_poixe', 'Poixe')} onModelsUpdated={() => fetchProviders(true)} />
-              <SiliconFlowSetup ref={siliconflowRef} index={31} byokEnabled={getByokStatus('ap_siliconflow')} onToggleByok={() => toggleByokProvider('ap_siliconflow', 'SiliconFlow')} onModelsUpdated={() => fetchProviders(true)} />
-              <ZenmuxSetup ref={zenmuxRef} index={32} byokEnabled={getByokStatus('ap_zenmux')} onToggleByok={() => toggleByokProvider('ap_zenmux', 'Zenmux')} onModelsUpdated={() => fetchProviders(true)} />
-              <UnoRouterSetup ref={unorouterRef} index={33} byokEnabled={getByokStatus('ap_unorouter')} onToggleByok={() => toggleByokProvider('ap_unorouter', 'UnoRouter')} onModelsUpdated={() => fetchProviders(true)} />
-              <RoutewaySetup ref={routewayRef} index={34} byokEnabled={getByokStatus('ap_routeway')} onToggleByok={() => toggleByokProvider('ap_routeway', 'Routeway')} onModelsUpdated={() => fetchProviders(true)} />
-              <StepFunSetup ref={stepfunRef} index={35} byokEnabled={getByokStatus('ap_stepfun')} onToggleByok={() => toggleByokProvider('ap_stepfun', 'StepFun')} onModelsUpdated={() => fetchProviders(true)} />
-              <LLM7Setup ref={llm7Ref} index={36} byokEnabled={getByokStatus('ap_llm7')} onToggleByok={() => toggleByokProvider('ap_llm7', 'LLM7')} onModelsUpdated={() => fetchProviders(true)} />
-              <ModelScopeSetup ref={modelscopeRef} index={37} byokEnabled={getByokStatus('ap_modelscope')} onToggleByok={() => toggleByokProvider('ap_modelscope', 'ModelScope')} onModelsUpdated={() => fetchProviders(true)} />
-              <AIHordeSetup ref={aihordeRef} index={38} byokEnabled={getByokStatus('ap_aihorde')} onToggleByok={() => toggleByokProvider('ap_aihorde', 'AI Horde')} onModelsUpdated={() => fetchProviders(true)} />
-              <PollinationsSetup ref={pollinationsRef} index={39} byokEnabled={getByokStatus('ap_pollinations')} onToggleByok={() => toggleByokProvider('ap_pollinations', 'Pollinations')} onModelsUpdated={() => fetchProviders(true)} />
-              <AnyRouterSetup ref={anyrouterRef} index={40} byokEnabled={getByokStatus('ap_anyrouter')} onToggleByok={() => toggleByokProvider('ap_anyrouter', 'AnyRouter')} onModelsUpdated={() => fetchProviders(true)} />
-              <AgnesAISetup ref={agnesaiRef} index={41} byokEnabled={getByokStatus('ap_agnesai')} onToggleByok={() => toggleByokProvider('ap_agnesai', 'Agnes AI')} onModelsUpdated={() => fetchProviders(true)} />
-              <TokenRouterSetup ref={tokenrouterRef} index={42} byokEnabled={getByokStatus('ap_tokenrouter')} onToggleByok={() => toggleByokProvider('ap_tokenrouter', 'TokenRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenRouterSetup ref={openRouterRef} index={1} byokEnabled={getByokStatus('ap_openrouter', 'openrouter')} onToggleByok={() => toggleByokProvider('ap_openrouter', 'OpenRouter')} chatsEnabled={getChatsStatus('ap_openrouter', 'openrouter')} onToggleChats={() => toggleChatsProvider('ap_openrouter', 'OpenRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenCodeSetup ref={openCodeRef} index={2} byokEnabled={getByokStatus('ap_opencode', 'opencode')} onToggleByok={() => toggleByokProvider('ap_opencode', 'OpenCode')} chatsEnabled={getChatsStatus('ap_opencode', 'opencode')} onToggleChats={() => toggleChatsProvider('ap_opencode', 'OpenCode')} onModelsUpdated={() => fetchProviders(true)} />
+              <OpenAISetup ref={openaiRef} index={3} byokEnabled={getByokStatus('ap_openai')} onToggleByok={() => toggleByokProvider('ap_openai', 'OpenAI')} chatsEnabled={getChatsStatus('ap_openai')} onToggleChats={() => toggleChatsProvider('ap_openai', 'OpenAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <AnthropicSetup ref={anthropicRef} index={4} byokEnabled={getByokStatus('ap_anthropic')} onToggleByok={() => toggleByokProvider('ap_anthropic', 'Anthropic')} chatsEnabled={getChatsStatus('ap_anthropic')} onToggleChats={() => toggleChatsProvider('ap_anthropic', 'Anthropic')} onModelsUpdated={() => fetchProviders(true)} />
+              <CohereSetup ref={cohereRef} index={5} byokEnabled={getByokStatus('ap_cohere')} onToggleByok={() => toggleByokProvider('ap_cohere', 'Cohere')} chatsEnabled={getChatsStatus('ap_cohere')} onToggleChats={() => toggleChatsProvider('ap_cohere', 'Cohere')} onModelsUpdated={() => fetchProviders(true)} />
+              <GroqSetup ref={groqRef} index={6} byokEnabled={getByokStatus('ap_groq')} onToggleByok={() => toggleByokProvider('ap_groq', 'Groq')} chatsEnabled={getChatsStatus('ap_groq')} onToggleChats={() => toggleChatsProvider('ap_groq', 'Groq')} onModelsUpdated={() => fetchProviders(true)} />
+              <GoogleSetup ref={googleRef} index={7} byokEnabled={getByokStatus('ap_google')} onToggleByok={() => toggleByokProvider('ap_google', 'Google')} chatsEnabled={getChatsStatus('ap_google')} onToggleChats={() => toggleChatsProvider('ap_google', 'Google')} onModelsUpdated={() => fetchProviders(true)} />
+              <CerebrasSetup ref={cerebrasRef} index={8} byokEnabled={getByokStatus('ap_cerebras')} onToggleByok={() => toggleByokProvider('ap_cerebras', 'Cerebras')} chatsEnabled={getChatsStatus('ap_cerebras')} onToggleChats={() => toggleChatsProvider('ap_cerebras', 'Cerebras')} onModelsUpdated={() => fetchProviders(true)} />
+              <SambaNovaSetup ref={sambanovaRef} index={9} byokEnabled={getByokStatus('ap_sambanova')} onToggleByok={() => toggleByokProvider('ap_sambanova', 'SambaNova')} chatsEnabled={getChatsStatus('ap_sambanova')} onToggleChats={() => toggleChatsProvider('ap_sambanova', 'SambaNova')} onModelsUpdated={() => fetchProviders(true)} />
+              <XAISetup ref={xaiRef} index={10} byokEnabled={getByokStatus('ap_xai')} onToggleByok={() => toggleByokProvider('ap_xai', 'xAI')} chatsEnabled={getChatsStatus('ap_xai')} onToggleChats={() => toggleChatsProvider('ap_xai', 'xAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <NovitaSetup ref={novitaRef} index={11} byokEnabled={getByokStatus('ap_novita')} onToggleByok={() => toggleByokProvider('ap_novita', 'Novita')} chatsEnabled={getChatsStatus('ap_novita')} onToggleChats={() => toggleChatsProvider('ap_novita', 'Novita')} onModelsUpdated={() => fetchProviders(true)} />
+              <BytezSetup ref={bytezRef} index={12} byokEnabled={getByokStatus('ap_bytez')} onToggleByok={() => toggleByokProvider('ap_bytez', 'Bytez')} chatsEnabled={getChatsStatus('ap_bytez')} onToggleChats={() => toggleChatsProvider('ap_bytez', 'Bytez')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIMLAPISetup ref={aimlapiRef} index={13} byokEnabled={getByokStatus('ap_aimlapi')} onToggleByok={() => toggleByokProvider('ap_aimlapi', 'AIMLAPI')} chatsEnabled={getChatsStatus('ap_aimlapi')} onToggleChats={() => toggleChatsProvider('ap_aimlapi', 'AIMLAPI')} onModelsUpdated={() => fetchProviders(true)} />
+              <TokenHarborSetup ref={tokenharborRef} index={14} byokEnabled={getByokStatus('ap_tokenharbor')} onToggleByok={() => toggleByokProvider('ap_tokenharbor', 'TokenHarbor')} chatsEnabled={getChatsStatus('ap_tokenharbor')} onToggleChats={() => toggleChatsProvider('ap_tokenharbor', 'TokenHarbor')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIANDSetup ref={aiandRef} index={15} byokEnabled={getByokStatus('ap_aiand')} onToggleByok={() => toggleByokProvider('ap_aiand', 'AIAND')} chatsEnabled={getChatsStatus('ap_aiand')} onToggleChats={() => toggleChatsProvider('ap_aiand', 'AIAND')} onModelsUpdated={() => fetchProviders(true)} />
+              <MistralSetup ref={mistralRef} index={16} byokEnabled={getByokStatus('ap_mistral')} onToggleByok={() => toggleByokProvider('ap_mistral', 'Mistral')} chatsEnabled={getChatsStatus('ap_mistral')} onToggleChats={() => toggleChatsProvider('ap_mistral', 'Mistral')} onModelsUpdated={() => fetchProviders(true)} />
+              <TogetherSetup ref={togetherRef} index={17} byokEnabled={getByokStatus('ap_together')} onToggleByok={() => toggleByokProvider('ap_together', 'Together')} chatsEnabled={getChatsStatus('ap_together')} onToggleChats={() => toggleChatsProvider('ap_together', 'Together')} onModelsUpdated={() => fetchProviders(true)} />
+              <DeepSeekSetup ref={deepseekRef} index={18} byokEnabled={getByokStatus('ap_deepseek')} onToggleByok={() => toggleByokProvider('ap_deepseek', 'DeepSeek')} chatsEnabled={getChatsStatus('ap_deepseek')} onToggleChats={() => toggleChatsProvider('ap_deepseek', 'DeepSeek')} onModelsUpdated={() => fetchProviders(true)} />
+              <FireworksSetup ref={fireworksRef} index={19} byokEnabled={getByokStatus('ap_fireworks')} onToggleByok={() => toggleByokProvider('ap_fireworks', 'Fireworks')} chatsEnabled={getChatsStatus('ap_fireworks')} onToggleChats={() => toggleChatsProvider('ap_fireworks', 'Fireworks')} onModelsUpdated={() => fetchProviders(true)} />
+              <PerplexitySetup ref={perplexityRef} index={20} byokEnabled={getByokStatus('ap_perplexity')} onToggleByok={() => toggleByokProvider('ap_perplexity', 'Perplexity')} chatsEnabled={getChatsStatus('ap_perplexity')} onToggleChats={() => toggleChatsProvider('ap_perplexity', 'Perplexity')} onModelsUpdated={() => fetchProviders(true)} />
+              <AmazonBedrockSetup ref={amazonbedrockRef} index={21} byokEnabled={getByokStatus('ap_amazonbedrock')} onToggleByok={() => toggleByokProvider('ap_amazonbedrock', 'Amazon Bedrock')} chatsEnabled={getChatsStatus('ap_amazonbedrock')} onToggleChats={() => toggleChatsProvider('ap_amazonbedrock', 'Amazon Bedrock')} onModelsUpdated={() => fetchProviders(true)} />
+              <GithubSetup ref={githubRef} index={22} byokEnabled={getByokStatus('ap_github')} onToggleByok={() => toggleByokProvider('ap_github', 'GitHub Models')} chatsEnabled={getChatsStatus('ap_github')} onToggleChats={() => toggleChatsProvider('ap_github', 'GitHub Models')} onModelsUpdated={() => fetchProviders(true)} />
+              <HuggingFaceSetup ref={huggingfaceRef} index={23} byokEnabled={getByokStatus('ap_huggingface')} onToggleByok={() => toggleByokProvider('ap_huggingface', 'Hugging Face')} chatsEnabled={getChatsStatus('ap_huggingface')} onToggleChats={() => toggleChatsProvider('ap_huggingface', 'Hugging Face')} onModelsUpdated={() => fetchProviders(true)} />
+              <HyperbolicSetup ref={hyperbolicRef} index={24} byokEnabled={getByokStatus('ap_hyperbolic')} onToggleByok={() => toggleByokProvider('ap_hyperbolic', 'Hyperbolic')} chatsEnabled={getChatsStatus('ap_hyperbolic')} onToggleChats={() => toggleChatsProvider('ap_hyperbolic', 'Hyperbolic')} onModelsUpdated={() => fetchProviders(true)} />
+              <MoonshotSetup ref={moonshotRef} index={25} byokEnabled={getByokStatus('ap_moonshot')} onToggleByok={() => toggleByokProvider('ap_moonshot', 'Moonshot')} chatsEnabled={getChatsStatus('ap_moonshot')} onToggleChats={() => toggleChatsProvider('ap_moonshot', 'Moonshot')} onModelsUpdated={() => fetchProviders(true)} />
+              <ZaiSetup ref={zaiRef} index={26} byokEnabled={getByokStatus('ap_zai')} onToggleByok={() => toggleByokProvider('ap_zai', 'ZAI')} chatsEnabled={getChatsStatus('ap_zai')} onToggleChats={() => toggleChatsProvider('ap_zai', 'ZAI')} onModelsUpdated={() => fetchProviders(true)} />
+              <NvidiaSetup ref={nvidiaRef} index={27} byokEnabled={getByokStatus('ap_nvidia')} onToggleByok={() => toggleByokProvider('ap_nvidia', 'Nvidia')} chatsEnabled={getChatsStatus('ap_nvidia')} onToggleChats={() => toggleChatsProvider('ap_nvidia', 'Nvidia')} onModelsUpdated={() => fetchProviders(true)} />
+              <KiloCodeSetup ref={kilocodeRef} index={28} byokEnabled={getByokStatus('ap_kilocode')} onToggleByok={() => toggleByokProvider('ap_kilocode', 'Kilo Code')} chatsEnabled={getChatsStatus('ap_kilocode')} onToggleChats={() => toggleChatsProvider('ap_kilocode', 'Kilo Code')} onModelsUpdated={() => fetchProviders(true)} />
+              <ClineCodeSetup ref={clinecodeRef} index={29} byokEnabled={getByokStatus('ap_clinecode')} onToggleByok={() => toggleByokProvider('ap_clinecode', 'Cline Code')} chatsEnabled={getChatsStatus('ap_clinecode')} onToggleChats={() => toggleChatsProvider('ap_clinecode', 'Cline Code')} onModelsUpdated={() => fetchProviders(true)} />
+              <PoixeSetup ref={poixeRef} index={30} byokEnabled={getByokStatus('ap_poixe')} onToggleByok={() => toggleByokProvider('ap_poixe', 'Poixe')} chatsEnabled={getChatsStatus('ap_poixe')} onToggleChats={() => toggleChatsProvider('ap_poixe', 'Poixe')} onModelsUpdated={() => fetchProviders(true)} />
+              <SiliconFlowSetup ref={siliconflowRef} index={31} byokEnabled={getByokStatus('ap_siliconflow')} onToggleByok={() => toggleByokProvider('ap_siliconflow', 'SiliconFlow')} chatsEnabled={getChatsStatus('ap_siliconflow')} onToggleChats={() => toggleChatsProvider('ap_siliconflow', 'SiliconFlow')} onModelsUpdated={() => fetchProviders(true)} />
+              <ZenmuxSetup ref={zenmuxRef} index={32} byokEnabled={getByokStatus('ap_zenmux')} onToggleByok={() => toggleByokProvider('ap_zenmux', 'Zenmux')} chatsEnabled={getChatsStatus('ap_zenmux')} onToggleChats={() => toggleChatsProvider('ap_zenmux', 'Zenmux')} onModelsUpdated={() => fetchProviders(true)} />
+              <UnoRouterSetup ref={unorouterRef} index={33} byokEnabled={getByokStatus('ap_unorouter')} onToggleByok={() => toggleByokProvider('ap_unorouter', 'UnoRouter')} chatsEnabled={getChatsStatus('ap_unorouter')} onToggleChats={() => toggleChatsProvider('ap_unorouter', 'UnoRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <RoutewaySetup ref={routewayRef} index={34} byokEnabled={getByokStatus('ap_routeway')} onToggleByok={() => toggleByokProvider('ap_routeway', 'Routeway')} chatsEnabled={getChatsStatus('ap_routeway')} onToggleChats={() => toggleChatsProvider('ap_routeway', 'Routeway')} onModelsUpdated={() => fetchProviders(true)} />
+              <StepFunSetup ref={stepfunRef} index={35} byokEnabled={getByokStatus('ap_stepfun')} onToggleByok={() => toggleByokProvider('ap_stepfun', 'StepFun')} chatsEnabled={getChatsStatus('ap_stepfun')} onToggleChats={() => toggleChatsProvider('ap_stepfun', 'StepFun')} onModelsUpdated={() => fetchProviders(true)} />
+              <LLM7Setup ref={llm7Ref} index={36} byokEnabled={getByokStatus('ap_llm7')} onToggleByok={() => toggleByokProvider('ap_llm7', 'LLM7')} chatsEnabled={getChatsStatus('ap_llm7')} onToggleChats={() => toggleChatsProvider('ap_llm7', 'LLM7')} onModelsUpdated={() => fetchProviders(true)} />
+              <ModelScopeSetup ref={modelscopeRef} index={37} byokEnabled={getByokStatus('ap_modelscope')} onToggleByok={() => toggleByokProvider('ap_modelscope', 'ModelScope')} chatsEnabled={getChatsStatus('ap_modelscope')} onToggleChats={() => toggleChatsProvider('ap_modelscope', 'ModelScope')} onModelsUpdated={() => fetchProviders(true)} />
+              <AIHordeSetup ref={aihordeRef} index={38} byokEnabled={getByokStatus('ap_aihorde')} onToggleByok={() => toggleByokProvider('ap_aihorde', 'AI Horde')} chatsEnabled={getChatsStatus('ap_aihorde')} onToggleChats={() => toggleChatsProvider('ap_aihorde', 'AI Horde')} onModelsUpdated={() => fetchProviders(true)} />
+              <PollinationsSetup ref={pollinationsRef} index={39} byokEnabled={getByokStatus('ap_pollinations')} onToggleByok={() => toggleByokProvider('ap_pollinations', 'Pollinations')} chatsEnabled={getChatsStatus('ap_pollinations')} onToggleChats={() => toggleChatsProvider('ap_pollinations', 'Pollinations')} onModelsUpdated={() => fetchProviders(true)} />
+              <AnyRouterSetup ref={anyrouterRef} index={40} byokEnabled={getByokStatus('ap_anyrouter')} onToggleByok={() => toggleByokProvider('ap_anyrouter', 'AnyRouter')} chatsEnabled={getChatsStatus('ap_anyrouter')} onToggleChats={() => toggleChatsProvider('ap_anyrouter', 'AnyRouter')} onModelsUpdated={() => fetchProviders(true)} />
+              <AgnesAISetup ref={agnesaiRef} index={41} byokEnabled={getByokStatus('ap_agnesai')} onToggleByok={() => toggleByokProvider('ap_agnesai', 'Agnes AI')} chatsEnabled={getChatsStatus('ap_agnesai')} onToggleChats={() => toggleChatsProvider('ap_agnesai', 'Agnes AI')} onModelsUpdated={() => fetchProviders(true)} />
+              <TokenRouterSetup ref={tokenrouterRef} index={42} byokEnabled={getByokStatus('ap_tokenrouter')} onToggleByok={() => toggleByokProvider('ap_tokenrouter', 'TokenRouter')} chatsEnabled={getChatsStatus('ap_tokenrouter')} onToggleChats={() => toggleChatsProvider('ap_tokenrouter', 'TokenRouter')} onModelsUpdated={() => fetchProviders(true)} />
             </div>
           </div>
         </>

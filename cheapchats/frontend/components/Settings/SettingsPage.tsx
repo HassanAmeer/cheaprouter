@@ -1,47 +1,48 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import styles from "./SettingsPage.module.css";
 import {
   ArrowLeft,
   Cpu,
   MessageSquare,
   Mic,
-  Palette,
-  Shield,
-  Search,
-  Key,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  Layers,
-  Sparkles,
-  Sliders,
-  Server,
-  Zap,
-  RefreshCw,
-  Trash2,
-  Eye,
-  Plus,
   Volume2,
-  Lock,
+  Search,
+  CheckCircle2,
+  Sliders,
+  RefreshCw,
+  Plus,
+  Sparkles,
+  Layers,
+  RotateCcw,
+  Check,
+  Zap,
+  Info,
+  AlertTriangle,
+  Pencil,
+  Trash2,
+  Server,
+  ChevronDown,
 } from "lucide-react";
 import ProviderKeyDrawer, { ProviderItem } from "./ProviderKeyDrawer";
+import CustomProviderDialog from "./CustomProviderDialog";
+import {
+  CustomProvider,
+  readCustomProviders,
+  writeCustomProviders,
+} from "@cheapchats/frontend/lib/customProviders";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 
 export type SettingsTab =
   | "providers"
   | "chat"
-  | "speech"
-  | "appearance"
-  | "privacy";
+  | "speech";
 
 export default function SettingsPage() {
   const router = useRouter();
   const {
-    isIncognito,
-    setIncognito,
     isSttEnabled,
     toggleSttEnabled,
     isTtsEnabled,
@@ -50,6 +51,10 @@ export default function SettingsPage() {
     setSttLang,
     ttsVoice,
     setTtsVoice,
+    chatPreferences,
+    setChatPreferences,
+    rollingWindowLimit,
+    setRollingWindowLimit,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("providers");
@@ -57,17 +62,18 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [userKeys, setUserKeys] = useState<Record<string, string>>({});
+  const [customEndpoints, setCustomEndpoints] = useState<CustomProvider[]>([]);
+  const [isCustomProviderDialogOpen, setIsCustomProviderDialogOpen] = useState(false);
+  const [editingCustomProvider, setEditingCustomProvider] = useState<CustomProvider | null>(null);
+  const [isCustomExpanded, setIsCustomExpanded] = useState(true);
   const [selectedProviderForDrawer, setSelectedProviderForDrawer] =
     useState<ProviderItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [speechSupport, setSpeechSupport] = useState({ recognition: false, synthesis: false });
 
-  // Chat settings state
-  const [temperature, setTemperature] = useState(0.7);
-  const [systemPrompt, setSystemPrompt] = useState(
-    "You are a helpful, brilliant AI assistant."
-  );
-  const [streamResponse, setStreamResponse] = useState(true);
-  const [autoOpenArtifacts, setAutoOpenArtifacts] = useState(true);
+  const [customContextInput, setCustomContextInput] = useState("");
+  const [showCustomContext, setShowCustomContext] = useState(false);
 
   // Load configured keys from localStorage
   const loadUserKeys = () => {
@@ -98,6 +104,20 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchProviders();
     loadUserKeys();
+    setCustomEndpoints(readCustomProviders());
+    const loadSpeechCapabilities = () => {
+      const synthesisAvailable = "speechSynthesis" in window;
+      setSpeechSupport({
+        recognition: "SpeechRecognition" in window || "webkitSpeechRecognition" in window,
+        synthesis: synthesisAvailable,
+      });
+      if (synthesisAvailable) {
+        setBrowserVoices(window.speechSynthesis.getVoices());
+      }
+    };
+    loadSpeechCapabilities();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", loadSpeechCapabilities);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", loadSpeechCapabilities);
   }, []);
 
   const handleKeySaved = (providerId: string, hasKey: boolean) => {
@@ -121,6 +141,15 @@ export default function SettingsPage() {
     );
   }, [providers, searchQuery]);
 
+  const filteredCustomEndpoints = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return customEndpoints;
+    return customEndpoints.filter((provider) =>
+      [provider.name, provider.baseUrl, ...provider.models.map((model) => model.id)]
+        .some((value) => value.toLowerCase().includes(query))
+    );
+  }, [customEndpoints, searchQuery]);
+
   const configuredCount = useMemo(() => {
     let count = 0;
     for (const p of providers) {
@@ -128,31 +157,134 @@ export default function SettingsPage() {
         count++;
       }
     }
+    count += customEndpoints.filter((provider) => userKeys[provider.id]).length;
     return count;
-  }, [providers, userKeys]);
+  }, [providers, customEndpoints, userKeys]);
 
-  const totalModelsCount = useMemo(() => {
-    return providers.reduce((acc, p) => acc + (p.models?.length || 0), 0);
-  }, [providers]);
+  const customProviderCount = useMemo(
+    () => customEndpoints.length,
+    [customEndpoints]
+  );
+
+  const handleCustomProvidersSaved = (nextProviders: CustomProvider[]) => {
+    setCustomEndpoints(nextProviders);
+    loadUserKeys();
+  };
+
+  const removeCustomProvider = (provider: CustomProvider) => {
+    if (!window.confirm(`Remove ${provider.name} from this browser? Its saved API key will also be removed.`)) return;
+    const nextProviders = customEndpoints.filter((item) => item.id !== provider.id);
+    try {
+      writeCustomProviders(nextProviders);
+      const rawKeys = localStorage.getItem("cheapchats_provider_keys");
+      const keys = rawKeys ? JSON.parse(rawKeys) : {};
+      delete keys[provider.id];
+      localStorage.setItem("cheapchats_provider_keys", JSON.stringify(keys));
+      handleCustomProvidersSaved(nextProviders);
+    } catch (error) {
+      console.error("Failed to remove custom provider:", error);
+      window.alert("Could not remove this provider from browser storage.");
+    }
+  };
+
+  const renderProviderCards = (providerList: ProviderItem[]) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {providerList.map((provider) => {
+        const hasKey = !!(
+          userKeys[provider.id] ||
+          userKeys[provider.name.toLowerCase()]
+        );
+
+        return (
+          <div
+            key={provider.id}
+            onClick={() => openDrawerForProvider(provider)}
+            className={`group relative cursor-pointer rounded-2xl border bg-gradient-to-br from-[#242831] via-[#191c22] to-[#111419] p-5 shadow-lg shadow-black/20 transition-all duration-200 hover:-translate-y-1 hover:shadow-black/40 ${
+              hasKey
+                ? "border-emerald-500/30 hover:border-emerald-500/50"
+                : "border-white/10 hover:border-rose-300/30"
+            }`}
+          >
+            <div
+              className={`absolute top-0 left-6 right-6 h-0.5 rounded-full transition ${
+                hasKey ? "bg-emerald-500/70" : "bg-gradient-to-r from-rose-300/55 via-slate-300/25 to-white/10 group-hover:from-rose-300/80"
+              }`}
+            />
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-slate-300/10 to-black/50 p-2 transition-transform group-hover:scale-105">
+                  <img
+                    src={provider.icon}
+                    alt={provider.name}
+                    className="h-full w-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://api.iconify.design/lucide:server.svg";
+                    }}
+                  />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white transition group-hover:text-slate-200">
+                    {provider.name}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {provider.models?.length || 0} models catalog
+                  </p>
+                </div>
+              </div>
+              {hasKey ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-950/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 shadow-sm">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  Key Saved
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-slate-400 transition group-hover:border-white/20 group-hover:text-slate-200">
+                  <Plus className="h-3 w-3" />
+                  Add Key
+                </span>
+              )}
+            </div>
+            <div className="my-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Endpoint
+              </p>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-slate-300">
+                {provider.baseUrl || "Standard Cloud Gateway"}
+              </p>
+            </div>
+            <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs">
+              <span className="text-[11px] text-slate-400 transition group-hover:text-slate-200">
+                {hasKey ? "Click to manage key" : "Click to enter key"}
+              </span>
+              <span className="font-semibold text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-rose-200">
+                →
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
-    <div className="flex h-screen w-screen bg-[#0d0709] text-slate-100 overflow-hidden font-sans">
+    <div className={`${styles.settingsRoot} flex h-screen w-screen overflow-hidden bg-[#0b0d10] font-sans text-slate-100`}>
       {/* ──────────────── Left Sidebar ──────────────── */}
-      <aside className="w-64 md:w-72 bg-[#12080b] border-r border-red-500/15 flex flex-col h-full flex-shrink-0 select-none">
+      <aside className="flex h-full w-[4.25rem] flex-shrink-0 select-none flex-col border-r border-white/10 bg-gradient-to-b from-[#171a20] via-[#12151a] to-[#0e1014] sm:w-64 md:w-72">
         {/* Top Header */}
-        <div className="p-5 border-b border-red-500/15">
+        <div className="border-b border-white/10 p-2.5 sm:p-5">
           <button
             onClick={() => router.push("/chats")}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 transition mb-3 group"
+            className="group mb-3 inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 transition hover:text-white sm:justify-start"
+            aria-label="Back to Chat"
+            title="Back to Chat"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Chat
+            <span className="hidden sm:inline">Back to Chat</span>
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-lg shadow-red-600/30">
+          <div className="flex items-center justify-center gap-2.5 sm:justify-start">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/20 bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 shadow-lg shadow-black/30">
               <Sliders className="w-4 h-4 text-white" />
             </div>
-            <div>
+            <div className="hidden min-w-0 sm:block">
               <h1 className="text-sm font-bold text-white tracking-tight">Settings</h1>
               <p className="text-[11px] text-slate-400">CheapChats Control Center</p>
             </div>
@@ -163,18 +295,20 @@ export default function SettingsPage() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           <button
             onClick={() => setActiveTab("providers")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            title="Providers & API Keys"
+            aria-label="Providers & API Keys"
+            className={`w-full flex items-center justify-center sm:justify-between px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "providers"
-                ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
+                ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <Cpu className="w-4 h-4 text-red-400" />
-              <span>Providers & API Keys</span>
+              <Cpu className="w-4 h-4 text-rose-300" />
+              <span className="hidden sm:inline">Providers & API Keys</span>
             </div>
             {configuredCount > 0 && (
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500/30 text-red-200 border border-red-500/40">
+              <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-white/10 text-slate-200 border border-white/15">
                 {configuredCount}
               </span>
             )}
@@ -182,71 +316,54 @@ export default function SettingsPage() {
 
           <button
             onClick={() => setActiveTab("chat")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            title="Chat Settings"
+            aria-label="Chat Settings"
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "chat"
-                ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
+                ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-rose-400" />
-            <span>Chat Preferences</span>
+            <MessageSquare className="w-4 h-4 text-slate-400" />
+            <span className="hidden sm:inline">Chat Settings</span>
           </button>
 
           <button
             onClick={() => setActiveTab("speech")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+            title="Speech & Audio"
+            aria-label="Speech & Audio"
+            className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-2 sm:px-3 py-2.5 rounded-xl text-xs font-medium transition ${
               activeTab === "speech"
-                ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
+                ? "bg-gradient-to-r from-rose-400/[0.09] via-white/[0.06] to-transparent text-white border border-rose-300/20 shadow-sm shadow-black/20"
                 : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
             }`}
           >
-            <Mic className="w-4 h-4 text-amber-400" />
-            <span>Speech & Audio</span>
+            <Mic className="w-4 h-4 text-slate-400" />
+            <span className="hidden sm:inline">Speech & Audio</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("appearance")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
-              activeTab === "appearance"
-                ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
-                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-            }`}
-          >
-            <Palette className="w-4 h-4 text-purple-400" />
-            <span>Appearance</span>
-          </button>
 
-          <button
-            onClick={() => setActiveTab("privacy")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition ${
-              activeTab === "privacy"
-                ? "bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm"
-                : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-            }`}
-          >
-            <Shield className="w-4 h-4 text-emerald-400" />
-            <span>Privacy & Storage</span>
-          </button>
+
         </nav>
 
         {/* Footer info */}
-        <div className="p-4 border-t border-red-500/10 text-[11px] text-slate-500">
+        <div className="hidden border-t border-white/10 p-4 text-[11px] text-slate-500 sm:block">
           <p className="font-semibold text-slate-400">CheapChats 2.0</p>
           <p className="mt-0.5">Powered by CheapRouter Engine</p>
         </div>
       </aside>
 
       {/* ──────────────── Main Center Content ──────────────── */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d0709] relative">
+      <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top_right,rgba(148,163,184,0.08),transparent_45%),#0b0d10]">
         {/* Scrollable Center Body */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 max-w-6xl w-full mx-auto space-y-8">
+        <div className="mx-auto w-full max-w-6xl flex-1 space-y-7 overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
           {/* TAB 1: PROVIDERS & API KEYS (GRID VIEW) */}
           {activeTab === "providers" && (
             <div className="space-y-6">
               {/* Header Title & Subtitle */}
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-red-500" />
+                  <Cpu className="w-5 h-5 text-rose-300" />
                   AI Providers & API Keys
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
@@ -255,23 +372,25 @@ export default function SettingsPage() {
               </div>
 
               {/* Statistics Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-red-950/20 to-black/40 border border-red-500/20 shadow-md">
-                  <div className="text-[11px] font-semibold text-slate-400">Available Providers</div>
-                  <div className="text-2xl font-bold text-white mt-1">{providers.length}</div>
-                  <div className="text-[10px] text-red-400/80 mt-1">Syncing from CheapRouter Engine</div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-300/[0.09] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
+                  <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/70 via-slate-200/30 to-transparent" />
+                  <div className="text-[11px] font-semibold text-slate-400">Total Providers</div>
+                  <div className="text-2xl font-bold text-white mt-1">{providers.length + customEndpoints.length}</div>
+                  <div className="text-[10px] text-rose-200/70 mt-1">Provider Engine &amp; Custom Providers</div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/20 to-black/40 border border-emerald-500/20 shadow-md">
-                  <div className="text-[11px] font-semibold text-slate-400">Configured BYOK Keys</div>
+                <div className="relative overflow-hidden rounded-2xl border border-rose-300/15 bg-gradient-to-br from-rose-300/[0.08] via-slate-500/[0.06] to-[#111419] p-4 shadow-lg shadow-black/20">
+                  <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-rose-300/50 via-slate-200/20 to-transparent" />
+                  <div className="text-[11px] font-semibold text-slate-400">Custom Connected Providers</div>
+                  <div className="mt-1 text-2xl font-bold text-slate-100">{customEndpoints.length}</div>
+                  <div className="mt-1 text-[10px] text-rose-200/70">Custom endpoints &amp; Ollama APIs</div>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-400/[0.09] via-slate-700/[0.08] to-[#111419] p-4 shadow-lg shadow-black/20">
+                  <div className="text-[11px] font-semibold text-slate-400">BYOK Configured Providers</div>
                   <div className="text-2xl font-bold text-emerald-400 mt-1">{configuredCount}</div>
-                  <div className="text-[10px] text-emerald-400/80 mt-1">Stored securely in your browser</div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-950/20 to-black/40 border border-rose-500/20 shadow-md">
-                  <div className="text-[11px] font-semibold text-slate-400">Supported Models</div>
-                  <div className="text-2xl font-bold text-rose-300 mt-1">{totalModelsCount}</div>
-                  <div className="text-[10px] text-rose-400/80 mt-1">Ready for zero-latency chats</div>
+                  <div className="text-[10px] text-emerald-400/80 mt-1">Active user API keys saved</div>
                 </div>
               </div>
 
@@ -284,7 +403,7 @@ export default function SettingsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search provider or model..."
-                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-black/40 border border-red-500/20 focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 text-xs text-white placeholder-slate-500 outline-none transition"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.035] py-2 pl-9 pr-4 text-xs text-white outline-none transition placeholder:text-slate-500 focus:border-slate-400/40 focus:ring-1 focus:ring-slate-300/15"
                   />
                 </div>
 
@@ -306,11 +425,11 @@ export default function SettingsPage() {
                   {[...Array(6)].map((_, i) => (
                     <div
                       key={i}
-                      className="h-40 rounded-2xl bg-white/[0.02] border border-white/5 animate-pulse"
+                      className="h-40 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-400/[0.08] to-white/[0.02] animate-pulse"
                     />
                   ))}
                 </div>
-              ) : filteredProviders.length === 0 ? (
+              ) : filteredProviders.length === 0 && filteredCustomEndpoints.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
                   <Cpu className="w-8 h-8 text-slate-500 mx-auto" />
                   <p className="text-sm font-semibold text-slate-300">No providers found</p>
@@ -319,90 +438,124 @@ export default function SettingsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredProviders.map((provider) => {
-                    const hasKey = !!(
-                      userKeys[provider.id] ||
-                      userKeys[provider.name.toLowerCase()]
-                    );
-
-                    return (
-                      <div
-                        key={provider.id}
-                        onClick={() => openDrawerForProvider(provider)}
-                        className={`group relative p-5 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border transition-all duration-200 cursor-pointer shadow-lg hover:-translate-y-1 hover:shadow-red-600/10 ${
-                          hasKey
-                            ? "border-emerald-500/30 hover:border-emerald-500/60"
-                            : "border-red-500/20 hover:border-red-500/50"
-                        }`}
-                      >
-                        {/* Top Indicator Accent */}
-                        <div
-                          className={`absolute top-0 left-6 right-6 h-0.5 rounded-full transition ${
-                            hasKey ? "bg-emerald-500/70" : "bg-red-500/30 group-hover:bg-red-500/60"
-                          }`}
-                        />
-
-                        {/* Top Card Row: Icon + Name + Badge */}
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center p-2 group-hover:scale-105 transition-transform flex-shrink-0">
-                              <img
-                                src={provider.icon}
-                                alt={provider.name}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                  (e.currentTarget as any).src =
-                                    "https://api.iconify.design/lucide:server.svg";
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-white group-hover:text-red-300 transition">
-                                {provider.name}
-                              </h3>
-                              <p className="text-[11px] text-slate-400">
-                                {provider.models?.length || 0} models catalog
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Status Badge */}
-                          {hasKey ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 shadow-sm">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              Key Saved
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/5 text-slate-400 border border-white/10 group-hover:text-red-300 group-hover:border-red-500/30 transition">
-                              <Plus className="w-3 h-3" />
-                              Add Key
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Middle: Endpoint preview */}
-                        <div className="my-3">
-                          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                            Endpoint
-                          </p>
-                          <p className="text-[11px] font-mono text-slate-300 truncate mt-0.5">
-                            {provider.baseUrl || "Standard Cloud Gateway"}
-                          </p>
-                        </div>
-
-                        {/* Bottom Action Footer */}
-                        <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                          <span className="text-[11px] text-slate-400 group-hover:text-slate-200 transition">
-                            {hasKey ? "Click to manage key" : "Click to enter key"}
+                <div className="space-y-8">
+                  <section className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-300/15 bg-white/[0.02] p-3.5">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsCustomExpanded(!isCustomExpanded)}
+                          className="flex items-center gap-2 text-sm font-semibold text-white hover:text-rose-200 transition cursor-pointer"
+                        >
+                          <ChevronDown
+                            className={`h-4 w-4 text-rose-300 transition-transform duration-200 ${
+                              isCustomExpanded ? "rotate-0" : "-rotate-90"
+                            }`}
+                          />
+                          <span>Custom Providers</span>
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-300">
+                            {customEndpoints.length}
                           </span>
-                          <span className="text-red-400 font-semibold group-hover:translate-x-1 transition-transform">
-                            →
-                          </span>
-                        </div>
+                        </button>
+                        <p className="hidden md:inline text-[11px] text-slate-400">
+                          Add custom endpoints, local Ollama, vLLM or OpenAI-compatible APIs
+                        </p>
                       </div>
-                    );
-                  })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCustomProvider(null);
+                          setIsCustomProviderDialogOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300/20 bg-rose-300/[0.07] px-3 py-2 text-xs font-medium text-rose-100 transition hover:border-rose-300/35 hover:bg-rose-300/[0.12] cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add custom provider
+                      </button>
+                    </div>
+
+                    {isCustomExpanded && (
+                      filteredCustomEndpoints.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {filteredCustomEndpoints.map((provider) => {
+                            const hasKey = Boolean(userKeys[provider.id]);
+                            return (
+                              <article
+                                key={provider.id}
+                                className="relative rounded-2xl border border-rose-300/15 bg-gradient-to-br from-[#29252b] via-[#191c22] to-[#111419] p-5 shadow-lg shadow-black/20"
+                              >
+                                <div className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-gradient-to-r from-rose-300/60 via-slate-300/25 to-transparent" />
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-200/15 bg-rose-200/[0.06] text-rose-200">
+                                      <Server className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <h4 className="truncate text-sm font-bold text-white">{provider.name}</h4>
+                                      <p className="text-[11px] text-slate-400">{provider.models.length} models</p>
+                                    </div>
+                                  </div>
+                                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${hasKey ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-400"}`}>
+                                    {hasKey ? "Key saved" : "No key"}
+                                  </span>
+                                </div>
+                                <p className="mt-4 truncate font-mono text-[11px] text-slate-400" title={provider.baseUrl}>
+                                  {provider.baseUrl}
+                                </p>
+                                <div className="mt-4 flex items-center gap-2 border-t border-white/5 pt-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingCustomProvider(provider);
+                                      setIsCustomProviderDialogOpen(true);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 transition hover:bg-white/5 hover:text-white cursor-pointer"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCustomProvider(provider)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-400 transition hover:border-red-400/25 hover:bg-red-400/[0.06] hover:text-red-200 cursor-pointer"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Remove
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCustomProvider(null);
+                            setIsCustomProviderDialogOpen(true);
+                          }}
+                          className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] text-center transition hover:border-rose-300/30 hover:bg-rose-300/[0.03] cursor-pointer"
+                        >
+                          <Plus className="h-5 w-5 text-rose-200" />
+                          <span className="text-xs font-medium text-slate-200">
+                            {customEndpoints.length ? "No custom providers match your search" : "Add your first custom provider"}
+                          </span>
+                          <span className="text-[11px] text-slate-500">API URL, optional key and model IDs</span>
+                        </button>
+                      )
+                    )}
+                  </section>
+                  {filteredProviders.length > 0 && (
+                    <section className="space-y-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-200">Provider Engine Providers</h3>
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          Pre-configured providers from CheapRouter engine. Click to connect your BYOK API keys.
+                        </p>
+                      </div>
+                      {renderProviderCards(filteredProviders)}
+                    </section>
+                  )}
                 </div>
               )}
             </div>
@@ -410,78 +563,368 @@ export default function SettingsPage() {
 
           {/* TAB 2: CHAT PREFERENCES */}
           {activeTab === "chat" && (
-            <div className="space-y-6 max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-red-500" />
-                  Chat Preferences
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Adjust default conversation settings, creativity temperature, and code execution.
-                </p>
+            <div className="space-y-6 max-w-3xl">
+              {/* Header with Title and Auto-saved status */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-rose-300" />
+                    Chat Settings
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Configure model intelligence, temperature, context window limit, and conversation defaults.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Saved to Browser</span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setChatPreferences({
+                        temperature: 0.7,
+                        contextWindow: "128k",
+                        systemPrompt: "You are a helpful, brilliant AI assistant.",
+                        streamResponse: true,
+                        autoOpenArtifacts: true,
+                        rollingWindowLimit: 20,
+                      });
+                      setRollingWindowLimit(20);
+                    }}
+                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer"
+                    title="Reset all preferences to default"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset Defaults
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
-                {/* Temperature */}
-                <div className="space-y-2">
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#20242c] via-[#171a20] to-[#111419] p-6 shadow-xl shadow-black/25 space-y-7">
+                {/* 1. TEMPERATURE & CREATIVITY */}
+                <div className="space-y-3">
                   <div className="flex justify-between items-center text-xs">
-                    <label className="font-semibold text-slate-200">
-                      Creativity & Temperature ({temperature})
+                    <label className="font-semibold text-slate-100 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Model Temperature & Creativity</span>
+                      <span className="font-mono text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md text-[11px]">
+                        {chatPreferences.temperature.toFixed(2)}
+                      </span>
                     </label>
                     <span className="text-slate-400 text-[11px]">
-                      {temperature < 0.4 ? "Precise & Deterministic" : temperature > 0.8 ? "Highly Creative" : "Balanced"}
+                      {chatPreferences.temperature <= 0.35
+                        ? "Precise & Deterministic (Code / Math)"
+                        : chatPreferences.temperature >= 0.85
+                        ? "Highly Creative (Ideas / Roleplay)"
+                        : "Balanced (General Reasoning)"}
                     </span>
                   </div>
+
                   <input
                     type="range"
                     min="0"
-                    max="1.2"
+                    max="1.5"
                     step="0.05"
-                    value={temperature}
-                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full accent-red-500 cursor-pointer"
+                    value={chatPreferences.temperature}
+                    onChange={(e) =>
+                      setChatPreferences({ temperature: parseFloat(e.target.value) })
+                    }
+                    className="w-full accent-rose-400 cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
                   />
+
+                  {/* Temperature Quick Presets */}
+                  <div className="flex items-center gap-2 pt-1">
+                    {[
+                      { label: "Precise", val: 0.2, desc: "0.20 (Factual)" },
+                      { label: "Balanced", val: 0.7, desc: "0.70 (Standard)" },
+                      { label: "Creative", val: 1.0, desc: "1.00 (Expressive)" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.val}
+                        onClick={() => setChatPreferences({ temperature: preset.val })}
+                        className={`text-[11px] px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5 ${
+                          Math.abs(chatPreferences.temperature - preset.val) < 0.04
+                            ? "bg-rose-500/20 border-rose-500/50 text-rose-200 font-semibold shadow-xs"
+                            : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                        }`}
+                      >
+                        <span>{preset.label}</span>
+                        <span className="text-[10px] opacity-70">({preset.val})</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* System Prompt */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-200">
-                    Default System Prompt
-                  </label>
+                {/* 2. CONTEXT WINDOW (CRITICAL: Default 128k, configurable to 64k, 512k, 1M, etc.) */}
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center text-xs">
+                    <label className="font-semibold text-slate-100 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-sky-400" />
+                      <span>Context Window Limit</span>
+                      <span className="font-mono text-sky-300 bg-sky-400/10 border border-sky-400/20 px-2 py-0.5 rounded-md text-[11px] uppercase">
+                        {chatPreferences.contextWindow}
+                      </span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      Default: <span className="text-emerald-400 font-semibold">128k</span>
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Determines how many tokens of conversation context and attachments are sent to the AI.
+                    Select from optimized presets or enter a custom limit.
+                  </p>
+
+                  {/* Context Window Preset Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { id: "64k", title: "64k", label: "64,000 Tokens", badge: "Compact" },
+                      { id: "128k", title: "128k", label: "128,000 Tokens", badge: "Default", isDefault: true },
+                      { id: "512k", title: "512k", label: "512,000 Tokens", badge: "Extended" },
+                      { id: "1m", title: "1M", label: "1,000,000 Tokens", badge: "Ultra" },
+                    ].map((opt) => {
+                      const isSelected = chatPreferences.contextWindow?.toLowerCase() === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => {
+                            setChatPreferences({ contextWindow: opt.id as any });
+                            setShowCustomContext(false);
+                          }}
+                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between relative ${
+                            isSelected
+                              ? "bg-sky-500/15 border-sky-500/50 text-white shadow-md shadow-sky-950/30"
+                              : "bg-white/[0.03] border-white/[0.08] text-slate-300 hover:bg-white/[0.07] hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold tracking-tight">{opt.title}</span>
+                            <span
+                              className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md uppercase ${
+                                opt.isDefault
+                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                  : "bg-white/10 text-slate-400"
+                              }`}
+                            >
+                              {opt.badge}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1 font-mono">
+                            {opt.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Context Window Toggle & Input */}
+                  <div className="pt-1">
+                    {!showCustomContext ? (
+                      <button
+                        onClick={() => setShowCustomContext(true)}
+                        className="text-[11px] text-slate-400 hover:text-sky-300 underline underline-offset-4 cursor-pointer"
+                      >
+                        + Set custom context window (e.g. 256k, 2M)
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 p-2 rounded-xl bg-black/40 border border-white/10 mt-2">
+                        <input
+                          type="text"
+                          placeholder="e.g. 256k, 32k, 2M"
+                          value={customContextInput}
+                          onChange={(e) => setCustomContextInput(e.target.value)}
+                          className="flex-1 bg-transparent px-2 text-xs text-white placeholder-slate-500 outline-none font-mono"
+                        />
+                        <button
+                          onClick={() => {
+                            if (customContextInput.trim()) {
+                              setChatPreferences({ contextWindow: customContextInput.trim().toLowerCase() });
+                            }
+                          }}
+                          className="px-3 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 text-xs font-semibold cursor-pointer"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onClick={() => setShowCustomContext(false)}
+                          className="px-2 py-1 text-slate-400 hover:text-white text-xs cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. MESSAGE MEMORY & RETENTION (DEFAULT: 20 MESSAGES, RANGE: 5+, WARNING IF > 50) */}
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center text-xs">
+                    <label className="font-semibold text-slate-100 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-emerald-400" />
+                      <span>Message Memory & History Retention</span>
+                      <span className="font-mono text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-md text-[11px]">
+                        {rollingWindowLimit || 20} messages
+                      </span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      Default: <span className="text-emerald-400 font-semibold">20 messages</span>
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Specifies how many previous messages the model remembers in the conversation.
+                    Adjust from 5 messages up to any custom limit.
+                  </p>
+
+                  {/* Slider and direct numeric input */}
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="5"
+                      max="100"
+                      step="1"
+                      value={rollingWindowLimit || 20}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 5;
+                        setRollingWindowLimit(val);
+                        setChatPreferences({ rollingWindowLimit: val });
+                      }}
+                      className="flex-1 accent-emerald-400 cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                    />
+
+                    <div className="flex items-center gap-1.5 shrink-0 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="500"
+                        value={rollingWindowLimit || 20}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                          setRollingWindowLimit(val);
+                          setChatPreferences({ rollingWindowLimit: val });
+                        }}
+                        className="w-12 bg-transparent text-xs font-mono font-bold text-emerald-300 text-center outline-none"
+                      />
+                      <span className="text-[10px] text-slate-400 font-mono">msgs</span>
+                    </div>
+                  </div>
+
+                  {/* Presets (5, 10, 20 [Default], 30, 40, 50) */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {[
+                      { val: 5, label: "5 msgs" },
+                      { val: 10, label: "10 msgs" },
+                      { val: 20, label: "20 msgs", isDefault: true },
+                      { val: 30, label: "30 msgs" },
+                      { val: 40, label: "40 msgs" },
+                      { val: 50, label: "50 msgs" },
+                    ].map((opt) => {
+                      const isSelected = (rollingWindowLimit || 20) === opt.val;
+                      return (
+                        <button
+                          key={opt.val}
+                          onClick={() => {
+                            setRollingWindowLimit(opt.val);
+                            setChatPreferences({ rollingWindowLimit: opt.val });
+                          }}
+                          className={`text-[11px] px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-200 font-semibold shadow-xs"
+                              : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {opt.isDefault && (
+                            <span className="text-[9px] px-1 py-0.2 rounded-xs bg-emerald-500/30 text-emerald-300 font-bold uppercase">
+                              Default
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Warning: ONLY if > 50 messages, and strictly text without border/box/background as user requested */}
+                  {(rollingWindowLimit || 20) > 50 && (
+                    <p className="text-[11px] text-amber-400/90 flex items-center gap-1.5 mt-2 font-normal">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span>Warning: AI can forget earlier context or lose focus with more than 50 messages in memory.</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* 4. DEFAULT SYSTEM INSTRUCTIONS */}
+                <div className="space-y-2 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-semibold text-slate-200">
+                      Default System Instructions (Prompt)
+                    </label>
+                    <button
+                      onClick={() =>
+                        setChatPreferences({
+                          systemPrompt: "You are a helpful, brilliant AI assistant.",
+                        })
+                      }
+                      className="text-[10px] text-slate-400 hover:text-rose-300 cursor-pointer"
+                    >
+                      Reset prompt
+                    </button>
+                  </div>
                   <textarea
-                    rows={4}
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-black/40 border border-red-500/20 text-xs text-white placeholder-slate-500 outline-none focus:border-red-500/60 transition"
+                    rows={3}
+                    value={chatPreferences.systemPrompt}
+                    onChange={(e) =>
+                      setChatPreferences({ systemPrompt: e.target.value })
+                    }
+                    placeholder="Enter instructions for how the model should behave across all chats..."
+                    className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-xs text-white placeholder-slate-500 outline-none transition focus:border-rose-400/40 font-mono leading-relaxed"
                   />
                 </div>
 
-                {/* Streaming Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Stream Token Responses</p>
-                    <p className="text-[11px] text-slate-400">Stream words in real-time as they generate.</p>
+                {/* 5. TOGGLES (STREAMING & ARTIFACTS) */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  {/* Streaming Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-200">
+                        Stream Responses (SSE)
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Stream tokens in real-time word by word as they generate.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={chatPreferences.streamResponse}
+                      onChange={(e) =>
+                        setChatPreferences({ streamResponse: e.target.checked })
+                      }
+                      className="w-4 h-4 accent-rose-400 rounded cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={streamResponse}
-                    onChange={(e) => setStreamResponse(e.target.checked)}
-                    className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                  />
-                </div>
 
-                {/* Auto open artifacts */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Auto-Open Code & Artifacts</p>
-                    <p className="text-[11px] text-slate-400">Automatically open code previews in the right inspector panel.</p>
+                  {/* Auto Open Artifacts */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-200">
+                        Auto-Open Code & Artifacts
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Automatically open code previews in the inspector panel when created.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={chatPreferences.autoOpenArtifacts}
+                      onChange={(e) =>
+                        setChatPreferences({ autoOpenArtifacts: e.target.checked })
+                      }
+                      className="w-4 h-4 accent-rose-400 rounded cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={autoOpenArtifacts}
-                    onChange={(e) => setAutoOpenArtifacts(e.target.checked)}
-                    className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                  />
                 </div>
               </div>
             </div>
@@ -492,164 +935,112 @@ export default function SettingsPage() {
             <div className="space-y-6 max-w-2xl">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Mic className="w-5 h-5 text-amber-500" />
-                  Speech & Voice Configuration
+                  <Mic className="w-5 h-5 text-rose-300" />
+                  Speech & Audio
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Configure speech recognition input and text-to-speech audio playback.
+                  Uses speech recognition and voices provided by Chrome and your operating system.
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
-                {/* Speech to Text Toggle */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Speech-to-Text Microphone</p>
-                    <p className="text-[11px] text-slate-400">Speak prompts directly into the chat input.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isSttEnabled}
-                    onChange={toggleSttEnabled}
-                    className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                  />
-                </div>
-
-                {/* STT Language */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-200">Recognition Language</label>
-                  <select
-                    value={sttLang}
-                    onChange={(e) => setSttLang(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-black/40 border border-red-500/20 text-xs text-white outline-none"
-                  >
-                    <option value="en-US">English (US)</option>
-                    <option value="ur-PK">Urdu (Pakistan)</option>
-                    <option value="hi-IN">Hindi (India)</option>
-                    <option value="es-ES">Spanish</option>
-                    <option value="fr-FR">French</option>
-                    <option value="de-DE">German</option>
-                    <option value="zh-CN">Chinese (Mandarin)</option>
-                    <option value="ar-SA">Arabic</option>
-                  </select>
-                </div>
-
-                {/* TTS Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Text-to-Speech Playback</p>
-                    <p className="text-[11px] text-slate-400">Listen to model responses spoken out loud.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isTtsEnabled}
-                    onChange={toggleTtsEnabled}
-                    className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                  />
-                </div>
-
-                {/* Voice Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-200">AI Voice</label>
-                  <select
-                    value={ttsVoice}
-                    onChange={(e) => setTtsVoice(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-black/40 border border-red-500/20 text-xs text-white outline-none"
-                  >
-                    <option value="natural-female">Natural Female (Alloy style)</option>
-                    <option value="natural-male">Natural Male (Echo style)</option>
-                    <option value="warm-female">Warm Female (Nova style)</option>
-                    <option value="deep-male">Deep Male (Onyx style)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: APPEARANCE */}
-          {activeTab === "appearance" && (
-            <div className="space-y-6 max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-purple-500" />
-                  Appearance & Design
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Tailored high-contrast dark aesthetic with glowing accents.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-200">Theme Preset</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/40 text-xs font-semibold text-red-200 flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-red-500" />
-                      Cyber Crimson (Default)
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#20242c] via-[#171a20] to-[#111419] p-6 shadow-lg shadow-black/20 space-y-5">
+                <section className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-100">Speech to text</h3>
+                      <p className="mt-1 text-[11px] text-slate-400">Use Chrome’s built-in speech recognition for microphone input.</p>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 text-xs font-medium text-slate-400 flex items-center gap-2 opacity-60 cursor-not-allowed">
-                      <span className="w-3 h-3 rounded-full bg-slate-600" />
-                      Obsidian Minimal
+                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-medium ${speechSupport.recognition ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-amber-500/25 bg-amber-500/10 text-amber-200"}`}>
+                      {speechSupport.recognition ? "Available" : "Not available"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-200">Microphone input</p>
+                      <p className="text-[11px] text-slate-500">Enable or disable voice input in chat.</p>
                     </div>
+                    <input
+                      type="checkbox"
+                      checked={isSttEnabled}
+                      onChange={toggleSttEnabled}
+                      disabled={!speechSupport.recognition}
+                      className="h-4 w-4 cursor-pointer accent-rose-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    />
                   </div>
-                </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-recognition-language">Recognition language</label>
+                    <select
+                      id="speech-recognition-language"
+                      value={sttLang}
+                      onChange={(e) => setSttLang(e.target.value)}
+                      disabled={!speechSupport.recognition}
+                      className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Use browser language</option>
+                      <option value="en-US">English (United States)</option>
+                      <option value="en-GB">English (United Kingdom)</option>
+                      <option value="ur-PK">Urdu (Pakistan)</option>
+                      <option value="hi-IN">Hindi (India)</option>
+                      <option value="ar-SA">Arabic</option>
+                      <option value="es-ES">Spanish</option>
+                      <option value="fr-FR">French</option>
+                      <option value="de-DE">German</option>
+                      <option value="zh-CN">Chinese (Mandarin)</option>
+                    </select>
+                  </div>
+                </section>
+
+                <section className="space-y-4 border-t border-white/10 pt-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                        <Volume2 className="h-4 w-4 text-rose-300" />
+                        Text to speech
+                      </h3>
+                      <p className="mt-1 text-[11px] text-slate-400">Read assistant responses aloud with voices installed in your browser or system.</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-medium ${speechSupport.synthesis ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-amber-500/25 bg-amber-500/10 text-amber-200"}`}>
+                      {speechSupport.synthesis ? `${browserVoices.length} voices` : "Not available"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-200">Speech playback</p>
+                      <p className="text-[11px] text-slate-500">Enable or disable read-aloud controls on messages.</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isTtsEnabled}
+                      onChange={toggleTtsEnabled}
+                      disabled={!speechSupport.synthesis}
+                      className="h-4 w-4 cursor-pointer accent-rose-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-voice">Browser voice</label>
+                    <select
+                      id="speech-voice"
+                      value={browserVoices.some((voice) => voice.voiceURI === ttsVoice) ? ttsVoice : "default"}
+                      onChange={(e) => setTtsVoice(e.target.value)}
+                      disabled={!speechSupport.synthesis || !isTtsEnabled || browserVoices.length === 0}
+                      className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="default">Automatic (match response language)</option>
+                      {browserVoices.map((voice) => (
+                        <option key={voice.voiceURI} value={voice.voiceURI}>
+                          {voice.name} · {voice.lang}{voice.default ? " · Default" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {speechSupport.synthesis && browserVoices.length === 0 && (
+                      <p className="text-[11px] text-amber-200/80">Chrome has not reported any available voices yet. Check your system’s speech settings and reload this page.</p>
+                    )}
+                  </div>
+                </section>
               </div>
             </div>
           )}
 
-          {/* TAB 5: PRIVACY & DATA */}
-          {activeTab === "privacy" && (
-            <div className="space-y-6 max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-emerald-500" />
-                  Privacy & Local Storage
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Control conversation history, incognito mode, and local keys.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
-                {/* Incognito mode */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Incognito Mode</p>
-                    <p className="text-[11px] text-slate-400">
-                      When active, chats are temporary and not saved to the database.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isIncognito}
-                    onChange={(e) => setIncognito(e.target.checked)}
-                    className="w-4 h-4 accent-red-500 rounded cursor-pointer"
-                  />
-                </div>
-
-                {/* Clear local keys */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200">Clear Saved API Keys</p>
-                    <p className="text-[11px] text-slate-400">
-                      Remove all stored BYOK provider keys from this browser.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (confirm("Are you sure you want to remove all saved API keys?")) {
-                        localStorage.removeItem("cheapchats_provider_keys");
-                        setUserKeys({});
-                      }
-                    }}
-                    className="px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-950/40 text-xs font-medium transition"
-                  >
-                    Clear Keys
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
 
@@ -659,6 +1050,12 @@ export default function SettingsPage() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onKeySaved={handleKeySaved}
+      />
+      <CustomProviderDialog
+        isOpen={isCustomProviderDialogOpen}
+        provider={editingCustomProvider}
+        onClose={() => setIsCustomProviderDialogOpen(false)}
+        onSaved={handleCustomProvidersSaved}
       />
     </div>
   );
