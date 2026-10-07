@@ -684,9 +684,9 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
             uploadFiles(e.dataTransfer.files);
           }
         }}
-        className={`bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${isDraggingOver
+        className={`bg-[#14181F] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${isDraggingOver
             ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-            : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
+            : "border-[#262C34] focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/20"
           }`}
       >
         {/* Attachments Row */}

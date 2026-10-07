@@ -303,7 +303,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-56 md:w-60 h-full bg-[#140d0f] border-r border-red-500/10 flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
+    <aside className="w-64 h-full bg-[#0F1217] border-r border-[#1E232B] flex flex-col z-20 flex-shrink-0 select-none transition-all duration-200">
       {/* Dynamic panel content */}
 
       {/* Dynamic panel content */}

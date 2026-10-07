@@ -265,13 +265,13 @@ export default function ConversationList() {
     <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-xs text-slate-300">
       {/* Incognito Temporary Chat Toggle Row */}
       <div
-        className={`px-2.5 py-2 rounded-xl border transition-all duration-200 flex items-center justify-between select-none ${
+        className={`px-3 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-between select-none ${
           isIncognito
-            ? "bg-red-950/25 border-red-500/30 shadow-sm shadow-red-950/40 opacity-100"
-            : "bg-[#181012] border-white/5 opacity-60 hover:opacity-100"
+            ? "bg-red-950/30 border-red-500/35 shadow-sm shadow-red-950/40 opacity-100"
+            : "bg-[#14181F] border-[#1E232B] hover:border-slate-700"
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div
             className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
               isIncognito ? "bg-red-500/20 text-red-400" : "bg-white/5 text-slate-400"
@@ -281,7 +281,7 @@ export default function ConversationList() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-bold leading-none ${isIncognito ? "text-white" : "text-slate-300"}`}>
+              <span className={`text-xs font-semibold leading-none ${isIncognito ? "text-white" : "text-slate-200"}`}>
                 Incognito
               </span>
               {isIncognito && (
@@ -290,7 +290,7 @@ export default function ConversationList() {
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Temporary Chat</p>
+            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Temporary Chat</p>
           </div>
         </div>
 
@@ -299,7 +299,7 @@ export default function ConversationList() {
           type="button"
           onClick={toggleIncognito}
           className={`w-9 h-5 rounded-full transition-colors duration-200 relative flex items-center px-0.5 flex-shrink-0 cursor-pointer ${
-            isIncognito ? "bg-red-600 shadow-md shadow-red-900/40" : "bg-[#252525] border border-white/15"
+            isIncognito ? "bg-red-600 shadow-md shadow-red-900/40" : "bg-[#252C36] border border-white/10"
           }`}
         >
           <div
@@ -311,14 +311,14 @@ export default function ConversationList() {
       </div>
 
       {/* Live Search Input for Chats */}
-      <div className="relative px-1 mb-1">
-        <Search className="w-3.5 h-3.5 absolute left-3 top-2 text-red-400/60" />
+      <div className="relative px-0.5">
+        <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400 pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Filter chats..."
-          className="w-full bg-[#1b1013] border border-red-500/15 rounded-xl pl-8 pr-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+          className="w-full bg-[#14181F] border border-[#1E232B] rounded-xl pl-8 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all"
         />
       </div>
 

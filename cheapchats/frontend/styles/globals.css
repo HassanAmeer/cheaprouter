@@ -1,6 +1,11 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+/* CheapChats Core Theme Tokens and Custom Glassmorphic Utilities */
+
+@theme {
+  --color-slate-850: #151f32;
+  --color-brand-emerald: #10b981;
+  --color-brand-violet: #8b5cf6;
+  --color-brand-sky: #0284c7;
+}
 
 :root {
   /* Central Red Theme Tokens */

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import "@cheapchats/frontend/styles/globals.css";
 import Header from "@cheapchats/frontend/components/Header/Header";
 import DebugConsoleToggle from "@cheapchats/frontend/components/Header/DebugConsoleToggle";
 import NavRail from "@cheapchats/frontend/components/Sidebar/NavRail";
@@ -22,11 +23,11 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
 
   // If on settings page, render the full-screen Settings view directly
   if (isSettings) {
-    return <div className="h-screen w-screen bg-[#0d0709] overflow-hidden">{children}</div>;
+    return <div className="h-screen w-screen bg-[#0B0D10] overflow-hidden">{children}</div>;
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#12090b] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-[#0B0D10] text-slate-100 overflow-hidden font-sans">
       {/* Floating Top-Right Terminal Debug Button */}
       <DebugConsoleToggle />
 
@@ -44,7 +45,7 @@ export default function ChatsLayout({ children }: { children: React.ReactNode })
           <Sidebar />
 
           {/* Chat Workspace / Prompt Workspace */}
-          <main className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#130a0c]">
+          <main className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative bg-[#0E1116]">
             {sidebarView === "prompts" ? <PromptEditorView /> : children}
           </main>
 

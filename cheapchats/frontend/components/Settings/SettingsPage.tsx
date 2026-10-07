@@ -136,11 +136,11 @@ export default function SettingsPage() {
   }, [providers]);
 
   return (
-    <div className="flex h-screen w-screen bg-[#0d0709] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-[#0B0D10] text-slate-100 overflow-hidden font-sans">
       {/* ──────────────── Left Sidebar ──────────────── */}
-      <aside className="w-64 md:w-72 bg-[#12080b] border-r border-red-500/15 flex flex-col h-full flex-shrink-0 select-none">
+      <aside className="w-64 md:w-72 bg-[#0F1217] border-r border-[#1E232B] flex flex-col h-full flex-shrink-0 select-none">
         {/* Top Header */}
-        <div className="p-5 border-b border-red-500/15">
+        <div className="p-5 border-b border-[#1E232B]">
           <button
             onClick={() => router.push("/chats")}
             className="inline-flex items-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 transition mb-3 group"
@@ -237,7 +237,7 @@ export default function SettingsPage() {
       </aside>
 
       {/* ──────────────── Main Center Content ──────────────── */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d0709] relative">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0E1116] relative">
         {/* Scrollable Center Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 max-w-6xl w-full mx-auto space-y-8">
           {/* TAB 1: PROVIDERS & API KEYS (GRID VIEW) */}
