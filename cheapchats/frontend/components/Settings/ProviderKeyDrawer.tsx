@@ -196,11 +196,11 @@ export default function ProviderKeyDrawer({
       />
 
       {/* Drawer */}
-      <aside className="relative z-10 w-full max-w-lg bg-[#0F1217] border-l border-[#1E232B] shadow-2xl flex flex-col h-full overflow-hidden text-slate-100 animate-in slide-in-from-right duration-250">
+      <aside className="relative z-10 w-full max-w-lg bg-[#0e0709] border-l border-red-500/20 shadow-2xl flex flex-col h-full overflow-hidden text-slate-100 animate-in slide-in-from-right duration-250">
         {/* Top Header */}
-        <div className="px-6 py-5 border-b border-[#1E232B] bg-[#14181F] flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-red-500/15 bg-gradient-to-b from-red-950/20 to-transparent flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#181D24] border border-[#262C34] flex items-center justify-center p-2 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-500/30 flex items-center justify-center p-2 shadow-inner">
               <img
                 src={provider.icon}
                 alt={provider.name}

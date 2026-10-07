@@ -8,13 +8,14 @@ export default function HeaderOptions() {
 
   return (
     <div className="flex items-center gap-1.5">
+      {/* Live Preview Panel Toggle Button */}
       <button
         onClick={toggleArtifacts}
-        title="Toggle Live Preview / Artifacts Panel"
-        className={`p-2 rounded-lg border transition-all duration-150 cursor-pointer ${
+        title="Toggle Live Preview Panel"
+        className={`p-1.5 rounded-lg border transition duration-200 ${
           isArtifactsOpen
-            ? "bg-red-500/20 text-red-300 border-red-500/40 shadow-sm"
-            : "bg-[#15191E] text-slate-400 border-[#1E232B] hover:text-white hover:bg-[#1A1F26] hover:border-slate-700"
+            ? "bg-red-500/20 text-red-300 border-red-500/40"
+            : "bg-[#1c1214] text-slate-400 border-white/10 hover:text-slate-200 hover:bg-[#251619]"
         }`}
       >
         <Layout className="w-4 h-4" />

@@ -136,11 +136,11 @@ export default function SettingsPage() {
   }, [providers]);
 
   return (
-    <div className="flex h-screen w-screen bg-[#0B0D10] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-[#0d0709] text-slate-100 overflow-hidden font-sans">
       {/* ──────────────── Left Sidebar ──────────────── */}
-      <aside className="w-64 md:w-72 bg-[#0F1217] border-r border-[#1E232B] flex flex-col h-full flex-shrink-0 select-none">
+      <aside className="w-64 md:w-72 bg-[#12080b] border-r border-red-500/15 flex flex-col h-full flex-shrink-0 select-none">
         {/* Top Header */}
-        <div className="p-5 border-b border-[#1E232B]">
+        <div className="p-5 border-b border-red-500/15">
           <button
             onClick={() => router.push("/chats")}
             className="inline-flex items-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 transition mb-3 group"
@@ -237,7 +237,7 @@ export default function SettingsPage() {
       </aside>
 
       {/* ──────────────── Main Center Content ──────────────── */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0E1116] relative">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d0709] relative">
         {/* Scrollable Center Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 max-w-6xl w-full mx-auto space-y-8">
           {/* TAB 1: PROVIDERS & API KEYS (GRID VIEW) */}
@@ -330,10 +330,10 @@ export default function SettingsPage() {
                       <div
                         key={provider.id}
                         onClick={() => openDrawerForProvider(provider)}
-                        className={`group relative p-5 rounded-2xl bg-[#15191E] border transition-all duration-200 cursor-pointer shadow-md hover:-translate-y-0.5 ${
+                        className={`group relative p-5 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border transition-all duration-200 cursor-pointer shadow-lg hover:-translate-y-1 hover:shadow-red-600/10 ${
                           hasKey
-                            ? "border-emerald-500/40 hover:border-emerald-500/70"
-                            : "border-[#262C34] hover:border-slate-600"
+                            ? "border-emerald-500/30 hover:border-emerald-500/60"
+                            : "border-red-500/20 hover:border-red-500/50"
                         }`}
                       >
                         {/* Top Indicator Accent */}
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
                 {/* Temperature */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs">
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
                 {/* Speech to Text Toggle */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -579,17 +579,17 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-4 shadow-md">
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-slate-200">Theme Preset</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-500/40 text-xs font-semibold text-red-200 flex items-center gap-2">
+                    <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/40 text-xs font-semibold text-red-200 flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-red-500" />
-                      Obsidian Crimson
+                      Cyber Crimson (Default)
                     </div>
                     <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 text-xs font-medium text-slate-400 flex items-center gap-2 opacity-60 cursor-not-allowed">
                       <span className="w-3 h-3 rounded-full bg-slate-600" />
-                      Slate Minimal
+                      Obsidian Minimal
                     </div>
                   </div>
                 </div>
@@ -610,7 +610,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#15191E] border border-[#262C34] space-y-5 shadow-md">
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#180a0f] to-[#110709] border border-red-500/20 space-y-5">
                 {/* Incognito mode */}
                 <div className="flex items-center justify-between">
                   <div>

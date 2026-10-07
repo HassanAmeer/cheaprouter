@@ -524,7 +524,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   };
 
   return (
-    <div className="w-full max-w-3xl min-w-0 mx-auto px-4 pb-4 pt-1 relative z-10 select-none">
+    <div className="w-full max-w-3xl min-w-0 mx-auto px-2 sm:px-4 pb-2 pt-1 relative z-10 select-none">
       {/* Toast Notification for Model / Network Errors */}
       {toastInfo && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-[92%] sm:w-auto bg-[#1b0d10]/95 border border-red-500/40 shadow-2xl shadow-red-950/70 rounded-2xl p-3.5 backdrop-blur-xl animate-in slide-in-from-top-4 fade-in duration-200 select-none">
@@ -662,6 +662,11 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
         </div>
       )}
 
+      {/* Model Selector Top-Left Bar */}
+      <div className="flex items-center justify-between mb-1.5 px-1">
+        <ModelSelector />
+      </div>
+
       {/* Main Input Box */}
       <div
         onDragOver={(e) => {
@@ -679,9 +684,9 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
             uploadFiles(e.dataTransfer.files);
           }
         }}
-        className={`bg-[#15191E] rounded-2xl pt-3 px-4 pb-2.5 border transition-all duration-150 shadow-xl flex flex-col gap-2 ${isDraggingOver
+        className={`bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${isDraggingOver
             ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-            : "border-[#262C34] focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/20"
+            : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
           }`}
       >
         {/* Attachments Row */}
@@ -901,16 +906,16 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
               </button>
             </Tooltip>
 
-            {/* 3. Send / Mic Button */}
+            {/* 3. Send / Mic Button in a styled grey box (Far Right) */}
             {content.trim() || attachments.length > 0 || activeSuggestionChip || (selectedSkills && selectedSkills.length > 0) ? (
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={isUploading}
-                className="p-2 rounded-xl bg-[#FF3B3B] hover:bg-[#E11D1D] text-white transition-all duration-150 flex items-center justify-center shadow-md shadow-red-950/40 cursor-pointer disabled:opacity-50"
+                className="p-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 text-zinc-200 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
                 title="Send Message"
               >
-                <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                <ArrowUp className="w-4 h-4" />
               </button>
             ) : (
               <button
@@ -918,7 +923,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
                 onClick={toggleSpeechRecognition}
                 className={`p-2 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
                     ? "bg-red-600 text-white border-red-500 animate-pulse shadow-lg shadow-red-600/50"
-                    : "bg-[#1A1F26] border-[#262C34] text-slate-300 hover:text-white hover:bg-slate-800 shadow-sm"
+                    : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm"
                   }`}
                 title={isListening ? "Stop Voice Input" : "Voice Input"}
               >
@@ -930,11 +935,11 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
       </div>
 
       {/* Centered Footer Text */}
-      <div className="mt-2 text-center text-[11px] text-slate-500">
-        <span>CheapChat · Free AI for Everyone. </span>
-        <a href="#" className="underline hover:text-slate-300">Privacy policy</a>
+      <div className="mt-2 text-center text-[11px] text-red-300/50">
+        <span>CheapChat - Every AI for Everyone. </span>
+        <a href="#" className="underline hover:text-red-200">Privacy policy</a>
         <span> | </span>
-        <a href="#" className="underline hover:text-slate-300">Terms of service</a>
+        <a href="#" className="underline hover:text-red-200">Terms of service</a>
       </div>
     </div>
   );

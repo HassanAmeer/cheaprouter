@@ -338,7 +338,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
   };
 
   return (
-    <div className="flex-1 min-w-0 flex h-full overflow-hidden bg-[#0E1116]">
+    <div className="flex-1 min-w-0 flex h-full overflow-hidden bg-[#130a0c]">
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden relative">
         {isIncognito && (
           <div className="bg-purple-950/40 border-b border-purple-500/30 px-4 py-2 flex items-center justify-between text-xs text-purple-200 select-none animate-in fade-in duration-200">

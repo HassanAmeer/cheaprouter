@@ -10,6 +10,7 @@ import {
   Cpu,
   Zap,
   Check,
+  Settings,
   Search,
   X,
   RotateCw,
@@ -39,7 +40,7 @@ const PROVIDER_ICONS: Record<string, any> = {
 };
 
 export default function ModelSelector() {
-  const { selectedProvider, selectedModel, setSelectedProviderAndModel } = useAppStore();
+  const { selectedProvider, selectedModel, setSelectedProviderAndModel, setActiveModal } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [activeHoverProvider, setActiveHoverProvider] = useState<string | null>(null);
   const [providersData, setProvidersData] = useState<Record<string, ModelItem[]>>({});
@@ -78,45 +79,44 @@ export default function ModelSelector() {
   };
 
   useEffect(() => {
+    // 1. Instant hydration from cache for 0ms load
     try {
       const cached = localStorage.getItem("cheapchat_cached_models");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Object.keys(parsed).length > 0) {
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
           setProvidersData(parsed);
-          setActiveHoverProvider(selectedProvider || Object.keys(parsed)[0]);
+          const keys = Object.keys(parsed);
+          if (keys.length > 0) {
+            setActiveHoverProvider((prev) => prev || (selectedProvider && parsed[selectedProvider] ? selectedProvider : keys[0]));
+          }
+        } else {
+          setLoading(true);
         }
+      } else {
+        setLoading(true);
       }
-    } catch {}
+    } catch {
+      setLoading(true);
+    }
 
+    // 2. Fetch fresh in background
     fetchModels();
-  }, [selectedProvider]);
+  }, []);
 
   const handleSelectModel = (provider: string, modelId: string) => {
     setSelectedProviderAndModel(provider, modelId);
+    // Note: Do not auto-close or only close if user wants. We close on explicit model selection, 
+    // but the dropdown never dismisses on outside clicks.
     setIsOpen(false);
   };
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("#model-selector-container")) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("click", handleOutside);
-    }
-    return () => document.removeEventListener("click", handleOutside);
-  }, [isOpen]);
-
-  const providerKeys = Object.keys(providersData);
-  const sortedProviderKeys = [...providerKeys].sort((a, b) => {
-    if (a === "Custom API") return 1;
-    if (b === "Custom API") return -1;
-    return a.localeCompare(b);
-  });
+  // Ensure "Custom API" is always positioned at the very bottom of the provider list
+  const allProviderKeys = Object.keys(providersData);
+  const regularProviders = allProviderKeys.filter((p) => p !== "Custom API");
+  const sortedProviderKeys = providersData["Custom API"]
+    ? [...regularProviders, "Custom API"]
+    : regularProviders;
 
   const rawList = activeHoverProvider && providersData[activeHoverProvider] ? providersData[activeHoverProvider] : [];
   const filteredList = searchQuery.trim()
@@ -128,19 +128,19 @@ export default function ModelSelector() {
     : rawList;
 
   return (
-    <div className="relative" id="model-selector-container">
+    <div className="relative">
       {/* Selector Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#15191E] hover:bg-[#1A1F26] border border-[#262C34] hover:border-slate-600 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white transition shadow-sm cursor-pointer focus:outline-none"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/20 hover:bg-white/5 border border-white/5 hover:border-red-500/30 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition duration-150 cursor-pointer focus:outline-none"
       >
         <Sparkles className="w-4 h-4 text-red-400 flex-shrink-0" />
         {selectedProvider ? (
           <div className="flex items-center gap-1.5 truncate text-xs sm:text-sm">
             <span className="text-slate-400 font-medium truncate">{selectedProvider}</span>
-            <span className="text-slate-600 font-normal">·</span>
-            <span className="text-slate-100 font-bold truncate max-w-[140px] sm:max-w-[200px]">
+            <span className="text-slate-500 font-normal">·</span>
+            <span className="text-slate-100 font-bold truncate max-w-[140px] sm:max-w-[220px]">
               {selectedModel}
             </span>
           </div>
@@ -154,14 +154,14 @@ export default function ModelSelector() {
         />
       </button>
 
-      {/* Dropdown Menu - Opens downwards from Top Header */}
+      {/* Dropdown Menu - Explicitly does NOT close on outside clicks! */}
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-0 top-full mt-2 w-80 sm:w-[480px] md:w-[540px] bg-[#15191E] backdrop-blur-2xl rounded-2xl z-50 border border-[#262C34] shadow-2xl shadow-black/80 flex flex-col select-none overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+          className="absolute left-0 bottom-full mb-2.5 w-80 sm:w-[480px] md:w-[540px] bg-[#140b0d]/98 backdrop-blur-2xl rounded-2xl z-50 border border-red-500/30 shadow-2xl shadow-black/90 flex flex-col select-none overflow-hidden"
         >
-          {/* Top Header Bar with Title, Refresh, and Close */}
-          <div className="flex items-center justify-between px-4 py-2.5 bg-[#0F1217] border-b border-[#1E232B]">
+          {/* Top Header Bar with Title, Refresh, and Close (X) Icon Button */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#1b0d10] border-b border-red-500/20">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-red-400" />
               <span className="text-xs font-bold text-white tracking-wide">
@@ -179,53 +179,31 @@ export default function ModelSelector() {
               >
                 <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-red-400" : ""}`} />
               </button>
+
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Close"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-red-500/20 transition cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4 text-slate-300 hover:text-white" />
               </button>
             </div>
           </div>
 
-          {/* Search Models Input Bar */}
-          <div className="p-2.5 border-b border-[#1E232B] bg-[#11141A]">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search models in ${activeHoverProvider || "selected provider"}...`}
-                className="w-full bg-[#0B0D10] border border-[#1E232B] rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-2 text-slate-500 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Main Dropdown Body: Providers Column (Left) & Models Column (Right) */}
-          <div className="flex flex-col sm:flex-row gap-2.5 p-3">
+          <div className="flex flex-col sm:flex-row gap-2.5 p-2.5">
             {/* Provider List (Left side) */}
-            <div className="w-full sm:w-48 flex flex-col gap-1 border-b sm:border-b-0 sm:border-r border-[#1E232B] pb-2 sm:pb-0 sm:pr-2">
+            <div className="w-full sm:w-48 flex flex-col gap-1 border-b sm:border-b-0 sm:border-r border-red-500/15 pb-2 sm:pb-0 sm:pr-2">
               <div className="flex items-center justify-between px-2 py-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider">
                   Providers ({sortedProviderKeys.length})
                 </span>
                 <button
                   type="button"
                   onClick={() => fetchModels(true)}
                   title="Reload providers"
-                  className="text-slate-500 hover:text-white transition"
+                  className="text-slate-400 hover:text-white transition"
                 >
                   <RotateCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-red-400" : ""}`} />
                 </button>
@@ -244,10 +222,10 @@ export default function ModelSelector() {
                       key={providerKey}
                       className={`group flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-medium transition duration-150 cursor-pointer ${
                         isHovered || isSelected
-                          ? "bg-red-500/15 text-white border border-red-500/30"
+                          ? "bg-red-500/20 text-white border border-red-500/30"
                           : isCustom
-                          ? "text-red-300 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20"
-                          : "text-slate-300 hover:bg-[#1A1F26] border border-transparent"
+                          ? "text-red-200 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20"
+                          : "text-slate-300 hover:bg-[#251417] border border-transparent"
                       }`}
                       onMouseEnter={() => setActiveHoverProvider(providerKey)}
                       onClick={() => setActiveHoverProvider(providerKey)}
@@ -264,30 +242,67 @@ export default function ModelSelector() {
                       </div>
 
                       <div className="flex items-center gap-1.5 ml-1">
-                        <span className="text-[10px] text-slate-400 font-mono bg-black/40 px-1.5 py-0.5 rounded-md border border-white/5">
+                        <span className="text-[10px] text-slate-400 font-mono bg-black/30 px-1.5 py-0.5 rounded-md">
                           {count}
                         </span>
+                        {/* Refresh icon button on provider row */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fetchModels(true);
+                          }}
+                          title={`Refresh ${providerKey} models`}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition"
+                        >
+                          <RotateCw className="w-2.5 h-2.5" />
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Provider API Settings Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setActiveModal("settings");
+                }}
+                className="mt-2 flex items-center justify-center gap-1.5 w-full px-2.5 py-2 rounded-xl bg-transparent hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 text-red-400 text-xs font-medium transition cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5 text-red-400" />
+                <span>Provider Settings</span>
+              </button>
             </div>
 
-            {/* Model List (Right side) */}
-            <div className="flex-1 flex flex-col gap-1 max-h-64 overflow-y-auto pr-0.5 custom-scrollbar">
-              <div className="flex items-center justify-between px-2 py-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {activeHoverProvider || "Select a Provider"} ({filteredList.length})
+            {/* Dynamic Models Submenu (Right side with Search) */}
+            <div className="w-full sm:w-64 md:w-72 flex flex-col gap-1.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+              {/* Search Input & Header */}
+              <div className="relative px-1 pt-1">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search models..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#200f13] border border-red-500/20 rounded-xl pl-8 pr-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60"
+                />
+              </div>
+
+              <div className="flex items-center justify-between px-2 pt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="truncate">
+                  {activeHoverProvider ? `${activeHoverProvider} (${filteredList.length})` : "Select a Provider"}
                 </span>
                 <button
                   type="button"
                   onClick={() => fetchModels(true)}
                   disabled={isRefreshing}
-                  className="flex items-center gap-1 text-slate-500 hover:text-white transition cursor-pointer text-[11px]"
+                  className="flex items-center gap-1 text-slate-400 hover:text-white transition cursor-pointer lowercase font-normal"
                 >
                   <RotateCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-red-400" : ""}`} />
-                  <span>Refresh</span>
+                  <span>refresh</span>
                 </button>
               </div>
 
@@ -307,8 +322,8 @@ export default function ModelSelector() {
                       onClick={() => handleSelectModel(activeHoverProvider!, m.id)}
                       className={`flex flex-col text-left px-2.5 py-2 rounded-xl text-xs transition duration-150 border cursor-pointer ${
                         isSelected
-                          ? "bg-red-500/15 border-red-500/40 text-red-200 font-semibold"
-                          : "border-transparent text-slate-200 hover:bg-[#1A1F26]"
+                          ? "bg-red-500/20 border-red-500/40 text-red-300 font-semibold"
+                          : "border-transparent text-slate-200 hover:bg-[#251417]"
                       }`}
                     >
                       <div className="flex items-center justify-between font-medium">
@@ -322,7 +337,7 @@ export default function ModelSelector() {
                   );
                 })
               ) : (
-                <div className="px-3 py-6 text-xs text-slate-500 text-center leading-relaxed">
+                <div className="px-3 py-6 text-xs text-slate-400 text-center leading-relaxed">
                   No matching models found.
                 </div>
               )}

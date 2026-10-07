@@ -42,11 +42,11 @@ export default function NavRail() {
     `p-2.5 rounded-xl transition duration-150 ${
       view && isActive(view)
         ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/40 shadow-lg shadow-red-600/10"
-        : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+        : "text-slate-400 hover:text-red-300 hover:bg-[#1a0f12]"
     }`;
 
   return (
-    <aside className="w-14 h-full bg-[#0B0D10] border-r border-[#1E232B] flex flex-col items-center justify-between py-3.5 z-30 flex-shrink-0 select-none">
+    <aside className="w-13 md:w-14 h-full bg-[#0a0708] border-r border-red-500/10 flex flex-col items-center justify-between py-3 z-30 flex-shrink-0 select-none">
       {/* Top Icons Section */}
       <div className="flex flex-col items-center gap-3 w-full">
         {/* Toggle Secondary Sidebar */}
@@ -56,7 +56,7 @@ export default function NavRail() {
           </button>
         </Tooltip>
 
-        <div className="w-8 h-px bg-[#1E232B] my-1" />
+        <div className="w-8 h-px bg-red-500/15 my-1" />
 
         {/* New Chat */}
         <Tooltip content="New Chat" side="right">
@@ -64,7 +64,8 @@ export default function NavRail() {
             onClick={() => {
               useAppStore.getState().setActiveProjectId(null);
               setSidebarView("chats");
-              router.push("/chats");
+              router.push("/new");
+              router.refresh();
             }}
             className={btnClass()}
           >
