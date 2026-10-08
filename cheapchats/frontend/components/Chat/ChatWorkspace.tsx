@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import MessageThread from "@cheapchats/frontend/components/Chat/MessageThread";
 import ChatInput from "@cheapchats/frontend/components/Chat/ChatInput";
-import VoiceCallModal from "@cheapchats/frontend/components/Chat/VoiceCallModal";
 import { Message } from "@cheapchats/frontend/components/Chat/MessageItem";
 import {
   isArtifactCodeIncomplete,
@@ -691,18 +690,6 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           onSend={handleSendMessage}
           onStop={() => streamAbortControllerRef.current?.abort()}
           isStreaming={isStreaming}
-        />
-        <VoiceCallModal
-          isOpen={isCallAssistantOpen}
-          onClose={() => setCallAssistantOpen(false)}
-          onSendMessage={async (prompt: string) => {
-            return await handleSendMessage(prompt);
-          }}
-          selectedModel={selectedModel}
-          selectedProvider={selectedProvider}
-          latestAssistantMessage={messages[messages.length - 1]}
-          isStreaming={isStreaming}
-          onStopStreaming={() => streamAbortControllerRef.current?.abort()}
         />
       </div>
     </div>

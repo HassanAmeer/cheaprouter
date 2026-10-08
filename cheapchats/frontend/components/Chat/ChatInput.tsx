@@ -13,6 +13,7 @@ import {
   Mic,
   MicOff,
   PhoneCall,
+  PhoneOff,
   Paperclip,
   Sliders,
   Globe,
@@ -39,9 +40,14 @@ import {
   RotateCcw,
   AlertTriangle,
 } from "lucide-react";
+import {
+  cleanTextForSpeech,
+  getBestVoice,
+  containsStopKeyword,
+} from "@cheapchats/frontend/lib/speechUtils";
 
 interface ChatInputProps {
-  onSend: (message: string, attachments: any[]) => void;
+  onSend: (message: string, attachments: any[]) => Promise<string | undefined> | void;
   onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
@@ -109,12 +115,30 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     addSelectedSkill,
     removeSelectedSkill,
     clearSelectedSkills,
+    ttsVoice,
     setCallAssistantOpen,
   } = useAppStore();
   const [content, setContent] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  // Inline Call Assistant state
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [callStatus, setCallStatus] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const isCallActiveRef = useRef(false);
+  const callStatusRef = useRef<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const callRecognitionRef = useRef<any>(null);
+  const callSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    isCallActiveRef.current = isCallActive;
+  }, [isCallActive]);
+
+  useEffect(() => {
+    callStatusRef.current = callStatus;
+  }, [callStatus]);
   const [showSlashPrompts, setShowSlashPrompts] = useState(false);
   const [dbPrompts, setDbPrompts] = useState<{ title: string; prompt: string }[]>([]);
   const [skillsList, setSkillsList] = useState<{ name: string; description: string }[]>([]);
@@ -402,6 +426,263 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }
+  };
+
+  // Inline Call Assistant Handlers
+  const stopCallSpeaking = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    currentUtteranceRef.current = null;
+    setIsSpeaking(false);
+    if (isCallActiveRef.current) {
+      setCallStatus("listening");
+      callStatusRef.current = "listening";
+    }
+  };
+
+  const handleEndCall = () => {
+    setIsCallActive(false);
+    isCallActiveRef.current = false;
+    setCallStatus("idle");
+    callStatusRef.current = "idle";
+    setIsSpeaking(false);
+
+    if (callSilenceTimerRef.current) {
+      clearTimeout(callSilenceTimerRef.current);
+      callSilenceTimerRef.current = null;
+    }
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    currentUtteranceRef.current = null;
+
+    if (callRecognitionRef.current) {
+      const rec = callRecognitionRef.current;
+      rec.onend = null;
+      rec.onerror = null;
+      rec.onresult = null;
+      rec.onstart = null;
+      try {
+        rec.abort();
+      } catch {}
+      callRecognitionRef.current = null;
+    }
+
+    if (isStreaming && onStop) {
+      onStop();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (isCallActiveRef.current) {
+        handleEndCall();
+      }
+    };
+  }, []);
+
+  const speakCallResponse = (text: string) => {
+    if (!isCallActiveRef.current) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setCallStatus("listening");
+      callStatusRef.current = "listening";
+      return;
+    }
+
+    const cleaned = cleanTextForSpeech(text);
+    if (!cleaned) {
+      setCallStatus("listening");
+      callStatusRef.current = "listening";
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    setCallStatus("speaking");
+    callStatusRef.current = "speaking";
+    setIsSpeaking(true);
+
+    const utterance = new SpeechSynthesisUtterance(cleaned);
+    currentUtteranceRef.current = utterance;
+
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = getBestVoice(voices, ttsVoice, cleaned);
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+    }
+
+    utterance.onstart = () => {
+      if (!isCallActiveRef.current) {
+        window.speechSynthesis.cancel();
+        return;
+      }
+      setCallStatus("speaking");
+      callStatusRef.current = "speaking";
+    };
+
+    utterance.onend = () => {
+      currentUtteranceRef.current = null;
+      setIsSpeaking(false);
+      if (isCallActiveRef.current) {
+        setCallStatus("listening");
+        callStatusRef.current = "listening";
+      }
+    };
+
+    utterance.onerror = (e) => {
+      if (e.error !== "canceled" && e.error !== "interrupted") {
+        console.warn("Speech synthesis error:", e);
+      }
+      currentUtteranceRef.current = null;
+      setIsSpeaking(false);
+      if (isCallActiveRef.current) {
+        setCallStatus("listening");
+        callStatusRef.current = "listening";
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const triggerCallSend = async (text: string) => {
+    const cleanPrompt = text.trim();
+    if (!cleanPrompt || !isCallActiveRef.current) return;
+
+    setCallStatus("thinking");
+    callStatusRef.current = "thinking";
+    setContent("");
+
+    try {
+      const assistantReply = await onSend(cleanPrompt, attachmentsRef.current);
+      setAttachments([]);
+
+      if (isCallActiveRef.current) {
+        if (assistantReply && assistantReply.trim()) {
+          speakCallResponse(assistantReply);
+        } else {
+          setCallStatus("listening");
+          callStatusRef.current = "listening";
+        }
+      }
+    } catch (err) {
+      console.error("Call assistant send error:", err);
+      if (isCallActiveRef.current) {
+        setCallStatus("listening");
+        callStatusRef.current = "listening";
+      }
+    }
+  };
+
+  const startCallRecognition = () => {
+    if (!isCallActiveRef.current) return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Chrome Speech Recognition is required. Please open CheapChats in Google Chrome.");
+      handleEndCall();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = sttLang || navigator.language || "en-US";
+    callRecognitionRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      if (!isCallActiveRef.current) return;
+
+      let final = "";
+      let interim = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          final += item[0].transcript;
+        } else {
+          interim += item[0].transcript;
+        }
+      }
+
+      const combinedText = (final || interim).trim();
+
+      if (callStatusRef.current === "speaking") {
+        if (containsStopKeyword(combinedText)) {
+          stopCallSpeaking();
+        }
+        return;
+      }
+
+      if (callStatusRef.current === "listening") {
+        if (final) {
+          setContent((prev) => (prev ? `${prev} ${final}` : final).trim());
+        } else if (interim) {
+          setContent((prev) => {
+            return prev ? `${prev} ${interim}` : interim;
+          });
+        }
+
+        if (callSilenceTimerRef.current) {
+          clearTimeout(callSilenceTimerRef.current);
+        }
+
+        callSilenceTimerRef.current = setTimeout(() => {
+          if (callStatusRef.current === "listening" && isCallActiveRef.current) {
+            const spokenText = contentRef.current.trim();
+            if (spokenText) {
+              triggerCallSend(spokenText);
+            }
+          }
+        }, 1800);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === "not-allowed") {
+        alert("Microphone permission denied. Please enable microphone permissions in Chrome.");
+        handleEndCall();
+      } else if (event.error !== "no-speech" && isCallActiveRef.current) {
+        console.warn("Call speech recognition error:", event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      if (isCallActiveRef.current && callRecognitionRef.current === recognition) {
+        try {
+          recognition.start();
+        } catch {}
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.warn("Speech recognition already running or start error:", e);
+    }
+  };
+
+  const handleStartCall = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Chrome Speech Recognition is required. Please open CheapChats in Google Chrome.");
+      return;
+    }
+
+    setIsCallActive(true);
+    isCallActiveRef.current = true;
+    setCallStatus("listening");
+    callStatusRef.current = "listening";
+    setContent("");
+
+    startCallRecognition();
   };
 
   const toggleSpeechRecognition = () => {
@@ -856,7 +1137,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder={
-            activeSuggestionChip
+            isCallActive
+              ? callStatus === "speaking"
+                ? 'AI Speaking... (Say "Stop" or click Stop to interrupt)'
+                : callStatus === "thinking"
+                ? "AI Thinking & Generating answer..."
+                : "Listening to your voice... (pause ~2s to send)"
+              : activeSuggestionChip
               ? `Add details for ${activeSuggestionChip.label}...`
               : "Ask anything — / for types or skills"
           }
@@ -865,151 +1152,249 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed ${styles.messageTextarea}`}
         />
 
-        {/* Bottom Bar: Pinned Tools + Controls */}
-        <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
-          {/* Left Pinned Tools Bar */}
-          <div className="flex items-center gap-1.5 overflow-visible min-w-0 flex-shrink-0">
-            {/* Attachment Button */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              multiple
-              className="hidden"
-            />
-            <Tooltip content="Attach any files (images, docs, code, zip...)" side="top">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-red-500/15 transition relative cursor-pointer"
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-                {attachments.length > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1b1013]" />
-                )}
-              </button>
-            </Tooltip>
-
-            {/* Web Search Button (Subtle dark red translucent highlight with plain red check icon) */}
-            <button
-              type="button"
-              onClick={() => toggleTool("webSearch")}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all duration-150 select-none cursor-pointer ${activeTools.webSearch
-                  ? "bg-red-500/15 border-red-500/40 text-red-300 shadow-sm shadow-red-950/30"
-                  : "bg-zinc-800/40 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70"
+        {/* Bottom Bar: If isCallActive, show Dynamic Sound Wave Visualizer, else show normal tools */}
+        {isCallActive ? (
+          <div className="flex items-center justify-between pt-1.5 pb-1 px-1 text-xs gap-2 min-w-0 border-t border-zinc-800/80 animate-in fade-in duration-200 select-none">
+            {/* Left: Live Status Pill */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    callStatus === "speaking"
+                      ? "bg-purple-400"
+                      : callStatus === "thinking"
+                      ? "bg-amber-400"
+                      : "bg-emerald-400"
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    callStatus === "speaking"
+                      ? "bg-purple-500"
+                      : callStatus === "thinking"
+                      ? "bg-amber-500"
+                      : "bg-emerald-500"
+                  }`}
+                />
+              </span>
+              <span
+                className={`text-[12px] font-semibold tracking-wide ${
+                  callStatus === "speaking"
+                    ? "text-purple-300"
+                    : callStatus === "thinking"
+                    ? "text-amber-300"
+                    : "text-emerald-300"
                 }`}
-              title="Web Search"
-            >
-              <Globe className={`w-3.5 h-3.5 ${activeTools.webSearch ? "text-red-400" : "text-zinc-400"}`} />
-              <span>Search</span>
-              {activeTools.webSearch && (
-                <Check className="w-3 h-3 text-red-400 stroke-[2.5] flex-shrink-0" />
-              )}
-            </button>
-
-            {/* Static / skill hint text - Pure text, no icon, no badge, no background, no border, not clickable */}
-            <span className="text-xs text-zinc-500 font-normal select-none pointer-events-none px-1">
-              / skill
-            </span>
-          </div>
-
-          {/* Right Side: Stop Voice + Usage Quota + Artifacts + Send / Mic */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {isSpeaking && (
-              <button
-                type="button"
-                onClick={handleStopSpeaking}
-                className="px-2.5 py-1 rounded-xl bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold shadow-md shadow-red-950/60 animate-pulse flex items-center gap-1"
-                title="Stop Agent Voice Immediately"
               >
-                <Square className="w-3 h-3 fill-current" />
-                <span>Stop Voice</span>
-              </button>
-            )}
+                {callStatus === "speaking"
+                  ? "Assistant Speaking..."
+                  : callStatus === "thinking"
+                  ? "AI Generating..."
+                  : "Listening to you..."}
+              </span>
+            </div>
 
-            {/* 1. Usage Quota Area with Tooltip */}
-            <UsageQuotaCircle />
+            {/* Center: Dynamic Sound Wave Frequency Bars */}
+            <div className="flex items-center gap-1 sm:gap-1.5 px-3 py-0.5 justify-center flex-1 max-w-xs">
+              {[35, 75, 50, 95, 60, 100, 80, 90, 45, 85, 55, 70, 40].map((h, i) => (
+                <span
+                  key={i}
+                  className={`w-1 sm:w-1.5 rounded-full transition-all duration-150 ${
+                    callStatus === "speaking"
+                      ? "bg-gradient-to-t from-purple-500 via-pink-400 to-rose-300 animate-pulse"
+                      : callStatus === "thinking"
+                      ? "bg-gradient-to-t from-amber-500 to-orange-400 animate-pulse"
+                      : "bg-gradient-to-t from-emerald-500 to-teal-300 animate-pulse"
+                  }`}
+                  style={{
+                    height:
+                      callStatus === "speaking"
+                        ? `${Math.max(6, (h / 100) * 26)}px`
+                        : callStatus === "listening"
+                        ? `${Math.max(4, ((h * 0.7) / 100) * 20)}px`
+                        : `${Math.max(3, ((h * 0.3) / 100) * 14)}px`,
+                    animationDelay: `${i * 80}ms`,
+                    animationDuration: callStatus === "speaking" ? "0.65s" : "1.3s",
+                  }}
+                />
+              ))}
+            </div>
 
-            {/* Revert / Back Button: Appears after text is corrected to undo and go back */}
-            {historyContent !== null && (
-              <Tooltip content="Revert back to original text" side="top">
+            {/* Right: Controls (Stop Voice button if speaking + End Call) */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {callStatus === "speaking" ? (
                 <button
                   type="button"
-                  onClick={handleRevertText}
-                  className="p-1 transition-colors select-none cursor-pointer flex items-center justify-center text-zinc-400 hover:text-white"
-                  title="Undo correction"
+                  onClick={stopCallSpeaking}
+                  className="px-2.5 py-1 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/50 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm animate-pulse"
+                  title="Stop Assistant Voice (Or say 'Stop')"
                 >
-                  <RotateCcw className="w-4 h-4 text-zinc-400 hover:text-zinc-200" />
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>Stop Voice</span>
+                </button>
+              ) : (
+                <span className="text-[11px] text-zinc-500 italic hidden sm:inline">
+                  {callStatus === "thinking"
+                    ? "Generating answer..."
+                    : "Pause ~2s to send"}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
+            {/* Left Pinned Tools Bar */}
+            <div className="flex items-center gap-1.5 overflow-visible min-w-0 flex-shrink-0">
+              {/* Attachment Button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                multiple
+                className="hidden"
+              />
+              <Tooltip content="Attach any files (images, docs, code, zip...)" side="top">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-red-500/15 transition relative cursor-pointer"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  {attachments.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#1b1013]" />
+                  )}
                 </button>
               </Tooltip>
-            )}
 
-            {/* Sparkles: AI Prompt & Word Correction Tool */}
-            <Tooltip content={isCorrecting ? "Correcting words..." : "Correct words with AI"} side="top">
+              {/* Web Search Button (Subtle dark red translucent highlight with plain red check icon) */}
               <button
                 type="button"
-                onClick={handleCorrectWords}
-                disabled={isCorrecting}
-                className="p-1 transition-colors select-none cursor-pointer flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-50"
-                title="Correct words"
+                onClick={() => toggleTool("webSearch")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all duration-150 select-none cursor-pointer ${activeTools.webSearch
+                    ? "bg-red-500/15 border-red-500/40 text-red-300 shadow-sm shadow-red-950/30"
+                    : "bg-zinc-800/40 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70"
+                  }`}
+                title="Web Search"
               >
-                {isCorrecting ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
-                ) : (
-                  <Sparkles className="w-4 h-4 text-zinc-400 hover:text-zinc-200" />
+                <Globe className={`w-3.5 h-3.5 ${activeTools.webSearch ? "text-red-400" : "text-zinc-400"}`} />
+                <span>Search</span>
+                {activeTools.webSearch && (
+                  <Check className="w-3 h-3 text-red-400 stroke-[2.5] flex-shrink-0" />
                 )}
               </button>
-            </Tooltip>
 
-            {/* 3. Send / Mic Button in a styled grey box (Far Right) */}
-            {content.trim() || attachments.length > 0 || activeSuggestionChip ? (
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={isUploading}
-                className="p-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 text-zinc-200 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
-                title="Send Message"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </button>
-            ) : isStreaming ? (
-              <button
-                type="button"
-                onClick={onStop}
-                className="p-2 rounded-xl border border-red-900/80 bg-red-950/80 text-rose-200 hover:bg-red-900/80 hover:text-white transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
-                title="Stop generating"
-                aria-label="Stop generating"
-              >
-                <Square className="w-4 h-4 fill-current" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={toggleSpeechRecognition}
-                disabled={!isSttEnabled}
-                className={`p-2 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
-                    ? "bg-red-600 text-white border-red-500 animate-pulse shadow-lg shadow-red-600/50"
-                    : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
-                  }`}
-                title={!isSttEnabled ? "Enable speech input in Settings" : isListening ? "Stop Voice Input" : "Voice Input"}
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-            )}
+              {/* Static / skill hint text - Pure text, no icon, no badge, no background, no border, not clickable */}
+              <span className="text-xs text-zinc-500 font-normal select-none pointer-events-none px-1">
+                / skill
+              </span>
+            </div>
+
+            {/* Right Side: Stop Voice + Usage Quota + Artifacts + Send / Mic */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {isSpeaking && (
+                <button
+                  type="button"
+                  onClick={handleStopSpeaking}
+                  className="px-2.5 py-1 rounded-xl bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold shadow-md shadow-red-950/60 animate-pulse flex items-center gap-1"
+                  title="Stop Agent Voice Immediately"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>Stop Voice</span>
+                </button>
+              )}
+
+              {/* 1. Usage Quota Area with Tooltip */}
+              <UsageQuotaCircle />
+
+              {/* Revert / Back Button: Appears after text is corrected to undo and go back */}
+              {historyContent !== null && (
+                <Tooltip content="Revert back to original text" side="top">
+                  <button
+                    type="button"
+                    onClick={handleRevertText}
+                    className="p-1 transition-colors select-none cursor-pointer flex items-center justify-center text-zinc-400 hover:text-white"
+                    title="Undo correction"
+                  >
+                    <RotateCcw className="w-4 h-4 text-zinc-400 hover:text-zinc-200" />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Sparkles: AI Prompt & Word Correction Tool */}
+              <Tooltip content={isCorrecting ? "Correcting words..." : "Correct words with AI"} side="top">
+                <button
+                  type="button"
+                  onClick={handleCorrectWords}
+                  disabled={isCorrecting}
+                  className="p-1 transition-colors select-none cursor-pointer flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-50"
+                  title="Correct words"
+                >
+                  {isCorrecting ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-zinc-400 hover:text-zinc-200" />
+                  )}
+                </button>
+              </Tooltip>
+
+              {/* 3. Send / Mic Button in a styled grey box (Far Right) */}
+              {content.trim() || attachments.length > 0 || activeSuggestionChip ? (
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={isUploading}
+                  className="p-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 text-zinc-200 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
+                  title="Send Message"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              ) : isStreaming ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="p-2 rounded-xl border border-red-900/80 bg-red-950/80 text-rose-200 hover:bg-red-900/80 hover:text-white transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
+                  title="Stop generating"
+                  aria-label="Stop generating"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleSpeechRecognition}
+                  disabled={!isSttEnabled}
+                  className={`p-2 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
+                      ? "bg-red-600 text-white border-red-500 animate-pulse shadow-lg shadow-red-600/50"
+                      : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    }`}
+                  title={!isSttEnabled ? "Enable speech input in Settings" : isListening ? "Stop Voice Input" : "Voice Input"}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Call Assistant Button (Placed right outside the message field) */}
-      <Tooltip content="Call Assistant (Voice Mode)" side="top">
+      <Tooltip content={isCallActive ? "End Call (Turn off mic)" : "Start Voice Call"} side="top">
         <button
           type="button"
-          onClick={() => setCallAssistantOpen(true)}
-          className="h-11 w-11 mb-1 rounded-2xl bg-[#1b1013] hover:bg-emerald-950/70 border border-zinc-800 hover:border-emerald-500/60 text-emerald-400 hover:text-emerald-300 shadow-xl shadow-black/50 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0 cursor-pointer group"
-          title="Call Assistant (Voice Mode)"
-          aria-label="Call Assistant"
+          onClick={isCallActive ? handleEndCall : handleStartCall}
+          className={`h-11 w-11 mb-1 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0 cursor-pointer shadow-xl ${
+            isCallActive
+              ? "bg-red-600 hover:bg-red-500 text-white shadow-red-950/70 border border-red-500 animate-pulse ring-2 ring-red-500/30"
+              : "bg-[#1b1013] hover:bg-emerald-950/70 border border-zinc-800 hover:border-emerald-500/60 text-emerald-400 hover:text-emerald-300 shadow-black/50"
+          }`}
+          title={isCallActive ? "End Call" : "Start Voice Call"}
+          aria-label={isCallActive ? "End Call" : "Start Voice Call"}
         >
-          <PhoneCall className="w-5 h-5 transition-transform group-hover:scale-110" />
+          {isCallActive ? (
+            <PhoneOff className="w-5 h-5 text-white" />
+          ) : (
+            <PhoneCall className="w-5 h-5 transition-transform group-hover:scale-110" />
+          )}
         </button>
       </Tooltip>
     </div>
