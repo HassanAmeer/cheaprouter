@@ -96,6 +96,10 @@ interface AppState {
   toggleHandsFreeMode: () => void;
   setHandsFreeMode: (enabled: boolean) => void;
 
+  isCallAssistantOpen: boolean;
+  setCallAssistantOpen: (open: boolean) => void;
+  toggleCallAssistant: () => void;
+
   isSpeaking: boolean;
   setIsSpeaking: (speaking: boolean) => void;
 
@@ -207,6 +211,10 @@ export const useAppStore = create<AppState>((set) => ({
   isHandsFreeMode: false,
   toggleHandsFreeMode: () => set((state) => ({ isHandsFreeMode: !state.isHandsFreeMode })),
   setHandsFreeMode: (enabled) => set({ isHandsFreeMode: enabled }),
+
+  isCallAssistantOpen: false,
+  setCallAssistantOpen: (open) => set({ isCallAssistantOpen: open }),
+  toggleCallAssistant: () => set((state) => ({ isCallAssistantOpen: !state.isCallAssistantOpen })),
 
   isSpeaking: false,
   setIsSpeaking: (speaking) => set({ isSpeaking: speaking }),

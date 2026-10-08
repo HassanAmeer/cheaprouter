@@ -12,6 +12,7 @@ import {
   ArrowUp,
   Mic,
   MicOff,
+  PhoneCall,
   Paperclip,
   Sliders,
   Globe,
@@ -108,6 +109,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     addSelectedSkill,
     removeSelectedSkill,
     clearSelectedSkills,
+    setCallAssistantOpen,
   } = useAppStore();
   const [content, setContent] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -716,31 +718,32 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         <ModelSelector />
       </div>
 
-      {/* Main Input Box */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDraggingOver(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          setIsDraggingOver(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDraggingOver(false);
-          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            uploadFiles(e.dataTransfer.files);
-          }
-        }}
-        className={`bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
-          isStreaming
-            ? styles.streamingBorder
-            : isDraggingOver
-              ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-              : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
-        }`}
-      >
+      {/* Container wrapping Main Input Box and Call Assistant button right outside */}
+      <div className="flex items-end gap-2.5">
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingOver(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDraggingOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDraggingOver(false);
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              uploadFiles(e.dataTransfer.files);
+            }
+          }}
+          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
+            isStreaming
+              ? styles.streamingBorder
+              : isDraggingOver
+                ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
+                : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
+          }`}
+        >
         {/* Attachments Row */}
         {(attachments.length > 0 || isUploading) && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
@@ -996,6 +999,20 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           </div>
         </div>
       </div>
+
+      {/* Call Assistant Button (Placed right outside the message field) */}
+      <Tooltip content="Call Assistant (Voice Mode)" side="top">
+        <button
+          type="button"
+          onClick={() => setCallAssistantOpen(true)}
+          className="h-11 w-11 mb-1 rounded-2xl bg-[#1b1013] hover:bg-emerald-950/70 border border-zinc-800 hover:border-emerald-500/60 text-emerald-400 hover:text-emerald-300 shadow-xl shadow-black/50 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0 cursor-pointer group"
+          title="Call Assistant (Voice Mode)"
+          aria-label="Call Assistant"
+        >
+          <PhoneCall className="w-5 h-5 transition-transform group-hover:scale-110" />
+        </button>
+      </Tooltip>
+    </div>
 
       {/* Centered Footer Text */}
       <div className="mt-2 text-center text-[11px] text-red-300/50">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import MessageThread from "@cheapchats/frontend/components/Chat/MessageThread";
 import ChatInput from "@cheapchats/frontend/components/Chat/ChatInput";
+import VoiceCallModal from "@cheapchats/frontend/components/Chat/VoiceCallModal";
 import { Message } from "@cheapchats/frontend/components/Chat/MessageItem";
 import {
   isArtifactCodeIncomplete,
@@ -56,6 +57,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     rollingWindowLimit,
     chatPreferences,
     setSelectedProviderAndModel,
+    isCallAssistantOpen,
+    setCallAssistantOpen,
   } = useAppStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -149,7 +152,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     isRetry = false,
     queuedMsgId?: string,
     continuationArtifactOverride?: Artifact
-  ) => {
+  ): Promise<string> => {
+    let assistantMsgContent = "";
     let responseFailed = false;
     let responseHasEnoughContent = false;
     const artifactForRequest = continuationArtifactOverride || activeArtifact;
@@ -388,7 +392,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let assistantMsgContent = "";
+      assistantMsgContent = "";
       let newConvId = "";
       let streamError = false;
       let canRetry = true;
@@ -628,10 +632,15 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         }, 150);
       }
     }
+    return assistantMsgContent;
   };
 
-  const handleSendMessage = (content: string, attachments: any[] = [], isRetry = false) => {
-    if (!content.trim() && attachments.length === 0) return;
+  const handleSendMessage = async (
+    content: string,
+    attachments: any[] = [],
+    isRetry = false
+  ): Promise<string | undefined> => {
+    if (!content.trim() && attachments.length === 0) return undefined;
 
     if (isStreamingRef.current && !isRetry) {
       const qNum = messageQueueRef.current.length + 1;
@@ -646,10 +655,10 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       };
       messageQueueRef.current.push({ id: queuedId, content, attachments });
       setMessages((prev) => [...prev, queuedUserMsg]);
-      return;
+      return undefined;
     }
 
-    executeSend(content, attachments, isRetry);
+    return await executeSend(content, attachments, isRetry);
   };
 
   const handleRegenerate = () => {
@@ -682,6 +691,18 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           onSend={handleSendMessage}
           onStop={() => streamAbortControllerRef.current?.abort()}
           isStreaming={isStreaming}
+        />
+        <VoiceCallModal
+          isOpen={isCallAssistantOpen}
+          onClose={() => setCallAssistantOpen(false)}
+          onSendMessage={async (prompt: string) => {
+            return await handleSendMessage(prompt);
+          }}
+          selectedModel={selectedModel}
+          selectedProvider={selectedProvider}
+          latestAssistantMessage={messages[messages.length - 1]}
+          isStreaming={isStreaming}
+          onStopStreaming={() => streamAbortControllerRef.current?.abort()}
         />
       </div>
     </div>
