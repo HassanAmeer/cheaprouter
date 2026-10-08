@@ -400,7 +400,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // Speech to text
+  // Speech to text (standard mic button)
   const startListening = () => {
     if (!isSttEnabled) return;
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
@@ -410,23 +410,29 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = getEffectiveSttLang(sttLang);
+
+    const baseText = contentRef.current ? contentRef.current.trim() : "";
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      if (isHandsFreeMode) {
-        const finalContent = contentRef.current ? `${contentRef.current} ${transcript}`.trim() : transcript;
-        onSend(finalContent, attachmentsRef.current);
+      let fullTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript;
+      }
+      const trimmed = fullTranscript.trim();
+      const updated = baseText ? `${baseText} ${trimmed}` : trimmed;
+      setContent(updated);
+
+      if (isHandsFreeMode && event.results[event.results.length - 1]?.isFinal) {
+        onSend(updated, attachmentsRef.current);
         setContent("");
         setAttachments([]);
-      } else {
-        setContent((prev) => (prev ? `${prev} ${transcript}` : transcript));
       }
     };
 
@@ -450,6 +456,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (isCallActiveRef.current) {
       setCallStatus("listening");
       callStatusRef.current = "listening";
+      setContent("");
+      startCallRecognition();
     }
   };
 
@@ -505,6 +513,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       setCallStatus("listening");
       callStatusRef.current = "listening";
+      setContent("");
+      startCallRecognition();
       return;
     }
 
@@ -512,6 +522,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (!cleaned) {
       setCallStatus("listening");
       callStatusRef.current = "listening";
+      setContent("");
+      startCallRecognition();
       return;
     }
 
@@ -545,6 +557,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       if (isCallActiveRef.current) {
         setCallStatus("listening");
         callStatusRef.current = "listening";
+        setContent("");
+        startCallRecognition();
       }
     };
 
@@ -557,6 +571,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       if (isCallActiveRef.current) {
         setCallStatus("listening");
         callStatusRef.current = "listening";
+        setContent("");
+        startCallRecognition();
       }
     };
 
@@ -566,6 +582,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const triggerCallSend = async (text: string) => {
     const cleanPrompt = text.trim();
     if (!cleanPrompt || !isCallActiveRef.current) return;
+
+    if (callRecognitionRef.current) {
+      try {
+        callRecognitionRef.current.abort();
+      } catch {}
+    }
 
     setCallStatus("thinking");
     callStatusRef.current = "thinking";
@@ -586,6 +608,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         } else {
           setCallStatus("listening");
           callStatusRef.current = "listening";
+          setContent("");
+          startCallRecognition();
         }
       }
     } catch (err) {
@@ -593,6 +617,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       if (isCallActiveRef.current) {
         setCallStatus("listening");
         callStatusRef.current = "listening";
+        setContent("");
+        startCallRecognition();
       }
     }
   };
@@ -643,19 +669,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     recognition.onresult = (event: any) => {
       if (!isCallActiveRef.current) return;
 
-      let final = "";
-      let interim = "";
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const item = event.results[i];
-        if (item.isFinal) {
-          final += item[0].transcript;
-        } else {
-          interim += item[0].transcript;
-        }
+      let fullTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript;
       }
-
-      const combinedText = (final || interim).trim();
+      const combinedText = fullTranscript.trim();
 
       if (callStatusRef.current === "speaking") {
         if (containsStopKeyword(combinedText)) {
@@ -673,13 +691,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           userSpeakingTimeoutRef.current = setTimeout(() => {
             setIsUserSpeaking(false);
           }, 1400);
-        }
-        if (final) {
-          setContent((prev) => (prev ? `${prev} ${final}` : final).trim());
-        } else if (interim) {
-          setContent((prev) => {
-            return prev ? `${prev} ${interim}` : interim;
-          });
+
+          // Stream clean real-time text straight into input field!
+          setContent(combinedText);
         }
 
         if (callSilenceTimerRef.current) {
