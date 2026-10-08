@@ -404,8 +404,6 @@ export default function SpeechAudioSettings() {
       persona.flag === "🇵🇰" ||
       persona.id === "zoya" ||
       persona.id === "bilal" ||
-      persona.id === "aryan" ||
-      persona.id === "hamza" ||
       persona.id === "pari" ||
       persona.id === "sameer" ||
       persona.id === "ayesha" ||
