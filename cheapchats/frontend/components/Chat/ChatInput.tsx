@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAppStore } from "@cheapchats/frontend/lib/store";
+import { useAppStore, resolveSpeechProfile, type SpeechProfile } from "@cheapchats/frontend/lib/store";
+import { detectLanguageWithAI } from "@cheapchats/frontend/lib/autoLanguage";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import ModelSelector from "@cheapchats/frontend/components/Header/ModelSelector";
 import UsageQuotaCircle from "@cheapchats/frontend/components/Chat/UsageQuotaCircle";
@@ -49,6 +50,8 @@ import {
   SPEECH_LANGUAGES,
   transliterateToRomanUrdu,
   romanUrduToUrduScript,
+  getAutoAzureVoice,
+  getAutoBrowserVoice,
   getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 import { startThinkingWaveSound, stopThinkingWaveSound } from "@cheapchats/frontend/lib/thinkingWaveSound";
@@ -141,7 +144,23 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
   // Inline Call Assistant state
   const [isCallActive, setIsCallActive] = useState(false);
+  // ── Call latency tuning ────────────────────────────────────────────────────
+  // How long the mic must stay quiet before the sentence is sent. Lower = faster
+  // reply, higher = safer for slow speakers / noisy rooms.
+  const CALL_SILENCE_MS = 550;
+  // Speak the first chunk after this many words (before a sentence ends), so the
+  // agent starts talking while the rest of the answer is still streaming.
+  const CALL_FIRST_CHUNK_WORDS = 5;
+
   const [callStatus, setCallStatus] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const [callSpeechError, setCallSpeechError] = useState(false);
+
+  // Surfaced in the call panel; never silently switches to another voice
+  const reportCallSpeechError = () => {
+    setCallSpeechError(true);
+    window.setTimeout(() => setCallSpeechError(false), 5000);
+    drainSpeechQueue();
+  };
   const isCallActiveRef = useRef(false);
   const callStatusRef = useRef<"idle" | "listening" | "thinking" | "speaking">("idle");
   const callRecognitionRef = useRef<any>(null);
@@ -166,6 +185,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const isStreamFinishedRef = useRef(false);
   const didStreamSpeakRef = useRef(false);
   const turnIdRef = useRef(0);
+  // Language detected by the AI for the current spoken turn (Auto Detect accents)
+  const callLangRef = useRef<string | null>(null);
+  const callLangPromiseRef = useRef<Promise<string> | null>(null);
+  const lastSpokenTranscriptRef = useRef<string>("");
 
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
@@ -509,6 +532,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       setCallStatus("listening");
       callStatusRef.current = "listening";
       setContent("");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
+      }
       startCallRecognition();
     }
   };
@@ -591,6 +617,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     isSpeakingUtteranceRef.current = false;
     isStreamFinishedRef.current = true;
 
+    lastSpokenTranscriptRef.current = "";
     cleanupMicAudioAnalyser();
 
     if (callSilenceTimerRef.current) {
@@ -760,6 +787,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         setCallStatus("listening");
         callStatusRef.current = "listening";
         setContent("");
+
+        // Notify ChatWorkspace to batch process any queued sender messages accumulated in the conversation!
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
+        }
+
         startCallRecognition();
       }
       return;
@@ -775,7 +808,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     isSpeakingUtteranceRef.current = true;
     const currentTurn = turnIdRef.current;
 
-    const playBrowserFallback = (chunk: string) => {
+    const playBrowserFallback = (chunk: string, voiceKey?: string, callProfile?: SpeechProfile | null) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window) || !isCallActiveRef.current || turnIdRef.current !== currentTurn) {
         isSpeakingUtteranceRef.current = false;
         drainSpeechQueue();
@@ -783,9 +816,17 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
 
       const voices = window.speechSynthesis.getVoices();
-      const bestVoice = getBestVoice(voices, ttsVoice, chunk, sttLang);
+      const bestVoice = callProfile?.auto
+        ? getAutoBrowserVoice(voices, callProfile.gender, chunk, callLangRef.current || undefined)
+        : getBestVoice(voices, voiceKey ?? ttsVoice, chunk, sttLang);
 
       let chunkToSpeak = chunk;
+      if (
+        callProfile?.auto &&
+        getAutoAzureVoice(chunk, callProfile.gender, callLangRef.current || undefined).includes("ur-PK")
+      ) {
+        chunkToSpeak = romanUrduToUrduScript(chunk);
+      }
       if (/[\u0600-\u06FF]/.test(chunkToSpeak)) {
         const isNativeUrduOrArabic =
           bestVoice &&
@@ -837,39 +878,53 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       window.speechSynthesis.speak(utterance);
     };
 
-    // Pure Urdu personas: browser voices can't pronounce Urdu script correctly,
-    // so always route them through the Azure neural Urdu voices (perfect Urdu).
-    // Roman/Latin-script personas must be spoken by an Urdu neural voice, otherwise
-    // the voice reads every Latin letter separately and sounds broken. Text is
-    // converted to native Urdu script before synthesis (see romanUrduToUrduScript).
-    const pureUrduAzureVoice =
-      ttsVoice === "persona:urdu-male"
-        ? "azure:ur-PK-AsadNeural"
-        : ttsVoice === "persona:urdu-female"
-        ? "azure:ur-PK-UzmaNeural"
-        : ttsVoice === "persona:kashif"
-        ? "azure:ur-PK-AsadNeural"
-        : ttsVoice === "persona:ayesha"
-        ? "azure:ur-PK-UzmaNeural"
-        : ttsVoice === "persona:vikram-roman"
-        ? "azure:ur-PK-AsadNeural"
-        : ttsVoice === "persona:neha-roman"
-        ? "azure:ur-PK-UzmaNeural"
-        : null;
+    // Exactly ONE saved speech profile drives the call: the same voice saved in
+    // Settings. No cross-fallback — if this source fails the chunk is skipped
+    // instead of speaking with the other engine.
+    const profile = resolveSpeechProfile(ttsEngine, ttsVoice);
 
-    if (ttsEngine === "browser" && !ttsVoice.startsWith("azure:") && !pureUrduAzureVoice) {
-      playBrowserFallback(nextChunk);
+    if (!profile) {
+      isSpeakingUtteranceRef.current = false;
       return;
     }
 
-    // 1. Try Free Ultra-Realistic Edge Neural Voice from backend API
+    // Auto Detect: AI identifies the language once per turn, every chunk of this
+    // answer then uses the accent that matches it.
+    if (profile.auto) {
+      if (!callLangPromiseRef.current) {
+        callLangPromiseRef.current = detectLanguageWithAI(nextChunk).then((lang) => {
+          callLangRef.current = lang;
+          return lang;
+        });
+      }
+      await callLangPromiseRef.current;
+      if (turnIdRef.current !== currentTurn || !isCallActiveRef.current) {
+        isSpeakingUtteranceRef.current = false;
+        return;
+      }
+    }
+
+    if (profile.engine === "browser") {
+      playBrowserFallback(nextChunk, profile.voice, profile);
+      return;
+    }
+
+    // By API: Azure neural voice (Roman-Urdu personas get native Urdu script)
     try {
       const resp = await fetch("/api/cheapchats/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: pureUrduAzureVoice ? romanUrduToUrduScript(nextChunk) : nextChunk,
-          voice: pureUrduAzureVoice || ttsVoice,
+          text: profile.auto
+            ? getAutoAzureVoice(nextChunk, profile.gender).includes("ur-PK")
+              ? romanUrduToUrduScript(nextChunk)
+              : nextChunk
+            : profile.script === "urdu"
+            ? romanUrduToUrduScript(nextChunk)
+            : nextChunk,
+          voice: profile.auto
+            ? `azure:${getAutoAzureVoice(nextChunk, profile.gender)}`
+            : profile.apiVoice,
         }),
       });
 
@@ -905,21 +960,19 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
         audio.onerror = () => {
           currentAudioElementRef.current = null;
-          playBrowserFallback(nextChunk);
+          isSpeakingUtteranceRef.current = false;
+          reportCallSpeechError();
         };
 
         await audio.play();
         return;
       }
     } catch {
-      // Network or audio error fallback
+      // Network error: stay on the same selected voice, skip this chunk
     }
 
-    if (turnIdRef.current === currentTurn && isCallActiveRef.current) {
-      playBrowserFallback(nextChunk);
-    } else {
-      isSpeakingUtteranceRef.current = false;
-    }
+    isSpeakingUtteranceRef.current = false;
+    reportCallSpeechError();
   };
 
   const processStreamBuffer = (isFinal = false) => {
@@ -936,7 +989,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       // Fast initial response: break on clause if buffer has accumulated >= 10 words without sentence punctuation
       if (!match) {
         const words = buf.trim().split(/\s+/).filter(Boolean);
-        if (words.length >= 10) {
+        if (words.length >= CALL_FIRST_CHUNK_WORDS) {
           const clauseRegex = /([,;:—])(\s+)/g;
           match = clauseRegex.exec(buf);
         }
@@ -1030,6 +1083,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     // Advance turn ID so any obsolete in-flight audio fetches or utterances are discarded
     turnIdRef.current += 1;
+    callLangRef.current = null;
+    callLangPromiseRef.current = null;
 
     // Reset streaming TTS queue & pause active audio elements for new response
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -1058,6 +1113,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     }
     setContent("");
 
+    // Restart speech recognition so it actively listens and queues any user words during thinking/speaking!
+    setTimeout(() => {
+      if (isCallActiveRef.current) {
+        startCallRecognition();
+      }
+    }, 150);
+
     try {
       const assistantReply = await onSend(cleanPrompt, attachmentsRef.current, false, true);
       setAttachments([]);
@@ -1074,6 +1136,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
             setCallStatus("listening");
             callStatusRef.current = "listening";
             setContent("");
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
+            }
             startCallRecognition();
           }
         }
@@ -1086,6 +1151,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           setCallStatus("listening");
           callStatusRef.current = "listening";
           setContent("");
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
+          }
           startCallRecognition();
         }
       }
@@ -1112,7 +1180,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     callRecognitionRef.current = recognition;
 
     recognition.onspeechstart = () => {
-      if (isCallActiveRef.current && callStatusRef.current === "listening") {
+      if (isCallActiveRef.current) {
         setIsUserSpeaking(true);
       }
     };
@@ -1124,7 +1192,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     };
 
     recognition.onsoundstart = () => {
-      if (isCallActiveRef.current && callStatusRef.current === "listening") {
+      if (isCallActiveRef.current) {
         setIsUserSpeaking(true);
       }
     };
@@ -1152,39 +1220,46 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         return;
       }
 
-      if (callStatusRef.current === "speaking") {
-        if (containsStopKeyword(combinedText)) {
-          stopCallSpeaking();
-        }
+      if (containsStopKeyword(combinedText)) {
+        stopCallSpeaking();
         return;
       }
 
-      if (callStatusRef.current === "listening") {
-        if (combinedText) {
-          setIsUserSpeaking(true);
-          if (userSpeakingTimeoutRef.current) {
-            clearTimeout(userSpeakingTimeoutRef.current);
-          }
-          userSpeakingTimeoutRef.current = setTimeout(() => {
-            setIsUserSpeaking(false);
-          }, 1400);
-
-          // Stream clean real-time text straight into input field!
-          setContent(combinedText);
+      if (combinedText) {
+        setIsUserSpeaking(true);
+        if (userSpeakingTimeoutRef.current) {
+          clearTimeout(userSpeakingTimeoutRef.current);
         }
+        userSpeakingTimeoutRef.current = setTimeout(() => {
+          setIsUserSpeaking(false);
+        }, 800);
+
+        lastSpokenTranscriptRef.current = combinedText;
 
         if (callSilenceTimerRef.current) {
           clearTimeout(callSilenceTimerRef.current);
         }
 
         callSilenceTimerRef.current = setTimeout(() => {
-          if (callStatusRef.current === "listening" && isCallActiveRef.current) {
-            const spokenText = contentRef.current.trim();
-            if (spokenText) {
-              triggerCallSend(spokenText);
+          if (!isCallActiveRef.current) return;
+          const textToSend = lastSpokenTranscriptRef.current.trim();
+          lastSpokenTranscriptRef.current = "";
+          if (textToSend) {
+            // NEVER put text into input field! Directly send into conversation thread as sender bubble box!
+            if (callStatusRef.current === "listening") {
+              triggerCallSend(textToSend);
+            } else {
+              // Assistant is thinking or speaking: onSend creates a queued user sender bubble in the chat thread!
+              onSend(textToSend, [], false, true);
             }
+
+            try {
+              if (callRecognitionRef.current) {
+                callRecognitionRef.current.abort();
+              }
+            } catch {}
           }
-        }, 1000);
+        }, CALL_SILENCE_MS);
       }
     };
 
@@ -1231,6 +1306,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     setCallStatus("listening");
     callStatusRef.current = "listening";
     setContent("");
+
+    // Warm up the offline speech engine so the very first reply is not delayed
+    if (ttsEngine === "browser" && typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        const warm = new SpeechSynthesisUtterance(" ");
+        warm.volume = 0;
+        window.speechSynthesis.speak(warm);
+      } catch {}
+    }
 
     await startMicAudioAnalyser();
     startCallRecognition();
@@ -1732,28 +1816,78 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         {/* Bottom Area: If isCallActive, show full-width sound waves; else show normal tools */}
         {isCallActive ? (
           <div className="w-full pt-1.5 pb-0.5 border-t border-zinc-800/80 animate-in fade-in duration-200 select-none">
-            <div className="w-full flex items-center justify-between gap-[2px] sm:gap-1 px-0.5 overflow-hidden">
+            {/* Status indicator badge above waves */}
+            {/* Status indicator badge above waves */}
+            <div className="flex items-center justify-between px-1 pb-1 text-[10px] font-mono">
+              <span className="flex items-center gap-1.5 min-w-0">
+                {isUserSpeaking || (waveAmplitudes.reduce((a, b) => a + b, 0) / (waveAmplitudes.length || 1) > 0.18) ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-200 ring-1 ring-red-500 animate-pulse flex-shrink-0" />
+                    <span className="text-white font-semibold tracking-wide truncate">
+                      Listening to You (Speaking)
+                    </span>
+                  </>
+                ) : callStatus === "speaking" ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                    <span className="text-red-400 font-semibold tracking-wide truncate">
+                      Assistant Speaking
+                    </span>
+                  </>
+                ) : callStatus === "thinking" ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-ping flex-shrink-0" />
+                    <span className="text-amber-300 tracking-wide truncate">
+                      Thinking & Preparing Response...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0" />
+                    <span className="text-slate-300 tracking-wide truncate">
+                      Connected • Silent (Sakin)
+                    </span>
+                  </>
+                )}
+              </span>
+              <span className="text-zinc-500 text-[9px] uppercase tracking-wider font-semibold flex-shrink-0">
+                Voice Call
+              </span>
+            </div>
+
+            {/* 4-State Waves:
+                1) Silent / Sakin: Dark grey -> grey -> silver metallic
+                2) User Speaking: Silver body with glowing Red outline on every wave bar
+                3) Thinking / Time lag raha ho: Dark red to orange / amber
+                4) Response Speaking: Dark red -> red -> dark red
+            */}
+            <div className="w-full flex items-center justify-between gap-[2px] sm:gap-1 px-0.5 overflow-hidden min-h-[36px]">
               {WAVE_BAR_FACTORS.map((_, i) => {
                 const amp = waveAmplitudes[i] ?? 0.12;
                 const isSpeaking = callStatus === "speaking";
                 const isThinking = callStatus === "thinking";
-                const isUserTalking = callStatus === "listening" && (isUserSpeaking || amp > 0.22);
+                const avgAmp = waveAmplitudes.reduce((acc, v) => acc + v, 0) / (waveAmplitudes.length || 1);
+                const isUserTalking = isUserSpeaking || avgAmp > 0.18 || amp > 0.24;
 
-                let barClass = "bg-gradient-to-t from-zinc-600 via-zinc-500 to-zinc-400/80";
-                let barHeight = Math.max(4, Math.round(amp * 16));
+                let barClass = "";
+                let barHeight = Math.max(4, Math.round(amp * 18));
 
-                if (isSpeaking) {
-                  // Assistant speaking (TTS): Dark red to purple gradient reacting to vocal cadence
-                  barClass = "bg-gradient-to-t from-red-800 via-rose-600 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
+                if (isUserTalking) {
+                  // 2) User Speaking: Silver body with red outline/border on every wave bar
+                  barClass = "bg-gradient-to-t from-zinc-600 via-zinc-300 to-slate-100 border-[1.5px] border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]";
                   barHeight = Math.max(5, Math.round(amp * 36));
-                } else if (isUserTalking) {
-                  // User speaking (STT): Vibrant red jumping to mic audio and speech
-                  barClass = "bg-gradient-to-t from-red-600 via-rose-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.45)]";
-                  barHeight = Math.max(5, Math.round(amp * 34));
+                } else if (isSpeaking) {
+                  // 4) Response Speaking: Dark red -> red -> dark red
+                  barClass = "bg-gradient-to-t from-red-950 via-red-600 to-red-950 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.65)]";
+                  barHeight = Math.max(5, Math.round(amp * 36));
                 } else if (isThinking) {
-                  // AI generating/thinking
-                  barClass = "bg-gradient-to-t from-red-800 via-orange-600 to-amber-400";
+                  // 3) Response aane mein time lag raha ho / Thinking: Dark red se orange
+                  barClass = "bg-gradient-to-t from-red-900 via-orange-600 to-amber-400 border border-orange-500/40 shadow-[0_0_8px_rgba(249,115,22,0.45)]";
                   barHeight = Math.max(4, Math.round(amp * 22));
+                } else {
+                  // 1) Silent / Sakin: Dark grey -> grey -> silver metallic
+                  barClass = "bg-gradient-to-t from-zinc-700 via-zinc-400 to-slate-200 border border-zinc-500/20 shadow-[0_0_4px_rgba(203,213,225,0.25)]";
+                  barHeight = Math.max(4, Math.round(amp * 16));
                 }
 
                 return (
@@ -1828,6 +1962,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
                   <Square className="w-3 h-3 fill-current" />
                   <span>Stop Voice</span>
                 </button>
+              )}
+
+              {/* Saved-voice playback error: never silently use another voice */}
+              {callSpeechError && (
+                <Tooltip content="Saved voice failed to play. Open Settings → Speech & Audio and press Save Speech." side="top">
+                  <span className="px-2 py-1 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-[10px] font-bold animate-pulse">
+                    Voice failed
+                  </span>
+                </Tooltip>
               )}
 
               {/* 1. Usage Quota Area with Tooltip */}

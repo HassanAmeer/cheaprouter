@@ -237,8 +237,8 @@ export async function searchWithPlaywright(
     const page = await context.newPage();
     // Search using Bing which renders fast clean results without complex bot walls in headless
     const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
-    await page.waitForTimeout(1000);
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 7000 });
+    await page.waitForTimeout(600);
 
     const results = await page.evaluate((max) => {
       const items: { title: string; link: string; snippet: string }[] = [];

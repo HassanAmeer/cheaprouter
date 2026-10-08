@@ -3,6 +3,12 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
+import {
+  readWebPageWithReach,
+  searchWebWithReach,
+  cleanSearchQuery,
+  getYoutubeTranscriptWithReach,
+} from "../../../../../cheapchats/backend/lib/agentReachService";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -183,9 +189,140 @@ export async function POST(request: Request) {
     }
 
     const target = await resolvePublicTarget(baseUrl);
-    const upstreamPayload = action === "chat" ? JSON.stringify(payload) : undefined;
-    if (action === "chat" && (!payload || typeof payload !== "object" || Array.isArray(payload))) {
-      return NextResponse.json({ error: "A chat request payload is required." }, { status: 400 });
+    let upstreamPayload: string | undefined = undefined;
+    if (action === "chat") {
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        return NextResponse.json({ error: "A chat request payload is required." }, { status: 400 });
+      }
+
+      // Clone payload & messages
+      const payloadObj = { ...(payload as Record<string, any>) };
+      const rawMessages: any[] = Array.isArray(payloadObj.messages) ? [...payloadObj.messages] : [];
+
+      // Extract last user message
+      const lastUserIndex = rawMessages.findLastIndex((m: any) => m && m.role === "user");
+      const userMessage =
+        (typeof body.message === "string" && body.message.trim()) ||
+        (lastUserIndex !== -1 && typeof rawMessages[lastUserIndex]?.content === "string"
+          ? rawMessages[lastUserIndex].content.trim()
+          : "");
+
+      const tools =
+        body.tools && typeof body.tools === "object"
+          ? (body.tools as Record<string, boolean>)
+          : undefined;
+
+      // 1. Live URL Scraping (Jina Reader / YouTube Transcript)
+      const urlMatch = userMessage.match(/https?:\/\/[^\s<>'"]+/i);
+      let scrapedContext = "";
+      if (urlMatch) {
+        const targetUrl = urlMatch[0];
+        try {
+          const isYoutube = /youtube\.com|youtu\.be/i.test(targetUrl);
+          const scrapeResult = isYoutube
+            ? await getYoutubeTranscriptWithReach(targetUrl)
+            : await readWebPageWithReach(targetUrl);
+          if (scrapeResult && scrapeResult.success && scrapeResult.markdown) {
+            scrapedContext = `\n\n<agent_reach_scraped_content url="${targetUrl}" source="${scrapeResult.source}">\nTitle: ${scrapeResult.title || targetUrl}\nContent:\n${scrapeResult.markdown}\n</agent_reach_scraped_content>\n`;
+          }
+        } catch (err) {
+          console.warn("[Custom Provider] Scrape URL failed:", err);
+        }
+      }
+
+      // 2. Pure capability check vs live web search
+      const lowerTrimmed = userMessage.toLowerCase().trim().replace(/[?!.,;]+$/, "");
+      const isPureSearchCapabilityQuestion =
+        /^(web\s+(se|par|pe)\s+)?(aap\s+)?search\s+(karke\s+)?(mujhe\s+)?(batayein|batao|karein|karo)$/i.test(lowerTrimmed) ||
+        /^(kya\s+)?(aap|tum)\s+(web|internet|google)\s+(se\s+)?search\s+kar\s+sakte\s+(ho|hain)$/i.test(lowerTrimmed) ||
+        /^(can\s+you|are\s+you\s+able\s+to)\s+(search|browse)\s+(the\s+)?(web|internet)$/i.test(lowerTrimmed) ||
+        /^(search\s+the\s+web|browse\s+the\s+web|web\s+search\s+karo|search\s+karke\s+batao|web\s+search\s+on\s+hai)$/i.test(lowerTrimmed);
+
+      const isExplicitSearchRequest =
+        Boolean(tools?.webSearch) ||
+        (/\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape|live|price|rate|bhao|gold|chandi|silver|dollar|rupee|pkr|usd|result|nikal|nikalo|check|current|today|aj|aaj|kal|bitcoin|btc|crypto|ethereum|eth|solana|sol|nvidia|browse|fetch)\b/i.test(
+          userMessage
+        ));
+
+      let searchSystemDirective = "";
+      let liveSearchContextText = "";
+      let executedCleanedQuery = "";
+
+      if (isPureSearchCapabilityQuestion) {
+        searchSystemDirective = `\n\n<search_readiness_instruction>
+The user is testing or asking about your real-time web search and live internet capabilities.
+MANDATORY INSTRUCTION:
+1. Enthusiastically confirm in natural Roman Urdu or English:
+   "Jee haan! Mere paas real-time web search aur live internet research ki mukammal salahiyat active hai. Aap mujhe koi bhi topic (jaise taza tareen khabrein, gold rate, crypto/currency rates, cricket score, ya research) batayein, main foran internet se live search karke aapko update karunga."
+2. NEVER apologize or claim that you cannot search.
+</search_readiness_instruction>\n`;
+      } else if (isExplicitSearchRequest && !urlMatch && userMessage) {
+        try {
+          let cleanedQuery = cleanSearchQuery(userMessage);
+          if (!cleanedQuery || cleanedQuery.length < 2) {
+            cleanedQuery = userMessage.replace(/https?:\/\/[^\s]+/gi, "").trim();
+          }
+          executedCleanedQuery = cleanedQuery;
+
+          if (cleanedQuery) {
+            console.log("[Custom Provider Reach] Searching web for topic:", cleanedQuery);
+            const searchData = await searchWebWithReach(cleanedQuery, 5);
+            if (searchData.results && searchData.results.length > 0) {
+              liveSearchContextText = searchData.results
+                .map(
+                  (r: any, idx: number) =>
+                    `[Source ${idx + 1}]: ${r.title}\nLink: ${r.link}\nDetails: ${r.snippet}`
+                )
+                .join("\n\n");
+
+              searchSystemDirective = `\n\n<web_search_results engine="${searchData.source}">
+Query: "${cleanedQuery}"
+${searchData.summary ? `Summary: ${searchData.summary}\n` : ""}
+Results:
+${searchData.results.map((r: any) => `- **${r.title}** (${r.link})\n  ${r.snippet}`).join("\n")}
+
+CRITICAL MANDATORY DIRECTIVE:
+Real-time verified live web data has been retrieved above via Agent Reach and DuckDuckGo / Wikipedia / Web.
+You MUST directly and accurately answer the user's question using these exact findings and current data.
+NEVER say "I am not able to search", "mere paas real-time access nahi hai", or "I lack real-time data". You HAVE the live research data right here. State the facts clearly in natural Roman Urdu or English!
+</web_search_results>\n`;
+            }
+          }
+        } catch (err) {
+          console.warn("[Custom Provider Reach] Search execution failed:", err);
+        }
+      }
+
+      // Inject system instructions
+      const fullAdditions = `${scrapedContext}${searchSystemDirective}`;
+      if (fullAdditions) {
+        const sysIndex = rawMessages.findIndex((m: any) => m && m.role === "system");
+        if (sysIndex !== -1) {
+          rawMessages[sysIndex] = {
+            ...rawMessages[sysIndex],
+            content: `${rawMessages[sysIndex].content || ""}\n${fullAdditions}`,
+          };
+        } else {
+          rawMessages.unshift({
+            role: "system",
+            content: fullAdditions.trim(),
+          });
+        }
+      }
+
+      // Inject live research dossier directly into active user prompt
+      if (liveSearchContextText && lastUserIndex !== -1) {
+        const targetUserIdx = rawMessages.findLastIndex((m: any) => m && m.role === "user");
+        if (targetUserIdx !== -1) {
+          rawMessages[targetUserIdx] = {
+            ...rawMessages[targetUserIdx],
+            content: `[CURRENT LIVE WEB DATA & RESEARCH DOSSIER FOR: "${executedCleanedQuery}"]\n${liveSearchContextText}\n\n[USER QUERY]:\n${userMessage}`,
+          };
+        }
+      }
+
+      payloadObj.messages = rawMessages;
+      upstreamPayload = JSON.stringify(payloadObj);
     }
 
     target.url.pathname = `${target.url.pathname.replace(/\/+$/, "")}/${action === "models" ? "models" : "chat/completions"}`;

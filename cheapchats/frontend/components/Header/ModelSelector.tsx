@@ -79,8 +79,39 @@ export default function ModelSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileProviderMenuOpen, setMobileProviderMenuOpen] = useState(false);
   const [activeHoverProvider, setActiveHoverProvider] = useState<string | null>(null);
-  const [providersData, setProvidersData] = useState<Record<string, ModelItem[]>>({});
-  const [customProviderNames, setCustomProviderNames] = useState<Record<string, string>>({});
+  const [providersData, setProvidersData] = useState<Record<string, ModelItem[]>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const cached = localStorage.getItem("cheapchat_cached_models");
+      const base = cached ? JSON.parse(cached) : {};
+      const next = { ...(typeof base === "object" && base ? base : {}) };
+      for (const provider of readCustomProviders()) {
+        const key = getCustomProviderKey(provider.id);
+        next[key] = provider.models.map((model) => ({
+          ...model,
+          provider: key,
+        }));
+      }
+      return next;
+    } catch {
+      return {};
+    }
+  });
+  const [customProviderNames, setCustomProviderNames] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const names: Record<string, string> = {};
+      for (const provider of readCustomProviders()) {
+        const key = getCustomProviderKey(provider.id);
+        names[key] = provider.name;
+        names[provider.id] = provider.name;
+        names[provider.name] = provider.name;
+      }
+      return names;
+    } catch {
+      return {};
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,18 +139,34 @@ export default function ModelSelector() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  // Hydrate user's chosen provider & model from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedProv = localStorage.getItem("cheapchats_selected_provider");
+      const savedModel = localStorage.getItem("cheapchats_selected_model");
+      if (savedProv || savedModel) {
+        setSelectedProviderAndModel(
+          savedProv || selectedProvider || "OpenAI",
+          savedModel || selectedModel || "gpt-4o"
+        );
+      }
+    } catch {}
+  }, []);
+
   const mergeCustomProviders = (source: Record<string, ModelItem[]>) => {
     const next = { ...source };
     const names: Record<string, string> = {};
     for (const provider of readCustomProviders()) {
       const key = getCustomProviderKey(provider.id);
       names[key] = provider.name;
+      names[provider.id] = provider.name;
+      names[provider.name] = provider.name;
       next[key] = provider.models.map((model) => ({
         ...model,
         provider: key,
       }));
     }
-    setCustomProviderNames(names);
+    setCustomProviderNames((prev) => ({ ...prev, ...names }));
     return next;
   };
 
@@ -232,9 +279,28 @@ export default function ModelSelector() {
 
   const handleSelectModel = (provider: string, modelId: string) => {
     setSelectedProviderAndModel(provider, modelId);
-    // Note: Do not auto-close or only close if user wants. We close on explicit model selection, 
-    // but the dropdown never dismisses on outside clicks.
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cheapchats_selected_provider", provider);
+        localStorage.setItem("cheapchats_selected_model", modelId);
+      }
+    } catch {}
     setIsOpen(false);
+  };
+
+  const providerName = (provider: string) => {
+    if (!provider) return "";
+    if (customProviderNames[provider]) return customProviderNames[provider];
+    if (provider.startsWith("custom:")) {
+      const id = provider.slice("custom:".length);
+      const found = readCustomProviders().find((p) => p.id === id || p.name === id);
+      if (found) return found.name;
+    }
+    const foundDirect = readCustomProviders().find(
+      (p) => p.name.toLowerCase() === provider.toLowerCase() || p.id === provider
+    );
+    if (foundDirect) return foundDirect.name;
+    return provider;
   };
 
   const isProviderConfigured = (pKey: string) => {
@@ -254,7 +320,11 @@ export default function ModelSelector() {
       return true;
     }
     // 2. Currently selected provider is always active and visible
-    if (pKey === selectedProvider) {
+    if (
+      pKey === selectedProvider ||
+      (selectedProvider && pKey.toLowerCase() === selectedProvider.toLowerCase()) ||
+      (selectedProvider && providerName(pKey).toLowerCase() === selectedProvider.toLowerCase())
+    ) {
       return true;
     }
     // 3. OpenRouter is available by default through the backend proxy
@@ -286,12 +356,21 @@ export default function ModelSelector() {
   const sortedProviderKeys = effectiveProviderKeys.includes("Custom API")
     ? [...regularProviders, "Custom API"]
     : regularProviders;
-  const providerName = (provider: string) => customProviderNames[provider] || provider;
 
   useEffect(() => {
     if (sortedProviderKeys.length > 0) {
-      if (selectedProvider && sortedProviderKeys.includes(selectedProvider)) {
-        setActiveHoverProvider(selectedProvider);
+      const matchedKey = selectedProvider
+        ? sortedProviderKeys.find(
+            (k) =>
+              k === selectedProvider ||
+              k.toLowerCase() === selectedProvider.toLowerCase() ||
+              providerName(k).toLowerCase() === selectedProvider.toLowerCase() ||
+              providerName(selectedProvider).toLowerCase() === k.toLowerCase()
+          )
+        : null;
+
+      if (matchedKey) {
+        setActiveHoverProvider(matchedKey);
       } else if (!activeHoverProvider || !sortedProviderKeys.includes(activeHoverProvider)) {
         setActiveHoverProvider(sortedProviderKeys[0]);
       }

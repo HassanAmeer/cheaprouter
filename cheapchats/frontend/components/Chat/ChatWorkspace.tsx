@@ -155,7 +155,10 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
             }
             if (restoredArtifact) setActiveArtifact(restoredArtifact);
 
-            if (data.conversation?.model) {
+            // Keep the user's explicitly chosen provider and model from localStorage if one exists
+            const savedProv = typeof window !== "undefined" ? localStorage.getItem("cheapchats_selected_provider") : null;
+            const savedModel = typeof window !== "undefined" ? localStorage.getItem("cheapchats_selected_model") : null;
+            if (!savedProv && !savedModel && data.conversation?.model) {
               const rawProv = data.conversation.provider || "OpenRouter";
               const matchedCustom = readCustomProviders().find(
                 (p) =>
@@ -191,7 +194,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     isRetry = false,
     queuedMsgId?: string,
     continuationArtifactOverride?: Artifact,
-    isCallMode = false
+    isCallMode = false,
+    queuedMsgIds?: string[]
   ): Promise<string> => {
     let assistantMsgContent = "";
     let responseFailed = false;
@@ -243,6 +247,13 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           return [...prev.slice(0, -1), assistantMsg];
         }
         return [...prev, assistantMsg];
+      });
+    } else if (queuedMsgIds && queuedMsgIds.length > 0) {
+      setMessages((prev) => {
+        const updated = prev.map((m) =>
+          queuedMsgIds.includes(m.id) ? { ...m, queueStatus: undefined } : m
+        );
+        return [...updated, assistantMsg];
       });
     } else if (queuedMsgId) {
       setMessages((prev) => {
@@ -407,6 +418,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
             temperature: effTemperature,
             max_tokens: 4096,
           },
+          tools: activeTools,
+          message: content,
         } : {
           conversationId: isIncognito ? undefined : (activeConvId || undefined),
           message: content,
@@ -721,7 +734,11 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
         );
       }
 
-      if (messageQueueRef.current.length > 0) {
+      const isCallActive =
+        typeof window !== "undefined" &&
+        Boolean((window as any).__cheapchats_is_call_active);
+
+      if (!isCallActive && messageQueueRef.current.length > 0) {
         const nextItem = messageQueueRef.current.shift()!;
         setMessages((prev) => {
           let qIdx = 1;
@@ -739,6 +756,26 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     }
     return assistantMsgContent;
   };
+
+  // When a voice call assistant finishes speaking, batch process all queued messages accumulated in the conversation
+  useEffect(() => {
+    const handleCallTurnFinished = () => {
+      if (messageQueueRef.current.length > 0) {
+        const queuedItems = [...messageQueueRef.current];
+        messageQueueRef.current = [];
+        const queuedIds = queuedItems.map((item) => item.id);
+        const combinedContent = queuedItems.map((item) => item.content).join(" ");
+        setTimeout(() => {
+          executeSend(combinedContent, [], false, undefined, undefined, true, queuedIds);
+        }, 150);
+      }
+    };
+
+    window.addEventListener("cheapchat:call_turn_finished", handleCallTurnFinished);
+    return () => {
+      window.removeEventListener("cheapchat:call_turn_finished", handleCallTurnFinished);
+    };
+  }, []);
 
   const handleSendMessage = async (
     content: string,

@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 export const PROVIDER_ICONS_MAP: Record<string, string> = {
-  openai: 'https://cdn.simpleicons.org/openai/10A37F',
+  openai: 'https://www.google.com/s2/favicons?domain=openai.com&sz=128',
   anthropic: 'https://cdn.simpleicons.org/anthropic/D97757',
   google: 'https://cdn.simpleicons.org/google/4285F4',
   gemini: 'https://cdn.simpleicons.org/google/4285F4',

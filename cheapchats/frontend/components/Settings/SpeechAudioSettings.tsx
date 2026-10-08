@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { detectLanguageWithAI } from "@cheapchats/frontend/lib/autoLanguage";
 import {
   Mic,
   MicOff,
@@ -29,6 +30,10 @@ import {
   VOICE_PERSONAS,
   VoicePersona,
   AZURE_VOICE_PERSONAS,
+  azureVoiceFromPersonaId,
+  getAutoAzureVoice,
+  getAutoBrowserVoice,
+  detectSpeechLanguage,
   AzureVoicePersona,
   getEffectiveSttLang,
   getBestVoice,
@@ -43,6 +48,24 @@ import {
  * text letter-by-letter (which sounds broken). So we send these personas through the
  * Azure Urdu neural voices and convert the text to native Urdu script first.
  */
+// Which mic language matches each offline persona (used on Save)
+const STT_LANG_FOR_PERSONA: Record<string, string> = {
+  "urdu-male": "ur-PK",
+  "urdu-female": "ur-PK",
+  kashif: "ur-roman",
+  ayesha: "ur-roman",
+  swara: "hi-IN",
+  "vikram-roman": "hi-IN",
+  "neha-roman": "hi-IN",
+  neerja: "en-IN",
+  rohan: "en-IN",
+  jenny: "en-US",
+  guy: "en-US",
+  sonia: "en-GB",
+  fatima: "ar-SA",
+  hamdan: "ar-SA",
+};
+
 const ROMAN_URDU_AZURE_VOICES: Record<string, string> = {
   "persona:urdu-male": "ur-PK-AsadNeural",
   "persona:urdu-female": "ur-PK-UzmaNeural",
@@ -70,11 +93,23 @@ export default function SpeechAudioSettings() {
     ttsPitch,
     setTtsPitch,
     ttsEngine,
-    setTtsEngine,
+    saveSpeechSelection,
   } = useAppStore();
 
   // Active Tab: "mic" (Speech to Text) or "speech" (Text to Speech)
   const [activeTab, setActiveTab] = useState<"mic" | "speech">("mic");
+
+  // Pending (unsaved) speech selection. Nothing is applied until "Save Speech"
+  // is pressed, so Read Aloud / call assistant always use one committed voice.
+  const [draftVoice, setDraftVoice] = useState<string>(ttsVoice);
+  // The source always follows the selected accent (never the other way round)
+  const draftEngine: "azure" | "browser" = draftVoice.startsWith("azure:") ? "azure" : "browser";
+  const [hasUnsavedSpeech, setHasUnsavedSpeech] = useState(false);
+  // Exactly ONE accent is selected at a time. The tab only decides which card
+  // list you are looking at — it never changes the selection.
+  const [viewEngine, setViewEngine] = useState<"azure" | "browser">(ttsEngine);
+  const [pendingRate, setPendingRate] = useState<number>(ttsRate);
+  const [pendingPitch, setPendingPitch] = useState<number>(ttsPitch);
 
   // Browser Speech APIs Support
   const [speechSupport, setSpeechSupport] = useState({
@@ -258,7 +293,8 @@ export default function SpeechAudioSettings() {
   const fallbackToBrowserSpeech = (
     textToSpeak: string,
     persona: VoicePersona | null,
-    targetVoiceKey: string
+    targetVoiceKey: string,
+    previewLang?: string | null
   ) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       setIsPlayingTts(false);
@@ -267,8 +303,21 @@ export default function SpeechAudioSettings() {
     }
 
     let cleaned = textToSpeak;
-    const targetRole = persona ? persona.langCodes[0] : sttLang;
-    const bestVoice = getBestVoice(browserVoices, targetVoiceKey, cleaned, targetRole);
+    const targetRole = persona
+      ? persona.langCodes[0] === "auto"
+        ? detectSpeechLanguage(cleaned)
+        : persona.langCodes[0]
+      : sttLang;
+    const isAuto = /\|auto-(male|female)$/.test(targetVoiceKey);
+    const autoGender: "male" | "female" = targetVoiceKey.endsWith("auto-male") ? "male" : "female";
+    const bestVoice = isAuto
+      ? getAutoBrowserVoice(
+          browserVoices.length ? browserVoices : window.speechSynthesis.getVoices(),
+          autoGender,
+          cleaned,
+          previewLang || undefined
+        )
+      : getBestVoice(browserVoices, targetVoiceKey, cleaned, targetRole);
 
     if (/[\u0600-\u06FF]/.test(cleaned)) {
       const isNativeUrduOrArabic =
@@ -381,17 +430,22 @@ export default function SpeechAudioSettings() {
 
     const targetVoiceKey = persona
       ? (persona.id.startsWith("azure:") ? persona.id : `persona:${persona.id}`)
-      : ttsVoice;
+      : draftVoice;
 
     if (personaId) {
       setLoadingPersonaId(personaId);
     }
 
-    // Built-in accents are fully offline: they must never wait on the API.
-    // Only the "By API" tab (ttsEngine === "azure") or an explicit azure:* voice
-    // goes through the server.
-    const isAzureTarget =
-      targetVoiceKey.startsWith("azure:") || ttsEngine === "azure";
+    // One source only: an Azure card always previews through the API, a built-in
+    // card always previews through the local device voice (no server wait).
+    const isAzureTarget = targetVoiceKey.startsWith("azure:");
+
+    // Auto Detect cards: language of this message decides the voice
+    const isAuto = /\|auto-(male|female)$/.test(targetVoiceKey);
+    const autoGender: "male" | "female" = targetVoiceKey.endsWith("auto-male") ? "male" : "female";
+    // Auto Detect: the AI identifies the language of the sample first
+    const previewLang = isAuto ? await detectLanguageWithAI(cleaned) : null;
+    const autoAzureVoice = isAuto ? getAutoAzureVoice(cleaned, autoGender, previewLang || undefined) : "";
 
     // 1. Play Ultra-Realistic Free Edge Neural AI Voice
     if (isAzureTarget) {
@@ -400,12 +454,22 @@ export default function SpeechAudioSettings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: ROMAN_URDU_AZURE_VOICES[targetVoiceKey]
-              ? romanUrduToUrduScript(cleaned)
-              : cleaned,
-            voice: ROMAN_URDU_AZURE_VOICES[targetVoiceKey]
-              ? `azure:${ROMAN_URDU_AZURE_VOICES[targetVoiceKey]}`
-              : targetVoiceKey,
+            text:
+              isAuto
+                ? autoAzureVoice.includes("ur-PK")
+                  ? romanUrduToUrduScript(cleaned)
+                  : cleaned
+                : ROMAN_URDU_AZURE_VOICES[targetVoiceKey] || targetVoiceKey.includes("|roman")
+                ? romanUrduToUrduScript(cleaned)
+                : cleaned,
+            // Persona ids may carry the "|roman" marker; the API gets the plain voice
+            voice: isAuto
+              ? `azure:${autoAzureVoice}`
+              : azureVoiceFromPersonaId(
+                  ROMAN_URDU_AZURE_VOICES[targetVoiceKey]
+                    ? `azure:${ROMAN_URDU_AZURE_VOICES[targetVoiceKey]}`
+                    : targetVoiceKey
+                ),
           }),
         });
 
@@ -433,7 +497,7 @@ export default function SpeechAudioSettings() {
           audio.onerror = () => {
             activeAudioRef.current = null;
             setLoadingPersonaId(null);
-            fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
+            fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey, previewLang);
           };
 
           await audio.play();
@@ -444,54 +508,75 @@ export default function SpeechAudioSettings() {
       }
     }
 
-    fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
+    fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey, previewLang);
+  };
+
+  const activeAzurePersona = AZURE_VOICE_PERSONAS.find((p) => p.id === ttsVoice);
+  const activeBrowserPersona = VOICE_PERSONAS.find((p) => `persona:${p.id}` === ttsVoice);
+  const activeVoiceLabel =
+    ttsEngine === "azure"
+      ? activeAzurePersona
+        ? `${activeAzurePersona.flag} ${activeAzurePersona.name} (Azure Neural)`
+        : ttsVoice
+      : activeBrowserPersona
+      ? `${activeBrowserPersona.flag} ${activeBrowserPersona.name} (Offline)`
+      : ttsVoice;
+
+  const handleSaveSpeech = () => {
+    saveSpeechSelection(draftEngine, draftVoice);
+    setPlaybackRate(pendingRate);
+    setPitch(pendingPitch);
+    handleRateChange(pendingRate);
+    handlePitchChange(pendingPitch);
+    setHasUnsavedSpeech(false);
+
+    // Keep STT aligned with the accent that was just saved
+    if (draftVoice.startsWith("persona:")) {
+      const p = VOICE_PERSONAS.find((v) => `persona:${v.id}` === draftVoice);
+      if (p && !p.id.startsWith("auto-")) {
+        const stt = STT_LANG_FOR_PERSONA[p.id];
+        if (stt) setSttLang(stt);
+      }
+    } else {
+      const az = AZURE_VOICE_PERSONAS.find((v) => v.id === draftVoice);
+      if (az?.flag === "🇵🇰") setSttLang("ur-roman");
+      else if (az?.azureVoice?.startsWith("en-US")) setSttLang("en-US");
+      else if (az?.azureVoice?.startsWith("en-GB")) setSttLang("en-GB");
+      else if (az?.azureVoice?.startsWith("ar-")) setSttLang("ar-SA");
+      else if (az?.flag === "🇮🇳") setSttLang("hi-IN");
+    }
+
+    toast(
+      `Saved! Read Aloud & call assistant will use: ${draftEngine === "azure" ? "⚡ By API" : "🌐 Built-in Offline"} — ${activeVoiceLabelFor(draftEngine, draftVoice)}`,
+      "success"
+    );
+  };
+
+  const activeVoiceLabelFor = (engine: "azure" | "browser", voice: string) => {
+    if (engine === "azure") {
+      const az = AZURE_VOICE_PERSONAS.find((v) => v.id === voice);
+      return az ? `${az.flag} ${az.name}` : voice;
+    }
+    const b = VOICE_PERSONAS.find((v) => `persona:${v.id}` === voice);
+    return b ? `${b.flag} ${b.name}` : voice;
   };
 
   const handleSelectAzurePersona = (azureP: AzureVoicePersona) => {
-    setTtsEngine("azure");
-    setTtsVoice(azureP.id);
-    toast(`${azureP.flag} ${azureP.name} accent saved!`, "success");
+    setDraftVoice(azureP.id);
+    setViewEngine("azure");
+    setHasUnsavedSpeech(true);
 
-    // Auto-align STT language when an Azure persona is picked
-    if (azureP.flag === "🇵🇰") {
-      setSttLang("ur-roman");
-    } else if (azureP.flag === "🇮🇳") {
-      setSttLang("hi-IN");
-    } else if (azureP.azureVoice.startsWith("en-US")) {
-      setSttLang("en-US");
-    } else if (azureP.azureVoice.startsWith("en-GB")) {
-      setSttLang("en-GB");
-    } else if (azureP.azureVoice.startsWith("ar-")) {
-      setSttLang("ar-SA");
-    }
+    // STT language is aligned on Save, together with the voice itself
   };
 
   const handleSelectPersona = (persona: VoicePersona) => {
-    setTtsEngine("browser");
-    setTtsVoice(`persona:${persona.id}`);
-    handleRateChange(persona.rate);
-    handlePitchChange(persona.pitch);
-    toast(`${persona.flag} ${persona.name} accent saved!`, "success");
+    setDraftVoice(`persona:${persona.id}`);
+    setViewEngine("browser");
+    setPendingRate(persona.rate);
+    setPendingPitch(persona.pitch);
+    setHasUnsavedSpeech(true);
 
-    // Auto-align STT language when a persona is picked
-    if (persona.id === "urdu-male" || persona.id === "urdu-female") {
-      setSttLang("ur-PK");
-    } else if (
-      persona.id === "kashif" ||
-      persona.id === "ayesha"
-    ) {
-      setSttLang("ur-roman");
-    } else if (persona.id === "swara" || persona.id === "vikram-roman" || persona.id === "neha-roman") {
-      setSttLang("hi-IN");
-    } else if (persona.id === "neerja" || persona.id === "rohan") {
-      setSttLang("en-IN");
-    } else if (persona.id === "jenny" || persona.id === "guy") {
-      setSttLang("en-US");
-    } else if (persona.id === "sonia") {
-      setSttLang("en-GB");
-    } else if (persona.id === "fatima" || persona.id === "hamdan") {
-      setSttLang("ar-SA");
-    }
+    // STT language is aligned on Save, together with the voice itself
   };
 
   // Filtered STT Accents
@@ -899,50 +984,89 @@ export default function SpeechAudioSettings() {
 
           {/* ── Bottom: Unified Voice Accent Cards Grid (One Place!) ─────────── */}
           <div className="space-y-3">
-            {/* ── Sub-tabs: [⚡ By API (Azure Neural HD)] vs [🌐 Built-in Accents (Browser)] ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-zinc-800/80 border border-white/5 rounded-2xl shadow-inner">
-              <button
-                type="button"
-                onClick={() => {
-                  setTtsEngine("azure");
-                  if (!ttsVoice.startsWith("azure:")) {
-                    setTtsVoice("azure:ur-PK-AsadNeural");
-                  }
-                  toast("⚡ Azure Neural voice mode enabled and saved!", "success");
-                }}
-                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-                  ttsEngine === "azure"
-                    ? "bg-zinc-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
-                }`}
-              >
-                <span>⚡ By API (Server can be slow 2 to 5s)</span>
-              </button>
+            {/* ── Speech Engine: pick ONE source (By API or Offline), then Save ── */}
+            <div className="rounded-2xl border border-white/8 bg-[#151517]/80 p-3.5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-bold text-white tracking-wide">
+                    Speech Source — only one is active
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                  Saved: {ttsEngine === "azure" ? "⚡ By API" : "🌐 Offline"}
+                </span>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setTtsEngine("browser");
-                  if (ttsVoice.startsWith("azure:")) {
-                    setTtsVoice("persona:ayesha");
-                  }
-                  toast("🌐 Built-in (Offline) voice mode enabled and saved!", "success");
-                }}
-                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-                  ttsEngine === "browser"
-                    ? "bg-zinc-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
-                }`}
-              >
-                <span>🌐 Built-in Accents (Offline - Fastly)</span>
-              </button>
+              {/* Cupertino style segmented control — clearly a switch between two tabs */}
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-black/55 border border-white/8 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setViewEngine("browser")}
+                  className={`relative rounded-xl py-2.5 px-2 text-[12px] sm:text-[13px] font-bold transition-all duration-200 ease-out cursor-pointer flex items-center justify-center gap-1.5 ${
+                    viewEngine === "browser"
+                      ? "bg-white/12 text-white shadow-[0_2px_10px_rgba(0,0,0,0.55)] ring-1 ring-white/12"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span className="text-sm leading-none">🌐</span>
+                  <span className="truncate">Built-in Offline</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewEngine("azure")}
+                  className={`relative rounded-xl py-2.5 px-2 text-[12px] sm:text-[13px] font-bold transition-all duration-200 ease-out cursor-pointer flex items-center justify-center gap-1.5 ${
+                    viewEngine === "azure"
+                      ? "bg-white/12 text-white shadow-[0_2px_10px_rgba(0,0,0,0.55)] ring-1 ring-white/12"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span className="text-sm leading-none">⚡</span>
+                  <span className="truncate">By API</span>
+                </button>
+              </div>
+
+              <p className="text-[10.5px] text-slate-500 leading-snug">
+                {viewEngine === "browser"
+                  ? "Device voices — instant, no server, works offline."
+                  : "Azure neural voices — ultra realistic, server call takes 2 to 5s."}
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                <div className="text-[11px] text-slate-400 leading-snug">
+                  <span className="text-slate-500">Will be used:</span>{" "}
+                  <span className="text-white font-semibold">
+                    {activeVoiceLabelFor(draftEngine, draftVoice)}
+                  </span>
+                  {hasUnsavedSpeech && (
+                    <span className="ml-2 text-amber-300">• unsaved changes</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveSpeech}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                    hasUnsavedSpeech
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/60 shadow-lg shadow-emerald-950/40"
+                      : "bg-[#232326] text-slate-300 border-white/10 hover:bg-[#2b2b30]"
+                  }`}
+                >
+                  {hasUnsavedSpeech ? "Save Speech" : "Saved ✓"}
+                </button>
+              </div>
+
+              <p className="text-[10px] text-slate-500 leading-snug">
+                Read Aloud and the voice call always use this one saved voice — it never switches to the
+                other source, even if playback fails.
+              </p>
             </div>
 
             {/* If By API selected: Render Azure Neural Accent Cards */}
-            {ttsEngine === "azure" ? (
+            {viewEngine === "azure" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filteredAzurePersonas.map((azureP) => {
-                  const isSelected = ttsVoice === azureP.id;
+                  const isSelected = draftVoice === azureP.id;
                   const isPlayingThis = isPlayingTts && playingPersonaId === azureP.id;
                   const isLoadingThis = loadingPersonaId === azureP.id;
 
@@ -1059,7 +1183,7 @@ export default function SpeechAudioSettings() {
               /* If Built-in selected: Render Browser Personas Grid */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filteredPersonas.map((persona) => {
-                  const isPersonaSelected = ttsVoice === `persona:${persona.id}`;
+                  const isPersonaSelected = draftVoice === `persona:${persona.id}`;
                   const isPlayingThisPersona = isPlayingTts && playingPersonaId === persona.id;
                   const isLoadingThisPersona = loadingPersonaId === persona.id;
 

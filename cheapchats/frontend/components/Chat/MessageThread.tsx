@@ -104,17 +104,19 @@ export default function MessageThread({
 
   return (
     <div className="flex-1 min-w-0 overflow-y-auto relative custom-scrollbar">
-      {messages.map((msg, index) => (
-        <MessageItem
-          key={msg.id || index}
-          message={msg}
-          onRegenerate={msg.sender === "assistant" ? onRegenerate : undefined}
-          onEdit={msg.sender === "user" ? onEditUserMessage : undefined}
-          isStreaming={isStreaming && index === messages.length - 1}
-        />
-      ))}
+      <div className="w-full max-w-3xl min-w-0 mx-auto px-2 sm:px-4 md:px-6 pt-2 pb-4">
+        {messages.map((msg, index) => (
+          <MessageItem
+            key={msg.id || index}
+            message={msg}
+            onRegenerate={msg.sender === "assistant" ? onRegenerate : undefined}
+            onEdit={msg.sender === "user" ? onEditUserMessage : undefined}
+            isStreaming={isStreaming && index === messages.length - 1}
+          />
+        ))}
 
-      <div ref={bottomRef} className="h-4" />
+        <div ref={bottomRef} className="h-4" />
+      </div>
     </div>
   );
 }

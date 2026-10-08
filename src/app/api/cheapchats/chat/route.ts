@@ -7,6 +7,7 @@ import { getSession } from '../../../../../cheapchats/backend/lib/auth';
 import {
   readWebPageWithReach,
   searchWebWithReach,
+  cleanSearchQuery,
   getYoutubeTranscriptWithReach,
 } from '../../../../../cheapchats/backend/lib/agentReachService';
 import {
@@ -315,12 +316,33 @@ MANDATORY INSTRUCTIONS FOR ASSISTANT:
     let liveSearchContextText = '';
     let executedCleanedQuery = '';
 
-    if (isExplicitSearchRequest && !urlMatch) {
+    // Check if the user is asking whether the AI can search or just saying "web se search karke batao" without a specific topic
+    const lowerTrimmed = message.toLowerCase().trim().replace(/[?!.,;]+$/, '');
+    const isPureSearchCapabilityQuestion =
+      /^(web\s+(se|par|pe)\s+)?(aap\s+)?search\s+(karke\s+)?(mujhe\s+)?(batayein|batao|karein|karo)$/i.test(lowerTrimmed) ||
+      /^(kya\s+)?(aap|tum)\s+(web|internet|google)\s+(se\s+)?search\s+kar\s+sakte\s+(ho|hain)$/i.test(lowerTrimmed) ||
+      /^(can\s+you|are\s+you\s+able\s+to)\s+(search|browse)\s+(the\s+)?(web|internet)$/i.test(lowerTrimmed) ||
+      /^(search\s+the\s+web|browse\s+the\s+web|web\s+search\s+karo|search\s+karke\s+batao|web\s+search\s+on\s+hai)$/i.test(lowerTrimmed);
+
+    if (isPureSearchCapabilityQuestion) {
+      activeSystemPrompt += `\n\n<search_readiness_instruction>
+The user is testing or asking about your real-time web search and live internet capabilities.
+MANDATORY INSTRUCTION:
+1. Enthusiastically confirm in natural Roman Urdu or English:
+   "Jee haan! Mere paas real-time web search aur live internet research ki mukammal salahiyat active hai. Aap mujhe koi bhi topic (jaise taza tareen khabrein, kisi shakhsiat ki maloomat, cricket score, crypto/market rates, ya research paper) batayein, main foran internet se live search karke aapko update karunga."
+2. NEVER apologize or claim that you cannot search.
+</search_readiness_instruction>\n`;
+    } else if (isExplicitSearchRequest && !urlMatch) {
       try {
-        const cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, '').trim();
+        // Strip conversational search prefixes so search engines receive the actual topic
+        let cleanedQuery = cleanSearchQuery(message);
+        if (!cleanedQuery) {
+          cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, '').trim();
+        }
+
         executedCleanedQuery = cleanedQuery;
         if (cleanedQuery) {
-          console.log('[AGENT REACH] Executing web search for:', cleanedQuery);
+          console.log('[AGENT REACH] Executing web search for topic:', cleanedQuery);
           const searchData = await searchWebWithReach(cleanedQuery, 5);
           if (searchData.results && searchData.results.length > 0) {
             const wantsTabOpened = /\b(tab|kholo|open|browser|window)\b/i.test(message);

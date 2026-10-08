@@ -25,6 +25,141 @@ export interface Artifact {
   files?: ArtifactFile[];
 }
 
+export type SpeechEngine = "azure" | "browser";
+
+/** Azure voice keys are always prefixed, browser personas always use "persona:". */
+export function toAzureVoiceKey(voice: string): string {
+  // Persona ids may carry a "|roman" marker (Roman Urdu accent mode). The marker
+  // is part of the selection, so it must survive saving and page reloads.
+  const raw = (voice || "").trim();
+  if (!raw) return "azure:ur-PK-AsadNeural";
+  const [base, ...rest] = raw.split("|");
+  const marker = rest.length ? `|${rest.join("|")}` : "";
+  return `${base.startsWith("azure:") ? base : `azure:${base}`}${marker}`;
+}
+
+/** The real Azure voice id to send to the TTS API (persona marker removed). */
+export function azureVoiceOnly(voice: string): string {
+  const v = (voice || "").split("|")[0].trim();
+  if (!v) return "azure:ur-PK-AsadNeural";
+  return v.startsWith("azure:") ? v : `azure:${v}`;
+}
+
+export function toBrowserVoiceKey(voice: string): string {
+  const v = (voice || "").trim();
+  if (!v || v === "default" || v.startsWith("azure:")) return "persona:ayesha";
+  return v.startsWith("persona:") ? v : `persona:${v}`;
+}
+
+/**
+ * Engine + voice must always agree, otherwise the app ends up speaking with a
+ * voice the user never selected. If they disagree, the stored voice wins when it
+ * clearly belongs to one engine, otherwise we fall back to the saved engine.
+ */
+export function resolveSpeechEngine(
+  engine: string | null | undefined,
+  voice: string | null | undefined
+): SpeechEngine {
+  const v = (voice || "").trim();
+  if (v.startsWith("azure:")) return "azure";
+  if (v.startsWith("persona:") && v !== "persona:default") return "browser";
+  // Default source is the offline built-in one
+  return engine === "azure" ? "azure" : "browser";
+}
+
+export interface SpeechProfile {
+  engine: SpeechEngine;
+  /** Exactly what the user selected (may include the "|roman" persona marker) */
+  voice: string;
+  /** Voice id to send to the TTS API (marker removed) */
+  apiVoice: string;
+  /** Roman-Urdu personas must be synthesized in native Urdu script */
+  script: "urdu" | "latin";
+  /** Auto Detect accents pick the voice per message from its language */
+  auto: boolean;
+  /** Gender for Auto Detect accents */
+  gender: "male" | "female";
+}
+
+/**
+ * The single speech profile used by Read Aloud and the voice call. Engine and
+ * voice are always normalized together, so the app can never speak with a voice
+ * the user did not select.
+ */
+export function resolveSpeechProfile(
+  engine: string | null | undefined,
+  voice: string | null | undefined
+): SpeechProfile | null {
+  const raw = (voice || "").trim();
+  // Nothing saved yet -> use the offline built-in source
+  if (!raw || raw === "default") {
+    return {
+      engine: "browser",
+      voice: "persona:ayesha",
+      apiVoice: "persona:ayesha",
+      script: "latin",
+      auto: false,
+      gender: "female",
+    };
+  }
+
+  // Auto Detect accents: the voice is chosen per message from its language
+  const isAuto = /\|auto-(male|female)$/.test(raw);
+  const autoGender: "male" | "female" = raw.endsWith("auto-male") ? "male" : "female";
+  if (isAuto) {
+    const engineAuto: SpeechEngine = raw.startsWith("azure:") ? "azure" : "browser";
+    const persona = engineAuto === "azure" ? `azure:auto|auto-${autoGender}` : `persona:auto-${autoGender}`;
+    return {
+      engine: engineAuto,
+      voice: persona,
+      apiVoice: persona,
+      script: "latin",
+      auto: true,
+      gender: autoGender,
+    };
+  }
+
+  const resolvedEngine = resolveSpeechEngine(engine, raw);
+
+  if (resolvedEngine === "browser") {
+    const v = toBrowserVoiceKey(raw);
+    // Offline Auto Detect personas
+    if (v === "persona:auto-female" || v === "persona:auto-male") {
+      return { engine: "browser", voice: v, apiVoice: v, script: "latin", auto: true, gender: v.endsWith("male") ? "male" : "female" };
+    }
+    return { engine: "browser", voice: v, apiVoice: v, script: "latin", auto: false, gender: "female" };
+  }
+
+  const v = toAzureVoiceKey(raw);
+  // Roman-Urdu personas cannot be read letter-by-letter by neural voices
+  const romanPersona = v.startsWith("persona:")
+    ? ROMAN_URDU_AZURE_VOICE_BY_PERSONA[v.replace("persona:", "")]
+    : undefined;
+  const finalVoice = romanPersona ? `azure:${romanPersona}` : v;
+  const apiVoice = azureVoiceOnly(finalVoice);
+  // Only Urdu neural voices need the roman -> Urdu script conversion; English
+  // and other voices must keep the original text untouched.
+  const script: "urdu" | "latin" = apiVoice.includes("ur-PK") ? "urdu" : "latin";
+  return {
+    engine: "azure",
+    voice: finalVoice,
+    apiVoice,
+    script,
+    auto: /\|auto-(male|female)$/.test(finalVoice),
+    gender: finalVoice.endsWith("auto-male") ? "male" : "female",
+  };
+}
+
+// Roman-Urdu personas -> Azure neural Urdu voices
+const ROMAN_URDU_AZURE_VOICE_BY_PERSONA: Record<string, string> = {
+  "urdu-male": "ur-PK-AsadNeural",
+  kashif: "ur-PK-AsadNeural",
+  "vikram-roman": "ur-PK-AsadNeural",
+  "urdu-female": "ur-PK-UzmaNeural",
+  ayesha: "ur-PK-UzmaNeural",
+  "neha-roman": "ur-PK-UzmaNeural",
+};
+
 export interface DebugData {
   timestamp?: string;
   endpoint?: string;
@@ -126,6 +261,11 @@ interface AppState {
 
   ttsEngine: "azure" | "browser";
   setTtsEngine: (engine: "azure" | "browser") => void;
+
+  // Single source of truth for speech: engine + voice are always saved together,
+  // so Read Aloud / call assistant can never use a different voice than the one
+  // selected in Settings. There is only ever ONE active speech.
+  saveSpeechSelection: (engine: "azure" | "browser", voice: string) => void;
 
   isArtifactsOpen: boolean;
   setArtifactsOpen: (open: boolean) => void;
@@ -298,7 +438,9 @@ export const useAppStore = create<AppState>((set) => ({
     set({ sttLang: lang });
   },
 
-  ttsVoice: typeof window !== "undefined" ? localStorage.getItem("cheapchat_tts_voice") || "default" : "default",
+  // Built-in offline is the default source
+  ttsVoice:
+    typeof window !== "undefined" ? localStorage.getItem("cheapchat_tts_voice") || "persona:ayesha" : "persona:ayesha",
   setTtsVoice: (voice) => {
     if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_voice", voice);
     set({ ttsVoice: voice });
@@ -320,10 +462,23 @@ export const useAppStore = create<AppState>((set) => ({
     set({ ttsPitch: pitch });
   },
 
-  ttsEngine: (typeof window !== "undefined" && (localStorage.getItem("cheapchat_tts_engine") as "azure" | "browser")) || "azure",
+  ttsEngine: resolveSpeechEngine(
+    typeof window !== "undefined" ? localStorage.getItem("cheapchat_tts_engine") : null,
+    typeof window !== "undefined" ? localStorage.getItem("cheapchat_tts_voice") : null
+  ),
   setTtsEngine: (engine: "azure" | "browser") => {
     if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_engine", engine);
     set({ ttsEngine: engine });
+  },
+
+  saveSpeechSelection: (engine: "azure" | "browser", voice: string) => {
+    const safeEngine = resolveSpeechEngine(engine, voice);
+    const safeVoice = safeEngine === "azure" ? toAzureVoiceKey(voice) : toBrowserVoiceKey(voice);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cheapchat_tts_engine", safeEngine);
+      localStorage.setItem("cheapchat_tts_voice", safeVoice);
+    }
+    set({ ttsEngine: safeEngine, ttsVoice: safeVoice });
   },
 
   isArtifactsOpen: false,

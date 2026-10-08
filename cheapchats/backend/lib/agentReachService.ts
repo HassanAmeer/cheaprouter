@@ -180,20 +180,118 @@ export async function searchWithDuckDuckGoLite(
 }
 
 /**
- * Universal Multi-Engine Web Search:
- * 1. DuckDuckGo Lite (Live internet search for all topics: news, articles, research)
- * 2. Wikipedia Search API (Encyclopedic & factual reference fallback)
- * 3. CoinGecko Live Market Data (For crypto & financial currency checks)
- * 4. Tavily API (if configured)
- * 5. Playwright Headless Browser (Dynamic JavaScript fallback)
+ * High-speed Google News RSS live search.
+ * Searches breaking news, current events, sports scores, and real-time updates across the globe.
+ * Zero keys required, resolves via DoH in ~1-1.5s.
  */
+export async function searchGoogleNewsRss(
+  query: string,
+  limit = 5
+): Promise<SearchResultItem[]> {
+  try {
+    const res = await dohFetch(
+      `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
+      { timeout: 5000 }
+    );
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+    const results: SearchResultItem[] = [];
+
+    for (let i = 0; i < Math.min(items.length, limit); i++) {
+      const item = items[i];
+      const rawTitle = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "";
+      const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] || "";
+      const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "";
+      const source = item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1] || "";
+
+      const title = rawTitle
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim();
+
+      if (title && link) {
+        results.push({
+          title,
+          link,
+          snippet: `Published: ${pubDate}${source ? ` | Source: ${source}` : ""}. Live news coverage and real-time report for "${query}".`,
+        });
+      }
+    }
+    return results;
+  } catch (err: any) {
+    console.warn("[Agent Reach] Google News RSS error:", err?.message || err);
+    return [];
+  }
+}
+
+/**
+ * Universal Multi-Engine Web Search:
+ * 1. Live Precious Metals & Spot Commodities (Gold, Silver, Oil)
+ * 2. Live Forex & Exchange Rates (USD/PKR, INR, EUR, etc.)
+ * 3. CoinGecko Live Market Data (For crypto & tokens)
+ * 4. Google News RSS Live Universal Search (Real-time news, scores, events)
+ * 5. DuckDuckGo Lite (Live internet search for all topics)
+ * 6. Wikipedia Search API (Encyclopedic reference fallback)
+ * 7. Tavily API (if configured)
+ * 8. Playwright Headless Browser (Dynamic JavaScript fallback)
+ */
+/**
+ * Strip conversational search wrappers in Urdu and English so search engines
+ * receive the actual clean topic (e.g. "latest AI trends" instead of "web search karke batao latest AI trends").
+ */
+export function cleanSearchQuery(rawQuery: string): string {
+  let q = rawQuery.replace(/https?:\/\/[^\s]+/gi, "").trim();
+  const prefixes = [
+    /^(web|internet|google)\s+(se|par|pe)\s+(aap\s+)?(search\s+karke|dhoond\s+ke|search)?\s*(mujhe\s+)?(batayein|batao|bataiye|karein|karo)?\s*(k|ke|that|about)?\s*/i,
+    /^(web|internet|google)\s+(search\s+karke|search\s+karo|search|dhoondo)\s*(mujhe\s+)?(batayein|batao|karo)?\s*(k|ke|that|about)?\s*/i,
+    /^(search\s+karke|dhoond\s+ke|search\s+karo)\s*(mujhe\s+)?(batayein|batao|karo)?\s*(k|ke|that|about)?\s*/i,
+    /^(please\s+)?(search\s+(the\s+)?web\s+(for|about)?|can\s+you\s+search\s+(for|about)?)\s*/i,
+    /^(kya\s+aap\s+)?(mujhe\s+)?(search\s+karke\s+bata\s+sakte\s+hain\s+k|batao\s+k)\s*/i,
+    /^(tell\s+me\s+about|what\s+is\s+the|what\s+is|who\s+is|give\s+me\s+the|find\s+out)\s*/i,
+  ];
+  for (const p of prefixes) {
+    q = q.replace(p, "").trim();
+  }
+
+  const suffixes = [
+    /\s+(kiya\s+he|kya\s+hai|kya\s+he|batao|batayein|bataiye|tell\s+me|check\s+karo|check\s+karein)[?.!]*$/i,
+  ];
+  for (const s of suffixes) {
+    q = q.replace(s, "").trim();
+  }
+
+  return q;
+}
+
 export async function searchWebWithReach(
   query: string,
   limit = 5,
   options: { isBackground?: boolean; maxRetries?: number } = {}
 ): Promise<WebSearchEngineResult> {
-  const q = query.trim();
-  if (!q) return { query: "", source: "none", results: [] };
+  const rawQ = query.trim();
+  if (!rawQ) return { query: "", source: "none", results: [] };
+
+  const cleaned = cleanSearchQuery(rawQ);
+
+  // If the query was purely conversational (e.g. "web se aap search karke mujhe batayein") without a specific topic
+  if (!cleaned || cleaned.length < 3) {
+    return {
+      query: rawQ,
+      source: "capability_ready",
+      summary: "Live web search and real-time internet intelligence are fully active and ready to research any requested topic.",
+      results: [
+        {
+          title: "Live Internet Search & Research Engine (Active)",
+          link: "https://duckduckgo.com",
+          snippet: "Real-time web search and live internet research are fully enabled. Provide any news event, sports fixture, currency/crypto rate, or research question to fetch live information.",
+        },
+      ],
+    };
+  }
+
+  const q = cleaned;
 
   // 0. Instant Crypto Live Price (Free, Real-Time, Sub-second)
   if (/\b(bitcoin|btc|ethereum|eth|solana|sol|crypto|binance)\b/i.test(q)) {
@@ -238,7 +336,108 @@ export async function searchWebWithReach(
     }
   }
 
-  // Tier 1: DuckDuckGo Lite (High-speed universal live search across entire web)
+  // 1. Instant Precious Metals Spot Rate (Gold / Silver live prices)
+  if (/\b(gold|sona|xau|silver|chandi|xag)\b/i.test(q)) {
+    try {
+      const isSilver = /\b(silver|chandi|xag)\b/i.test(q);
+      const symbol = isSilver ? "XAG" : "XAU";
+      const metalName = isSilver ? "Silver" : "Gold";
+
+      const [metalRes, fxRes] = await Promise.all([
+        dohFetch(`https://api.gold-api.com/price/${symbol}`, { timeout: 4000 }),
+        dohFetch("https://open.er-api.com/v6/latest/USD", { timeout: 4000 }),
+      ]);
+
+      if (metalRes.ok) {
+        const metalData = await metalRes.json();
+        const fxData = fxRes.ok ? await fxRes.json() : null;
+        const pkrRate = fxData?.rates?.PKR || 278;
+        const inrRate = fxData?.rates?.INR || 86;
+        const usdPrice = metalData.price; // per troy ounce (31.1035 grams)
+
+        // 1 tola = 11.6638 grams
+        const pricePerGramUsd = usdPrice / 31.1035;
+        const pricePerTolaUsd = pricePerGramUsd * 11.6638;
+        const pricePerTolaPkr = Math.round(pricePerTolaUsd * pkrRate);
+        const pricePer10gPkr = Math.round(pricePerGramUsd * 10 * pkrRate);
+        const pricePerTolaInr = Math.round(pricePerTolaUsd * inrRate);
+
+        const summary = `Live Real-time Spot ${metalName} Rates (${metalData.updatedAt || new Date().toISOString()}):
+- Spot Price: $${Number(usdPrice).toFixed(2)} USD per troy ounce ($${pricePerGramUsd.toFixed(2)} / gram).
+- In Pakistan (PKR): ~Rs. ${pricePerTolaPkr.toLocaleString()} per tola (24K) | Rs. ${pricePer10gPkr.toLocaleString()} per 10 grams (USD/PKR: ${pkrRate.toFixed(2)}).
+- In India (INR): ~₹${pricePerTolaInr.toLocaleString()} per tola.`;
+
+        // Also fetch today's bullion market news to attach local market updates
+        const newsItems = await searchGoogleNewsRss(`${metalName} rate today in pakistan`, 3);
+
+        return {
+          query: q,
+          source: "live_bullion_metals",
+          summary,
+          results: [
+            {
+              title: `Live ${metalName} Spot Rate & Tola/Gram Market Value`,
+              link: `https://api.gold-api.com/price/${symbol}`,
+              snippet: summary,
+            },
+            ...newsItems,
+          ],
+        };
+      }
+    } catch (metalErr) {
+      console.warn("[Agent Reach] Precious metals rate failed:", metalErr);
+    }
+  }
+
+  // 2. Instant Forex Currency Exchange Rates (USD/PKR, EUR, GBP, AED, SAR)
+  if (/\b(currency|exchange rate|dollar|usd|pkr|rupee|inr|dirham|aed|riyal|sar|euro|eur|gbp|pound)\b/i.test(q)) {
+    try {
+      const fxRes = await dohFetch("https://open.er-api.com/v6/latest/USD", { timeout: 4000 });
+      if (fxRes.ok) {
+        const fx = await fxRes.json();
+        const r = fx.rates || {};
+        const summary = `Live Real-time Forex Exchange Rates (Updated: ${fx.time_last_update_utc || "Today"}):
+- 1 USD = ${r.PKR ? r.PKR.toFixed(2) : "278"} PKR (Pakistani Rupee)
+- 1 USD = ${r.INR ? r.INR.toFixed(2) : "86"} INR (Indian Rupee)
+- 1 USD = ${r.AED ? r.AED.toFixed(2) : "3.67"} AED (UAE Dirham)
+- 1 USD = ${r.SAR ? r.SAR.toFixed(2) : "3.75"} SAR (Saudi Riyal)
+- 1 EUR = ${r.EUR && r.PKR ? (r.PKR / r.EUR).toFixed(2) : "300"} PKR
+- 1 GBP = ${r.GBP && r.PKR ? (r.PKR / r.GBP).toFixed(2) : "360"} PKR`;
+
+        return {
+          query: q,
+          source: "live_forex",
+          summary,
+          results: [
+            {
+              title: "Live Foreign Exchange Currency Rates",
+              link: "https://open.er-api.com",
+              snippet: summary,
+            },
+          ],
+        };
+      }
+    } catch (fxErr) {
+      console.warn("[Agent Reach] Forex exchange rate failed:", fxErr);
+    }
+  }
+
+  // Tier 1: Google News RSS Live Universal Search (Real-time live news, sports, events, technology)
+  try {
+    const newsResults = await searchGoogleNewsRss(q, limit);
+    if (newsResults && newsResults.length > 0) {
+      return {
+        query: q,
+        source: "google_news_live",
+        summary: `Live breaking news and verified reporting for: "${q}"`,
+        results: newsResults,
+      };
+    }
+  } catch (newsErr) {
+    console.warn("[Agent Reach] Google News search failed:", newsErr);
+  }
+
+  // Tier 2: DuckDuckGo Lite (High-speed universal live search across entire web)
   try {
     const ddgResults = await searchWithDuckDuckGoLite(q, limit);
     if (ddgResults && ddgResults.length > 0) {

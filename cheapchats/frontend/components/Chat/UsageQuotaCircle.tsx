@@ -3,13 +3,19 @@
 import { useState } from "react";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import { Zap } from "lucide-react";
+import { useAppStore } from "@cheapchats/frontend/lib/store";
 
 export default function UsageQuotaCircle() {
-  // Usage quota state (75% used, 25% grey)
-  const [quotaPercent] = useState(75);
-  const [usedTokens] = useState(7500);
-  const [maxTokens] = useState(10000);
+  // Real usage, measured live from the actual conversation messages
+  const { conversationUsage } = useAppStore();
+  const usedTokens = conversationUsage?.usedTokens ?? 0;
+  const maxTokens = conversationUsage?.maxTokens ?? 128000;
+  const messageCount = conversationUsage?.messageCount ?? 0;
+
   const [showDetails, setShowDetails] = useState(false);
+
+  const quotaPercent = maxTokens > 0 ? Math.min(100, (usedTokens / maxTokens) * 100) : 0;
+  const isNearLimit = quotaPercent >= 85;
 
   // Compact size parameters
   const size = 20;
@@ -23,7 +29,10 @@ export default function UsageQuotaCircle() {
 
   return (
     <div className="relative flex items-center">
-      <Tooltip content={`Usage Quota: ${quotaPercent}% (${usedTokens.toLocaleString()} / ${maxTokens.toLocaleString()} tokens)`} side="top">
+      <Tooltip
+        content={`Context used: ${quotaPercent.toFixed(quotaPercent < 10 ? 1 : 0)}% (${usedTokens.toLocaleString()} / ${maxTokens.toLocaleString()} tokens)`}
+        side="top"
+      >
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
@@ -47,7 +56,7 @@ export default function UsageQuotaCircle() {
               cy={center}
               r={radius}
               fill="transparent"
-              stroke="#a82828"
+              stroke={isNearLimit ? "#ef4444" : "#a82828"}
               strokeWidth={strokeWidth}
               strokeDasharray="2 1.5"
               strokeDashoffset={strokeDashoffset}
@@ -66,7 +75,7 @@ export default function UsageQuotaCircle() {
               <span>Usage Quota</span>
             </div>
             <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full font-semibold">
-              {quotaPercent}% Used
+              {quotaPercent.toFixed(quotaPercent < 10 && quotaPercent > 0 ? 1 : 0)}% Used
             </span>
           </div>
 
@@ -76,15 +85,29 @@ export default function UsageQuotaCircle() {
               <span className="font-mono text-white font-semibold">{usedTokens.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-[11px] text-slate-400">
-              <span>Monthly Limit:</span>
+              <span>Context Window:</span>
               <span className="font-mono text-slate-300">{maxTokens.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+              <span>Messages:</span>
+              <span className="font-mono text-slate-300">{messageCount}</span>
+            </div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+              <span>Remaining:</span>
+              <span className="font-mono text-slate-300">
+                {Math.max(0, maxTokens - usedTokens).toLocaleString()}
+              </span>
             </div>
           </div>
 
           {/* Progress Bar */}
           <div className="w-full bg-[#251417] h-1.5 rounded-full overflow-hidden">
             <div
-              className="bg-gradient-to-r from-rose-600 to-red-700 h-full rounded-full transition-all duration-300"
+              className={`h-full rounded-full transition-all duration-300 ${
+                isNearLimit
+                  ? "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
+                  : "bg-gradient-to-r from-rose-600 to-red-700"
+              }`}
               style={{ width: `${quotaPercent}%` }}
             />
           </div>

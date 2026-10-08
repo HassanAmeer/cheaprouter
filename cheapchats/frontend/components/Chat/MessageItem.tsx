@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useAppStore } from "@cheapchats/frontend/lib/store";
+import { useAppStore, resolveSpeechProfile } from "@cheapchats/frontend/lib/store";
+import { detectLanguageWithAI } from "@cheapchats/frontend/lib/autoLanguage";
 import {
   isArtifactCodeIncomplete,
   parseAllArtifactFiles,
 } from "@cheapchats/frontend/lib/artifactParser";
 import {
   cleanTextForSpeech,
+  getAutoAzureVoice,
+  getAutoBrowserVoice,
   getBestVoice,
   getEffectiveTtsSettings,
   romanUrduToUrduScript,
@@ -560,6 +563,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
   const [copiedText, setCopiedText] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [speechFailed, setSpeechFailed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(message.feedback || null);
   const [isEditing, setIsEditing] = useState(false);
@@ -609,16 +613,24 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     }
   };
 
-  const playWithBrowserVoice = (speechText: string) => {
+  const playWithBrowserVoice = (
+    speechText: string,
+    voiceKey?: string,
+    auto?: { auto: boolean; gender: "male" | "female"; lang?: string }
+  ) => {
     if (!("speechSynthesis" in window)) return;
     const utterance = new SpeechSynthesisUtterance(speechText);
 
-    const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+    const ttsSettings = getEffectiveTtsSettings(voiceKey ?? ttsVoice);
     utterance.rate = ttsSettings.rate;
     utterance.pitch = ttsSettings.pitch;
 
     const voices = window.speechSynthesis.getVoices();
-    const selectedVoice = getBestVoice(voices, ttsVoice, speechText, sttLang);
+    // Auto Detect: pick the device voice from the message language + gender
+    const selectedVoice =
+      auto?.auto
+        ? getAutoBrowserVoice(voices, auto.gender, speechText, auto.lang)
+        : getBestVoice(voices, voiceKey ?? ttsVoice, speechText, sttLang);
 
     if (selectedVoice) {
       utterance.voice = selectedVoice;
@@ -638,7 +650,54 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     setIsPlayingAudio(true);
   };
 
-  const handleToggleAudio = () => {
+  const playApiAudio = async (text: string, voice: string) => {
+    try {
+      const resp = await fetch("/api/cheapchats/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice }),
+      });
+
+      if (!resp.ok) throw new Error("tts failed");
+
+      const blob = await resp.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        setIsAudioLoading(false);
+        setIsPlayingAudio(true);
+        setIsSpeaking(true);
+      };
+      audio.onended = () => {
+        audioRef.current = null;
+        URL.revokeObjectURL(audioUrl);
+        setIsPlayingAudio(false);
+        setIsSpeaking(false);
+      };
+      audio.onerror = () => {
+        audioRef.current = null;
+        URL.revokeObjectURL(audioUrl);
+        setIsAudioLoading(false);
+        setIsPlayingAudio(false);
+        setIsSpeaking(false);
+        setSpeechFailed(true);
+        window.setTimeout(() => setSpeechFailed(false), 4000);
+      };
+
+      await audio.play();
+    } catch {
+      // Same saved voice failed — stay silent rather than use another engine
+      setIsAudioLoading(false);
+      setIsPlayingAudio(false);
+      setIsSpeaking(false);
+      setSpeechFailed(true);
+      window.setTimeout(() => setSpeechFailed(false), 4000);
+    }
+  };
+
+  const handleToggleAudio = async () => {
     if (!isTtsEnabled || typeof window === "undefined") return;
 
     // Stop whatever is playing (API audio or browser speech)
@@ -659,65 +718,52 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
 
     window.speechSynthesis.cancel(); // cancel any active speech first
 
-    // Whatever accent is selected in Speech & Audio Settings is used here as-is:
-    // "By API" engine or an explicit azure:* voice -> server neural voice,
-    // "Built-in" engine -> local browser voice for that persona.
-    const useApi = ttsEngine === "azure" || ttsVoice.startsWith("azure:");
-    const personaAzureVoice = getPureUrduAzureVoice(ttsVoice);
-    const azureVoice = personaAzureVoice ?? (ttsVoice.startsWith("azure:") ? ttsVoice : null);
+    // Exactly ONE saved speech is used, resolved by the store so engine and
+    // voice can never disagree. There is no cross-fallback: if this source
+    // fails, nothing is spoken instead of speaking with a different voice.
+    const profile = resolveSpeechProfile(ttsEngine, ttsVoice);
+    if (!profile) {
+      setIsPlayingAudio(false);
+      setIsAudioLoading(false);
+      return;
+    }
 
-    if (!useApi) {
-      playWithBrowserVoice(speechText);
+    // Auto Detect: let the AI identify the language first, then pick the accent
+    if (profile.auto) {
+      const lang = await detectLanguageWithAI(speechText);
+
+      if (profile.engine === "browser") {
+        playWithBrowserVoice(speechText, profile.voice, {
+          auto: true,
+          gender: profile.gender,
+          lang,
+        });
+        return;
+      }
+
+      setIsAudioLoading(true);
+      const azureVoice = getAutoAzureVoice(speechText, profile.gender, lang);
+      await playApiAudio(
+        azureVoice.includes("ur-PK") ? romanUrduToUrduScript(speechText) : speechText,
+        `azure:${azureVoice}`
+      );
+      return;
+    }
+
+    if (profile.engine === "browser") {
+      playWithBrowserVoice(speechText, profile.voice, {
+        auto: false,
+        gender: profile.gender,
+      });
       return;
     }
 
     // API accent: show loader until the audio is ready, then play it
     setIsAudioLoading(true);
-
-    (async () => {
-      try {
-        const resp = await fetch("/api/cheapchats/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: personaAzureVoice ? romanUrduToUrduScript(speechText) : speechText,
-            voice: azureVoice || ttsVoice,
-          }),
-        });
-
-        if (!resp.ok) throw new Error("tts failed");
-
-        const blob = await resp.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-
-        audio.onplay = () => {
-          setIsAudioLoading(false);
-          setIsPlayingAudio(true);
-          setIsSpeaking(true);
-        };
-        audio.onended = () => {
-          audioRef.current = null;
-          URL.revokeObjectURL(audioUrl);
-          setIsPlayingAudio(false);
-          setIsSpeaking(false);
-        };
-        audio.onerror = () => {
-          audioRef.current = null;
-          URL.revokeObjectURL(audioUrl);
-          setIsAudioLoading(false);
-          setIsPlayingAudio(false);
-          setIsSpeaking(false);
-          playWithBrowserVoice(speechText);
-        };
-
-        await audio.play();
-      } catch {
-        setIsAudioLoading(false);
-        playWithBrowserVoice(speechText);
-      }
-    })();
+    await playApiAudio(
+      profile.script === "urdu" ? romanUrduToUrduScript(speechText) : speechText,
+      profile.apiVoice
+    );
   };
 
   useEffect(() => {
@@ -843,8 +889,8 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
   // ── USER MESSAGE (Right Aligned, Pure Text, Grey Icon on Right) ──────
   if (isUser) {
     return (
-      <div className="w-full min-w-0 py-3.5 px-3 sm:px-6 md:px-8 flex justify-end transition duration-150">
-        <div className="max-w-3xl w-full min-w-0 flex items-start gap-3 justify-end">
+      <div className="w-full min-w-0 py-3 sm:py-3.5 flex justify-end transition duration-150">
+        <div className="max-w-[85%] sm:max-w-[80%] min-w-0 flex items-start gap-3 justify-end">
           {/* Edit Mode vs Render Mode */}
           {isEditing ? (
             <div className="w-full min-w-[280px] sm:min-w-[420px] flex flex-col gap-2">
@@ -1000,8 +1046,8 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     );
 
   return (
-    <div className="w-full min-w-0 py-3.5 px-3 sm:px-6 md:px-8 flex justify-start border-b border-white/[0.02] hover:bg-white/[0.01] transition duration-150">
-      <div className="max-w-3xl w-full min-w-0 flex flex-col break-words">
+    <div className="w-full min-w-0 py-3.5 flex justify-start border-b border-white/[0.02] hover:bg-white/[0.01] transition duration-150">
+      <div className="w-full min-w-0 flex flex-col break-words">
         {/* Header */}
         <div className="flex items-center gap-2 mb-2 select-none">
             <span className="font-bold text-xs text-white">
@@ -1103,11 +1149,13 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                   title={
                     !isTtsEnabled
                       ? "Enable text to speech in Settings"
+                      : speechFailed
+                      ? "Saved voice failed to play - check Speech & Audio settings"
                       : isAudioLoading
                       ? "Loading voice..."
                       : isPlayingAudio
                       ? "Stop"
-                      : "Read Aloud"
+                      : `Read Aloud (${resolveSpeechProfile(ttsEngine, ttsVoice)?.engine === "azure" ? "By API" : "Offline"})`
                   }
                   className={`p-1.5 rounded-lg transition ${
                     !isTtsEnabled
@@ -1119,7 +1167,9 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                       : "hover:bg-[#252525] hover:text-white"
                   }`}
                 >
-                  {isAudioLoading ? (
+                  {speechFailed ? (
+                    <VolumeX className="w-3.5 h-3.5 text-red-500" />
+                  ) : isAudioLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : isPlayingAudio ? (
                     <VolumeX className="w-3.5 h-3.5 animate-pulse" />

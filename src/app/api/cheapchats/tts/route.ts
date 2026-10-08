@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Map persona or voice IDs to Edge Neural voices
-    let selectedVoice = voice || "ur-PK-AsadNeural";
+    // Persona ids may carry a "|roman" marker (Roman Urdu accent mode)
+    let selectedVoice = (voice || "ur-PK-AsadNeural").split("|")[0];
 
     if (selectedVoice.startsWith("azure:")) {
       selectedVoice = selectedVoice.replace("azure:", "");

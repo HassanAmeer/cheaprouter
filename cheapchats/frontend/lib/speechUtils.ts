@@ -233,6 +233,41 @@ export interface VoicePersona {
 
 export const VOICE_PERSONAS: VoicePersona[] = [
   // ═══════════════════════════════════════════════════════════════════════════
+  // AUTO DETECT (device voices, language detected per message)
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "auto-female",
+    name: "Auto Detect (Female)",
+    gender: "female",
+    accentTitle: "Auto Detect Language (Female Voice)",
+    flag: "🌐",
+    badge: "Auto Detect",
+    tags: ["Auto", "Any Language", "Female"],
+    description:
+      "Har message ka language khud detect karta hai (Urdu, Roman Urdu, Hindi, English, Arabic...) aur female device voice se bolta hai.",
+    samplePhrase: "Assalam-o-alaikum! Yeh voice apne aap language detect kar leti hai.",
+    preferredKeywords: ["auto", "female", "automatic"],
+    langCodes: ["auto"],
+    pitch: 1.0,
+    rate: 1.0,
+  },
+  {
+    id: "auto-male",
+    name: "Auto Detect (Male)",
+    gender: "male",
+    accentTitle: "Auto Detect Language (Male Voice)",
+    flag: "🌐",
+    badge: "Auto Detect",
+    tags: ["Auto", "Any Language", "Male"],
+    description:
+      "Har message ka language khud detect karta hai (Urdu, Roman Urdu, Hindi, English, Arabic...) aur male device voice se bolta hai.",
+    samplePhrase: "Assalam-o-alaikum! Yeh voice apne aap language detect kar leti hai.",
+    preferredKeywords: ["auto", "male", "automatic"],
+    langCodes: ["auto"],
+    pitch: 1.0,
+    rate: 1.0,
+  },
+  // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 1: FAMOUS INTERNATIONAL ACCENTS (TOP SECTION)
   // ═══════════════════════════════════════════════════════════════════════════
   {
@@ -467,7 +502,68 @@ export interface AzureVoicePersona {
   samplePhrase: string;
 }
 
+/**
+ * Persona ids may carry a "|roman" marker (Roman Urdu accent mode). The actual
+ * Azure voice is always the part before the marker.
+ */
+export function azureVoiceFromPersonaId(personaId: string): string {
+  const base = (personaId || "").split("|")[0];
+  return base.startsWith("azure:") ? base : `azure:${base}`;
+}
+
 export const AZURE_VOICE_PERSONAS: AzureVoicePersona[] = [
+  {
+    id: "azure:auto|auto-female",
+    name: "Auto Detect (Female)",
+    azureVoice: "auto",
+    gender: "female",
+    accentTitle: "Auto Detect Language (Azure Female)",
+    flag: "🌐",
+    badge: "Auto Detect",
+    tags: ["Auto", "Any Language", "Female", "Azure Neural"],
+    description:
+      "Har message ka language detect karke usi ka best Azure female neural voice chunta hai — Urdu, Roman Urdu, Hindi, English, Arabic sab handle.",
+    samplePhrase: "Assalam-o-alaikum! Main apne aap language detect kar leti hoon, bataiye aap kya karna chahti hain?",
+  },
+  {
+    id: "azure:auto|auto-male",
+    name: "Auto Detect (Male)",
+    azureVoice: "auto",
+    gender: "male",
+    accentTitle: "Auto Detect Language (Azure Male)",
+    flag: "🌐",
+    badge: "Auto Detect",
+    tags: ["Auto", "Any Language", "Male", "Azure Neural"],
+    description:
+      "Har message ka language detect karke usi ka best Azure male neural voice chunta hai — Urdu, Roman Urdu, Hindi, English, Arabic sab handle.",
+    samplePhrase: "Assalam-o-alaikum! Main apne aap language detect kar leta hoon, bataiye aap kya karna chahte hain?",
+  },
+  {
+    id: "azure:ur-PK-AsadNeural|roman",
+    name: "Roman Urdu Male (اردو مذکر)",
+    azureVoice: "ur-PK-AsadNeural",
+    gender: "male",
+    accentTitle: "Roman Urdu (Azure Neural Male)",
+    flag: "🇵🇰",
+    badge: "Roman Urdu",
+    tags: ["Roman Urdu", "Azure Neural", "Male", "Reads Latin Script"],
+    description:
+      "Roman Urdu accent mode: aap Roman English letters mein likhte hain, magar awaz bilkul native Pakistani Urdu mein aati hai.",
+    samplePhrase: "Assalam-o-alaikum! Main aap ka dost hoon, bataiye aaj main aap ki kya madad kar sakta hoon?",
+  },
+  {
+    id: "azure:ur-PK-UzmaNeural|roman",
+    name: "Roman Urdu Female (اردو خاتون)",
+    azureVoice: "ur-PK-UzmaNeural",
+    gender: "female",
+    accentTitle: "Roman Urdu (Azure Neural Female)",
+    flag: "🇵🇰",
+    badge: "Roman Urdu",
+    tags: ["Roman Urdu", "Azure Neural", "Female", "Reads Latin Script"],
+    description:
+      "Roman Urdu accent mode: Roman English text likha hua Urdu script mein convert hokar natural female Urdu voice mein sunai deta hai.",
+    samplePhrase: "Assalam-o-alaikum! Main aap ki madad ke liye hazir hoon, bataiye aap kya karna chahti hain?",
+  },
   {
     id: "azure:ur-PK-AsadNeural",
     name: "Asad (اسد)",
@@ -1545,6 +1641,129 @@ export function cleanTextForSpeech(rawText: string): string {
  * 4. Script-based auto-detection.
  * 5. High quality natural English voice.
  */
+/**
+ * Very light language detector used by the Auto Detect accents. Returns a BCP-47
+ * tag so the right device / Azure voice can be picked per message.
+ */
+export function detectSpeechLanguage(text: string): string {
+  const t = (text || "").trim();
+  if (!t) return "en-US";
+
+  // Native Urdu / Arabic script
+  if (/[\u0600-\u06FF]/.test(t)) {
+    if (/[\u067E\u0686\u06BA\u06BE\u06C1\u06D2]/.test(t)) return "ur-PK"; // ٹ چ ڈ ڑ ں ے
+    return /[\u0627-\u064A]/.test(t) ? "ar-SA" : "ur-PK";
+  }
+
+  // Devanagari (Hindi)
+  if (/[\u0900-\u097F]/.test(t)) return "hi-IN";
+
+  // Japanese Kana
+  if (/[\u3040-\u30FF]/.test(t)) return "ja-JP";
+
+  // Korean
+  if (/[\uAC00-\uD7AF]/.test(t)) return "ko-KR";
+
+  // Chinese
+  if (/[\u4E00-\u9FFF]/.test(t)) return "zh-CN";
+
+  // Cyrillic
+  if (/[\u0400-\u04FF]/.test(t)) return "ru-RU";
+
+  // Greek
+  if (/[\u0370-\u03FF]/.test(t)) return "el-GR";
+
+  // Thai
+  if (/[\u0E00-\u0E7F]/.test(t)) return "th-TH";
+
+  // Roman Urdu written in Latin letters: common Urdu words
+  const words = t.toLowerCase().match(/[a-z]+/g) || [];
+  if (words.length) {
+    const urduHits = words.filter((w) => ROMAN_URDU_STOPWORDS.has(w)).length;
+    if (urduHits >= 2 || (words.length <= 4 && urduHits >= 1)) return "ur-roman";
+  }
+
+  // Default: English
+  return "en-US";
+}
+
+export type SpeechGender = "male" | "female";
+
+/** Azure neural voice per language + gender (used by the By API Auto Detect cards) */
+const AUTO_AZURE_VOICES: Record<string, Record<SpeechGender, string>> = {
+  "ur-roman": { male: "ur-PK-AsadNeural", female: "ur-PK-UzmaNeural" },
+  "ur-PK": { male: "ur-PK-AsadNeural", female: "ur-PK-UzmaNeural" },
+  "ur-IN": { male: "ur-IN-SalmanNeural", female: "ur-IN-GulNeural" },
+  "hi-IN": { male: "hi-IN-MadhurNeural", female: "hi-IN-SwaraNeural" },
+  "en-US": { male: "en-US-GuyNeural", female: "en-US-JennyNeural" },
+  "en-GB": { male: "en-GB-RyanNeural", female: "en-GB-SoniaNeural" },
+  "en-IN": { male: "en-IN-RaviNeural", female: "en-IN-AaravNeural" },
+  "ar-SA": { male: "ar-SA-HamdanNeural", female: "ar-SA-ZariyahNeural" },
+  "es-ES": { male: "es-ES-AlvaroNeural", female: "es-ES-ElviraNeural" },
+  "fr-FR": { male: "fr-FR-HenriNeural", female: "fr-FR-DeniseNeural" },
+  "de-DE": { male: "de-DE-ConradNeural", female: "de-DE-KatjaNeural" },
+  "zh-CN": { male: "zh-CN-YunxiNeural", female: "zh-CN-XiaoxiaoNeural" },
+  "ja-JP": { male: "ja-JP-KeitaNeural", female: "ja-JP-NanamiNeural" },
+  "ru-RU": { male: "ru-RU-DmitryNeural", female: "ru-RU-SvetlanaNeural" },
+};
+
+/** Best Azure neural voice for the detected language + chosen gender */
+export function getAutoAzureVoice(
+  text: string,
+  gender: SpeechGender,
+  detectedLang?: string
+): string {
+  const lang = detectedLang || detectSpeechLanguage(text);
+  const table = AUTO_AZURE_VOICES[lang] || AUTO_AZURE_VOICES[lang.split("-")[0]];
+  const fallback = lang.startsWith("ur") || lang.startsWith("ar")
+    ? AUTO_AZURE_VOICES["ur-PK"]
+    : AUTO_AZURE_VOICES["en-US"];
+  return (table || fallback)[gender];
+}
+
+const FEMALE_HINTS = /(female|woman|girl|zira|samantha|victoria|karen|moira|tessa|fiona|jenny|sonia|ayesha|uzma|hira|neha|swara|gul|fatima|zariyah|aarav|denise|katja|elvira|xiaoxiao|nanami|svetlana|jenny)/i;
+const MALE_HINTS = /(male|man|boy|daniel|alex|fred|thomas|guy|ryan|david|mark|asad|tariq|kashif|madhur|ravi|hamdan|alvaro|henri|conrad|yunxi|keita|dmitry)/i;
+
+/**
+ * Best device voice for the detected language + chosen gender.
+ * Fallback chain: exact language -> base language -> any voice of that gender ->
+ * any default voice -> first available. So a missing language never leaves the
+ * user without a matching male/female voice.
+ */
+export function getAutoBrowserVoice(
+  voices: SpeechSynthesisVoice[],
+  gender: SpeechGender,
+  text: string,
+  detectedLang?: string
+): SpeechSynthesisVoice | null {
+  if (!voices || voices.length === 0) return null;
+  const lang = detectedLang || detectSpeechLanguage(text);
+  const base = lang.toLowerCase().split("-")[0];
+
+  const matches = (v: SpeechSynthesisVoice) => {
+    const name = `${v.name} ${v.voiceURI || ""}`;
+    return gender === "female" ? FEMALE_HINTS.test(name) : MALE_HINTS.test(name);
+  };
+  const norm = (v: SpeechSynthesisVoice) => (v.lang || "").toLowerCase().replace("_", "-");
+
+  // 1) exact language + gender
+  const exact = voices.filter((v) => norm(v) === lang.toLowerCase());
+  const hit = exact.find(matches);
+  if (hit) return hit;
+
+  // 2) same base language + gender
+  const sameBase = voices.filter((v) => norm(v).startsWith(base));
+  const hitBase = sameBase.find(matches);
+  if (hitBase) return hitBase;
+
+  // 3) any voice with that gender (language not installed on this device)
+  const anyGender = voices.find(matches);
+  if (anyGender) return anyGender;
+
+  // 4) anything at all
+  return voices.find((v) => v.default) || voices[0] || null;
+}
+
 export function getBestVoice(
   voices: SpeechSynthesisVoice[],
   ttsVoiceUri?: string,
