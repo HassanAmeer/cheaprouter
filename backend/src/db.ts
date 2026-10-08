@@ -46,6 +46,7 @@ export async function initDb() {
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT;`;
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_rewarded BOOLEAN DEFAULT FALSE;`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'USER';`;
   } catch (e) {
     console.error('Migration error:', e);
   }

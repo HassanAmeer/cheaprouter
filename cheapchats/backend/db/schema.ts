@@ -1,16 +1,21 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, doublePrecision, bigint } from "drizzle-orm/pg-core";
 
-export const users = sqliteTable("users", {
+// Unified Users Table (Shared with CheapRouter)
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").notNull().default("USER"), // 'USER' | 'ADMIN'
-  status: text("status").notNull().default("ACTIVE"), // 'ACTIVE' | 'BANNED'
-  avatar: text("avatar"),
-  createdAt: integer("created_at").notNull(),
+  name: text("name").notNull(),
+  username: text("name"),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  plan: text("plan").notNull().default("free"),
+  role: text("role").default("USER"),
+  status: text("status").default("Active"),
+  avatar: text("profile_picture"),
+  createdAt: text("created_at"),
 });
 
-export const conversations = sqliteTable("conversations", {
+// CheapChats dedicated tables (prefixed with cheapchats_ for clean separation in PostgreSQL)
+export const conversations = pgTable("cheapchats_conversations", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   title: text("title").notNull(),
@@ -22,11 +27,11 @@ export const conversations = sqliteTable("conversations", {
   isPinned: integer("is_pinned").notNull().default(0),
   isBookmarked: integer("is_bookmarked").notNull().default(0),
   isIncognito: integer("is_incognito").notNull().default(0),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const messages = sqliteTable("messages", {
+export const messages = pgTable("cheapchats_messages", {
   id: text("id").primaryKey(),
   conversationId: text("conversation_id").notNull(),
   sender: text("sender").notNull(), // 'user' | 'assistant' | 'system'
@@ -35,29 +40,29 @@ export const messages = sqliteTable("messages", {
   model: text("model"),
   provider: text("provider"),
   tokens: integer("tokens").notNull().default(0),
-  cost: real("cost").notNull().default(0),
-  feedback: text("feedback"), // 'up' | 'down' | null
-  attachments: text("attachments"), // JSON serialized attachments
-  createdAt: integer("created_at").notNull(),
+  cost: doublePrecision("cost").notNull().default(0),
+  feedback: text("feedback"),
+  attachments: text("attachments"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const agents = sqliteTable("agents", {
+export const agents = pgTable("cheapchats_agents", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   avatar: text("avatar"),
   systemPrompt: text("system_prompt").notNull(),
-  temperature: real("temperature").notNull().default(0.7),
+  temperature: doublePrecision("temperature").notNull().default(0.7),
   model: text("model").notNull().default("openai/gpt-4o"),
-  capabilities: text("capabilities").notNull().default("{}"), // JSON string
+  capabilities: text("capabilities").notNull().default("{}"),
   isPublic: integer("is_public").notNull().default(0),
   isFeatured: integer("is_featured").notNull().default(0),
-  status: text("status").notNull().default("APPROVED"), // 'APPROVED' | 'PENDING'
-  createdAt: integer("created_at").notNull(),
+  status: text("status").notNull().default("APPROVED"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const prompts = sqliteTable("prompts", {
+export const prompts = pgTable("cheapchats_prompts", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   title: text("title").notNull(),
@@ -66,46 +71,47 @@ export const prompts = sqliteTable("prompts", {
   content: text("content").notNull(),
   command: text("command"),
   isPublic: integer("is_public").notNull().default(0),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const mcpServers = sqliteTable("mcp_servers", {
+export const mcpServers = pgTable("cheapchats_mcp_servers", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull().default("stdio"), // 'stdio' | 'sse'
+  type: text("type").notNull().default("stdio"),
   urlOrCommand: text("url_or_command").notNull(),
-  status: text("status").notNull().default("ACTIVE"), // 'ACTIVE' | 'INACTIVE'
+  status: text("status").notNull().default("ACTIVE"),
   toolsJson: text("tools_json").notNull().default("[]"),
-  createdAt: integer("created_at").notNull(),
+  accountsJson: text("accounts_json").default("[]"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const globalConfig = sqliteTable("global_config", {
+export const globalConfig = pgTable("cheapchats_global_config", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const providerEndpoints = sqliteTable("provider_endpoints", {
+export const providerEndpoints = pgTable("cheapchats_provider_endpoints", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   provider: text("provider").notNull(),
   baseUrl: text("base_url").notNull(),
   apiKey: text("api_key"),
   isActive: integer("is_active").notNull().default(1),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const auditLogs = sqliteTable("audit_logs", {
+export const auditLogs = pgTable("cheapchats_audit_logs", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   action: text("action").notNull(),
   details: text("details").notNull(),
   ip: text("ip").notNull().default("127.0.0.1"),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const skills = sqliteTable("skills", {
+export const skills = pgTable("cheapchats_skills", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
@@ -115,37 +121,37 @@ export const skills = sqliteTable("skills", {
   fileName: text("file_name"),
   isDefault: integer("is_default").notNull().default(0),
   isAlwaysActive: integer("is_always_active").notNull().default(0),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }),
 });
 
-export const memories = sqliteTable("memories", {
+export const memories = pgTable("cheapchats_memories", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   key: text("key"),
   value: text("value"),
   content: text("content").notNull(),
   isUsed: integer("is_used").notNull().default(1),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const attachments = sqliteTable("attachments", {
+export const attachments = pgTable("cheapchats_attachments", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   url: text("url"),
   size: integer("size"),
-  type: text("type"), // 'image' | 'document' | 'code' | 'audio' | 'video' | 'archive' | 'other'
+  type: text("type"),
   mimeType: text("mime_type"),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const notifications = sqliteTable("notifications", {
+export const notifications = pgTable("cheapchats_notifications", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
-  connectorId: text("connector_id").notNull(), // 'github' | 'db' | 'whatsapp' | 'gmail' | 'workspace' | 'system'
-  accountLabel: text("account_label"), // 'Clientsjobs/cheap_chat' or email/handle
-  type: text("type").notNull().default("alert"), // 'pr' | 'issue' | 'dm' | 'comment' | 'alert'
+  connectorId: text("connector_id").notNull(),
+  accountLabel: text("account_label"),
+  type: text("type").notNull().default("alert"),
   title: text("title").notNull(),
   content: text("content").notNull(),
   sender: text("sender").notNull(),
@@ -154,5 +160,5 @@ export const notifications = sqliteTable("notifications", {
   isRead: integer("is_read").notNull().default(0),
   isReplied: integer("is_replied").notNull().default(0),
   replyContent: text("reply_content"),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });

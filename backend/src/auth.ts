@@ -1,4 +1,4 @@
-import { db, genId } from './db.ts';
+import { db, genId } from './db';
 import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 
 // Never fall back to a hardcoded secret: if JWT_SECRET is unset, fail loudly at

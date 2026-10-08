@@ -400,6 +400,29 @@ export function renderDashboardHtml(): string {
           Easily attach your own local models (Ollama, vLLM, LM Studio) or private third-party OpenAI-compatible APIs directly into CheapRouter.
         </p>
 
+        <!-- Quick Local LLM & OpenCode Tunnel Helper -->
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: #fca5a5;">⚡ Connecting Local Ollama / OpenCode from your laptop to VPS?</span>
+          </div>
+          <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5;">
+            VPS par live website se apne laptop ka local model chalane ke liye apne local terminal me ye free tunnel command run karein:
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 11px; color: #a7f3d0; font-weight: 700; margin-bottom: 4px;">🦙 For Local Ollama (port 11434):</div>
+              <code style="font-family: monospace; font-size: 11px; color: #34d399; user-select: all; display: block; word-break: break-all;">npx cloudflared tunnel --url http://localhost:11434</code>
+            </div>
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 11px; color: #fca5a5; font-weight: 700; margin-bottom: 4px;">💻 For OpenCode CLI / IDE (port 8080):</div>
+              <code style="font-family: monospace; font-size: 11px; color: #fb7185; user-select: all; display: block; word-break: break-all;">npx cloudflared tunnel --url http://localhost:8080</code>
+            </div>
+          </div>
+          <p style="font-size: 11px; color: #94a3b8; margin: 0;">
+            Command run hone par terminal se jo <strong>https://...trycloudflare.com/v1</strong> URL mile, use neeche <strong>Base URL</strong> me enter karein.
+          </p>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
             <label>Provider Name *</label>

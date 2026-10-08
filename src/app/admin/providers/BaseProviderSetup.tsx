@@ -20,7 +20,8 @@ import {
   Sparkles,
   Copy,
   Image as ImageIcon,
-  MessageSquare
+  MessageSquare,
+  Terminal,
 } from 'lucide-react';
 import styles from '../admin.module.css';
 import { BRAND_CONFIG } from '@/lib/brandConfig';
@@ -124,6 +125,16 @@ const BaseProviderSetup = forwardRef<BaseProviderSetupRef, BaseProviderSetupProp
     status?: number;
   } | null>(null);
   const [copiedResponse, setCopiedResponse] = useState(false);
+  const [copiedTunnel, setCopiedTunnel] = useState(false);
+
+  const isOpenCode = Boolean(
+    providerId.toLowerCase().includes('opencode') ||
+    providerName.toLowerCase().includes('opencode')
+  );
+  const isOllama = Boolean(
+    providerId.toLowerCase().includes('ollama') ||
+    providerName.toLowerCase().includes('ollama')
+  );
 
   const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('adminToken') || '') : '';
@@ -749,11 +760,77 @@ const BaseProviderSetup = forwardRef<BaseProviderSetupRef, BaseProviderSetupProp
               </button>
             </div>
 
-            {/* ============================================================ */}
-            {/* VIEW 1: MANAGE TAB                                           */}
-            {/* ============================================================ */}
+            {/* VIEW 1: MANAGE TAB */}
             {drawerTab === 'manage' && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Local OpenCode / Ollama Tunnel Connection Box */}
+                {(isOpenCode || isOllama) && (
+                  <div
+                    style={{
+                      margin: '12px 18px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      background: 'rgba(239, 68, 68, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 700, color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Terminal size={14} color="#fca5a5" />
+                        Connect Local {isOpenCode ? 'OpenCode CLI / Extension' : 'Ollama LLM'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            isOpenCode
+                              ? 'npx cloudflared tunnel --url http://localhost:8080'
+                              : 'npx cloudflared tunnel --url http://localhost:11434'
+                          );
+                          setCopiedTunnel(true);
+                          setTimeout(() => setCopiedTunnel(false), 2000);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: '4px',
+                          color: '#fca5a5',
+                          fontSize: '10px',
+                          padding: '3px 8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {copiedTunnel ? '✓ Copied' : 'Copy Command'}
+                      </button>
+                    </div>
+
+                    <div
+                      style={{
+                        background: '#090a0d',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        color: isOpenCode ? '#fb7185' : '#34d399',
+                        userSelect: 'all'
+                      }}
+                    >
+                      {isOpenCode
+                        ? 'npx cloudflared tunnel --url http://localhost:8080'
+                        : 'npx cloudflared tunnel --url http://localhost:11434'}
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+                      Run this in your laptop terminal to connect your local {isOpenCode ? 'OpenCode CLI' : 'Ollama'} to this VPS without setting up complex security or SSL.
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. COLLAPSIBLE API KEYS SECTION */}
                 <div style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-card-bg)' }}>
                   <div

@@ -83,6 +83,10 @@ export default function ProviderKeyDrawer({
     provider?.id?.toLowerCase().includes("opencode") ||
     provider?.name?.toLowerCase().includes("opencode")
   );
+  const isOllama = Boolean(
+    provider?.id?.toLowerCase().includes("ollama") ||
+    provider?.name?.toLowerCase().includes("ollama")
+  );
 
   // Load existing key from localStorage when provider opens
   useEffect(() => {
@@ -311,6 +315,54 @@ export default function ProviderKeyDrawer({
                   </li>
                   <li>
                     <strong className="text-slate-200">Local Model / CLI:</strong> Tunnel command se milne wala live URL (e.g. <code className="text-emerald-300 font-mono">https://xxxx.trycloudflare.com/v1</code>) CheapChats ke <strong>Custom Providers</strong> me Base URL ke tor par enter karein.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Local Ollama LLM Quick Guide */}
+          {isOllama && (
+            <div className="rounded-xl border border-emerald-500/25 bg-gradient-to-br from-[#101c15] via-[#14151a] to-[#0e1014] p-4 text-xs space-y-3 shadow-inner">
+              <div className="flex items-center gap-2 text-emerald-300 font-semibold">
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <span>Local Ollama (Llama 3, DeepSeek, Mistral, Qwen)</span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Agar aapke apne laptop par Ollama chal raha hai (default port <code className="text-emerald-300 font-mono">11434</code>) aur use CheapChats ke sath jorna chahte hain:
+              </p>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                  <span>1. Apne terminal me ye command run karein:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:11434");
+                      setCopiedCommand(true);
+                      setTimeout(() => setCopiedCommand(false), 2000);
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] text-emerald-300 hover:text-white px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer"
+                  >
+                    {copiedCommand ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedCommand ? "Copied!" : "Copy Command"}</span>
+                  </button>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-black/60 border border-white/10 font-mono text-[11px] text-emerald-400 break-all select-all">
+                  npx cloudflared tunnel --url http://localhost:11434
+                </div>
+              </div>
+
+              <div className="space-y-1 text-[11px] text-slate-300 pt-1 border-t border-white/5">
+                <p className="font-semibold text-slate-200">2. URL Setup:</p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-400 text-[10px] leading-relaxed">
+                  <li>
+                    Command run hone par terminal se jo URL mile (e.g. <code className="text-emerald-300 font-mono">https://xxxx.trycloudflare.com/v1</code>), use <strong>Custom Providers</strong> me Base URL ke tor par enter karein.
+                  </li>
+                  <li>
+                    Ollama ke liye API Key ki zaroorat nahi hoti (blank chhor dein ya koi bhi placeholder text daal dein).
                   </li>
                 </ul>
               </div>

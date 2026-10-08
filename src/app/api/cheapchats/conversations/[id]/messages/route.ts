@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Invalid message list." }, { status: 400 });
     }
 
-    const conversation = db
+    const conversation = await db
       .select({ id: conversations.id })
       .from(conversations)
       .where(eq(conversations.id, id))
@@ -39,7 +39,7 @@ export async function POST(req: Request, { params }: RouteContext) {
     }
 
     const now = Date.now();
-    db.insert(messages)
+    await db.insert(messages)
       .values(
         entries.map((entry: { sender: "user" | "assistant"; content: string; attachments?: unknown }, index: number) => ({
           id: `msg_${now}_${index}_${crypto.randomUUID()}`,
@@ -52,17 +52,14 @@ export async function POST(req: Request, { params }: RouteContext) {
           attachments: entry.attachments ? JSON.stringify(entry.attachments) : null,
           createdAt: now + index,
         }))
-      )
-      .run();
+      );
 
-    db.update(conversations)
+    await db.update(conversations)
       .set({ updatedAt: now })
-      .where(eq(conversations.id, id))
-      .run();
+      .where(eq(conversations.id, id));
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Failed to save custom provider chat messages:", error);
-    return NextResponse.json({ error: "Failed to save chat messages." }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error?.message || "Failed to save message." }, { status: 500 });
   }
 }

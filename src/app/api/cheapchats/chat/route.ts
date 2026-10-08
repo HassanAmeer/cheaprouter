@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db as sqliteDb } from '../../../../../cheapchats/backend/db';
+import { db as chatDb } from '../../../../../cheapchats/backend/db';
 import { conversations, messages, skills } from '../../../../../cheapchats/backend/db/schema';
 import { db as pgDb } from '../../../../../backend/src/db';
-import { eq } from 'drizzle-orm';
+import { eq, desc, asc } from 'drizzle-orm';
+import { getSession } from '../../../../../cheapchats/backend/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,10 +48,8 @@ export async function POST(req: Request) {
       : [];
     if (selectedSkillNames.length > 0) {
       try {
-        const selectedSkillRows = sqliteDb
-          .select()
-          .from(skills)
-          .all()
+        const allSkills = await chatDb.select().from(skills);
+        const selectedSkillRows = allSkills
           .filter((skill: any) => selectedSkillNames.includes(skill?.name?.toLowerCase()) || selectedSkillNames.includes(skill?.id?.toLowerCase()));
 
         if (selectedSkillRows.length > 0) {
@@ -64,18 +63,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1. Manage SQLite Conversation
+    // 1. Manage PostgreSQL Conversation with unified user
+    const session = await getSession();
+    const currentUserId = session?.id || 'usr_user1';
     let currentConvId = conversationId;
-    const userId = 'guest_user';
 
     if (!isIncognito) {
       if (!currentConvId) {
         currentConvId = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         const shortTitle = message.slice(0, 35) + (message.length > 35 ? '...' : '');
         try {
-          sqliteDb.insert(conversations).values({
+          await chatDb.insert(conversations).values({
             id: currentConvId,
-            userId,
+            userId: currentUserId,
             title: shortTitle,
             model,
             provider,
@@ -84,15 +84,15 @@ export async function POST(req: Request) {
             isIncognito: 0,
             createdAt: startTime,
             updatedAt: startTime,
-          }).run();
+          });
         } catch (e) {
-          console.warn('Could not insert new conversation in sqlite:', e);
+          console.warn('Could not insert new conversation in postgres:', e);
         }
       }
 
       // Insert User message
       try {
-        sqliteDb.insert(messages).values({
+        await chatDb.insert(messages).values({
           id: `msg_u_${Date.now()}`,
           conversationId: currentConvId,
           sender: 'user',
@@ -102,9 +102,9 @@ export async function POST(req: Request) {
           tokens: Math.ceil(message.length / 4),
           cost: 0,
           createdAt: startTime,
-        }).run();
+        });
       } catch (e) {
-        console.warn('Could not insert user message in sqlite:', e);
+        console.warn('Could not insert user message in postgres:', e);
       }
     }
 
@@ -144,14 +144,14 @@ export async function POST(req: Request) {
       { role: 'system', content: activeSystemPrompt },
     ];
 
-    // Load recent SQLite message history if conversation exists
+    // Load recent PostgreSQL message history if conversation exists
     if (currentConvId && !isIncognito) {
       try {
-        const prev = sqliteDb
+        const prev = await chatDb
           .select()
           .from(messages)
           .where(eq(messages.conversationId, currentConvId))
-          .all();
+          .orderBy(asc(messages.createdAt));
         const limit = typeof rollingWindowLimit === 'number' && rollingWindowLimit > 0 ? rollingWindowLimit : 20;
         const recent = prev.slice(-limit);
         for (const m of recent) {
@@ -387,10 +387,10 @@ export async function POST(req: Request) {
           const latency = endTime - startTime;
           const tokens = Math.ceil(fullContent.length / 4);
 
-          // Save assistant message in SQLite
+          // Save assistant message in PostgreSQL
           if (!isIncognito && currentConvId && fullContent) {
             try {
-              sqliteDb.insert(messages).values({
+              await chatDb.insert(messages).values({
                 id: assistantMsgId,
                 conversationId: currentConvId,
                 sender: 'assistant',
@@ -400,14 +400,13 @@ export async function POST(req: Request) {
                 tokens,
                 cost: 0,
                 createdAt: endTime,
-              }).run();
+              });
 
-              sqliteDb.update(conversations)
+              await chatDb.update(conversations)
                 .set({ updatedAt: endTime })
-                .where(eq(conversations.id, currentConvId))
-                .run();
+                .where(eq(conversations.id, currentConvId));
             } catch (e) {
-              console.warn('Could not save assistant message in sqlite:', e);
+              console.warn('Could not save assistant message in postgres:', e);
             }
           }
 

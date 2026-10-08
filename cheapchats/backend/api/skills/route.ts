@@ -168,7 +168,7 @@ CRITICAL MANDATORY INSTRUCTIONS FOR GENERATING PLAYABLE GAMES & INTERACTIVE HTML
 
 export async function GET() {
   try {
-    let list = db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
+    let list = await db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
 
     // Auto-seed if empty
     if (!list || list.length === 0) {
@@ -176,7 +176,7 @@ export async function GET() {
       for (let i = 0; i < DEFAULT_SEEDS.length; i++) {
         const item = DEFAULT_SEEDS[i];
         const id = `skl_init_${now}_${i}`;
-        db.insert(skills).values({
+        await db.insert(skills).values({
           id,
           userId: "usr_user1",
           name: item.name,
@@ -192,7 +192,7 @@ export async function GET() {
         syncSkillToDisk(item.name, item.description, item.content);
       }
 
-      list = db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
+      list = await db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
     } else {
       // Self-heal: Seed any newly added default skills if missing from DB
       const existingNames = new Set(list.map((s: any) => s.name));
@@ -202,7 +202,7 @@ export async function GET() {
         const item = DEFAULT_SEEDS[i];
         if (!existingNames.has(item.name)) {
           const id = `skl_seed_${now}_${i}`;
-          db.insert(skills).values({
+          await db.insert(skills).values({
             id,
             userId: "usr_user1",
             name: item.name,
@@ -218,7 +218,7 @@ export async function GET() {
         }
       }
       if (hasAdded) {
-        list = db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
+        list = await db.select().from(skills).orderBy(desc(skills.isDefault), desc(skills.createdAt)).all();
       }
     }
 

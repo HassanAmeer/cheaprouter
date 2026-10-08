@@ -7,6 +7,7 @@ import ModelSelector from "@cheapchats/frontend/components/Header/ModelSelector"
 import UsageQuotaCircle from "@cheapchats/frontend/components/Chat/UsageQuotaCircle";
 import styles from "./ChatInput.module.css";
 import { getSuggestionSkillName } from "@cheapchats/frontend/lib/suggestionSkills";
+import { readCustomProviders, CustomProvider } from "@cheapchats/frontend/lib/customProviders";
 import {
   ArrowUp,
   Mic,
@@ -422,6 +423,27 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     setIsCorrecting(true);
     setToastInfo(null);
 
+    // Resolve user's active BYOK key and custom provider if applicable
+    let customProvider: CustomProvider | undefined;
+    if (selectedProvider && selectedProvider.startsWith("custom:")) {
+      const customProviderId = selectedProvider.slice("custom:".length);
+      try {
+        customProvider = readCustomProviders().find((provider) => provider.id === customProviderId);
+      } catch {}
+    }
+
+    let userKey: string | undefined;
+    try {
+      const raw = localStorage.getItem("cheapchats_provider_keys");
+      if (raw) {
+        const keys = JSON.parse(raw);
+        const pName = (selectedProvider || "openrouter").toLowerCase();
+        userKey = customProvider
+          ? keys[customProvider.id]
+          : keys[pName] || keys[`ap_${pName}`] || (selectedProvider ? keys[selectedProvider] : undefined);
+      }
+    } catch {}
+
     try {
       const res = await fetch("/api/correct", {
         method: "POST",
@@ -429,7 +451,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         body: JSON.stringify({
           text: content,
           model: selectedModel,
-          provider: selectedProvider,
+          provider: customProvider ? customProvider.name : selectedProvider,
+          apiKey: userKey,
+          customEndpoint: customProvider?.baseUrl,
+          isCustom: !!customProvider,
         }),
       });
 

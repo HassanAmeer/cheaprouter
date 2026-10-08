@@ -1,5 +1,6 @@
 import crypto from "crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { verifyToken } from "../../../backend/src/auth";
 
 export type Session = {
   id: string;
@@ -61,16 +62,59 @@ export function verifySessionCookie(value: string | undefined): Session | null {
 }
 
 export async function getSession(): Promise<Session | null> {
-  const cookieStore = await cookies();
-  const session = verifySessionCookie(cookieStore.get("user_session")?.value);
-  if (!session) return null;
-  // validate user exists and not banned
   const { db } = await import("@cheapchats/backend/db");
   const { users } = await import("@cheapchats/backend/db/schema");
   const { eq } = await import("drizzle-orm");
-  const user = db.select().from(users).where(eq(users.id, session.id)).get();
-  if (!user || user.status === "BANNED") return null;
-  return session;
+
+  try {
+    // 1. Check CheapRouter Bearer Token in headers
+    const reqHeaders = await headers();
+    const authHeader = reqHeaders.get("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice(7).trim();
+      const verified = await verifyToken(token);
+      if (verified && verified.sub) {
+        const user = await db.select().from(users).where(eq(users.id, verified.sub)).get();
+        if (user && user.status !== "Suspended" && user.status !== "BANNED") {
+          return {
+            id: user.id,
+            username: user.name || user.email.split("@")[0],
+            role: user.role || (verified.role === "admin" ? "ADMIN" : "USER"),
+          };
+        }
+      }
+    }
+
+    // 2. Check Cookie Sessions (user_session or cm_token)
+    const cookieStore = await cookies();
+    const session = verifySessionCookie(cookieStore.get("user_session")?.value);
+    if (session) {
+      const user = await db.select().from(users).where(eq(users.id, session.id)).get();
+      if (user && user.status !== "BANNED" && user.status !== "Suspended") {
+        return session;
+      }
+    }
+
+    // 3. Check cm_token in cookies
+    const cmToken = cookieStore.get("cm_token")?.value;
+    if (cmToken) {
+      const verified = await verifyToken(cmToken);
+      if (verified && verified.sub) {
+        const user = await db.select().from(users).where(eq(users.id, verified.sub)).get();
+        if (user && user.status !== "Suspended" && user.status !== "BANNED") {
+          return {
+            id: user.id,
+            username: user.name || user.email.split("@")[0],
+            role: user.role || (verified.role === "admin" ? "ADMIN" : "USER"),
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("getSession error:", err);
+  }
+
+  return null;
 }
 
 export async function requireAdmin(): Promise<Session | null> {

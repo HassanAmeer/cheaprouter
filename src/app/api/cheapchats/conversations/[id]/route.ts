@@ -8,17 +8,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const conv = db.select().from(conversations).where(eq(conversations.id, id)).get();
+    const conv = await db.select().from(conversations).where(eq(conversations.id, id)).get();
     if (!conv) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
-    const msgs = db
+    const msgs = await db
       .select()
       .from(messages)
       .where(eq(messages.conversationId, id))
-      .orderBy(asc(messages.createdAt))
-      .all();
+      .orderBy(asc(messages.createdAt));
 
     return NextResponse.json({ conversation: conv, messages: msgs });
   } catch (error: any) {
@@ -36,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.isPinned !== undefined) updateData.isPinned = body.isPinned ? 1 : 0;
     if (body.isBookmarked !== undefined) updateData.isBookmarked = body.isBookmarked ? 1 : 0;
 
-    db.update(conversations).set(updateData).where(eq(conversations.id, id)).run();
+    await db.update(conversations).set(updateData).where(eq(conversations.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -47,8 +46,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    db.delete(messages).where(eq(messages.conversationId, id)).run();
-    db.delete(conversations).where(eq(conversations.id, id)).run();
+    await db.delete(messages).where(eq(messages.conversationId, id));
+    await db.delete(conversations).where(eq(conversations.id, id));
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to delete conversation' }, { status: 500 });

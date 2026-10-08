@@ -46,6 +46,7 @@ export default function CustomProviderDialog({
   const [showKey, setShowKey] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [copiedLocalCmd, setCopiedLocalCmd] = useState(false);
+  const [copiedOllamaCmd, setCopiedOllamaCmd] = useState(false);
   const usesHttp = /^http:\/\//i.test(baseUrl.trim());
 
   useEffect(() => {
@@ -203,31 +204,60 @@ export default function CustomProviderDialog({
             )}
 
             {/* Quick helper for local OpenCode/Ollama/Local LLM tunnel */}
-            <div className="rounded-xl border border-rose-300/15 bg-white/[0.02] p-2.5 text-[11px] space-y-1.5 text-slate-400">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium text-slate-300 text-[11px]">
-                  <Terminal className="h-3.5 w-3.5 text-rose-300" />
-                  Local OpenCode CLI / IDE / Local LLM connect karna hai?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:8080");
-                    setCopiedLocalCmd(true);
-                    setTimeout(() => setCopiedLocalCmd(false), 2000);
-                  }}
-                  className="inline-flex items-center gap-1 text-[10px] text-rose-300 hover:text-white px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 transition cursor-pointer"
-                >
-                  {copiedLocalCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedLocalCmd ? "Copied" : "Copy"}</span>
-                </button>
+            <div className="rounded-xl border border-rose-300/15 bg-white/[0.02] p-3 text-[11px] space-y-2 text-slate-400">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+                <Terminal className="h-3.5 w-3.5 text-rose-300" />
+                <span>Laptop se Local Ollama ya OpenCode CLI connect karna hai?</span>
               </div>
-              <div className="p-1.5 rounded bg-black/50 border border-white/5 font-mono text-[10.5px] text-emerald-400 select-all">
-                npx cloudflared tunnel --url http://localhost:8080
-              </div>
-              <p className="text-[10px] text-slate-500 leading-normal">
-                Terminal me run karein aur generated <span className="font-mono text-emerald-300">https://...trycloudflare.com/v1</span> URL upar paste karein.
+              <p className="text-[10.5px] text-slate-400 leading-normal">
+                Terminal me tunnel command run karein aur milne wala <code className="text-emerald-300 font-mono">https://...trycloudflare.com/v1</code> URL upar paste karein:
               </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                {/* 1. Ollama Command */}
+                <div className="p-2 rounded-lg bg-black/50 border border-emerald-500/20 space-y-1">
+                  <div className="flex items-center justify-between text-[10.5px]">
+                    <span className="font-semibold text-emerald-300">🦙 Ollama (11434):</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:11434");
+                        setCopiedOllamaCmd(true);
+                        setTimeout(() => setCopiedOllamaCmd(false), 2000);
+                      }}
+                      className="text-[10px] text-emerald-400 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 transition cursor-pointer"
+                    >
+                      {copiedOllamaCmd ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedOllamaCmd ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <div className="font-mono text-[10px] text-emerald-400 truncate select-all">
+                    npx cloudflared tunnel --url http://localhost:11434
+                  </div>
+                </div>
+
+                {/* 2. OpenCode Command */}
+                <div className="p-2 rounded-lg bg-black/50 border border-rose-500/20 space-y-1">
+                  <div className="flex items-center justify-between text-[10.5px]">
+                    <span className="font-semibold text-rose-300">💻 OpenCode (8080):</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("npx cloudflared tunnel --url http://localhost:8080");
+                        setCopiedLocalCmd(true);
+                        setTimeout(() => setCopiedLocalCmd(false), 2000);
+                      }}
+                      className="text-[10px] text-rose-300 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 transition cursor-pointer"
+                    >
+                      {copiedLocalCmd ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedLocalCmd ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <div className="font-mono text-[10px] text-rose-300 truncate select-all">
+                    npx cloudflared tunnel --url http://localhost:8080
+                  </div>
+                </div>
+              </div>
             </div>
           </label>
 
