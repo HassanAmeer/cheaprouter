@@ -96,7 +96,6 @@ export default function SpeechAudioSettings() {
 
   // Filters for Accent Cards
   const [sttFilter, setSttFilter] = useState<"all" | "pakistan" | "india" | "global">("all");
-  const [speechFilter, setSpeechFilter] = useState<"all" | "famous" | "pakistan" | "india">("all");
 
   // TTS Testing State
   const currentLangOption = SPEECH_LANGUAGES.find((l) => l.id === sttLang) || SPEECH_LANGUAGES[0];
@@ -442,23 +441,11 @@ export default function SpeechAudioSettings() {
     return true;
   });
 
-  // Filtered Speech Personas (Built-in)
-  const filteredPersonas = VOICE_PERSONAS.filter((p) => {
-    if (speechFilter === "all") return true;
-    if (speechFilter === "famous") return p.id === "jenny" || p.id === "guy" || p.id === "sonia" || p.id === "hamdan" || p.id === "fatima";
-    if (speechFilter === "pakistan") return p.flag === "🇵🇰";
-    if (speechFilter === "india") return p.flag === "🇮🇳";
-    return true;
-  });
+  // Speech Personas (Built-in)
+  const filteredPersonas = VOICE_PERSONAS;
 
-  // Filtered Azure Personas (By API)
-  const filteredAzurePersonas = AZURE_VOICE_PERSONAS.filter((p) => {
-    if (speechFilter === "all") return true;
-    if (speechFilter === "famous") return p.flag !== "🇵🇰" && p.flag !== "🇮🇳";
-    if (speechFilter === "pakistan") return p.flag === "🇵🇰";
-    if (speechFilter === "india") return p.flag === "🇮🇳";
-    return true;
-  });
+  // Azure Personas (By API)
+  const filteredAzurePersonas = AZURE_VOICE_PERSONAS;
 
   const activePersona =
     (VOICE_PERSONAS.find((p) => `persona:${p.id}` === ttsVoice) as any) ||
@@ -811,35 +798,6 @@ export default function SpeechAudioSettings() {
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* ── Top Customization & Voice Audio Settings ─────────────────────── */}
           <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-[#1b1220] via-[#141018] to-[#101012] p-4.5 shadow-xl shadow-purple-950/20 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-purple-400" />
-                  Voice Audio & Pronunciation Customization
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Voice playback on/off karein, speed aur pitch sliders customize karein (Chat Assistant par automatically apply hoga).
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-medium">Voice Audio:</span>
-                <button
-                  type="button"
-                  onClick={toggleTtsEnabled}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                    isTtsEnabled ? "bg-purple-600" : "bg-zinc-700"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isTtsEnabled ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
             {/* Test Phrase Input & Quick Pills */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-300">
@@ -847,65 +805,15 @@ export default function SpeechAudioSettings() {
                   <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                   Custom Voice Sound Test
                 </span>
-                <span className="text-[10px] text-slate-500">Live preview with selected persona</span>
               </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={testText}
-                  onChange={(e) => setTestText(e.target.value)}
-                  placeholder="Type any sentence to test voice pronunciation..."
-                  className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400/50"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => playTtsTest()}
-                  className={`px-4 py-2 rounded-xl font-semibold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer whitespace-nowrap ${
-                    isPlayingTts
-                      ? "bg-purple-600 text-white animate-pulse shadow-purple-600/50 hover:bg-purple-700"
-                      : "bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 hover:border-zinc-500"
-                  }`}
-                >
-                  {isPlayingTts ? (
-                    <>
-                      <Square className="w-3.5 h-3.5 fill-current" />
-                      <span>Stop Voice</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 fill-current text-purple-300" />
-                      <span>Play Sample</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Quick Sample Pills */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                <span className="text-[10px] text-slate-500">Quick tests:</span>
-                {[
-                  { label: "🇵🇰 Bilal (Bhari Aawaz)", text: "Assalam-o-Alaikum! Main Bilal hoon. Boliye beta aaj main aap ki kya madad kar sakta hoon?" },
-                  { label: "🇵🇰 Aryan (Young Boy)", text: "Assalam-o-Alaikum! Main Aryan hoon. Aaj kya naya banana hai?" },
-                  { label: "🇵🇰 Pari (Child Kid)", text: "Hello! Mera naam Pari hai, mujh se koi bhi baat karein!" },
-                  { label: "🇵🇰 Zoya (Human Female)", text: "Assalam-o-Alaikum! Main Zoya hoon, CheapChats par aap ki madad ke liye hazir hoon." },
-                  { label: "🇺🇸 Jenny (English US)", text: "Hello! CheapChats voice system is responding instantaneously and clearly." },
-                  { label: "🇦🇪 Hamdan (Arabic)", text: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار." },
-                ].map((pill, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      setTestText(pill.text);
-                      playTtsTest(pill.text);
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 border border-white/5 hover:border-white/10 text-[10px] text-slate-300 hover:text-white transition cursor-pointer"
-                  >
-                    {pill.label}
-                  </button>
-                ))}
-              </div>
+              <input
+                type="text"
+                value={testText}
+                onChange={(e) => setTestText(e.target.value)}
+                placeholder="Type any sentence to test voice pronunciation..."
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400/50"
+              />
             </div>
 
             {/* Speed & Pitch Sliders - Saves Automatically & Applies to Chat! */}
@@ -963,113 +871,10 @@ export default function SpeechAudioSettings() {
               </div>
             </div>
 
-            {/* Direct Browser Voice Override Selector */}
-            <div className="pt-2 border-t border-white/5">
-              <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between mb-1.5">
-                <span>System Voice Engine (Advanced):</span>
-                <span className="text-[10px] text-slate-500 font-normal">
-                  {ttsEngine === "azure"
-                    ? "⚡ Microsoft Azure Edge Neural (Active)"
-                    : `${browserVoices.length} browser voices detected`}
-                </span>
-              </label>
-              <select
-                value={
-                  ttsVoice.startsWith("azure:")
-                    ? ttsVoice
-                    : browserVoices.some((v) => v.voiceURI === ttsVoice)
-                    ? ttsVoice
-                    : activePersona
-                    ? (activePersona.id.startsWith("azure:") ? activePersona.id : `persona:${activePersona.id}`)
-                    : "default"
-                }
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val.startsWith("azure:")) {
-                    setTtsEngine("azure");
-                    setTtsVoice(val);
-                  } else {
-                    setTtsEngine("browser");
-                    setTtsVoice(val);
-                  }
-                }}
-                className="w-full rounded-xl border border-white/10 bg-zinc-900/90 p-2 text-xs text-white outline-none focus:border-purple-400/50 cursor-pointer"
-              >
-                <option value="default">
-                  🌟 Automatic Persona Voice (Recommended)
-                </option>
-                {activePersona && (
-                  <option
-                    value={activePersona.id.startsWith("azure:") ? activePersona.id : `persona:${activePersona.id}`}
-                  >
-                    ✨ Active Persona: {activePersona.name} ({activePersona.accentTitle})
-                  </option>
-                )}
-                {browserVoices.map((voice) => (
-                  <option key={voice.voiceURI} value={voice.voiceURI}>
-                    {voice.name} · {voice.lang} {voice.default ? " (System Default)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* ── Bottom: Unified Voice Accent Cards Grid (One Place!) ─────────── */}
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <Star className="w-4 h-4 text-purple-400 fill-purple-400" />
-                  Voice Accent Cards ({ttsEngine === "azure" ? "⚡ By API - Azure Neural HD" : "🌐 Built-in Browser Accents"})
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {ttsEngine === "azure"
-                    ? "Microsoft Azure Neural AI voices (100% Free & No API Key). Human-like expressions & natural tone. Card click karne se foran save ho jayega."
-                    : "Browser ke built-in local accents. Fast & offline speech synthesis. Card click karne se foran save ho jayega."}
-                </p>
-              </div>
-
-              {/* Filter Pills */}
-              <div className="flex items-center bg-zinc-900 border border-white/10 rounded-xl p-0.5 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => setSpeechFilter("all")}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                    speechFilter === "all" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  All ({ttsEngine === "azure" ? AZURE_VOICE_PERSONAS.length : VOICE_PERSONAS.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpeechFilter("famous")}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                    speechFilter === "famous" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  🌐 Famous Global
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpeechFilter("pakistan")}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                    speechFilter === "pakistan" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  🇵🇰 Pakistan
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpeechFilter("india")}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                    speechFilter === "india" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  🇮🇳 India
-                </button>
-              </div>
-            </div>
-
             {/* ── Sub-tabs: [⚡ By API (Azure Neural HD)] vs [🌐 Built-in Accents (Browser)] ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-black/60 border border-purple-500/20 rounded-2xl shadow-inner">
               <button
