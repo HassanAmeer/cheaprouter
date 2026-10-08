@@ -404,10 +404,8 @@ export default function SpeechAudioSettings() {
       persona.flag === "🇵🇰" ||
       persona.id === "bilal" ||
       persona.id === "pari" ||
-      persona.id === "sameer" ||
       persona.id === "ayesha" ||
-      persona.id === "asad" ||
-      persona.id === "gul"
+      persona.id === "asad"
     ) {
       setSttLang("ur-roman");
     } else if (persona.id === "swara" || persona.id === "madhur") {
