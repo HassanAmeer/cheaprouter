@@ -152,6 +152,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const animFrameRef = useRef<number | null>(null);
   const [waveAmplitudes, setWaveAmplitudes] = useState<number[]>(() => new Array(50).fill(0.12));
 
+  // Streaming Speech Synthesis (TTS) queue & buffer
+  const streamingTtsBufferRef = useRef("");
+  const speechQueueRef = useRef<string[]>([]);
+  const isSpeakingUtteranceRef = useRef(false);
+  const isStreamFinishedRef = useRef(false);
+
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
   }, [isCallActive]);
@@ -464,7 +470,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       window.speechSynthesis.cancel();
     }
     currentUtteranceRef.current = null;
+    speechQueueRef.current = [];
+    streamingTtsBufferRef.current = "";
+    isSpeakingUtteranceRef.current = false;
+    isStreamFinishedRef.current = true;
     setIsSpeaking(false);
+    if (isStreaming && onStop) {
+      onStop();
+    }
     if (isCallActiveRef.current) {
       setCallStatus("listening");
       callStatusRef.current = "listening";
@@ -535,6 +548,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       clearTimeout(userSpeakingTimeoutRef.current);
       userSpeakingTimeoutRef.current = null;
     }
+
+    speechQueueRef.current = [];
+    streamingTtsBufferRef.current = "";
+    isSpeakingUtteranceRef.current = false;
+    isStreamFinishedRef.current = true;
 
     cleanupMicAudioAnalyser();
 
@@ -669,36 +687,52 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     };
   }, [isCallActive]);
 
-  const speakCallResponse = (text: string) => {
-    if (!isCallActiveRef.current) return;
+  // Drains speech queue sentence by sentence as they stream in
+  const drainSpeechQueue = () => {
+    if (!isCallActiveRef.current) {
+      speechQueueRef.current = [];
+      streamingTtsBufferRef.current = "";
+      isSpeakingUtteranceRef.current = false;
+      return;
+    }
+
+    if (isSpeakingUtteranceRef.current) {
+      return;
+    }
+
+    if (speechQueueRef.current.length === 0) {
+      if (isStreamFinishedRef.current) {
+        currentUtteranceRef.current = null;
+        setIsSpeaking(false);
+        setCallStatus("listening");
+        callStatusRef.current = "listening";
+        setContent("");
+        startCallRecognition();
+      }
+      return;
+    }
+
+    const nextChunk = speechQueueRef.current.shift();
+    if (!nextChunk) {
+      drainSpeechQueue();
+      return;
+    }
+
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setCallStatus("listening");
-      callStatusRef.current = "listening";
-      setContent("");
-      startCallRecognition();
       return;
     }
 
-    const cleaned = cleanTextForSpeech(text);
-    if (!cleaned) {
-      setCallStatus("listening");
-      callStatusRef.current = "listening";
-      setContent("");
-      startCallRecognition();
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
+    isSpeakingUtteranceRef.current = true;
     setCallStatus("speaking");
     callStatusRef.current = "speaking";
     setIsSpeaking(true);
 
-    const utterance = new SpeechSynthesisUtterance(cleaned);
+    const utterance = new SpeechSynthesisUtterance(nextChunk);
     currentUtteranceRef.current = utterance;
+    utterance.rate = 1.05;
 
     const voices = window.speechSynthesis.getVoices();
-    const bestVoice = getBestVoice(voices, ttsVoice, cleaned, sttLang);
+    const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);
     if (bestVoice) {
       utterance.voice = bestVoice;
     }
@@ -710,34 +744,119 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
       setCallStatus("speaking");
       callStatusRef.current = "speaking";
+      setIsSpeaking(true);
     };
 
     utterance.onend = () => {
       currentUtteranceRef.current = null;
-      setIsSpeaking(false);
-      if (isCallActiveRef.current) {
-        setCallStatus("listening");
-        callStatusRef.current = "listening";
-        setContent("");
-        startCallRecognition();
-      }
+      isSpeakingUtteranceRef.current = false;
+      drainSpeechQueue();
     };
 
     utterance.onerror = (e) => {
       if (e.error !== "canceled" && e.error !== "interrupted") {
-        console.warn("Speech synthesis error:", e);
+        console.warn("Speech synthesis chunk error:", e);
       }
       currentUtteranceRef.current = null;
-      setIsSpeaking(false);
-      if (isCallActiveRef.current) {
-        setCallStatus("listening");
-        callStatusRef.current = "listening";
-        setContent("");
-        startCallRecognition();
-      }
+      isSpeakingUtteranceRef.current = false;
+      drainSpeechQueue();
     };
 
     window.speechSynthesis.speak(utterance);
+  };
+
+  const processStreamBuffer = (isFinal = false) => {
+    if (!isCallActiveRef.current) return;
+
+    let buf = streamingTtsBufferRef.current;
+    const sentenceRegex = /([.!?\n]+)(\s+|$)/g;
+    const clauseRegex = /([,;:—])(\s+)/g;
+
+    while (true) {
+      sentenceRegex.lastIndex = 0;
+      let match = sentenceRegex.exec(buf);
+
+      // If no sentence ender, but buffer has >= 6 words, check clause boundary
+      if (!match) {
+        const words = buf.trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 6) {
+          clauseRegex.lastIndex = 0;
+          match = clauseRegex.exec(buf);
+        }
+      }
+
+      if (match && match.index !== undefined) {
+        const endPos = match.index + match[1].length;
+        const rawChunk = buf.slice(0, endPos).trim();
+        buf = buf.slice(match.index + match[0].length);
+
+        if (rawChunk) {
+          const cleaned = cleanTextForSpeech(rawChunk);
+          if (cleaned) {
+            speechQueueRef.current.push(cleaned);
+          }
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (isFinal) {
+      const remaining = buf.trim();
+      if (remaining) {
+        const cleaned = cleanTextForSpeech(remaining);
+        if (cleaned) {
+          speechQueueRef.current.push(cleaned);
+        }
+      }
+      buf = "";
+    }
+
+    streamingTtsBufferRef.current = buf;
+    drainSpeechQueue();
+  };
+
+  // Real-time listener for streaming tokens to start speaking immediately as response streams!
+  useEffect(() => {
+    if (!isCallActive) return;
+
+    const handleStreamToken = (e: any) => {
+      if (!isCallActiveRef.current) return;
+      const token = e.detail?.token;
+      if (typeof token === "string" && token) {
+        streamingTtsBufferRef.current += token;
+        processStreamBuffer(false);
+      }
+    };
+
+    const handleStreamEnd = () => {
+      if (!isCallActiveRef.current) return;
+      isStreamFinishedRef.current = true;
+      processStreamBuffer(true);
+    };
+
+    window.addEventListener("cheapchat:stream_token", handleStreamToken);
+    window.addEventListener("cheapchat:stream_end", handleStreamEnd);
+
+    return () => {
+      window.removeEventListener("cheapchat:stream_token", handleStreamToken);
+      window.removeEventListener("cheapchat:stream_end", handleStreamEnd);
+    };
+  }, [isCallActive]);
+
+  const speakCallResponse = (text: string) => {
+    if (!isCallActiveRef.current) return;
+    const cleaned = cleanTextForSpeech(text);
+    if (!cleaned) {
+      setCallStatus("listening");
+      callStatusRef.current = "listening";
+      setContent("");
+      startCallRecognition();
+      return;
+    }
+    streamingTtsBufferRef.current = cleaned;
+    isStreamFinishedRef.current = true;
+    processStreamBuffer(true);
   };
 
   const triggerCallSend = async (text: string) => {
@@ -749,6 +868,16 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         callRecognitionRef.current.abort();
       } catch {}
     }
+
+    // Reset streaming TTS queue & buffer for new response
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    currentUtteranceRef.current = null;
+    speechQueueRef.current = [];
+    streamingTtsBufferRef.current = "";
+    isSpeakingUtteranceRef.current = false;
+    isStreamFinishedRef.current = false;
 
     setCallStatus("thinking");
     callStatusRef.current = "thinking";
@@ -764,22 +893,31 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       setAttachments([]);
 
       if (isCallActiveRef.current) {
-        if (assistantReply && assistantReply.trim()) {
-          speakCallResponse(assistantReply);
-        } else {
-          setCallStatus("listening");
-          callStatusRef.current = "listening";
-          setContent("");
-          startCallRecognition();
+        isStreamFinishedRef.current = true;
+        processStreamBuffer(true);
+
+        // If nothing was generated or queued (e.g. empty reply), return to listening
+        if (!isSpeakingUtteranceRef.current && speechQueueRef.current.length === 0) {
+          if (assistantReply && assistantReply.trim()) {
+            speakCallResponse(assistantReply);
+          } else {
+            setCallStatus("listening");
+            callStatusRef.current = "listening";
+            setContent("");
+            startCallRecognition();
+          }
         }
       }
     } catch (err) {
       console.error("Call assistant send error:", err);
       if (isCallActiveRef.current) {
-        setCallStatus("listening");
-        callStatusRef.current = "listening";
-        setContent("");
-        startCallRecognition();
+        isStreamFinishedRef.current = true;
+        if (!isSpeakingUtteranceRef.current && speechQueueRef.current.length === 0) {
+          setCallStatus("listening");
+          callStatusRef.current = "listening";
+          setContent("");
+          startCallRecognition();
+        }
       }
     }
   };

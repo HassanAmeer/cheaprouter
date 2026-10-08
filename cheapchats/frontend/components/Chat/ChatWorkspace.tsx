@@ -435,6 +435,13 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
                 const customToken = data.choices?.[0]?.delta?.content;
                 if (typeof customToken === "string" && customToken) {
                   assistantMsgContent += customToken;
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(
+                      new CustomEvent("cheapchat:stream_token", {
+                        detail: { token: customToken, fullText: assistantMsgContent },
+                      })
+                    );
+                  }
                   setMessages((prev) => {
                     const updated = [...prev];
                     updated[updated.length - 1] = {
@@ -460,6 +467,13 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
 
               if (data.token) {
                 assistantMsgContent += data.token;
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(
+                    new CustomEvent("cheapchat:stream_token", {
+                      detail: { token: data.token, fullText: assistantMsgContent },
+                    })
+                  );
+                }
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1] = {
@@ -614,6 +628,14 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       }
       setIsStreaming(false);
       isStreamingRef.current = false;
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("cheapchat:stream_end", {
+            detail: { fullText: assistantMsgContent, aborted: abortController.signal.aborted },
+          })
+        );
+      }
 
       if (messageQueueRef.current.length > 0) {
         const nextItem = messageQueueRef.current.shift()!;
