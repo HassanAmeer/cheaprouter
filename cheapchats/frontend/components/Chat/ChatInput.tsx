@@ -1072,65 +1072,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               uploadFiles(e.dataTransfer.files);
             }
           }}
-          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl border transition-all duration-200 shadow-2xl flex ${
-            isCallActive
-              ? "h-14 px-3 sm:px-4 items-center justify-center border-red-500/30 shadow-red-950/20"
-              : "pt-3 px-3.5 pb-2 flex-col gap-2 " + (
-                  isStreaming
-                    ? styles.streamingBorder
-                    : isDraggingOver
-                      ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-                      : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
-                )
+          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
+            isStreaming
+              ? styles.streamingBorder
+              : isDraggingOver
+                ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
+                : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
           }`}
         >
-        {isCallActive ? (
-          <div className="w-full h-11 sm:h-12 flex items-center justify-between gap-[2px] sm:gap-1 px-1 sm:px-2 select-none overflow-hidden animate-in fade-in duration-200">
-            {WAVE_BAR_FACTORS.map((factor, i) => {
-              const isSpeaking = callStatus === "speaking";
-              const isThinking = callStatus === "thinking";
-              const isUserTalking = callStatus === "listening" && isUserSpeaking;
-
-              let barClass = "bg-gradient-to-t from-zinc-600 via-zinc-500 to-zinc-400/80";
-              let height = Math.max(4, Math.round(factor * 12));
-              let animDuration = "1.8s";
-              let animDelay = (i * 75) % 1200;
-
-              if (isSpeaking) {
-                // Assistant speaking: Dark red to purple gradient
-                barClass = "bg-gradient-to-t from-red-800 via-rose-600 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
-                height = Math.max(6, Math.round(factor * 36));
-                animDuration = "0.65s";
-                animDelay = (i * 45) % 800;
-              } else if (isUserTalking) {
-                // User speaking: Vibrant red
-                barClass = "bg-gradient-to-t from-red-600 via-rose-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.45)]";
-                height = Math.max(6, Math.round(factor * 32));
-                animDuration = "0.55s";
-                animDelay = (i * 50) % 700;
-              } else if (isThinking) {
-                // AI generating/thinking
-                barClass = "bg-gradient-to-t from-red-800 via-orange-600 to-amber-400";
-                height = Math.max(5, Math.round(factor * 18));
-                animDuration = "1.1s";
-                animDelay = (i * 60) % 900;
-              }
-
-              return (
-                <span
-                  key={i}
-                  className={`flex-1 min-w-[2px] max-w-[8px] rounded-full transition-all duration-150 animate-pulse ${barClass}`}
-                  style={{
-                    height: `${height}px`,
-                    animationDelay: `${animDelay}ms`,
-                    animationDuration: animDuration,
-                  }}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <>
         {/* Attachments Row */}
         {(attachments.length > 0 || isUploading) && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
@@ -1243,7 +1192,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder={
-            activeSuggestionChip
+            isCallActive
+              ? "Listening to your voice..."
+              : activeSuggestionChip
               ? `Add details for ${activeSuggestionChip.label}...`
               : "Ask anything — / for types or skills"
           }
@@ -1252,8 +1203,56 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed ${styles.messageTextarea}`}
         />
 
-        {/* Normal Bottom Bar Tools */}
-        <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
+        {/* Bottom Area: If isCallActive, show full-width sound waves; else show normal tools */}
+        {isCallActive ? (
+          <div className="w-full pt-1.5 pb-0.5 border-t border-zinc-800/80 animate-in fade-in duration-200 select-none">
+            <div className="w-full flex items-center justify-between gap-[2px] sm:gap-1 px-0.5 overflow-hidden">
+              {WAVE_BAR_FACTORS.map((factor, i) => {
+                const isSpeaking = callStatus === "speaking";
+                const isThinking = callStatus === "thinking";
+                const isUserTalking = callStatus === "listening" && isUserSpeaking;
+
+                let barClass = "bg-gradient-to-t from-zinc-600 via-zinc-500 to-zinc-400/80";
+                let height = Math.max(4, Math.round(factor * 12));
+                let animDuration = "1.8s";
+                let animDelay = (i * 75) % 1200;
+
+                if (isSpeaking) {
+                  // Assistant speaking: Dark red to purple gradient
+                  barClass = "bg-gradient-to-t from-red-800 via-rose-600 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
+                  height = Math.max(6, Math.round(factor * 34));
+                  animDuration = "0.65s";
+                  animDelay = (i * 45) % 800;
+                } else if (isUserTalking) {
+                  // User speaking: Vibrant red
+                  barClass = "bg-gradient-to-t from-red-600 via-rose-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.45)]";
+                  height = Math.max(6, Math.round(factor * 30));
+                  animDuration = "0.55s";
+                  animDelay = (i * 50) % 700;
+                } else if (isThinking) {
+                  // AI generating/thinking
+                  barClass = "bg-gradient-to-t from-red-800 via-orange-600 to-amber-400";
+                  height = Math.max(5, Math.round(factor * 18));
+                  animDuration = "1.1s";
+                  animDelay = (i * 60) % 900;
+                }
+
+                return (
+                  <span
+                    key={i}
+                    className={`flex-1 min-w-[2px] max-w-[8px] rounded-full transition-all duration-150 animate-pulse ${barClass}`}
+                    style={{
+                      height: `${height}px`,
+                      animationDelay: `${animDelay}ms`,
+                      animationDuration: animDuration,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
             {/* Left Pinned Tools Bar */}
             <div className="flex items-center gap-1.5 overflow-visible min-w-0 flex-shrink-0">
               {/* Attachment Button */}
@@ -1385,8 +1384,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               )}
             </div>
           </div>
-        </>
-      )}
+        )}
       </div>
 
       {/* Call Assistant Icon Button (Placed right outside the message field) */}
