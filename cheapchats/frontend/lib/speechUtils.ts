@@ -438,12 +438,12 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     accentTitle: "Urdu Native (Classic Elder Male)",
     flag: "🇵🇰",
     badge: "Elder Male",
-    tags: ["Urdu Script", "Formal", "Elder Male"],
+    tags: ["Urdu", "Elder Male", "Ba-Waqar", "Formal"],
     description: "Classic native Urdu voice with dignified, elder masculine timbre.",
-    samplePhrase: "السلام علیکم! میں اسد ہوں، چیپ چیٹس پر آپ کی خدمت میں حاضر ہوں۔",
-    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "male", "arabic"],
-    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
-    pitch: 0.74,
+    samplePhrase: "Assalam-o-Alaikum! Main Asad hoon, CheapChats par aap ki khidmat mein hazir hoon.",
+    preferredKeywords: ["asad", "urdu", "ur-pk", "ur_pk", "tariq", "madhur", "prabhat", "ravi"],
+    langCodes: ["ur-pk", "ur", "hi-in", "en-in", "hi", "ar-sa", "ar"],
+    pitch: 0.68,
     rate: 0.88,
   },
   {
@@ -453,13 +453,13 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     accentTitle: "Urdu Native (Melodic Female)",
     flag: "🇵🇰",
     badge: "Melodic Female",
-    tags: ["Urdu Script", "Melodic", "Polite Female"],
-    description: "Polite and traditional native Urdu voice for literary text.",
-    samplePhrase: "السلام علیکم! میرا نام گل ہے۔ فرمائیے میں آج آپ کی کیا رہنمائی کر سکتی ہوں؟",
-    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "female"],
-    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
-    pitch: 1.06,
-    rate: 0.92,
+    tags: ["Urdu", "Melodic", "Polite Female", "Meethi Aawaz"],
+    description: "Polite and traditional native Urdu voice with sweet melodic timbre.",
+    samplePhrase: "Assalam-o-Alaikum! Mera naam Gul hai. Farmaiye main aaj aap ki kya madad kar sakti hoon?",
+    preferredKeywords: ["gul", "urdu", "ur-pk", "ur_pk", "fatima", "swara", "kalpana", "neerja"],
+    langCodes: ["ur-pk", "ur", "hi-in", "en-in", "hi", "ar-sa", "ar"],
+    pitch: 1.08,
+    rate: 0.94,
   },
 ];
 
@@ -1117,9 +1117,18 @@ export function getBestVoice(
           if (maleLangMatch) return maleLangMatch;
         }
 
+        // If persona prefers Urdu / Desi languages, prioritize Urdu or Hindi voices before foreign English
+        const isDesiPersona = persona.langCodes.some((lc) => lc.startsWith("ur") || lc.startsWith("hi"));
+        if (isDesiPersona) {
+          const desiUrduOrHindi = voices.find(
+            (v) => (v.lang.toLowerCase().startsWith("ur") || v.lang.toLowerCase().startsWith("hi")) && !isKnownFemaleVoice(v)
+          );
+          if (desiUrduOrHindi) return desiUrduOrHindi;
+        }
+
         // Check for any Desi/Indian English male voice
         const anyDesiMale = voices.find(
-          (v) => (v.lang.toLowerCase().startsWith("en-in") || v.lang.toLowerCase().startsWith("hi")) && isKnownMaleVoice(v)
+          (v) => (v.lang.toLowerCase().startsWith("en-in") || v.lang.toLowerCase().startsWith("hi")) && !isKnownFemaleVoice(v)
         );
         if (anyDesiMale) return anyDesiMale;
 
@@ -1132,10 +1141,28 @@ export function getBestVoice(
       if (isFemale) {
         for (const lc of persona.langCodes) {
           const femaleLangMatch = voices.find(
+            (v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()) && isKnownFemaleVoice(v) && !isKnownMaleVoice(v)
+          );
+          if (femaleLangMatch) return femaleLangMatch;
+        }
+
+        const isDesiPersona = persona.langCodes.some((lc) => lc.startsWith("ur") || lc.startsWith("hi"));
+        if (isDesiPersona) {
+          const desiUrduOrHindi = voices.find(
+            (v) => (v.lang.toLowerCase().startsWith("ur") || v.lang.toLowerCase().startsWith("hi")) && !isKnownMaleVoice(v)
+          );
+          if (desiUrduOrHindi) return desiUrduOrHindi;
+        }
+
+        for (const lc of persona.langCodes) {
+          const femaleLangMatch = voices.find(
             (v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()) && !isKnownMaleVoice(v)
           );
           if (femaleLangMatch) return femaleLangMatch;
         }
+
+        const anyFemale = voices.find((v) => isKnownFemaleVoice(v) && !isKnownMaleVoice(v));
+        if (anyFemale) return anyFemale;
       }
 
       // Pass 4: Fallback to language code

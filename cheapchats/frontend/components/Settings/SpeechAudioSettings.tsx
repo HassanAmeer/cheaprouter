@@ -241,8 +241,22 @@ export default function SpeechAudioSettings() {
       "Hello, this is a voice test."
     ).trim();
 
-    const cleaned = cleanTextForSpeech(phraseToSpeak);
+    let cleaned = cleanTextForSpeech(phraseToSpeak);
     if (!cleaned) return;
+
+    const targetVoiceKey = persona ? `persona:${persona.id}` : ttsVoice;
+    const targetRole = persona ? persona.langCodes[0] : sttLang;
+    const bestVoice = getBestVoice(browserVoices, targetVoiceKey, cleaned, targetRole);
+
+    // If text contains Urdu script and chosen voice is not native Urdu/Arabic, transliterate to Roman Urdu for voice playback
+    if (/[\u0600-\u06FF]/.test(cleaned)) {
+      const isNativeUrduOrArabic =
+        bestVoice &&
+        (bestVoice.lang.toLowerCase().startsWith("ur") || bestVoice.lang.toLowerCase().startsWith("ar"));
+      if (!isNativeUrduOrArabic) {
+        cleaned = transliterateToRomanUrdu(cleaned);
+      }
+    }
 
     const utterance = new SpeechSynthesisUtterance(cleaned);
 
@@ -254,11 +268,11 @@ export default function SpeechAudioSettings() {
       utterance.pitch = pitch;
     }
 
-    const targetVoiceKey = persona ? `persona:${persona.id}` : ttsVoice;
-    const targetRole = persona ? persona.langCodes[0] : sttLang;
-    const bestVoice = getBestVoice(browserVoices, targetVoiceKey, cleaned, targetRole);
     if (bestVoice) {
       utterance.voice = bestVoice;
+      if (bestVoice.lang) {
+        utterance.lang = bestVoice.lang;
+      }
     }
 
     utterance.onstart = () => {
@@ -295,15 +309,15 @@ export default function SpeechAudioSettings() {
       persona.id === "bilal" ||
       persona.id === "aryan" ||
       persona.id === "pari" ||
-      persona.id === "ayesha"
+      persona.id === "ayesha" ||
+      persona.id === "asad" ||
+      persona.id === "gul"
     ) {
       setSttLang("ur-roman");
     } else if (persona.id === "swara" || persona.id === "madhur") {
       setSttLang("hi-IN");
     } else if (persona.id === "neerja" || persona.id === "rohan") {
       setSttLang("en-IN");
-    } else if (persona.id === "asad" || persona.id === "gul") {
-      setSttLang("ur-PK");
     } else if (persona.id === "jenny" || persona.id === "guy") {
       setSttLang("en-US");
     } else if (persona.id === "sonia") {

@@ -150,7 +150,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     attachments: any[] = [],
     isRetry = false,
     queuedMsgId?: string,
-    continuationArtifactOverride?: Artifact
+    continuationArtifactOverride?: Artifact,
+    isCallMode = false
   ): Promise<string> => {
     let assistantMsgContent = "";
     let responseFailed = false;
@@ -235,8 +236,24 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     const reqStartTime = Date.now();
     const effTemperature = chatPreferences?.temperature ?? 0.7;
     const effContextWindow = chatPreferences?.contextWindow ?? "128k";
-    const effSystemPrompt = chatPreferences?.systemPrompt || "You are a helpful, brilliant AI assistant.";
     const effRollingLimit = chatPreferences?.rollingWindowLimit || rollingWindowLimit || 20;
+    const isLiveCallMode =
+      isCallMode ||
+      (typeof window !== "undefined" && Boolean((window as any).__cheapchats_is_call_active)) ||
+      useAppStore.getState().isCallAssistantOpen;
+
+    const baseSystemPrompt = chatPreferences?.systemPrompt || "You are a helpful, brilliant AI assistant.";
+    const effSystemPrompt = isLiveCallMode
+      ? `${baseSystemPrompt}
+
+[CRITICAL INSTRUCTIONS FOR LIVE VOICE TELEPHONE CALL]:
+1. You are talking to the user on a REAL-TIME TELEPHONE / VOICE CALL. The user is speaking to you via microphone and hearing your spoken response through speech synthesis.
+2. Speak like a natural, warm, helpful human on a live telephone call.
+3. Keep ALL responses SHORT, CONCISE, and direct (strictly 1 to 3 short spoken sentences). Never write long paragraphs, essays, or multiple sections unless the user explicitly asks for deep detail.
+4. Do NOT use markdown symbols, bullet points (*, -), numbered lists, asterisks (**bold**), hashtags (#), or code snippets because your response is being read aloud to the user.
+5. If the user asks if you can hear them ("meri aawaz aa rahi hai?", "can you hear me?", "hello?", etc.), immediately and warmly confirm (e.g. "Jee haan! Aap ki aawaz bilkul saaf aa rahi hai. Farmayein, main aap ki kya madad kar sakta hoon?").
+6. Answer directly to save the user time. Only explain in deep detail if the user explicitly asks for details.`
+      : baseSystemPrompt;
 
     const requestPayloadObj = {
       conversationId: isIncognito ? undefined : (activeConvId || undefined),
@@ -659,7 +676,8 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
   const handleSendMessage = async (
     content: string,
     attachments: any[] = [],
-    isRetry = false
+    isRetry = false,
+    isCallMode = false
   ): Promise<string | undefined> => {
     if (!content.trim() && attachments.length === 0) return undefined;
 
@@ -679,7 +697,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       return undefined;
     }
 
-    return await executeSend(content, attachments, isRetry);
+    return await executeSend(content, attachments, isRetry, undefined, undefined, isCallMode);
   };
 
   const handleRegenerate = () => {

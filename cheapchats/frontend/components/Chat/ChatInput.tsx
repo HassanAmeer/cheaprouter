@@ -51,7 +51,7 @@ import {
 } from "@cheapchats/frontend/lib/speechUtils";
 
 interface ChatInputProps {
-  onSend: (message: string, attachments: any[]) => Promise<string | undefined> | void;
+  onSend: (message: string, attachments: any[], isRetry?: boolean, isCallMode?: boolean) => Promise<string | undefined> | void;
   onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
@@ -544,6 +544,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const handleEndCall = () => {
     setIsCallActive(false);
     isCallActiveRef.current = false;
+    setCallAssistantOpen(false);
+    if (typeof window !== "undefined") {
+      (window as any).__cheapchats_is_call_active = false;
+    }
     setCallStatus("idle");
     callStatusRef.current = "idle";
     setIsSpeaking(false);
@@ -732,16 +736,30 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     callStatusRef.current = "speaking";
     setIsSpeaking(true);
 
-    const utterance = new SpeechSynthesisUtterance(nextChunk);
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);
+
+    let chunkToSpeak = nextChunk;
+    if (/[\u0600-\u06FF]/.test(chunkToSpeak)) {
+      const isNativeUrduOrArabic =
+        bestVoice &&
+        (bestVoice.lang.toLowerCase().startsWith("ur") || bestVoice.lang.toLowerCase().startsWith("ar"));
+      if (!isNativeUrduOrArabic) {
+        chunkToSpeak = transliterateToRomanUrdu(chunkToSpeak);
+      }
+    }
+
+    const utterance = new SpeechSynthesisUtterance(chunkToSpeak);
     currentUtteranceRef.current = utterance;
     const ttsSettings = getEffectiveTtsSettings(ttsVoice);
     utterance.rate = ttsSettings.rate;
     utterance.pitch = ttsSettings.pitch;
 
-    const voices = window.speechSynthesis.getVoices();
-    const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);
     if (bestVoice) {
       utterance.voice = bestVoice;
+      if (bestVoice.lang) {
+        utterance.lang = bestVoice.lang;
+      }
     }
 
     utterance.onstart = () => {
@@ -776,18 +794,18 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (!isCallActiveRef.current) return;
 
     let buf = streamingTtsBufferRef.current;
-    const sentenceRegex = /([.!?\n]+)(\s+|$)/g;
-    const clauseRegex = /([,;:—])(\s+)/g;
+    // Complete sentences only (. ! ? \n or Urdu khatam ۔) to avoid choppy word pauses
+    const sentenceRegex = /([.!?۔\n]+)(\s+|$)/g;
 
     while (true) {
       sentenceRegex.lastIndex = 0;
       let match = sentenceRegex.exec(buf);
 
-      // If no sentence ender, but buffer has >= 6 words, check clause boundary
+      // Only break on clause if buffer has accumulated many words (> 22 words) without punctuation
       if (!match) {
         const words = buf.trim().split(/\s+/).filter(Boolean);
-        if (words.length >= 6) {
-          clauseRegex.lastIndex = 0;
+        if (words.length >= 22) {
+          const clauseRegex = /([,;:—])(\s+)/g;
           match = clauseRegex.exec(buf);
         }
       }
@@ -896,7 +914,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     setContent("");
 
     try {
-      const assistantReply = await onSend(cleanPrompt, attachmentsRef.current);
+      const assistantReply = await onSend(cleanPrompt, attachmentsRef.current, false, true);
       setAttachments([]);
 
       if (isCallActiveRef.current) {
@@ -1056,6 +1074,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     setIsCallActive(true);
     isCallActiveRef.current = true;
+    setCallAssistantOpen(true);
+    if (typeof window !== "undefined") {
+      (window as any).__cheapchats_is_call_active = true;
+    }
     setCallStatus("listening");
     callStatusRef.current = "listening";
     setContent("");
