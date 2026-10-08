@@ -143,6 +143,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const userSpeakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isUserSpeakingRef = useRef(false);
+
+  // Web Audio Analyser for genuine audio-reactive waves
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const [waveAmplitudes, setWaveAmplitudes] = useState<number[]>(() => new Array(50).fill(0.12));
 
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
@@ -151,6 +159,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   useEffect(() => {
     callStatusRef.current = callStatus;
   }, [callStatus]);
+
+  useEffect(() => {
+    isUserSpeakingRef.current = isUserSpeaking;
+  }, [isUserSpeaking]);
   const [showSlashPrompts, setShowSlashPrompts] = useState(false);
   const [dbPrompts, setDbPrompts] = useState<{ title: string; prompt: string }[]>([]);
   const [skillsList, setSkillsList] = useState<{ name: string; description: string }[]>([]);
@@ -461,6 +473,56 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     }
   };
 
+  const cleanupMicAudioAnalyser = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      try {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      } catch {}
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch {}
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+  };
+
+  const startMicAudioAnalyser = async () => {
+    try {
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        await audioContextRef.current.resume();
+      }
+
+      if (!mediaStreamRef.current && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
+
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioCtx();
+        if (ctx.state === "suspended") {
+          await ctx.resume();
+        }
+        audioContextRef.current = ctx;
+
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.5;
+        analyserRef.current = analyser;
+
+        const source = ctx.createMediaStreamSource(stream);
+        source.connect(analyser);
+      }
+    } catch (err) {
+      console.warn("Audio analyser start failed:", err);
+    }
+  };
+
   const handleEndCall = () => {
     setIsCallActive(false);
     isCallActiveRef.current = false;
@@ -468,10 +530,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     callStatusRef.current = "idle";
     setIsSpeaking(false);
     setIsUserSpeaking(false);
+    isUserSpeakingRef.current = false;
     if (userSpeakingTimeoutRef.current) {
       clearTimeout(userSpeakingTimeoutRef.current);
       userSpeakingTimeoutRef.current = null;
     }
+
+    cleanupMicAudioAnalyser();
 
     if (callSilenceTimerRef.current) {
       clearTimeout(callSilenceTimerRef.current);
@@ -507,6 +572,102 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
     };
   }, []);
+
+  // Audio-reactive visualizer loop that reacts to real sound (STT) and voice cadence (TTS)
+  useEffect(() => {
+    if (!isCallActive) {
+      cleanupMicAudioAnalyser();
+      return;
+    }
+
+    let isRunning = true;
+
+    const renderLoop = () => {
+      if (!isRunning || !isCallActiveRef.current) return;
+
+      const status = callStatusRef.current;
+
+      if (status === "speaking") {
+        // TTS: Assistant speech waveform cadence with syllables and frequency modulation
+        const t = performance.now() * 0.007;
+        const newAmps = WAVE_BAR_FACTORS.map((factor, i) => {
+          const syllable = Math.sin(t * 3.6 + i * 0.28) * 0.5 + 0.5;
+          const formant = Math.sin(t * 6.4 - i * 0.35) * 0.4 + 0.6;
+          const bass = Math.sin(t * 2.1 + i * 0.15) * 0.3 + 0.7;
+          const combined = (syllable * 0.45 + formant * 0.35 + bass * 0.2) * factor;
+          return Math.min(1.0, Math.max(0.12, combined * 1.1));
+        });
+        setWaveAmplitudes(newAmps);
+      } else if (status === "thinking") {
+        // AI thinking: smooth travelling shimmer wave
+        const t = performance.now() * 0.0035;
+        const newAmps = WAVE_BAR_FACTORS.map((factor, i) => {
+          const travel = Math.sin(t * 3.5 + i * 0.32) * 0.35 + 0.45;
+          return Math.min(0.8, Math.max(0.12, travel * factor));
+        });
+        setWaveAmplitudes(newAmps);
+      } else {
+        // STT: Real-time live audio reaction from microphone!
+        if (analyserRef.current) {
+          const analyser = analyserRef.current;
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          analyser.getByteFrequencyData(dataArray);
+
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+          }
+          const avgVolume = sum / bufferLength;
+          const isVoiceActive = avgVolume > 4.5;
+
+          if (isVoiceActive) {
+            if (!isUserSpeakingRef.current) {
+              isUserSpeakingRef.current = true;
+              setIsUserSpeaking(true);
+            }
+            if (userSpeakingTimeoutRef.current) clearTimeout(userSpeakingTimeoutRef.current);
+            userSpeakingTimeoutRef.current = setTimeout(() => {
+              isUserSpeakingRef.current = false;
+              setIsUserSpeaking(false);
+            }, 600);
+          }
+
+          const newAmps = WAVE_BAR_FACTORS.map((factor, i) => {
+            const binIndex = Math.min(
+              bufferLength - 1,
+              Math.floor((i / WAVE_BAR_FACTORS.length) * (bufferLength * 0.85))
+            );
+            const freqVal = dataArray[binIndex] / 255;
+
+            if (isVoiceActive) {
+              const boost = (freqVal * 2.0 + (avgVolume / 160)) * factor;
+              return Math.min(1.0, Math.max(0.15, boost));
+            } else {
+              const idle = 0.12 + 0.04 * Math.sin(performance.now() * 0.0025 + i * 0.22);
+              return Math.max(0.08, idle * factor);
+            }
+          });
+          setWaveAmplitudes(newAmps);
+        } else {
+          const idle = 0.12;
+          setWaveAmplitudes(new Array(50).fill(idle));
+        }
+      }
+
+      animFrameRef.current = requestAnimationFrame(renderLoop);
+    };
+
+    animFrameRef.current = requestAnimationFrame(renderLoop);
+
+    return () => {
+      isRunning = false;
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+    };
+  }, [isCallActive]);
 
   const speakCallResponse = (text: string) => {
     if (!isCallActiveRef.current) return;
@@ -735,7 +896,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     }
   };
 
-  const handleStartCall = () => {
+  const handleStartCall = async () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -751,6 +912,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     callStatusRef.current = "listening";
     setContent("");
 
+    await startMicAudioAnalyser();
     startCallRecognition();
   };
 
@@ -1221,44 +1383,35 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         {isCallActive ? (
           <div className="w-full pt-1.5 pb-0.5 border-t border-zinc-800/80 animate-in fade-in duration-200 select-none">
             <div className="w-full flex items-center justify-between gap-[2px] sm:gap-1 px-0.5 overflow-hidden">
-              {WAVE_BAR_FACTORS.map((factor, i) => {
+              {WAVE_BAR_FACTORS.map((_, i) => {
+                const amp = waveAmplitudes[i] ?? 0.12;
                 const isSpeaking = callStatus === "speaking";
                 const isThinking = callStatus === "thinking";
-                const isUserTalking = callStatus === "listening" && isUserSpeaking;
+                const isUserTalking = callStatus === "listening" && (isUserSpeaking || amp > 0.22);
 
                 let barClass = "bg-gradient-to-t from-zinc-600 via-zinc-500 to-zinc-400/80";
-                let height = Math.max(4, Math.round(factor * 12));
-                let animDuration = "1.8s";
-                let animDelay = (i * 75) % 1200;
+                let barHeight = Math.max(4, Math.round(amp * 16));
 
                 if (isSpeaking) {
-                  // Assistant speaking: Dark red to purple gradient
+                  // Assistant speaking (TTS): Dark red to purple gradient reacting to vocal cadence
                   barClass = "bg-gradient-to-t from-red-800 via-rose-600 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
-                  height = Math.max(6, Math.round(factor * 34));
-                  animDuration = "0.65s";
-                  animDelay = (i * 45) % 800;
+                  barHeight = Math.max(5, Math.round(amp * 36));
                 } else if (isUserTalking) {
-                  // User speaking: Vibrant red
+                  // User speaking (STT): Vibrant red jumping to mic audio and speech
                   barClass = "bg-gradient-to-t from-red-600 via-rose-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.45)]";
-                  height = Math.max(6, Math.round(factor * 30));
-                  animDuration = "0.55s";
-                  animDelay = (i * 50) % 700;
+                  barHeight = Math.max(5, Math.round(amp * 34));
                 } else if (isThinking) {
                   // AI generating/thinking
                   barClass = "bg-gradient-to-t from-red-800 via-orange-600 to-amber-400";
-                  height = Math.max(5, Math.round(factor * 18));
-                  animDuration = "1.1s";
-                  animDelay = (i * 60) % 900;
+                  barHeight = Math.max(4, Math.round(amp * 22));
                 }
 
                 return (
                   <span
                     key={i}
-                    className={`flex-1 min-w-[2px] max-w-[8px] rounded-full transition-all duration-150 animate-pulse ${barClass}`}
+                    className={`flex-1 min-w-[2px] max-w-[8px] rounded-full transition-all duration-75 ease-out ${barClass}`}
                     style={{
-                      height: `${height}px`,
-                      animationDelay: `${animDelay}ms`,
-                      animationDuration: animDuration,
+                      height: `${barHeight}px`,
                     }}
                   />
                 );
