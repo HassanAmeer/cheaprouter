@@ -123,6 +123,9 @@ interface AppState {
   ttsPitch: number;
   setTtsPitch: (pitch: number) => void;
 
+  ttsEngine: "azure" | "browser";
+  setTtsEngine: (engine: "azure" | "browser") => void;
+
   isArtifactsOpen: boolean;
   setArtifactsOpen: (open: boolean) => void;
   toggleArtifacts: () => void;
@@ -279,6 +282,12 @@ export const useAppStore = create<AppState>((set) => ({
   setTtsPitch: (pitch) => {
     if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_pitch", String(pitch));
     set({ ttsPitch: pitch });
+  },
+
+  ttsEngine: (typeof window !== "undefined" && (localStorage.getItem("cheapchat_tts_engine") as "azure" | "browser")) || "azure",
+  setTtsEngine: (engine: "azure" | "browser") => {
+    if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_engine", engine);
+    set({ ttsEngine: engine });
   },
 
   isArtifactsOpen: false,

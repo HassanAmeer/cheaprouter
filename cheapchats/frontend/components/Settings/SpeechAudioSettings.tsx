@@ -27,6 +27,8 @@ import {
   SpeechLanguageOption,
   VOICE_PERSONAS,
   VoicePersona,
+  AZURE_VOICE_PERSONAS,
+  AzureVoicePersona,
   getEffectiveSttLang,
   getBestVoice,
   cleanTextForSpeech,
@@ -50,6 +52,8 @@ export default function SpeechAudioSettings() {
     setTtsRate,
     ttsPitch,
     setTtsPitch,
+    ttsEngine,
+    setTtsEngine,
   } = useAppStore();
 
   // Active Tab: "mic" (Speech to Text) or "speech" (Text to Speech)
@@ -303,7 +307,12 @@ export default function SpeechAudioSettings() {
       return;
     }
 
-    const persona = personaId ? VOICE_PERSONAS.find((p) => p.id === personaId) || null : null;
+    const persona = personaId
+      ? (VOICE_PERSONAS.find((p) => p.id === personaId) as any) ||
+        AZURE_VOICE_PERSONAS.find((p) => p.id === personaId) ||
+        null
+      : null;
+
     const phraseToSpeak = (
       overrideText ||
       (persona ? persona.samplePhrase : testText) ||
@@ -313,52 +322,79 @@ export default function SpeechAudioSettings() {
     const cleaned = cleanTextForSpeech(phraseToSpeak);
     if (!cleaned) return;
 
-    const targetVoiceKey = persona ? `persona:${persona.id}` : ttsVoice;
+    const targetVoiceKey = persona
+      ? (persona.id.startsWith("azure:") ? persona.id : `persona:${persona.id}`)
+      : ttsVoice;
 
     setIsPlayingTts(true);
     if (personaId) {
       setPlayingPersonaId(personaId);
     }
 
+    const isAzureTarget =
+      targetVoiceKey.startsWith("azure:") ||
+      (ttsEngine === "azure" && !targetVoiceKey.startsWith("persona:"));
+
     // 1. Play Ultra-Realistic Free Edge Neural AI Voice
-    try {
-      const resp = await fetch("/api/cheapchats/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: cleaned,
-          voice: targetVoiceKey,
-        }),
-      });
+    if (isAzureTarget) {
+      try {
+        const resp = await fetch("/api/cheapchats/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: cleaned,
+            voice: targetVoiceKey,
+          }),
+        });
 
-      if (resp.ok) {
-        const blob = await resp.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        activeAudioRef.current = audio;
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl);
+          activeAudioRef.current = audio;
 
-        audio.onended = () => {
-          setIsPlayingTts(false);
-          setPlayingPersonaId(null);
-          activeAudioRef.current = null;
-        };
+          audio.onended = () => {
+            setIsPlayingTts(false);
+            setPlayingPersonaId(null);
+            activeAudioRef.current = null;
+          };
 
-        audio.onerror = () => {
-          activeAudioRef.current = null;
-          fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
-        };
+          audio.onerror = () => {
+            activeAudioRef.current = null;
+            fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
+          };
 
-        await audio.play();
-        return;
+          await audio.play();
+          return;
+        }
+      } catch {
+        // Fallback on network failure
       }
-    } catch {
-      // Fallback on network failure
     }
 
     fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
   };
 
+  const handleSelectAzurePersona = (azureP: AzureVoicePersona) => {
+    setTtsEngine("azure");
+    setTtsVoice(azureP.id);
+
+    // Auto-align STT language when an Azure persona is picked
+    if (azureP.flag === "🇵🇰") {
+      setSttLang("ur-roman");
+    } else if (azureP.flag === "🇮🇳") {
+      setSttLang("hi-IN");
+    } else if (azureP.azureVoice.startsWith("en-US")) {
+      setSttLang("en-US");
+    } else if (azureP.azureVoice.startsWith("en-GB")) {
+      setSttLang("en-GB");
+    } else if (azureP.azureVoice.startsWith("ar-")) {
+      setSttLang("ar-SA");
+    }
+  };
+
   const handleSelectPersona = (persona: VoicePersona) => {
+    setTtsEngine("browser");
     setTtsVoice(`persona:${persona.id}`);
     handleRateChange(persona.rate);
     handlePitchChange(persona.pitch);
@@ -399,7 +435,7 @@ export default function SpeechAudioSettings() {
     return true;
   });
 
-  // Filtered Speech Personas (Famous on top, Pakistan & Hindi below)
+  // Filtered Speech Personas (Built-in)
   const filteredPersonas = VOICE_PERSONAS.filter((p) => {
     if (speechFilter === "all") return true;
     if (speechFilter === "famous") return p.id === "jenny" || p.id === "guy" || p.id === "sonia" || p.id === "hamdan" || p.id === "fatima";
@@ -408,7 +444,19 @@ export default function SpeechAudioSettings() {
     return true;
   });
 
-  const activePersona = VOICE_PERSONAS.find((p) => `persona:${p.id}` === ttsVoice);
+  // Filtered Azure Personas (By API)
+  const filteredAzurePersonas = AZURE_VOICE_PERSONAS.filter((p) => {
+    if (speechFilter === "all") return true;
+    if (speechFilter === "famous") return p.flag !== "🇵🇰" && p.flag !== "🇮🇳";
+    if (speechFilter === "pakistan") return p.flag === "🇵🇰";
+    if (speechFilter === "india") return p.flag === "🇮🇳";
+    return true;
+  });
+
+  const activePersona =
+    (VOICE_PERSONAS.find((p) => `persona:${p.id}` === ttsVoice) as any) ||
+    AZURE_VOICE_PERSONAS.find((p) => p.id === ttsVoice) ||
+    null;
 
   return (
     <div className="space-y-6 max-w-3xl pb-8 animate-in fade-in duration-200">
@@ -913,20 +961,40 @@ export default function SpeechAudioSettings() {
               <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between mb-1.5">
                 <span>System Voice Engine (Advanced):</span>
                 <span className="text-[10px] text-slate-500 font-normal">
-                  {browserVoices.length} browser voices detected
+                  {ttsEngine === "azure"
+                    ? "⚡ Microsoft Azure Edge Neural (Active)"
+                    : `${browserVoices.length} browser voices detected`}
                 </span>
               </label>
               <select
-                value={browserVoices.some((v) => v.voiceURI === ttsVoice) ? ttsVoice : activePersona ? `persona:${activePersona.id}` : "default"}
-                onChange={(e) => setTtsVoice(e.target.value)}
-                disabled={!speechSupport.synthesis || browserVoices.length === 0}
+                value={
+                  ttsVoice.startsWith("azure:")
+                    ? ttsVoice
+                    : browserVoices.some((v) => v.voiceURI === ttsVoice)
+                    ? ttsVoice
+                    : activePersona
+                    ? (activePersona.id.startsWith("azure:") ? activePersona.id : `persona:${activePersona.id}`)
+                    : "default"
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.startsWith("azure:")) {
+                    setTtsEngine("azure");
+                    setTtsVoice(val);
+                  } else {
+                    setTtsEngine("browser");
+                    setTtsVoice(val);
+                  }
+                }}
                 className="w-full rounded-xl border border-white/10 bg-zinc-900/90 p-2 text-xs text-white outline-none focus:border-purple-400/50 cursor-pointer"
               >
                 <option value="default">
                   🌟 Automatic Persona Voice (Recommended)
                 </option>
                 {activePersona && (
-                  <option value={`persona:${activePersona.id}`}>
+                  <option
+                    value={activePersona.id.startsWith("azure:") ? activePersona.id : `persona:${activePersona.id}`}
+                  >
                     ✨ Active Persona: {activePersona.name} ({activePersona.accentTitle})
                   </option>
                 )}
@@ -945,10 +1013,12 @@ export default function SpeechAudioSettings() {
               <div>
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                   <Star className="w-4 h-4 text-purple-400 fill-purple-400" />
-                  Voice Accent Cards (Famous Accents Upar, Pakistani & Hindi Neeche)
+                  Voice Accent Cards ({ttsEngine === "azure" ? "⚡ By API - Azure Neural HD" : "🌐 Built-in Browser Accents"})
                 </h4>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Famous international accents upar hain, aur Pakistani & Hindi accents neeche hain. Card click karne se foran save ho jayega.
+                  {ttsEngine === "azure"
+                    ? "Microsoft Azure Neural AI voices (100% Free & No API Key). Human-like expressions & natural tone. Card click karne se foran save ho jayega."
+                    : "Browser ke built-in local accents. Fast & offline speech synthesis. Card click karne se foran save ho jayega."}
                 </p>
               </div>
 
@@ -961,7 +1031,7 @@ export default function SpeechAudioSettings() {
                     speechFilter === "all" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  All ({VOICE_PERSONAS.length})
+                  All ({ttsEngine === "azure" ? AZURE_VOICE_PERSONAS.length : VOICE_PERSONAS.length})
                 </button>
                 <button
                   type="button"
@@ -970,7 +1040,7 @@ export default function SpeechAudioSettings() {
                     speechFilter === "famous" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  🌐 Famous International
+                  🌐 Famous Global
                 </button>
                 <button
                   type="button"
@@ -993,113 +1063,268 @@ export default function SpeechAudioSettings() {
               </div>
             </div>
 
-            {/* The Unified Personas Grid: Famous on top, Pakistani & Hindi below */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {filteredPersonas.map((persona) => {
-                const isPersonaSelected = ttsVoice === `persona:${persona.id}`;
-                const isPlayingThisPersona = isPlayingTts && playingPersonaId === persona.id;
+            {/* ── Sub-tabs: [⚡ By API (Azure Neural HD)] vs [🌐 Built-in Accents (Browser)] ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-black/60 border border-purple-500/20 rounded-2xl shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  setTtsEngine("azure");
+                  if (!ttsVoice.startsWith("azure:")) {
+                    setTtsVoice("azure:ur-PK-AsadNeural");
+                  }
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                  ttsEngine === "azure"
+                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-600/30 ring-1 ring-purple-400/50"
+                    : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>⚡ By API (Azure Neural HD - Free)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hidden sm:inline-block">
+                  100% Human Sound
+                </span>
+              </button>
 
-                return (
-                  <div
-                    key={persona.id}
-                    onClick={() => handleSelectPersona(persona)}
-                    className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                      isPersonaSelected
-                        ? "bg-gradient-to-br from-purple-950/70 via-zinc-900 to-zinc-950 border-purple-500 shadow-lg shadow-purple-950/40 ring-1 ring-purple-500/50"
-                        : "bg-[#18181b] border-white/10 hover:border-purple-500/40 hover:bg-[#202026]"
-                    }`}
-                  >
-                    <div>
-                      {/* Header: Avatar, Name, Badge */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-sm shadow-md flex-shrink-0">
-                            {persona.flag}
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <span>{persona.name}</span>
-                              {isPersonaSelected && (
-                                <span className="p-0.5 rounded-full bg-purple-500/20 text-purple-400">
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                </span>
-                              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setTtsEngine("browser");
+                  if (ttsVoice.startsWith("azure:")) {
+                    setTtsVoice("persona:asad");
+                  }
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                  ttsEngine === "browser"
+                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-600/30 ring-1 ring-purple-400/50"
+                    : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
+                }`}
+              >
+                <Globe2 className="w-4 h-4 text-purple-300" />
+                <span>🌐 Built-in Accents (Browser)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700 text-slate-300 border border-white/10 hidden sm:inline-block">
+                  Offline Local
+                </span>
+              </button>
+            </div>
+
+            {/* If By API selected: Render Azure Neural Accent Cards */}
+            {ttsEngine === "azure" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {filteredAzurePersonas.map((azureP) => {
+                  const isSelected = ttsVoice === azureP.id;
+                  const isPlayingThis = isPlayingTts && playingPersonaId === azureP.id;
+
+                  return (
+                    <div
+                      key={azureP.id}
+                      onClick={() => handleSelectAzurePersona(azureP)}
+                      className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? "bg-gradient-to-br from-purple-950/70 via-indigo-950/40 to-zinc-950 border-purple-500 shadow-lg shadow-purple-950/40 ring-1 ring-purple-500/50"
+                          : "bg-[#18181b] border-white/10 hover:border-purple-500/40 hover:bg-[#202026]"
+                      }`}
+                    >
+                      <div>
+                        {/* Header: Flag Avatar, Name, Badge */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+                              {azureP.flag}
                             </div>
-                            <div className="text-[10px] text-purple-300 font-medium">
-                              {persona.accentTitle}
+                            <div>
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span>{azureP.name}</span>
+                                {isSelected && (
+                                  <span className="p-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-purple-300 font-medium">
+                                {azureP.accentTitle}
+                              </div>
                             </div>
                           </div>
+
+                          <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300">
+                            {azureP.badge}
+                          </span>
                         </div>
 
-                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 border border-white/10 text-slate-300">
-                          {persona.badge}
-                        </span>
+                        {/* Description */}
+                        <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                          {azureP.description}
+                        </p>
+
+                        {/* Sample Phrase Quote */}
+                        <div className="text-[10.5px] text-purple-200/90 italic bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5 mb-2.5 line-clamp-2">
+                          "{azureP.samplePhrase}"
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex items-center gap-1 flex-wrap mb-3">
+                          {azureP.tags.map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-800/80 border border-white/5 text-slate-400 font-mono"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Description */}
-                      <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
-                        {persona.description}
-                      </p>
+                      {/* Actions footer */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playTtsTest(azureP.samplePhrase, azureP.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                            isPlayingThis
+                              ? "bg-purple-600 text-white animate-pulse"
+                              : "bg-zinc-800 hover:bg-zinc-700 text-purple-300 hover:text-purple-200 border border-purple-500/20"
+                          }`}
+                        >
+                          {isPlayingThis ? (
+                            <>
+                              <Square className="w-3 h-3 fill-current" />
+                              <span>Stop</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3 fill-current" />
+                              <span>Preview Azure Voice</span>
+                            </>
+                          )}
+                        </button>
 
-                      {/* Sample Phrase Quote */}
-                      <div className="text-[10.5px] text-purple-200/90 italic bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5 mb-2.5 line-clamp-2">
-                        "{persona.samplePhrase}"
-                      </div>
-
-                      {/* Tags */}
-                      <div className="flex items-center gap-1 flex-wrap mb-3">
-                        {persona.tags.map((tag, tIdx) => (
-                          <span
-                            key={tIdx}
-                            className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-800/80 border border-white/5 text-slate-400 font-mono"
-                          >
-                            {tag}
+                        {isSelected ? (
+                          <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" /> Saved & Active
                           </span>
-                        ))}
+                        ) : (
+                          <span className="text-xs text-slate-400 group-hover:text-white transition font-medium">
+                            Click to Select →
+                          </span>
+                        )}
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* If Built-in selected: Render Browser Personas Grid */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {filteredPersonas.map((persona) => {
+                  const isPersonaSelected = ttsVoice === `persona:${persona.id}`;
+                  const isPlayingThisPersona = isPlayingTts && playingPersonaId === persona.id;
 
-                    {/* Actions footer */}
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playTtsTest(persona.samplePhrase, persona.id);
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                          isPlayingThisPersona
-                            ? "bg-purple-600 text-white animate-pulse"
-                            : "bg-zinc-800 hover:bg-zinc-700 text-purple-300 hover:text-purple-200 border border-purple-500/20"
-                        }`}
-                      >
-                        {isPlayingThisPersona ? (
-                          <>
-                            <Square className="w-3 h-3 fill-current" />
-                            <span>Stop</span>
-                          </>
+                  return (
+                    <div
+                      key={persona.id}
+                      onClick={() => handleSelectPersona(persona)}
+                      className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                        isPersonaSelected
+                          ? "bg-gradient-to-br from-purple-950/70 via-zinc-900 to-zinc-950 border-purple-500 shadow-lg shadow-purple-950/40 ring-1 ring-purple-500/50"
+                          : "bg-[#18181b] border-white/10 hover:border-purple-500/40 hover:bg-[#202026]"
+                      }`}
+                    >
+                      <div>
+                        {/* Header: Avatar, Name, Badge */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+                              {persona.flag}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span>{persona.name}</span>
+                                {isPersonaSelected && (
+                                  <span className="p-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-purple-300 font-medium">
+                                {persona.accentTitle}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 border border-white/10 text-slate-300">
+                            {persona.badge}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                          {persona.description}
+                        </p>
+
+                        {/* Sample Phrase Quote */}
+                        <div className="text-[10.5px] text-purple-200/90 italic bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5 mb-2.5 line-clamp-2">
+                          "{persona.samplePhrase}"
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex items-center gap-1 flex-wrap mb-3">
+                          {persona.tags.map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="text-[9.5px] px-1.5 py-0.5 rounded bg-zinc-800/80 border border-white/5 text-slate-400 font-mono"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Actions footer */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playTtsTest(persona.samplePhrase, persona.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                            isPlayingThisPersona
+                              ? "bg-purple-600 text-white animate-pulse"
+                              : "bg-zinc-800 hover:bg-zinc-700 text-purple-300 hover:text-purple-200 border border-purple-500/20"
+                          }`}
+                        >
+                          {isPlayingThisPersona ? (
+                            <>
+                              <Square className="w-3 h-3 fill-current" />
+                              <span>Stop</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3 fill-current" />
+                              <span>Preview</span>
+                            </>
+                          )}
+                        </button>
+
+                        {isPersonaSelected ? (
+                          <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" /> Saved & Active
+                          </span>
                         ) : (
-                          <>
-                            <Play className="w-3 h-3 fill-current" />
-                            <span>Preview</span>
-                          </>
+                          <span className="text-xs text-slate-400 group-hover:text-white transition font-medium">
+                            Click to Select →
+                          </span>
                         )}
-                      </button>
-
-                      {isPersonaSelected ? (
-                        <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" /> Saved & Active
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400 group-hover:text-white transition font-medium">
-                          Click to Select →
-                        </span>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

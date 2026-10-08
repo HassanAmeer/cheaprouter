@@ -493,6 +493,169 @@ export const VOICE_PERSONAS: VoicePersona[] = [
   },
 ];
 
+// ═════════════════════════════════════════════════════════════════════════════
+// AZURE NEURAL HD VOICE PERSONAS (BY API - 100% FREE & HYPER-REALISTIC)
+// ═════════════════════════════════════════════════════════════════════════════
+export interface AzureVoicePersona {
+  id: string;
+  name: string;
+  azureVoice: string;
+  gender: "male" | "female";
+  accentTitle: string;
+  flag: string;
+  badge: string;
+  tags: string[];
+  description: string;
+  samplePhrase: string;
+}
+
+export const AZURE_VOICE_PERSONAS: AzureVoicePersona[] = [
+  {
+    id: "azure:ur-PK-AsadNeural",
+    name: "Asad (اسد)",
+    azureVoice: "ur-PK-AsadNeural",
+    gender: "male",
+    accentTitle: "Urdu Pakistan (Azure Neural Male)",
+    flag: "🇵🇰",
+    badge: "Azure Official",
+    tags: ["Urdu", "Azure Neural", "Authentic Male", "Natural"],
+    description: "Official Microsoft Azure neural voice for Pakistan with dignified, realistic human tone.",
+    samplePhrase: "السلام علیکم! میں اسد ہوں، چیپ چیٹس پر آپ کی خدمت میں حاضر ہوں۔",
+  },
+  {
+    id: "azure:ur-PK-UzmaNeural",
+    name: "Uzma (عظمیٰ)",
+    azureVoice: "ur-PK-UzmaNeural",
+    gender: "female",
+    accentTitle: "Urdu Pakistan (Azure Neural Female)",
+    flag: "🇵🇰",
+    badge: "Azure Official",
+    tags: ["Urdu", "Azure Neural", "Authentic Female", "Warm"],
+    description: "Official Microsoft Azure native Pakistani female voice with gentle, clear human cadence.",
+    samplePhrase: "السلام علیکم! میرا نام عظمیٰ ہے۔ میں چیپ چیٹس پر آپ کی کیا رہنمائی کر سکتی ہوں؟",
+  },
+  {
+    id: "azure:ur-IN-SalmanNeural",
+    name: "Salman (سلمان)",
+    azureVoice: "ur-IN-SalmanNeural",
+    gender: "male",
+    accentTitle: "Urdu (Azure Salman Male)",
+    flag: "🇵🇰",
+    badge: "Fast Male",
+    tags: ["Urdu", "Azure Neural", "Male", "Snappy"],
+    description: "Crisp and articulate Urdu masculine neural voice, fast and engaging.",
+    samplePhrase: "السلام علیکم! میں سلمان ہوں۔ آج ہم کس موضوع پر گفتگو کریں؟",
+  },
+  {
+    id: "azure:ur-IN-GulNeural",
+    name: "Gul (گل)",
+    azureVoice: "ur-IN-GulNeural",
+    gender: "female",
+    accentTitle: "Urdu (Azure Gul Female)",
+    flag: "🇵🇰",
+    badge: "Lively Female",
+    tags: ["Urdu", "Azure Neural", "Female", "Melodic"],
+    description: "Expressive and melodic Urdu feminine neural voice with smooth cadence.",
+    samplePhrase: "السلام علیکم! میں گل ہوں۔ فرمائیے آج آپ کے لیے کیا خدمت سرانجام دوں؟",
+  },
+  {
+    id: "azure:hi-IN-MadhurNeural",
+    name: "Madhur (मधुर)",
+    azureVoice: "hi-IN-MadhurNeural",
+    gender: "male",
+    accentTitle: "Hindi / Hinglish (Azure Deep Male)",
+    flag: "🇮🇳",
+    badge: "Deep Male",
+    tags: ["Hindi", "Hinglish", "Azure Neural", "Deep Tone"],
+    description: "Rich, deep and authoritative masculine neural voice, sounds 100% human.",
+    samplePhrase: "नमस्ते! मैं मधुर हूँ। आज हम किस विषय पर चर्चा करना चाहते हैं?",
+  },
+  {
+    id: "azure:hi-IN-SwaraNeural",
+    name: "Swara (स्वरा)",
+    azureVoice: "hi-IN-SwaraNeural",
+    gender: "female",
+    accentTitle: "Hindi / Hinglish (Azure Natural Female)",
+    flag: "🇮🇳",
+    badge: "Natural HD",
+    tags: ["Hindi", "Hinglish", "Azure Neural", "Expressive"],
+    description: "Warm, authentic Indian female neural voice with natural conversational emotion.",
+    samplePhrase: "नमस्ते! मैं स्वरा हूँ, CheapChats में आपका स्वागत है। बताइए आज क्या करना है?",
+  },
+  {
+    id: "azure:en-US-JennyNeural",
+    name: "Jenny",
+    azureVoice: "en-US-JennyNeural",
+    gender: "female",
+    accentTitle: "English US (Azure Natural Female)",
+    flag: "🇺🇸",
+    badge: "Famous US",
+    tags: ["English US", "Azure Neural", "Natural", "Friendly"],
+    description: "Engaging and clear modern American English neural female persona.",
+    samplePhrase: "Hi there! I'm Jenny. I can help brainstorm ideas, code, or answer questions.",
+  },
+  {
+    id: "azure:en-US-GuyNeural",
+    name: "Guy",
+    azureVoice: "en-US-GuyNeural",
+    gender: "male",
+    accentTitle: "English US (Azure Deep Male)",
+    flag: "🇺🇸",
+    badge: "Heavy Male",
+    tags: ["English US", "Azure Neural", "Confident", "Deep Male"],
+    description: "Deep and resonant American masculine neural voice.",
+    samplePhrase: "Hey! I'm Guy. Let's make things happen with CheapChats today.",
+  },
+  {
+    id: "azure:en-US-AriaNeural",
+    name: "Aria",
+    azureVoice: "en-US-AriaNeural",
+    gender: "female",
+    accentTitle: "English US (Azure Expressive Female)",
+    flag: "🇺🇸",
+    badge: "Expressive",
+    tags: ["English US", "Azure Neural", "Versatile", "Expressive"],
+    description: "Dynamic and expressive American female voice with natural mood changes.",
+    samplePhrase: "Hello! I am Aria, ready to assist you with everything you need.",
+  },
+  {
+    id: "azure:en-GB-SoniaNeural",
+    name: "Sonia",
+    azureVoice: "en-GB-SoniaNeural",
+    gender: "female",
+    accentTitle: "English UK (Azure British Polished)",
+    flag: "🇬🇧",
+    badge: "British HD",
+    tags: ["English UK", "Azure Neural", "Polished", "Articulate"],
+    description: "Sophisticated British Received Pronunciation neural voice.",
+    samplePhrase: "Good day! I'm Sonia. It is a genuine pleasure to assist you with your tasks.",
+  },
+  {
+    id: "azure:ar-AE-HamdanNeural",
+    name: "Hamdan (حمدان)",
+    azureVoice: "ar-AE-HamdanNeural",
+    gender: "male",
+    accentTitle: "Gulf Arabic (Azure Executive Male)",
+    flag: "🇦🇪",
+    badge: "Gulf Arabic",
+    tags: ["Gulf Arabic", "Azure Neural", "Executive", "Deep"],
+    description: "Executive Gulf Arabic masculine persona with natural human cadence.",
+    samplePhrase: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار أو مهمة.",
+  },
+  {
+    id: "azure:ar-SA-ZariyahNeural",
+    name: "Zariyah (زارية)",
+    azureVoice: "ar-SA-ZariyahNeural",
+    gender: "female",
+    accentTitle: "Saudi Arabic (Azure Clear Female)",
+    flag: "🇸🇦",
+    badge: "Saudi Fusha",
+    tags: ["Arabic", "Azure Neural", "Modern Standard", "Warm"],
+    description: "Clear and polite Modern Standard Arabic female neural voice.",
+    samplePhrase: "مرحباً بك! أنا زارية، كيف يمكنني مساعدتك في شات اليوم؟",
+  },
+];
+
 /**
  * Returns default rate and pitch for a given voice URI or persona.
  */

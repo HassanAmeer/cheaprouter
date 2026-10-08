@@ -128,6 +128,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     removeSelectedSkill,
     clearSelectedSkills,
     ttsVoice,
+    ttsEngine,
     setCallAssistantOpen,
   } = useAppStore();
   const [content, setContent] = useState("");
@@ -806,6 +807,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
       window.speechSynthesis.speak(utterance);
     };
+
+    // If user explicitly configured browser built-in accents and did not select an Azure voice:
+    if (ttsEngine === "browser" && !ttsVoice.startsWith("azure:")) {
+      playBrowserFallback(nextChunk);
+      return;
+    }
 
     // 1. Try Free Ultra-Realistic Edge Neural Voice from backend API
     try {

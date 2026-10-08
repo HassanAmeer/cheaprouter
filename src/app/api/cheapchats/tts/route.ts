@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     let speedOption = rate || "+0%";
     let pitchOption = pitch || "+0Hz";
 
-    if (selectedVoice.startsWith("persona:")) {
+    if (selectedVoice.startsWith("azure:")) {
+      selectedVoice = selectedVoice.replace("azure:", "");
+    } else if (selectedVoice.startsWith("persona:")) {
       const pId = selectedVoice.replace("persona:", "");
       if (pId === "asad") {
         selectedVoice = "ur-PK-AsadNeural";
