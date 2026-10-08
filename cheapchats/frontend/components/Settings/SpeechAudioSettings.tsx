@@ -305,10 +305,13 @@ export default function SpeechAudioSettings() {
 
     // Auto-align STT language when a persona is picked
     if (
+      persona.flag === "🇵🇰" ||
       persona.id === "zoya" ||
       persona.id === "bilal" ||
       persona.id === "aryan" ||
+      persona.id === "hamza" ||
       persona.id === "pari" ||
+      persona.id === "sameer" ||
       persona.id === "ayesha" ||
       persona.id === "asad" ||
       persona.id === "gul"
@@ -340,8 +343,8 @@ export default function SpeechAudioSettings() {
   const filteredPersonas = VOICE_PERSONAS.filter((p) => {
     if (speechFilter === "all") return true;
     if (speechFilter === "famous") return p.id === "jenny" || p.id === "guy" || p.id === "sonia" || p.id === "hamdan" || p.id === "fatima";
-    if (speechFilter === "pakistan") return p.id === "bilal" || p.id === "aryan" || p.id === "pari" || p.id === "zoya" || p.id === "ayesha" || p.id === "asad" || p.id === "gul";
-    if (speechFilter === "india") return p.id === "swara" || p.id === "madhur" || p.id === "neerja" || p.id === "rohan";
+    if (speechFilter === "pakistan") return p.flag === "🇵🇰";
+    if (speechFilter === "india") return p.flag === "🇮🇳";
     return true;
   });
 
