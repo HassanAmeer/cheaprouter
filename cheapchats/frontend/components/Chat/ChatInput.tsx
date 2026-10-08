@@ -46,6 +46,8 @@ import {
   containsStopKeyword,
   getEffectiveSttLang,
   SPEECH_LANGUAGES,
+  transliterateToRomanUrdu,
+  getPersonaSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 
 interface ChatInputProps {
@@ -443,7 +445,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       for (let i = 0; i < event.results.length; i++) {
         fullTranscript += event.results[i][0].transcript;
       }
-      const trimmed = fullTranscript.trim();
+      let trimmed = fullTranscript.trim();
+      if (sttLang === "ur-roman") {
+        trimmed = transliterateToRomanUrdu(trimmed);
+      }
       const updated = baseText ? `${baseText} ${trimmed}` : trimmed;
       setContent(updated);
 
@@ -729,7 +734,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     const utterance = new SpeechSynthesisUtterance(nextChunk);
     currentUtteranceRef.current = utterance;
-    utterance.rate = 1.05;
+    const personaSettings = getPersonaSettings(ttsVoice);
+    utterance.rate = personaSettings.rate || 1.0;
+    utterance.pitch = personaSettings.pitch || 1.0;
 
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);
@@ -972,7 +979,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       for (let i = 0; i < event.results.length; i++) {
         fullTranscript += event.results[i][0].transcript;
       }
-      const combinedText = fullTranscript.trim();
+      let combinedText = fullTranscript.trim();
+      if (sttLang === "ur-roman") {
+        combinedText = transliterateToRomanUrdu(combinedText);
+      }
 
       if (callStatusRef.current === "speaking") {
         if (containsStopKeyword(combinedText)) {

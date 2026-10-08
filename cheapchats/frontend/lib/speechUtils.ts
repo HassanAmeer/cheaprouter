@@ -1,5 +1,6 @@
 /**
  * Speech utilities for Speech Synthesis (TTS) and Speech Recognition (STT).
+ * Includes transliteration for Roman Urdu and Persona-based voice selection.
  */
 
 export const STOP_WORDS = [
@@ -52,7 +53,7 @@ export const SPEECH_LANGUAGES: SpeechLanguageOption[] = [
     sttLang: "ur-PK",
     ttsLangPrefix: "ur",
     samplePhrase: "Assalam-o-Alaikum! CheapChats ka voice system kaisa kaam kar raha hai?",
-    description: "Urdu and Roman Urdu natural accent and speech recognition",
+    description: "Roman Urdu English-script transcription & natural Desi voice accents",
     popular: true,
   },
   {
@@ -106,7 +107,7 @@ export const SPEECH_LANGUAGES: SpeechLanguageOption[] = [
     flag: "🇮🇳",
     sttLang: "en-IN",
     ttsLangPrefix: "en",
-    samplePhrase: "Hello! CheapChats voice and speech test is running.",
+    samplePhrase: "Hello! CheapChats voice and speech test is running smoothly.",
     description: "Indian English accent and recognition",
     popular: true,
   },
@@ -194,6 +195,773 @@ export const SPEECH_LANGUAGES: SpeechLanguageOption[] = [
 ];
 
 /**
+ * Named Voice Personas with customized accents, pitch, rate, and preferred browser voices.
+ */
+export interface VoicePersona {
+  id: string;
+  name: string;
+  gender: "female" | "male";
+  accentTitle: string;
+  flag: string;
+  badge: string;
+  tags: string[];
+  description: string;
+  samplePhrase: string;
+  preferredKeywords: string[];
+  langCodes: string[];
+  pitch: number;
+  rate: number;
+}
+
+export const VOICE_PERSONAS: VoicePersona[] = [
+  // ─── Roman Urdu & Desi Personas ──────────────────────────────────────────────
+  {
+    id: "zoya",
+    name: "Zoya (زویا)",
+    gender: "female",
+    accentTitle: "Roman Urdu (Natural Female)",
+    flag: "🇵🇰",
+    badge: "Popular",
+    tags: ["Roman Urdu", "Desi Accent", "Warm"],
+    description: "Friendly and natural Desi female voice tuned for conversational Roman Urdu.",
+    samplePhrase: "Assalam-o-Alaikum! Main Zoya hoon. CheapChats par aap ki madad ke liye hazir hoon.",
+    preferredKeywords: ["swara", "heera", "kalpana", "neerja", "google हिन्दी", "hindi", "en-in", "urdu"],
+    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
+    pitch: 1.05,
+    rate: 0.95,
+  },
+  {
+    id: "bilal",
+    name: "Bilal (بلال)",
+    gender: "male",
+    accentTitle: "Roman Urdu (Deep Male)",
+    flag: "🇵🇰",
+    badge: "Recommended",
+    tags: ["Roman Urdu", "Desi Accent", "Professional"],
+    description: "Deep, respectful male tone with clear Hindustani/Roman Urdu phonetics.",
+    samplePhrase: "Assalam-o-Alaikum! Main Bilal hoon. Boliye aaj main aap ki kya madad kar sakta hoon?",
+    preferredKeywords: ["madhur", "prabhat", "ravi", "google हिन्दी", "en-in", "hindi", "urdu"],
+    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
+    pitch: 0.95,
+    rate: 0.95,
+  },
+  {
+    id: "ayesha",
+    name: "Ayesha (عائشہ)",
+    gender: "female",
+    accentTitle: "Roman Urdu (Soft & Clear)",
+    flag: "🇵🇰",
+    badge: "Soft Tone",
+    tags: ["Roman Urdu", "Clear", "Expressive"],
+    description: "Gentle and articulate tone, ideal for long explanations and chat summaries.",
+    samplePhrase: "Hello! Main Ayesha hoon. Koi bhi sawaal ho to bila-jhijhak pooch sakte hain.",
+    preferredKeywords: ["kalpana", "swara", "neerja", "google हिन्दी", "en-in"],
+    langCodes: ["hi-in", "en-in", "hi"],
+    pitch: 1.0,
+    rate: 0.92,
+  },
+
+  // ─── Hindi & Hinglish Personas ───────────────────────────────────────────────
+  {
+    id: "swara",
+    name: "Swara (स्वरा)",
+    gender: "female",
+    accentTitle: "Hindi / Hinglish (Neural Female)",
+    flag: "🇮🇳",
+    badge: "Neural HD",
+    tags: ["Hindi", "Hinglish", "Clear"],
+    description: "Crisp and standard Indian accent with authentic Hindi & Hinglish pronunciation.",
+    samplePhrase: "नमस्ते! मैं स्वरा हूँ, CheapChats में आपका स्वागत है। बताइए आज क्या करना है?",
+    preferredKeywords: ["swara", "google हिन्दी", "kalpana", "hi-in", "hi"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 1.0,
+    rate: 1.0,
+  },
+  {
+    id: "madhur",
+    name: "Madhur (मधुर)",
+    gender: "male",
+    accentTitle: "Hindi / Hinglish (Neural Male)",
+    flag: "🇮🇳",
+    badge: "Neural HD",
+    tags: ["Hindi", "Hinglish", "Smooth"],
+    description: "Calm, rich male persona tailored for natural Hindi conversation.",
+    samplePhrase: "नमस्ते! मैं मधुर हूँ। आज हम किस विषय पर चर्चा करना चाहते हैं?",
+    preferredKeywords: ["madhur", "prabhat", "google हिन्दी", "hi-in", "hi"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 0.96,
+    rate: 0.98,
+  },
+  {
+    id: "neerja",
+    name: "Neerja (नीरजा)",
+    gender: "female",
+    accentTitle: "Indian English (Professional)",
+    flag: "🇮🇳",
+    badge: "Fluent",
+    tags: ["Indian English", "Bilingual", "Formal"],
+    description: "Fluent bilingual Indian English persona with clear diction.",
+    samplePhrase: "Hello! I am Neerja, ready to assist you with quick and accurate answers.",
+    preferredKeywords: ["neerja", "en-in", "swara", "heera"],
+    langCodes: ["en-in", "hi-in"],
+    pitch: 1.02,
+    rate: 1.0,
+  },
+
+  // ─── Native Urdu Personas ───────────────────────────────────────────────────
+  {
+    id: "asad",
+    name: "Asad (اسد)",
+    gender: "male",
+    accentTitle: "Urdu Native (Classic Male)",
+    flag: "🇵🇰",
+    badge: "Native Script",
+    tags: ["Urdu Script", "Formal", "Classic"],
+    description: "Classic native Urdu voice tuned for Nastaliq and standard Urdu text.",
+    samplePhrase: "السلام علیکم! میں اسد ہوں، چیپ چیٹس پر آپ کی خدمت میں حاضر ہوں۔",
+    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "arabic", "ar-sa"],
+    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
+    pitch: 0.92,
+    rate: 0.90,
+  },
+  {
+    id: "gul",
+    name: "Gul (گل)",
+    gender: "female",
+    accentTitle: "Urdu Native (Melodic Female)",
+    flag: "🇵🇰",
+    badge: "Native Script",
+    tags: ["Urdu Script", "Melodic", "Polite"],
+    description: "Polite and traditional native Urdu voice for literary and conversational text.",
+    samplePhrase: "السلام علیکم! میرا نام گل ہے۔ فرمائیے میں آج آپ کی کیا رہنمائی کر سکتی ہوں؟",
+    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "female", "arabic"],
+    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
+    pitch: 1.05,
+    rate: 0.92,
+  },
+
+  // ─── English & Global Personas ──────────────────────────────────────────────
+  {
+    id: "jenny",
+    name: "Jenny",
+    gender: "female",
+    accentTitle: "English US (Natural Female)",
+    flag: "🇺🇸",
+    badge: "Popular",
+    tags: ["English US", "Friendly", "Fast"],
+    description: "Engaging and clear modern American English female persona.",
+    samplePhrase: "Hi there! I'm Jenny. I can help brainstorm ideas, code, or answer questions.",
+    preferredKeywords: ["jenny", "natural", "zira", "google us english", "en-us"],
+    langCodes: ["en-us", "en"],
+    pitch: 1.0,
+    rate: 1.0,
+  },
+  {
+    id: "guy",
+    name: "Guy",
+    gender: "male",
+    accentTitle: "English US (Confident Male)",
+    flag: "🇺🇸",
+    badge: "Studio",
+    tags: ["English US", "Confident", "Casual"],
+    description: "Deep, approachable American male persona.",
+    samplePhrase: "Hey! I'm Guy. Let's make things happen with CheapChats today.",
+    preferredKeywords: ["guy", "natural", "david", "google us english", "en-us"],
+    langCodes: ["en-us", "en"],
+    pitch: 0.96,
+    rate: 1.0,
+  },
+  {
+    id: "sonia",
+    name: "Sonia",
+    gender: "female",
+    accentTitle: "English UK (British Polished)",
+    flag: "🇬🇧",
+    badge: "British",
+    tags: ["English UK", "Polished", "Articulate"],
+    description: "Crisp and sophisticated British Received Pronunciation voice.",
+    samplePhrase: "Good day! I'm Sonia. It is a genuine pleasure to assist you with your tasks.",
+    preferredKeywords: ["sonia", "libby", "hazel", "google uk", "en-gb"],
+    langCodes: ["en-gb", "en"],
+    pitch: 1.0,
+    rate: 0.98,
+  },
+  {
+    id: "rohan",
+    name: "Rohan",
+    gender: "male",
+    accentTitle: "English India (Dynamic Male)",
+    flag: "🇮🇳",
+    badge: "Desi English",
+    tags: ["Indian English", "Fast", "Dynamic"],
+    description: "Energetic Indian English male voice, great for technical queries.",
+    samplePhrase: "Hello! I am Rohan. Let's dive straight into your coding questions.",
+    preferredKeywords: ["rohan", "ravi", "prabhat", "en-in"],
+    langCodes: ["en-in", "hi-in"],
+    pitch: 0.96,
+    rate: 1.0,
+  },
+  {
+    id: "fatima",
+    name: "Fatima (فاطمة)",
+    gender: "female",
+    accentTitle: "Arabic Saudi (Clear Female)",
+    flag: "🇸🇦",
+    badge: "Fusha",
+    tags: ["Arabic", "Modern Standard", "Warm"],
+    description: "Clear and warm Modern Standard Arabic female voice.",
+    samplePhrase: "مرحباً بك! أنا فاطمة، كيف يمكنني مساعدتك في شات اليوم؟",
+    preferredKeywords: ["fatima", "zeina", "mouna", "ar-sa", "arabic"],
+    langCodes: ["ar-sa", "ar"],
+    pitch: 1.0,
+    rate: 0.95,
+  },
+  {
+    id: "hamdan",
+    name: "Hamdan (حمدان)",
+    gender: "male",
+    accentTitle: "Gulf Arabic (Executive Male)",
+    flag: "🇦🇪",
+    badge: "Gulf",
+    tags: ["Gulf Arabic", "Confident", "Clear"],
+    description: "Confident Gulf Arabic male persona with natural cadence.",
+    samplePhrase: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار أو مهمة.",
+    preferredKeywords: ["hamdan", "tariq", "ar-ae", "arabic"],
+    langCodes: ["ar-ae", "ar"],
+    pitch: 0.95,
+    rate: 0.95,
+  },
+];
+
+/**
+ * Returns default rate and pitch for a given voice URI or persona.
+ */
+export function getPersonaSettings(ttsVoiceUri?: string): { rate: number; pitch: number } {
+  if (ttsVoiceUri && ttsVoiceUri.startsWith("persona:")) {
+    const personaId = ttsVoiceUri.replace("persona:", "");
+    const persona = VOICE_PERSONAS.find((p) => p.id === personaId);
+    if (persona) {
+      return { rate: persona.rate, pitch: persona.pitch };
+    }
+  }
+  return { rate: 1.0, pitch: 1.0 };
+}
+
+// ─── ROMAN URDU TRANSLITERATION ENGINE ──────────────────────────────────────────
+
+/**
+ * Common multi-word Urdu phrases mapped to clean Roman Urdu.
+ * Checked first before single-word dictionary matching.
+ */
+const URDU_PHRASES_DICT: [string, string][] = [
+  ["السلام علیکم", "Assalam-o-Alaikum"],
+  ["وعلیکم السلام", "Walaikum Assalam"],
+  ["کیا حال ہے", "kya haal hai"],
+  ["کیسے ہیں آپ", "kaise hain aap"],
+  ["کیسی ہیں آپ", "kaisi hain aap"],
+  ["آپ کیسے ہیں", "aap kaise hain"],
+  ["آپ کیسی ہیں", "aap kaisi hain"],
+  ["میں ٹھیک ہوں", "main theek hoon"],
+  ["الحمد للہ", "Alhamdulillah"],
+  ["الحمدللہ", "Alhamdulillah"],
+  ["ماشاءاللہ", "MashaAllah"],
+  ["انشاءاللہ", "InshaAllah"],
+  ["سب ٹھیک ہے", "sab theek hai"],
+  ["کوئی بات نہیں", "koi baat nahi"],
+  ["بہت شکریہ", "bohot shukriya"],
+  ["کیا بات ہے", "kya baat hai"],
+  ["اس لیے", "isliye"],
+  ["اس لئے", "isliye"],
+  ["کے لیے", "ke liye"],
+  ["کے لئے", "ke liye"],
+  ["کی طرف", "ki taraf"],
+  ["پتہ نہیں", "pata nahi"],
+  ["خدا حافظ", "Khuda Hafiz"],
+  ["اللہ حافظ", "Allah Hafiz"],
+  ["جزاک اللہ", "JazakAllah"],
+  ["آپ کا نام", "aap ka naam"],
+  ["آپکی مدد", "aap ki madad"],
+  ["آپ کی مدد", "aap ki madad"],
+];
+
+/**
+ * Comprehensive dictionary mapping common Urdu script words to Roman Urdu.
+ */
+export const URDU_TO_ROMAN_DICT: Record<string, string> = {
+  // Greetings & Courtesy
+  "السلام": "Assalam",
+  "علیکم": "Alaikum",
+  "وعلیکم": "Walaikum",
+  "شکریہ": "shukriya",
+  "مہربانی": "meherbani",
+  "خوش": "khush",
+  "آمدید": "aamdeed",
+  "خدا": "Khuda",
+  "حافظ": "Hafiz",
+  "اللہ": "Allah",
+  "جزاک": "Jazak",
+  "ماشاءاللہ": "MashaAllah",
+  "انشاءاللہ": "InshaAllah",
+  "الحمدللہ": "Alhamdulillah",
+
+  // Pronouns & Demonstratives
+  "میں": "main",
+  "ہم": "hum",
+  "آپ": "aap",
+  "تم": "tum",
+  "تو": "tu",
+  "وہ": "woh",
+  "یہ": "yeh",
+  "میرا": "mera",
+  "میری": "meri",
+  "میرے": "mere",
+  "ہمارا": "hamara",
+  "ہماری": "hamari",
+  "ہمارے": "hamare",
+  "تیرا": "tera",
+  "تیری": "teri",
+  "تیرے": "tere",
+  "اس": "iss",
+  "اسکا": "iska",
+  "اسکی": "iski",
+  "اسکے": "iske",
+  "ان": "inn",
+  "انکا": "inka",
+  "انکی": "inki",
+  "انکے": "inke",
+  "اپنا": "apna",
+  "اپنی": "apni",
+  "اپنے": "apne",
+  "خود": "khud",
+  "مجھے": "mujhe",
+  "ہمیں": "humein",
+  "تجھے": "tujhe",
+  "اسے": "ise",
+  "انہیں": "unhein",
+
+  // Question words
+  "کیا": "kya",
+  "کیسے": "kaise",
+  "کیسی": "kaisi",
+  "کیسا": "kaisa",
+  "کیوں": "kyun",
+  "کب": "kab",
+  "کہاں": "kahan",
+  "کدھر": "kidhar",
+  "کون": "kaun",
+  "کس": "kis",
+  "کسے": "kise",
+  "کسکو": "kisko",
+  "کتنا": "kitna",
+  "کتنی": "kitni",
+  "کتنے": "kitne",
+
+  // Auxiliary & State Verbs
+  "ہے": "hai",
+  "ہیں": "hain",
+  "ہوں": "hoon",
+  "ہو": "ho",
+  "تھا": "tha",
+  "تھی": "thi",
+  "تھے": "the",
+  "تھیں": "theen",
+  "ہونا": "hona",
+  "ہوتا": "hota",
+  "ہوتی": "hoti",
+  "ہوتے": "hote",
+  "ہوگا": "hoga",
+  "ہوگی": "hogi",
+  "ہونگے": "honge",
+  "ہوںگے": "honge",
+
+  // Common Action Verbs
+  "کرنا": "karna",
+  "کرتا": "karta",
+  "کرتی": "karti",
+  "کرتے": "karte",
+  "کرو": "karo",
+  "کریں": "karein",
+  "کروں": "karoon",
+  "کر": "kar",
+  "کیے": "kiye",
+  "کہا": "kaha",
+  "کہہ": "keh",
+  "کہو": "kaho",
+  "کہیں": "kahein",
+  "بول": "bol",
+  "بولو": "bolo",
+  "بولیں": "bolein",
+  "بولنا": "bolna",
+  "بتانا": "batana",
+  "بتاؤ": "batao",
+  "بتائیں": "batayein",
+  "بتا": "bata",
+  "دیکھو": "dekho",
+  "دیکھیں": "dekhein",
+  "دیکھ": "dekh",
+  "دیکھنا": "dekhna",
+  "سنو": "suno",
+  "سنیں": "sunein",
+  "سن": "sun",
+  "سننا": "sunna",
+  "سمجھ": "samajh",
+  "سمجھا": "samjha",
+  "سمجھے": "samjhe",
+  "سمجھنا": "samajhna",
+  "سمجھاؤ": "samjhao",
+  "جانا": "jaana",
+  "جا": "jaa",
+  "جاؤ": "jaao",
+  "جائیں": "jayein",
+  "گیا": "gaya",
+  "گئی": "gayi",
+  "گئے": "gaye",
+  "آنا": "aana",
+  "آؤ": "aao",
+  "آئیں": "aayein",
+  "آیا": "aaya",
+  "آئی": "aayi",
+  "آئے": "aaye",
+  "لینا": "lena",
+  "لو": "lo",
+  "لے": "le",
+  "لیں": "lein",
+  "لیا": "liya",
+  "لی": "li",
+  "لیے": "liye",
+  "دینا": "dena",
+  "دے": "de",
+  "دیں": "dein",
+  "دیا": "diya",
+  "دی": "di",
+  "رہا": "raha",
+  "رہی": "rahi",
+  "رہے": "rahe",
+  "رہنا": "rehna",
+  "رہو": "raho",
+  "رہیں": "rahein",
+  "سکتا": "sakta",
+  "سکتی": "sakti",
+  "سکتے": "sakte",
+  "سکو": "sako",
+  "چاہئے": "chahiye",
+  "چاہیے": "chahiye",
+  "چاہتا": "chahta",
+  "چاہتی": "chahti",
+  "چاہتے": "chahte",
+  "پوچھنا": "poochna",
+  "پوچھو": "poocho",
+  "پوچھیں": "poochein",
+  "پوچھا": "poocha",
+  "پوچھ": "pooch",
+  "لکھنا": "likhna",
+  "لکھو": "likho",
+  "لکھیں": "likhein",
+  "لکھ": "likh",
+  "پڑھنا": "parhna",
+  "پڑھو": "parho",
+  "پڑھ": "parh",
+  "کھانا": "khana",
+  "کھاؤ": "khao",
+  "پیئو": "piyo",
+  "پینا": "peena",
+  "چلنا": "chalna",
+  "چلو": "chalo",
+  "چلیں": "chalein",
+  "روک": "rok",
+  "روکو": "roko",
+  "رک": "ruk",
+  "چپ": "chup",
+  "بس": "bas",
+
+  // Connectors & Prepositions
+  "کا": "ka",
+  "کی": "ki",
+  "کے": "ke",
+  "کو": "ko",
+  "سے": "se",
+  "پر": "par",
+  "تک": "tak",
+  "اور": "aur",
+  "یا": "ya",
+  "لیکن": "lekin",
+  "مگر": "magar",
+  "پھر": "phir",
+  "بھی": "bhi",
+  "نہ": "na",
+  "نہیں": "nahi",
+  "مت": "mat",
+  "اگر": "agar",
+  "کیونکہ": "kyunke",
+  "اسلئے": "isliye",
+  "اسلیے": "isliye",
+  "ساتھ": "saath",
+  "پاس": "paas",
+  "سامنے": "saamne",
+  "پیچھے": "peeche",
+  "اوپر": "ooper",
+  "نیچے": "neeche",
+  "اندر": "andar",
+  "باہر": "bahar",
+  "درمیان": "darmiyan",
+  "طرف": "taraf",
+  "بغیر": "baghair",
+  "سوا": "siwa",
+
+  // Common Nouns, Adjectives, Expressions
+  "حال": "haal",
+  "خیریت": "khairyat",
+  "بات": "baat",
+  "باتیں": "baatein",
+  "کام": "kaam",
+  "وقت": "waqt",
+  "ٹائم": "time",
+  "دن": "din",
+  "رات": "raat",
+  "صبح": "subah",
+  "شام": "shaam",
+  "آج": "aaj",
+  "کل": "kal",
+  "پرسوں": "parson",
+  "اب": "ab",
+  "ابھی": "abhi",
+  "پہلے": "pehle",
+  "بعد": "baad",
+  "ہمیشہ": "hamesha",
+  "کبھی": "kabhi",
+  "تھوڑا": "thoda",
+  "تھوڑی": "thodi",
+  "بہت": "bohot",
+  "زیادہ": "zyada",
+  "کم": "kam",
+  "اچھا": "achha",
+  "اچھی": "achhi",
+  "اچھے": "achhe",
+  "برا": "bura",
+  "بری": "buri",
+  "برے": "bure",
+  "ٹھیک": "theek",
+  "صحیح": "sahi",
+  "غلط": "ghalat",
+  "آسان": "aasan",
+  "مشکل": "mushkil",
+  "نیا": "naya",
+  "نئی": "nayi",
+  "نئے": "naye",
+  "پرانا": "purana",
+  "بڑا": "bada",
+  "بڑی": "badi",
+  "بڑے": "bade",
+  "چھوٹا": "chota",
+  "چھوٹی": "choti",
+  "چھوٹے": "chote",
+  "لوگ": "log",
+  "دوست": "dost",
+  "بھائی": "bhai",
+  "بہن": "behen",
+  "گھر": "ghar",
+  "چیز": "cheez",
+  "چیزیں": "cheezein",
+  "سوال": "sawaal",
+  "جواب": "jawab",
+  "مدد": "madad",
+  "پلیز": "please",
+  "چیٹ": "chat",
+  "میسج": "message",
+  "ویڈیو": "video",
+  "آڈیو": "audio",
+  "تصویر": "tasweer",
+  "کوڈ": "code",
+  "وغیرہ": "waghaira",
+  "سب": "sab",
+  "کچھ": "kuch",
+  "کوئی": "koi",
+  "ہر": "har",
+  "ایک": "ek",
+  "دو": "do",
+  "تین": "teen",
+  "چار": "chaar",
+  "پانچ": "paanch",
+  "نام": "naam",
+  "مطلب": "matlab",
+  "وجہ": "wajah",
+  "طریقہ": "tareeqa",
+  "معلومات": "maloomat",
+  "ضرورت": "zaroorat",
+  "ضروری": "zaroori",
+  "فائدہ": "faida",
+  "نقصان": "nuqsan",
+  "زبردست": "zabardast",
+  "بہترین": "behtareen",
+  "شک": "shak",
+  "یقین": "yaqeen",
+  "امید": "ummeed",
+  "محبت": "mohabbat",
+  "زندگی": "zindagi",
+  "دنیا": "dunya",
+  "مسئلہ": "masla",
+  "حل": "hal",
+  "دل": "dil",
+  "سوچ": "soch",
+  "سوچو": "socho",
+  "سیکھو": "seekho",
+  "سیکھنا": "seekhna",
+};
+
+/**
+ * Phonetic character map for fallback transliteration of unlisted Urdu words.
+ */
+const URDU_CHAR_MAP: Record<string, string> = {
+  "آ": "aa",
+  "ا": "a",
+  "ب": "b",
+  "پ": "p",
+  "ت": "t",
+  "ٹ": "t",
+  "ث": "s",
+  "ج": "j",
+  "چ": "ch",
+  "ح": "h",
+  "خ": "kh",
+  "د": "d",
+  "ڈ": "d",
+  "ذ": "z",
+  "ر": "r",
+  "ڑ": "r",
+  "ز": "z",
+  "ژ": "zh",
+  "س": "s",
+  "ش": "sh",
+  "ص": "s",
+  "ض": "z",
+  "ط": "t",
+  "ظ": "z",
+  "ع": "a",
+  "غ": "gh",
+  "ف": "f",
+  "ق": "q",
+  "ک": "k",
+  "گ": "g",
+  "ل": "l",
+  "م": "m",
+  "ن": "n",
+  "ں": "n",
+  "و": "o",
+  "ہ": "h",
+  "ھ": "h",
+  "ء": "",
+  "ی": "i",
+  "ے": "e",
+  "ئ": "i",
+  "ؤ": "o",
+  "ة": "h",
+  "،": ",",
+  "؛": ";",
+  "؟": "?",
+  "۔": ".",
+};
+
+/**
+ * Fallback phonetic character-by-character transliteration for single words not in dictionary.
+ */
+function transliterateUrduWordPhonetic(urduWord: string): string {
+  // Digraph mappings (aspirated consonants)
+  const digraphs: [string, string][] = [
+    ["بھ", "bh"],
+    ["پھ", "ph"],
+    ["تھ", "th"],
+    ["ٹھ", "th"],
+    ["جھ", "jh"],
+    ["چھ", "chh"],
+    ["دھ", "dh"],
+    ["ڈھ", "dh"],
+    ["کھ", "kh"],
+    ["گھ", "gh"],
+  ];
+
+  let temp = urduWord;
+  for (const [digraph, rep] of digraphs) {
+    temp = temp.split(digraph).join(rep);
+  }
+
+  let out = "";
+  for (let i = 0; i < temp.length; i++) {
+    const ch = temp[i];
+    if (URDU_CHAR_MAP[ch] !== undefined) {
+      out += URDU_CHAR_MAP[ch];
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+/**
+ * Transliterates Urdu script into natural, readable Roman Urdu (English alphabet).
+ * If the input already contains English/Latin characters, they are preserved untouched.
+ */
+export function transliterateToRomanUrdu(rawText: string): string {
+  if (!rawText) return "";
+
+  // If there are zero Arabic/Urdu characters, return as-is
+  const hasUrdu = /[\u0600-\u06FF]/.test(rawText);
+  if (!hasUrdu) return rawText;
+
+  let text = rawText;
+
+  // 1. Check multi-word phrase dictionary
+  for (const [phrase, roman] of URDU_PHRASES_DICT) {
+    if (text.includes(phrase)) {
+      text = text.split(phrase).join(` ${roman} `);
+    }
+  }
+
+  // 2. Tokenize by whitespace while preserving punctuation
+  const tokens = text.split(/(\s+|[،؛؟۔.,!?:;])/);
+
+  const transliteratedTokens = tokens.map((token) => {
+    if (!token || /^\s+$/.test(token)) return token;
+
+    // Check punctuation
+    if (token === "؟") return "?";
+    if (token === "،") return ",";
+    if (token === "۔") return ".";
+    if (token === "؛") return ";";
+
+    // If token is already English / Latin script or numbers, preserve it!
+    if (/^[a-zA-Z0-9_\-'"@#]+$/.test(token)) {
+      return token;
+    }
+
+    // Strip out diacritics / zer / zabar / pesh
+    const cleaned = token.replace(/[\u064B-\u065F\u0670]/g, "").trim();
+
+    // Check direct word dictionary
+    if (URDU_TO_ROMAN_DICT[cleaned]) {
+      return URDU_TO_ROMAN_DICT[cleaned];
+    }
+
+    // Fallback phonetic character transliteration
+    return transliterateUrduWordPhonetic(cleaned);
+  });
+
+  let result = transliteratedTokens.join("");
+
+  // Clean double spaces and punctuation spacing
+  result = result
+    .replace(/\s+([?,.!;:])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // Capitalize sentence start
+  if (result.length > 0) {
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  return result;
+}
+
+/**
  * Returns the effective BCP-47 language tag for Chrome SpeechRecognition.
  */
 export function getEffectiveSttLang(sttLangId?: string): string {
@@ -242,10 +1010,11 @@ export function cleanTextForSpeech(rawText: string): string {
 /**
  * Picks the best voice available in the browser.
  * Priority:
- * 1. User configured voiceURI from settings.
- * 2. Language role / accent selected by user.
- * 3. Script-based auto-detection.
- * 4. High quality natural English voice.
+ * 1. Persona ID matching (e.g. "persona:zoya", "persona:bilal", etc.)
+ * 2. User configured voiceURI from settings.
+ * 3. Language role / accent selected by user (routes Roman Urdu to natural Desi voices).
+ * 4. Script-based auto-detection.
+ * 5. High quality natural English voice.
  */
 export function getBestVoice(
   voices: SpeechSynthesisVoice[],
@@ -255,16 +1024,64 @@ export function getBestVoice(
 ): SpeechSynthesisVoice | null {
   if (!voices || voices.length === 0) return null;
 
-  // 1. Explicit user selected specific voice
-  if (ttsVoiceUri && ttsVoiceUri !== "default") {
+  // 1. Check if user configured a Persona (e.g. "persona:zoya")
+  if (ttsVoiceUri && ttsVoiceUri.startsWith("persona:")) {
+    const personaId = ttsVoiceUri.replace("persona:", "");
+    const persona = VOICE_PERSONAS.find((p) => p.id === personaId);
+    if (persona) {
+      // Find matching voice by persona keywords
+      for (const kw of persona.preferredKeywords) {
+        const match = voices.find(
+          (v) =>
+            v.name.toLowerCase().includes(kw) ||
+            v.voiceURI.toLowerCase().includes(kw)
+        );
+        if (match) return match;
+      }
+      // Match by language code
+      for (const lc of persona.langCodes) {
+        const match = voices.find((v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()));
+        if (match) return match;
+      }
+    }
+  }
+
+  // 2. Explicit user selected specific voiceURI
+  if (ttsVoiceUri && ttsVoiceUri !== "default" && !ttsVoiceUri.startsWith("persona:")) {
     const found = voices.find((v) => v.voiceURI === ttsVoiceUri);
     if (found) return found;
   }
 
-  // 2. Language role / accent matching
-  if (languageRole === "ur-roman" || languageRole === "ur-PK" || languageRole === "ur") {
+  // 3. Language role / accent matching
+  if (languageRole === "ur-roman") {
+    // If text has native Perso-Arabic script, prefer Urdu/Arabic voice
+    const hasUrduScript = sampleText ? /[\u0600-\u06FF]/.test(sampleText) : false;
+    if (hasUrduScript) {
+      const urVoice = voices.find((v) => v.lang.toLowerCase().startsWith("ur") || v.lang.toLowerCase().startsWith("ar"));
+      if (urVoice) return urVoice;
+    }
+
+    // For Roman Urdu in Latin script, Indian/Hindustani neural voices pronounce it naturally!
+    const desiVoice = voices.find(
+      (v) =>
+        v.name.toLowerCase().includes("swara") ||
+        v.name.toLowerCase().includes("madhur") ||
+        v.name.toLowerCase().includes("kalpana") ||
+        v.name.toLowerCase().includes("neerja") ||
+        v.name.toLowerCase().includes("google हिन्दी") ||
+        v.lang.toLowerCase().startsWith("hi") ||
+        v.lang.toLowerCase() === "en-in" ||
+        v.lang.toLowerCase() === "en_in"
+    );
+    if (desiVoice) return desiVoice;
+
+    const fallbackUr = voices.find((v) => v.lang.toLowerCase().startsWith("ur"));
+    if (fallbackUr) return fallbackUr;
+  } else if (languageRole === "ur-PK" || languageRole === "ur") {
     const urVoice = voices.find((v) => v.lang.toLowerCase().startsWith("ur"));
     if (urVoice) return urVoice;
+    const arVoice = voices.find((v) => v.lang.toLowerCase().startsWith("ar"));
+    if (arVoice) return arVoice;
     const hiVoice = voices.find((v) => v.lang.toLowerCase().startsWith("hi"));
     if (hiVoice) return hiVoice;
   } else if (languageRole === "hi-IN" || languageRole === "hi") {
@@ -308,7 +1125,7 @@ export function getBestVoice(
     if (exactEn) return exactEn;
   }
 
-  // 3. Script-based content auto-detection
+  // 4. Script-based content auto-detection
   const isUrduScript = sampleText ? /[\u0600-\u06FF]/.test(sampleText) : false;
   if (isUrduScript) {
     const urVoice = voices.find(
@@ -323,7 +1140,7 @@ export function getBestVoice(
     if (hiVoice) return hiVoice;
   }
 
-  // 4. Default: High quality natural English voice (Auto-Detect defaults to English)
+  // 5. Default: High quality natural English voice (Auto-Detect defaults to English)
   const naturalEn = voices.find(
     (v) =>
       (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Premium") || v.name.includes("Neural")) &&
