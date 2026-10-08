@@ -6,6 +6,10 @@ import {
   isArtifactCodeIncomplete,
   parseAllArtifactFiles,
 } from "@cheapchats/frontend/lib/artifactParser";
+import {
+  cleanTextForSpeech,
+  getBestVoice,
+} from "@cheapchats/frontend/lib/speechUtils";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import {
   Volume2,
@@ -448,6 +452,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     isAutoVoiceEnabled,
     isTtsEnabled,
     ttsVoice,
+    sttLang,
     setIsSpeaking,
     setHandsFreeMode,
   } = useAppStore();
@@ -484,21 +489,6 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     setTimeout(() => setCopiedText(false), 2000);
   };
 
-  const cleanTextForSpeech = (rawText: string) => {
-    if (!rawText) return "";
-    return rawText
-      .replace(/<cheapchatAgent[^>]*\/?>(?:<\/cheapchatAgent>)?/gi, "")
-      .replace(/<cheapchatArtifact[\s\S]*?<\/cheapchatArtifact>/gi, "")
-      .replace(/```[\s\S]*?```/gi, "")
-      .replace(/https?:\/\/[^\s)]+/gi, "")
-      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
-      .replace(/[#*_`~>[\]()📱📧🐙🎵🔗👉🟢✅💡🗣️🔍✓\\]/g, "")
-      .replace(/---+/g, "")
-      .replace(/[\n\r]+/g, ". ")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-  };
-
   const handleToggleAudio = () => {
     if (!isTtsEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
@@ -513,17 +503,8 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
       window.speechSynthesis.cancel(); // cancel any active speech first
       const utterance = new SpeechSynthesisUtterance(speechText);
       
-      // Auto-detect best voice (Urdu/Hindi for roman urdu, or generic English)
       const voices = window.speechSynthesis.getVoices();
-      const isUrduScript = /[\u0600-\u06FF]/.test(speechText);
-      
-      let selectedVoice = voices.find((voice) => voice.voiceURI === ttsVoice);
-      if (!selectedVoice && isUrduScript) {
-        selectedVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ur") || voice.lang.toLowerCase().startsWith("hi"));
-      } else if (!selectedVoice) {
-        selectedVoice = voices.find((voice) => voice.lang === navigator.language);
-        if (!selectedVoice) selectedVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
-      }
+      const selectedVoice = getBestVoice(voices, ttsVoice, speechText, sttLang);
 
       if (selectedVoice) {
         utterance.voice = selectedVoice;

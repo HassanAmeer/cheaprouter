@@ -1109,7 +1109,9 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-recognition-language">Recognition language</label>
+                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-recognition-language">
+                      Voice Language & Accent Role
+                    </label>
                     <select
                       id="speech-recognition-language"
                       value={sttLang}
@@ -1117,17 +1119,16 @@ export default function SettingsPage() {
                       disabled={!speechSupport.recognition}
                       className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="">Use browser language</option>
-                      <option value="en-US">English (United States)</option>
-                      <option value="en-GB">English (United Kingdom)</option>
-                      <option value="ur-PK">Urdu (Pakistan)</option>
-                      <option value="hi-IN">Hindi (India)</option>
-                      <option value="ar-SA">Arabic</option>
-                      <option value="es-ES">Spanish</option>
-                      <option value="fr-FR">French</option>
-                      <option value="de-DE">German</option>
-                      <option value="zh-CN">Chinese (Mandarin)</option>
+                      <option value="auto">🌐 Auto-Detect (Default: English)</option>
+                      <option value="ur-roman">🇵🇰 Urdu / Roman Urdu (اردو)</option>
+                      <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+                      <option value="en-US">🇺🇸 English (United States)</option>
+                      <option value="en-GB">🇬🇧 English (United Kingdom)</option>
+                      <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
                     </select>
+                    <p className="text-[11px] text-slate-400">
+                      Controls speech recognition and AI voice accent. "Urdu / Roman Urdu" mode uses native phonetics so Roman Urdu and Urdu are recognized and spoken naturally.
+                    </p>
                   </div>
                 </section>
 
@@ -1158,7 +1159,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-voice">Browser voice</label>
+                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-voice">Browser voice accent</label>
                     <select
                       id="speech-voice"
                       value={browserVoices.some((voice) => voice.voiceURI === ttsVoice) ? ttsVoice : "default"}
@@ -1166,7 +1167,9 @@ export default function SettingsPage() {
                       disabled={!speechSupport.synthesis || !isTtsEnabled || browserVoices.length === 0}
                       className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="default">Automatic (match response language)</option>
+                      <option value="default">
+                        Automatic (Match Role: {sttLang === "ur-roman" ? "Urdu / Roman Urdu" : sttLang === "hi-IN" ? "Hindi" : sttLang === "ar-SA" ? "Arabic" : "English"})
+                      </option>
                       {browserVoices.map((voice) => (
                         <option key={voice.voiceURI} value={voice.voiceURI}>
                           {voice.name} · {voice.lang}{voice.default ? " · Default" : ""}

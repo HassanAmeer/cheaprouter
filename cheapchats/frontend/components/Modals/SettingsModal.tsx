@@ -29,9 +29,34 @@ import {
 type SettingsTab = "general" | "chat" | "providers" | "speech" | "privacy" | "account" | "about";
 
 export default function SettingsModal() {
-  const { activeModal, setActiveModal, rollingWindowLimit, setRollingWindowLimit } = useAppStore();
+  const {
+    activeModal,
+    setActiveModal,
+    rollingWindowLimit,
+    setRollingWindowLimit,
+    sttLang,
+    setSttLang,
+    isSttEnabled,
+    setIsSttEnabled,
+    isTtsEnabled,
+    setIsTtsEnabled,
+    ttsVoice,
+    setTtsVoice,
+  } = useAppStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [searchQuery, setSearchQuery] = useState("");
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const loadVoices = () => {
+        setBrowserVoices(window.speechSynthesis.getVoices());
+      };
+      loadVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+      return () => window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+    }
+  }, []);
 
   // API Keys state (Provider API keys)
   const [openrouterKey, setOpenrouterKey] = useState("");
@@ -88,16 +113,12 @@ export default function SettingsModal() {
   const [sendPromptsOnSelect, setSendPromptsOnSelect] = useState(true);
 
   // 3. Speech Tab States (Screenshot 1)
-  const [sttEnabled, setSttEnabled] = useState(true);
   const [sttEngine, setSttEngine] = useState("Browser");
-  const [sttLang, setSttLang] = useState("");
   const [autoTranscribe, setAutoTranscribe] = useState(false);
   const [decibelSensitivity, setDecibelSensitivity] = useState(-45);
   const [autoSendText, setAutoSendText] = useState(false);
 
-  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [ttsEngine, setTtsEngine] = useState("Browser");
-  const [ttsVoice, setTtsVoice] = useState("");
   const [conversationMode, setConversationMode] = useState(false);
   const [autoplayLatest, setAutoplayLatest] = useState(false);
   const [useCloudVoices, setUseCloudVoices] = useState(false);
@@ -989,8 +1010,8 @@ export default function SettingsModal() {
                   <div className="space-y-2">
                     <SettingRow
                       label="Speech to Text"
-                      checked={sttEnabled}
-                      onChange={setSttEnabled}
+                      checked={isSttEnabled}
+                      onChange={setIsSttEnabled}
                     />
                     <SettingRow
                       label="Engine"
@@ -1006,16 +1027,19 @@ export default function SettingsModal() {
                       }
                     />
                     <SettingRow
-                      label="Language"
+                      label="Voice Language & Accent Role"
                       rightElement={
                         <select
                           value={sttLang}
                           onChange={(e) => setSttLang(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer w-24"
+                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer"
                         >
-                          <option value="">Auto</option>
-                          <option value="en">English</option>
-                          <option value="ur">Urdu</option>
+                          <option value="auto">🌐 Auto-Detect (Default: English)</option>
+                          <option value="ur-roman">🇵🇰 Urdu / Roman Urdu (اردو)</option>
+                          <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+                          <option value="en-US">🇺🇸 English (United States)</option>
+                          <option value="en-GB">🇬🇧 English (United Kingdom)</option>
+                          <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
                         </select>
                       }
                     />
@@ -1058,8 +1082,8 @@ export default function SettingsModal() {
                   <div className="space-y-2">
                     <SettingRow
                       label="Text to Speech"
-                      checked={ttsEnabled}
-                      onChange={setTtsEnabled}
+                      checked={isTtsEnabled}
+                      onChange={setIsTtsEnabled}
                     />
                     <SettingRow
                       label="Engine"
@@ -1075,16 +1099,21 @@ export default function SettingsModal() {
                       }
                     />
                     <SettingRow
-                      label="Voice"
+                      label="Voice Accent / Profile"
                       rightElement={
                         <select
                           value={ttsVoice}
                           onChange={(e) => setTtsVoice(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer w-24"
+                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer max-w-[200px]"
                         >
-                          <option value="default">Default</option>
-                          <option value="alloy">Alloy</option>
-                          <option value="echo">Echo</option>
+                          <option value="default">
+                            Auto (Match Role: {sttLang === "ur-roman" ? "Urdu / Roman Urdu" : sttLang === "hi-IN" ? "Hindi" : sttLang === "ar-SA" ? "Arabic" : "English"})
+                          </option>
+                          {browserVoices.map((voice) => (
+                            <option key={voice.voiceURI} value={voice.voiceURI}>
+                              {voice.name} ({voice.lang})
+                            </option>
+                          ))}
                         </select>
                       }
                     />

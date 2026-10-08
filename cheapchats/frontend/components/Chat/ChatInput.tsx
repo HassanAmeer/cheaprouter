@@ -44,6 +44,8 @@ import {
   cleanTextForSpeech,
   getBestVoice,
   containsStopKeyword,
+  getEffectiveSttLang,
+  SPEECH_LANGUAGES,
 } from "@cheapchats/frontend/lib/speechUtils";
 
 interface ChatInputProps {
@@ -400,7 +402,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = sttLang || navigator.language;
+    recognition.lang = getEffectiveSttLang(sttLang);
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -508,7 +510,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     currentUtteranceRef.current = utterance;
 
     const voices = window.speechSynthesis.getVoices();
-    const bestVoice = getBestVoice(voices, ttsVoice, cleaned);
+    const bestVoice = getBestVoice(voices, ttsVoice, cleaned, sttLang);
     if (bestVoice) {
       utterance.voice = bestVoice;
     }
@@ -591,7 +593,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = sttLang || navigator.language || "en-US";
+    recognition.lang = getEffectiveSttLang(sttLang);
     callRecognitionRef.current = recognition;
 
     recognition.onresult = (event: any) => {
@@ -1220,8 +1222,17 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               ))}
             </div>
 
-            {/* Right: Controls (Stop Voice button if speaking + End Call) */}
+            {/* Right: Controls (Language Role badge, Stop Voice button, or status hints) */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveModal("settings")}
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-800/90 hover:bg-zinc-700/90 text-[11px] font-medium text-zinc-300 hover:text-white border border-zinc-700/70 transition cursor-pointer"
+                title="Active Voice & Accent Role (Click to modify in Settings)"
+              >
+                <span>{SPEECH_LANGUAGES.find((l) => l.id === sttLang)?.label.split("(")[0].trim() || "Auto-Detect"}</span>
+              </button>
+
               {callStatus === "speaking" ? (
                 <button
                   type="button"

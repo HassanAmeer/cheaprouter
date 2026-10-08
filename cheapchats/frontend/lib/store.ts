@@ -247,7 +247,7 @@ export const useAppStore = create<AppState>((set) => ({
       return { isTtsEnabled: next };
     }),
 
-  sttLang: typeof window !== "undefined" ? localStorage.getItem("cheapchat_stt_lang") || "" : "",
+  sttLang: typeof window !== "undefined" ? localStorage.getItem("cheapchat_stt_lang") || "auto" : "auto",
   setSttLang: (lang) => {
     if (typeof window !== "undefined") localStorage.setItem("cheapchat_stt_lang", lang);
     set({ sttLang: lang });
