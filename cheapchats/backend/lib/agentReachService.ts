@@ -1,3 +1,4 @@
+import { dohFetch } from "./dohResolver";
 import { exec } from "child_process";
 import util from "util";
 import { browsePage, searchWithPlaywright, SearchResultItem } from "./playwrightService";
@@ -8,7 +9,7 @@ const execPromise = util.promisify(exec);
 export { getTier1RateLimiter };
 
 export interface AgentReachResponse {
-  source: "jina_reader" | "playwright" | "agent_reach_cli" | "tavily" | "wikipedia" | "github_api";
+  source: "jina_reader" | "playwright" | "agent_reach_cli" | "tavily" | "wikipedia" | "duckduckgo" | "github_api";
   success: boolean;
   title?: string;
   url?: string;
@@ -48,17 +49,12 @@ export async function readWebPageWithReach(
     const rawMarkdown = await executeTier1WithQueue(
       async () => {
         const jinaUrl = `https://r.jina.ai/${url}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 14000);
-
-        const res = await fetch(jinaUrl, {
+        const res = await dohFetch(jinaUrl, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
             Accept: "text/plain, text/markdown",
           },
-          signal: controller.signal,
+          timeout: 10000,
         });
-        clearTimeout(timeoutId);
 
         if (res.status === 429) {
           const err: any = new Error("429 Too Many Requests from Jina Reader");
@@ -126,10 +122,70 @@ export async function readWebPageWithReach(
 }
 
 /**
+ * High-speed DuckDuckGo Lite live web search.
+ * Searches the entire live open web for any topic (news, tech, sports, facts, research).
+ * Zero API keys, zero cost, responses in ~1-1.5s via DoH direct HTTPS.
+ */
+export async function searchWithDuckDuckGoLite(
+  query: string,
+  limit = 5
+): Promise<SearchResultItem[]> {
+  try {
+    const res = await dohFetch("https://lite.duckduckgo.com/lite/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `q=${encodeURIComponent(query)}`,
+      timeout: 7000,
+    });
+
+    if (!res.ok) return [];
+
+    const html = await res.text();
+
+    const linkRegex =
+      /<a[^>]*href=['"]([^'"]+)['"][^>]*class=['"]result-link['"][^>]*>([\s\S]*?)<\/a>|<a[^>]*class=['"]result-link['"][^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi;
+    const snippetRegex = /<td[^>]*class=['"]result-snippet['"][^>]*>([\s\S]*?)<\/td>/gi;
+
+    const links: { link: string; title: string }[] = [];
+    let m;
+    while ((m = linkRegex.exec(html)) !== null) {
+      const rawLink = m[1] || m[3];
+      const rawTitle = (m[2] || m[4]).replace(/<[^>]+>/g, "").trim();
+      if (rawLink && rawTitle) {
+        links.push({ link: rawLink, title: rawTitle });
+      }
+    }
+
+    const snippets: string[] = [];
+    while ((m = snippetRegex.exec(html)) !== null) {
+      snippets.push(m[1].replace(/<[^>]+>/g, "").trim());
+    }
+
+    const results: SearchResultItem[] = [];
+    for (let i = 0; i < Math.min(links.length, limit); i++) {
+      results.push({
+        title: links[i].title,
+        link: links[i].link,
+        snippet: snippets[i] || links[i].title,
+      });
+    }
+
+    return results;
+  } catch (err: any) {
+    console.warn("[Agent Reach] DuckDuckGo search error:", err?.message || err);
+    return [];
+  }
+}
+
+/**
  * Universal Multi-Engine Web Search:
- * 1. Tavily API (if TAVILY_API_KEY is configured)
- * 2. Playwright Headless Browser Real Search (Free, live real-time web results)
- * 3. Wikipedia API (Fallback)
+ * 1. DuckDuckGo Lite (Live internet search for all topics: news, articles, research)
+ * 2. Wikipedia Search API (Encyclopedic & factual reference fallback)
+ * 3. CoinGecko Live Market Data (For crypto & financial currency checks)
+ * 4. Tavily API (if configured)
+ * 5. Playwright Headless Browser (Dynamic JavaScript fallback)
  */
 export async function searchWebWithReach(
   query: string,
@@ -140,23 +196,29 @@ export async function searchWebWithReach(
   if (!q) return { query: "", source: "none", results: [] };
 
   // 0. Instant Crypto Live Price (Free, Real-Time, Sub-second)
-  if (/\b(bitcoin|btc|ethereum|eth|solana|sol|crypto)\b/i.test(q)) {
+  if (/\b(bitcoin|btc|ethereum|eth|solana|sol|crypto|binance)\b/i.test(q)) {
     try {
       const coinId = /\b(ethereum|eth)\b/i.test(q)
         ? "ethereum"
         : /\b(solana|sol)\b/i.test(q)
         ? "solana"
         : "bitcoin";
-      const cgRes = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
+      const cgRes = await dohFetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`,
+        { timeout: 5000 }
       );
       if (cgRes.ok) {
         const cgData = await cgRes.json();
         if (cgData[coinId]) {
           const price = cgData[coinId].usd;
-          const change = cgData[coinId].usd_24h_change !== undefined ? Number(cgData[coinId].usd_24h_change).toFixed(2) : "0";
+          const change =
+            cgData[coinId].usd_24h_change !== undefined
+              ? Number(cgData[coinId].usd_24h_change).toFixed(2)
+              : "0";
           const name = coinId.toUpperCase();
-          const summary = `Live Real-time Market Data: ${name} is currently trading at $${Number(price).toLocaleString()} USD (${Number(change) >= 0 ? "+" : ""}${change}% in 24h).`;
+          const summary = `Live Real-time Market Data: ${name} is currently trading at $${Number(
+            price
+          ).toLocaleString()} USD (${Number(change) >= 0 ? "+" : ""}${change}% in 24h).`;
           return {
             query: q,
             source: "coingecko_live",
@@ -176,7 +238,50 @@ export async function searchWebWithReach(
     }
   }
 
-  // Tier 1: Tavily API
+  // Tier 1: DuckDuckGo Lite (High-speed universal live search across entire web)
+  try {
+    const ddgResults = await searchWithDuckDuckGoLite(q, limit);
+    if (ddgResults && ddgResults.length > 0) {
+      return {
+        query: q,
+        source: "duckduckgo_live",
+        summary: `Live web search results retrieved from DuckDuckGo for: "${q}"`,
+        results: ddgResults,
+      };
+    }
+  } catch (ddgErr) {
+    console.warn("[Agent Reach] DDG search failed, falling back to Wikipedia:", ddgErr);
+  }
+
+  // Tier 2: Wikipedia Search API (Instant encyclopedic and conceptual knowledge)
+  try {
+    const wikiRes = await dohFetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+        q
+      )}&utf8=&format=json`,
+      { timeout: 5000 }
+    );
+
+    if (wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      if (wikiData.query?.search && wikiData.query.search.length > 0) {
+        return {
+          query: q,
+          source: "wikipedia",
+          summary: `Search results from Wikipedia knowledge base for: "${q}"`,
+          results: wikiData.query.search.slice(0, limit).map((r: any) => ({
+            title: r.title,
+            link: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title)}`,
+            snippet: r.snippet.replace(/<\/?[^>]+(>|$)/g, ""),
+          })),
+        };
+      }
+    }
+  } catch (wikiErr) {
+    console.warn("[Agent Reach] Wikipedia search fallback failed:", wikiErr);
+  }
+
+  // Tier 3: Tavily API (if user configured TAVILY_API_KEY)
   const tavilyKey = process.env.TAVILY_API_KEY;
   if (tavilyKey) {
     try {
@@ -208,7 +313,7 @@ export async function searchWebWithReach(
     }
   }
 
-  // Tier 2: Playwright Live Web Search (bypasses blocks via Chromium session)
+  // Tier 4: Playwright Headless Browser fallback (8 second timeout)
   try {
     const pwResults = await searchWithPlaywright(q, limit);
     if (pwResults && pwResults.length > 0) {
@@ -220,31 +325,7 @@ export async function searchWebWithReach(
       };
     }
   } catch (pwErr) {
-    console.warn("[Agent Reach] Playwright search failed, falling back to Wikipedia:", pwErr);
-  }
-
-  // Tier 3: Wikipedia API fallback
-  try {
-    const wikiRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
-        q
-      )}&utf8=&format=json`
-    );
-    const wikiData = await wikiRes.json();
-    if (wikiData.query?.search && wikiData.query.search.length > 0) {
-      return {
-        query: q,
-        source: "wikipedia",
-        summary: `Search results from Wikipedia knowledge base for: "${q}"`,
-        results: wikiData.query.search.slice(0, limit).map((r: any) => ({
-          title: r.title,
-          link: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title)}`,
-          snippet: r.snippet.replace(/<\/?[^>]+(>|$)/g, ""),
-        })),
-      };
-    }
-  } catch (wikiErr) {
-    console.warn("[Agent Reach] Wikipedia search fallback failed:", wikiErr);
+    console.warn("[Agent Reach] Playwright search failed:", pwErr);
   }
 
   return {

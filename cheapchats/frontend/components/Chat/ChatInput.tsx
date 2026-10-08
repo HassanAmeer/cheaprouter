@@ -1908,10 +1908,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
       {/* Centered Footer Text */}
       <div className="mt-2 text-center text-[11px] text-red-300/50">
-        <span>CheapChat - Every AI for Everyone. </span>
-        <a href="#" className="underline hover:text-red-200">Privacy policy</a>
-        <span> | </span>
-        <a href="#" className="underline hover:text-red-200">Terms of service</a>
+        <span>CheapChat - Open Source, Free to Use - v1.0 Beta</span>
       </div>
     </div>
   );

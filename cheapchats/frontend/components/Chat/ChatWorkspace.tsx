@@ -22,6 +22,7 @@ import {
   isAllowedCustomProviderUrl,
   readCustomProviders,
 } from "@cheapchats/frontend/lib/customProviders";
+import { SYSTEM_PROMPT as DEFAULT_SYSTEM_PROMPT } from "@cheapchats/frontend/lib/systemPrompt";
 
 function detectAndOpenArtifact(
   content: string,
@@ -59,12 +60,39 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     setSelectedProviderAndModel,
     isCallAssistantOpen,
     setCallAssistantOpen,
+    setConversationUsage,
   } = useAppStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(Boolean(initialConversationId));
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId || null);
+
+  // Real context-usage accounting: every message actually in this conversation
+  // is measured (~4 chars = 1 token, same estimate the debug console uses) and
+  // compared against the model's selected context window.
+  useEffect(() => {
+    const parseWindow = (value: string | undefined): number => {
+      if (!value) return 128000;
+      const raw = value.trim().toLowerCase();
+      const num = parseFloat(raw.replace(/[^0-9.]/g, ""));
+      if (!isFinite(num) || num <= 0) return 128000;
+      if (raw.includes("k")) return Math.round(num * 1000);
+      if (raw.includes("m")) return Math.round(num * 1000000);
+      return Math.round(num);
+    };
+
+    const usedTokens = messages.reduce((total, m) => {
+      const text = typeof m.content === "string" ? m.content : "";
+      return total + Math.ceil(text.length / 4) + 4;
+    }, 0);
+
+    setConversationUsage({
+      usedTokens,
+      maxTokens: parseWindow(chatPreferences?.contextWindow),
+      messageCount: messages.length,
+    });
+  }, [messages, chatPreferences?.contextWindow, setConversationUsage]);
 
   interface QueuedMessage {
     id: string;
@@ -281,7 +309,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       (typeof window !== "undefined" && Boolean((window as any).__cheapchats_is_call_active)) ||
       useAppStore.getState().isCallAssistantOpen;
 
-    const baseSystemPrompt = chatPreferences?.systemPrompt || "You are a helpful, brilliant AI assistant.";
+    const baseSystemPrompt = chatPreferences?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     const effSystemPrompt = isLiveCallMode
       ? `${baseSystemPrompt}
 

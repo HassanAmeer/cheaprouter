@@ -10,6 +10,7 @@ import {
   cleanTextForSpeech,
   getBestVoice,
   getEffectiveTtsSettings,
+  romanUrduToUrduScript,
 } from "@cheapchats/frontend/lib/speechUtils";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import {
@@ -36,6 +37,7 @@ import {
   Sparkles,
   AlertTriangle,
   User,
+  Loader2,
 } from "lucide-react";
 
 const executedAgentActions = new Set<string>();
@@ -550,12 +552,15 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     isAutoVoiceEnabled,
     isTtsEnabled,
     ttsVoice,
+    ttsEngine,
     sttLang,
     setIsSpeaking,
     setHandsFreeMode,
   } = useAppStore();
   const [copiedText, setCopiedText] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(message.feedback || null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -587,44 +592,132 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     setTimeout(() => setCopiedText(false), 2000);
   };
 
-  const handleToggleAudio = () => {
-    if (!isTtsEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  // Browser voices cannot pronounce Urdu script, so Urdu personas always go
+  // through the Azure neural Urdu voices with roman -> Urdu script conversion.
+  const getPureUrduAzureVoice = (voice: string): string | null => {
+    switch (voice) {
+      case "persona:urdu-male":
+      case "persona:kashif":
+      case "persona:vikram-roman":
+        return "azure:ur-PK-AsadNeural";
+      case "persona:urdu-female":
+      case "persona:ayesha":
+      case "persona:neha-roman":
+        return "azure:ur-PK-UzmaNeural";
+      default:
+        return null;
+    }
+  };
 
-    if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
+  const playWithBrowserVoice = (speechText: string) => {
+    if (!("speechSynthesis" in window)) return;
+    const utterance = new SpeechSynthesisUtterance(speechText);
+
+    const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+    utterance.rate = ttsSettings.rate;
+    utterance.pitch = ttsSettings.pitch;
+
+    const voices = window.speechSynthesis.getVoices();
+    const selectedVoice = getBestVoice(voices, ttsVoice, speechText, sttLang);
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => {
       setIsPlayingAudio(false);
       setIsSpeaking(false);
-    } else {
-      const speechText = cleanTextForSpeech(message.content);
-      if (!speechText) return;
+    };
+    utterance.onerror = () => {
+      setIsPlayingAudio(false);
+      setIsSpeaking(false);
+    };
 
-      window.speechSynthesis.cancel(); // cancel any active speech first
-      const utterance = new SpeechSynthesisUtterance(speechText);
-      
-      const ttsSettings = getEffectiveTtsSettings(ttsVoice);
-      utterance.rate = ttsSettings.rate;
-      utterance.pitch = ttsSettings.pitch;
+    window.speechSynthesis.speak(utterance);
+    setIsPlayingAudio(true);
+  };
 
-      const voices = window.speechSynthesis.getVoices();
-      const selectedVoice = getBestVoice(voices, ttsVoice, speechText, sttLang);
+  const handleToggleAudio = () => {
+    if (!isTtsEnabled || typeof window === "undefined") return;
 
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setIsPlayingAudio(false);
-        setIsSpeaking(false);
-      };
-      utterance.onerror = () => {
-        setIsPlayingAudio(false);
-        setIsSpeaking(false);
-      };
-      
-      window.speechSynthesis.speak(utterance);
-      setIsPlayingAudio(true);
+    // Stop whatever is playing (API audio or browser speech)
+    if (isPlayingAudio || isAudioLoading) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      window.speechSynthesis?.cancel();
+      setIsPlayingAudio(false);
+      setIsAudioLoading(false);
+      setIsSpeaking(false);
+      return;
     }
+
+    if (!("speechSynthesis" in window)) return;
+
+    const speechText = cleanTextForSpeech(message.content);
+    if (!speechText) return;
+
+    window.speechSynthesis.cancel(); // cancel any active speech first
+
+    // Whatever accent is selected in Speech & Audio Settings is used here as-is:
+    // "By API" engine or an explicit azure:* voice -> server neural voice,
+    // "Built-in" engine -> local browser voice for that persona.
+    const useApi = ttsEngine === "azure" || ttsVoice.startsWith("azure:");
+    const personaAzureVoice = getPureUrduAzureVoice(ttsVoice);
+    const azureVoice = personaAzureVoice ?? (ttsVoice.startsWith("azure:") ? ttsVoice : null);
+
+    if (!useApi) {
+      playWithBrowserVoice(speechText);
+      return;
+    }
+
+    // API accent: show loader until the audio is ready, then play it
+    setIsAudioLoading(true);
+
+    (async () => {
+      try {
+        const resp = await fetch("/api/cheapchats/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: personaAzureVoice ? romanUrduToUrduScript(speechText) : speechText,
+            voice: azureVoice || ttsVoice,
+          }),
+        });
+
+        if (!resp.ok) throw new Error("tts failed");
+
+        const blob = await resp.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onplay = () => {
+          setIsAudioLoading(false);
+          setIsPlayingAudio(true);
+          setIsSpeaking(true);
+        };
+        audio.onended = () => {
+          audioRef.current = null;
+          URL.revokeObjectURL(audioUrl);
+          setIsPlayingAudio(false);
+          setIsSpeaking(false);
+        };
+        audio.onerror = () => {
+          audioRef.current = null;
+          URL.revokeObjectURL(audioUrl);
+          setIsAudioLoading(false);
+          setIsPlayingAudio(false);
+          setIsSpeaking(false);
+          playWithBrowserVoice(speechText);
+        };
+
+        await audio.play();
+      } catch {
+        setIsAudioLoading(false);
+        playWithBrowserVoice(speechText);
+      }
+    })();
   };
 
   useEffect(() => {
@@ -1007,12 +1100,32 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                 <button
                   onClick={handleToggleAudio}
                   disabled={!isTtsEnabled}
-                  title={isTtsEnabled ? "Read Aloud" : "Enable text to speech in Settings"}
+                  title={
+                    !isTtsEnabled
+                      ? "Enable text to speech in Settings"
+                      : isAudioLoading
+                      ? "Loading voice..."
+                      : isPlayingAudio
+                      ? "Stop"
+                      : "Read Aloud"
+                  }
                   className={`p-1.5 rounded-lg transition ${
-                    !isTtsEnabled ? "cursor-not-allowed opacity-40" : isPlayingAudio ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-[#252525] hover:text-white"
+                    !isTtsEnabled
+                      ? "cursor-not-allowed opacity-40"
+                      : isAudioLoading
+                      ? "text-red-400"
+                      : isPlayingAudio
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "hover:bg-[#252525] hover:text-white"
                   }`}
                 >
-                  {isPlayingAudio ? <VolumeX className="w-3.5 h-3.5 animate-pulse" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  {isAudioLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : isPlayingAudio ? (
+                    <VolumeX className="w-3.5 h-3.5 animate-pulse" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
                 </button>
               </Tooltip>
 

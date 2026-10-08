@@ -136,7 +136,21 @@ export default function SpeechAudioSettings() {
         };
         updateVoices();
         window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
-        return () => window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+
+        // Warm up the offline speech engine so the first Preview tap starts
+        // speaking right away instead of paying engine start-up latency.
+        const warmup = window.setTimeout(() => {
+          try {
+            const u = new SpeechSynthesisUtterance(" ");
+            u.volume = 0;
+            window.speechSynthesis.speak(u);
+          } catch {}
+        }, 350);
+
+        return () => {
+          window.clearTimeout(warmup);
+          window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+        };
       }
     }
   }, []);
@@ -306,7 +320,28 @@ export default function SpeechAudioSettings() {
       setLoadingPersonaId(null);
     };
 
-    window.speechSynthesis.speak(utterance);
+    // Chrome drops/stalls an utterance that is spoken in the same tick as a
+    // cancel() call, which is what made offline previews feel slow. Yield one
+    // frame (and re-read the voice list) so it starts instantly.
+    window.setTimeout(() => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        const freshVoices = window.speechSynthesis.getVoices();
+        if (freshVoices.length && !utterance.voice) {
+          const fresh = getBestVoice(freshVoices, targetVoiceKey, cleaned, targetRole);
+          if (fresh) {
+            utterance.voice = fresh;
+            utterance.lang = fresh.lang;
+          }
+        }
+        window.speechSynthesis.speak(utterance);
+      }
+    }, 0);
+
+    // Watchdog: some platforms never fire onstart when no matching voice is
+    // installed. Never leave the card stuck on "Loading...".
+    window.setTimeout(() => {
+      setLoadingPersonaId(null);
+    }, 1200);
   };
 
   // ─── TTS (Voice Playback) Test Handlers ───────────────────────────────────────
@@ -352,10 +387,11 @@ export default function SpeechAudioSettings() {
       setLoadingPersonaId(personaId);
     }
 
+    // Built-in accents are fully offline: they must never wait on the API.
+    // Only the "By API" tab (ttsEngine === "azure") or an explicit azure:* voice
+    // goes through the server.
     const isAzureTarget =
-      targetVoiceKey.startsWith("azure:") ||
-      (ttsEngine === "azure" && !targetVoiceKey.startsWith("persona:")) ||
-      ROMAN_URDU_AZURE_VOICES[targetVoiceKey] !== undefined;
+      targetVoiceKey.startsWith("azure:") || ttsEngine === "azure";
 
     // 1. Play Ultra-Realistic Free Edge Neural AI Voice
     if (isAzureTarget) {

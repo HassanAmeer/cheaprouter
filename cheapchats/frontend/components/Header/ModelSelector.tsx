@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import {
   CustomProvider,
@@ -23,6 +25,7 @@ import {
   X,
   RotateCw,
   Loader2,
+  Router,
 } from "lucide-react";
 import { ModelSelectorSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
@@ -48,9 +51,33 @@ const PROVIDER_ICONS: Record<string, any> = {
   Agents: Bot,
 };
 
+function ProviderIcon({
+  provider,
+  className = "w-3.5 h-3.5",
+}: {
+  provider: string;
+  className?: string;
+}) {
+  if (provider.startsWith("custom:")) {
+    return <Router className={`${className} text-red-400 flex-shrink-0`} />;
+  }
+  return (
+    <img
+      src={getProviderIcon(provider)}
+      alt={provider}
+      className={`${className} object-contain flex-shrink-0`}
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.display = "none";
+      }}
+    />
+  );
+}
+
 export default function ModelSelector() {
-  const { selectedProvider, selectedModel, setSelectedProviderAndModel, setActiveModal } = useAppStore();
+  const router = useRouter();
+  const { selectedProvider, selectedModel, setSelectedProviderAndModel } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [mobileProviderMenuOpen, setMobileProviderMenuOpen] = useState(false);
   const [activeHoverProvider, setActiveHoverProvider] = useState<string | null>(null);
   const [providersData, setProvidersData] = useState<Record<string, ModelItem[]>>({});
   const [customProviderNames, setCustomProviderNames] = useState<Record<string, string>>({});
@@ -295,14 +322,7 @@ export default function ModelSelector() {
       >
         {selectedProvider ? (
           <div className="flex items-center gap-1.5 truncate text-xs sm:text-sm">
-            <img
-              src={getProviderIcon(selectedProvider)}
-              alt={providerName(selectedProvider)}
-              className="w-3.5 h-3.5 object-contain flex-shrink-0 rounded-xs"
-              onError={(e) => {
-                (e.currentTarget as any).style.display = "none";
-              }}
-            />
+            <ProviderIcon provider={selectedProvider} />
             <span className="text-slate-400 font-medium truncate">{providerName(selectedProvider)}</span>
             <span className="text-slate-500 font-normal">·</span>
             <span className="text-slate-100 font-bold truncate max-w-[140px] sm:max-w-[220px]">
@@ -326,7 +346,7 @@ export default function ModelSelector() {
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:left-0 sm:bottom-full sm:mb-2.5 w-full sm:w-[480px] md:w-[540px] bg-[#140b0d]/98 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl z-50 border border-red-500/30 shadow-2xl shadow-black/90 flex flex-col select-none overflow-hidden max-h-[85vh] sm:max-h-none"
+          className="hidden sm:flex absolute left-0 bottom-full mb-2.5 w-[480px] md:w-[540px] bg-[#140b0d]/98 backdrop-blur-2xl rounded-2xl z-50 border border-red-500/30 shadow-2xl shadow-black/90 flex-col select-none overflow-hidden"
         >
           {/* Top Header Bar with Title, Refresh, and Close (X) Icon Button */}
           <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#1b0d10] border-b border-red-500/20">
@@ -338,16 +358,6 @@ export default function ModelSelector() {
             </div>
 
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => fetchModels(true)}
-                disabled={isRefreshing}
-                title="Refresh models from all providers"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer disabled:opacity-50"
-              >
-                <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-red-400" : ""}`} />
-              </button>
-
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -375,7 +385,7 @@ export default function ModelSelector() {
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
-                  setActiveModal("settings");
+                  router.push("/chats/settings");
                 }}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 text-xs font-semibold transition cursor-pointer"
               >
@@ -385,127 +395,6 @@ export default function ModelSelector() {
             </div>
           ) : (
             <>
-            {/* MOBILE: bottom-sheet flow — provider select, then light grey "Select AI Model" label, then models */}
-            <div className="sm:hidden flex flex-col overflow-y-auto custom-scrollbar">
-              <div className="px-3.5 pt-3 pb-2">
-                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Select Provider
-                </span>
-                <div className="relative">
-                  <select
-                    value={activeHoverProvider || ""}
-                    onChange={(e) => setActiveHoverProvider(e.target.value)}
-                    className="w-full appearance-none bg-[#200f13] border border-red-950/50 rounded-xl pl-8 pr-8 py-2.5 text-sm text-white outline-none focus:border-red-900/60"
-                  >
-                    {sortedProviderKeys.map((key) => (
-                      <option key={key} value={key}>
-                        {providerName(key)} ({providersData[key]?.length || 0})
-                      </option>
-                    ))}
-                  </select>
-                  {activeHoverProvider && (
-                    <img
-                      src={getProviderIcon(activeHoverProvider)}
-                      alt=""
-                      className="w-4 h-4 object-contain absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none rounded-xs"
-                      onError={(e) => {
-                        (e.currentTarget as any).style.display = "none";
-                      }}
-                    />
-                  )}
-                  <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="px-3.5 pt-1 pb-1.5 flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-500">Select AI Model</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    activeHoverProvider?.startsWith("custom:")
-                      ? loadCustomProviderModels(activeHoverProvider)
-                      : fetchModels(true)
-                  }
-                  disabled={isRefreshing || isLoadingCustomModels}
-                  className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-white transition cursor-pointer"
-                >
-                  <RotateCw
-                    className={`w-3 h-3 ${
-                      isRefreshing || isLoadingCustomModels ? "animate-spin text-red-400" : ""
-                    }`}
-                  />
-                  <span>{activeHoverProvider?.startsWith("custom:") ? "load" : "refresh"}</span>
-                </button>
-              </div>
-
-              <div className="relative px-3.5 pb-2">
-                <Search className="w-3.5 h-3.5 absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search models..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#200f13] border border-red-950/50 rounded-xl pl-8 pr-2 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-red-900/60"
-                />
-              </div>
-
-              <div className="px-3.5 pb-3 space-y-1">
-                {activeHoverProvider?.startsWith("custom:") && isLoadingCustomModels ? (
-                  <ModelSelectorSkeleton count={4} />
-                ) : customModelsError && activeHoverProvider?.startsWith("custom:") ? (
-                  <div className="py-6 text-xs text-amber-200/90 text-center leading-relaxed">
-                    {customModelsError}
-                  </div>
-                ) : loading ? (
-                  <ModelSelectorSkeleton count={4} />
-                ) : filteredList.length > 0 ? (
-                  filteredList.map((m) => {
-                    const isSel = selectedModel === m.id && selectedProvider === activeHoverProvider;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => handleSelectModel(activeHoverProvider!, m.id)}
-                        className={`w-full flex flex-col text-left px-3 py-3 rounded-xl text-sm transition duration-150 border cursor-pointer ${
-                          isSel
-                            ? "bg-red-500/20 border-red-500/40 text-red-200 font-semibold"
-                            : "border-white/5 text-slate-200 active:bg-[#251417]"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate">{m.name}</span>
-                          {isSel && <Check className="w-4 h-4 text-red-400 flex-shrink-0" />}
-                        </div>
-                        {m.description && (
-                          <span className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {m.description}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="py-6 text-xs text-slate-400 text-center leading-relaxed">
-                    {activeHoverProvider?.startsWith("custom:")
-                      ? "No models listed. Tap “load” above to fetch them from this API."
-                      : "No matching models found."}
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  setActiveModal("settings");
-                }}
-                className="mx-3.5 mb-4 flex items-center justify-center gap-1.5 w-[calc(100%-1.75rem)] px-3 py-3 rounded-xl bg-transparent hover:bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium transition cursor-pointer"
-              >
-                <Settings className="w-4 h-4 text-red-400" />
-                <span>Provider Settings</span>
-              </button>
-            </div>
-
             {/* DESKTOP: two-column provider + models layout */}
             <div className="hidden sm:flex flex-col sm:flex-row gap-2.5 p-2.5">
               {/* Provider List (Left side) */}
@@ -544,14 +433,7 @@ export default function ModelSelector() {
                       onClick={() => setActiveHoverProvider(providerKey)}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <img
-                          src={getProviderIcon(providerKey)}
-                          alt={providerName(providerKey)}
-                          className="w-3.5 h-3.5 object-contain flex-shrink-0 rounded-xs"
-                          onError={(e) => {
-                            (e.currentTarget as any).src = "https://api.iconify.design/lucide:server.svg";
-                          }}
-                        />
+                        <ProviderIcon provider={providerKey} />
                         <span className={`truncate ${isCustom ? "font-bold text-red-300" : ""}`}>
                           {providerName(providerKey)}
                         </span>
@@ -561,18 +443,6 @@ export default function ModelSelector() {
                         <span className="text-[10px] text-slate-400 font-mono bg-black/30 px-1.5 py-0.5 rounded-md">
                           {count}
                         </span>
-                        {/* Refresh icon button on provider row */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            fetchModels(true);
-                          }}
-                          title={`Refresh ${providerKey} models`}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition"
-                        >
-                          <RotateCw className="w-2.5 h-2.5" />
-                        </button>
                       </div>
                     </div>
                   );
@@ -584,7 +454,7 @@ export default function ModelSelector() {
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
-                  setActiveModal("settings");
+                  router.push("/chats/settings");
                 }}
                 className="mt-2 flex items-center justify-center gap-1.5 w-full px-2.5 py-2 rounded-xl bg-transparent hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 text-red-400 text-xs font-medium transition cursor-pointer"
               >
@@ -672,6 +542,214 @@ export default function ModelSelector() {
         )}
       </div>
     )}
+
+      {/* MOBILE: bottom sheet rendered in a portal so it sits above the sidebar/nav rail */}
+{isOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+            <div className="relative bg-[#140b0d]/98 border-t border-red-500/30 rounded-t-3xl shadow-2xl shadow-black/90 flex flex-col h-[70vh] overflow-hidden animate-in slide-in-from-bottom duration-200">
+              <div className="flex items-center justify-between px-3.5 py-3 bg-[#1b0d10] border-b border-red-500/20 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-red-400" />
+                  <span className="text-xs font-bold text-white tracking-wide">
+                    Select Provider & AI Model
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-red-500/20 transition cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-slate-300" />
+                </button>
+              </div>
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="px-3.5 pt-3 pb-2 flex-shrink-0 relative">
+                  <div
+                    className="w-full p-[1.5px]"
+                    style={{
+                      clipPath:
+                        "polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%)",
+                      background:
+                        "linear-gradient(120deg, rgba(255,255,255,0.22), rgba(239,68,68,0.55) 45%, rgba(255,255,255,0.14))",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setMobileProviderMenuOpen((v) => !v)}
+                      className="w-full flex items-center gap-2 pl-9 pr-8 py-3 text-sm text-white transition cursor-pointer hover:bg-white/5"
+                      style={{
+                        clipPath:
+                          "polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%)",
+                        background: "rgba(10,6,8,0.72)",
+                        backdropFilter: "blur(14px)",
+                        WebkitBackdropFilter: "blur(14px)",
+                      }}
+                    >
+                      {activeHoverProvider && (
+                        <ProviderIcon
+                          provider={activeHoverProvider}
+                          className="w-4 h-4 absolute left-7 top-1/2 -translate-y-1/2 pointer-events-none"
+                        />
+                      )}
+                      <span className="truncate text-left font-medium">
+                        {activeHoverProvider
+                          ? `${providerName(activeHoverProvider)} (${providersData[activeHoverProvider]?.length || 0})`
+                          : "Select Provider"}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 ml-auto text-slate-300 transition-transform duration-200 flex-shrink-0 ${
+                          mobileProviderMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {mobileProviderMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[9998]"
+                        onClick={() => setMobileProviderMenuOpen(false)}
+                      />
+                      <div className="absolute left-3.5 right-3.5 top-full mt-2 z-[9999] overflow-hidden rounded-[6px] border border-red-950/70 bg-[#1d0e11]/98 shadow-2xl shadow-black/90 backdrop-blur-md">
+                        <div className="flex items-center justify-between px-3.5 py-2 bg-black/30 border-b border-red-950/40">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                            Providers
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            {sortedProviderKeys.length}
+                          </span>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+                          {sortedProviderKeys.map((key) => {
+                            const isActive = key === activeHoverProvider;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => {
+                                  setActiveHoverProvider(key);
+                                  setMobileProviderMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-[5px] text-left text-sm transition duration-150 border cursor-pointer ${
+                                  isActive
+                                    ? "bg-red-500/15 border-red-500/40 text-white font-semibold"
+                                    : "border-transparent text-slate-200 hover:bg-white/5 active:bg-white/10"
+                                }`}
+                              >
+                                <ProviderIcon provider={key} className="w-4 h-4" />
+                                <span className="truncate">{providerName(key)}</span>
+                                <span className="ml-auto text-[10px] font-mono bg-black/40 px-1.5 py-0.5 rounded-md text-slate-400 flex-shrink-0">
+                                  {providersData[key]?.length || 0}
+                                </span>
+                                {isActive && <Check className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="px-3.5 pt-1 pb-1.5 flex items-center justify-between flex-shrink-0">
+                  <span className="text-[11px] font-semibold text-slate-500">Select AI Model</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      activeHoverProvider?.startsWith("custom:")
+                        ? loadCustomProviderModels(activeHoverProvider)
+                        : fetchModels(true)
+                    }
+                    disabled={isRefreshing || isLoadingCustomModels}
+                    className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-white transition cursor-pointer"
+                  >
+                    <RotateCw
+                      className={`w-3 h-3 ${
+                        isRefreshing || isLoadingCustomModels ? "animate-spin text-red-400" : ""
+                      }`}
+                    />
+                    <span>{activeHoverProvider?.startsWith("custom:") ? "load" : "refresh"}</span>
+                  </button>
+                </div>
+
+                <div className="relative px-3.5 pb-2 flex-shrink-0">
+                  <Search className="w-4 h-4 absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+                  <input
+                    type="text"
+                    placeholder="Search models..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 text-sm text-white placeholder-slate-400 outline-none rounded-[10px] border border-slate-500/40 focus:border-slate-400/70 transition"
+                    style={{
+                      background: "rgba(28,28,30,0.62)",
+                      backdropFilter: "blur(14px)",
+                      WebkitBackdropFilter: "blur(14px)",
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-3.5 pb-3">
+                  <div className="rounded-xl overflow-hidden divide-y divide-white/[0.07] border border-white/[0.06] bg-white/[0.04] backdrop-blur-md">
+                  {activeHoverProvider?.startsWith("custom:") && isLoadingCustomModels ? (
+                    <ModelSelectorSkeleton count={4} />
+                  ) : customModelsError && activeHoverProvider?.startsWith("custom:") ? (
+                    <div className="py-6 text-xs text-amber-200/90 text-center leading-relaxed">
+                      {customModelsError}
+                    </div>
+                  ) : loading ? (
+                    <ModelSelectorSkeleton count={4} />
+                  ) : filteredList.length > 0 ? (
+                    filteredList.map((m) => {
+                      const isSel = selectedModel === m.id && selectedProvider === activeHoverProvider;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => handleSelectModel(activeHoverProvider!, m.id)}
+                          className={`w-full flex flex-col text-left px-3.5 py-3 text-sm transition duration-100 active:bg-white/10 cursor-pointer ${
+                            isSel ? "bg-red-500/20 text-white font-semibold" : "text-slate-200"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate">{m.name}</span>
+                            {isSel && <Check className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                          </div>
+                          {m.description && (
+                            <span className="text-[11px] text-slate-500 truncate mt-0.5">
+                              {m.description}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="py-6 text-xs text-slate-400 text-center leading-relaxed">
+                      {activeHoverProvider?.startsWith("custom:")
+                        ? "No models listed. Tap “load” above to fetch them from this API."
+                        : "No matching models found."}
+                    </div>
+                  )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push("/chats/settings");
+                  }}
+                  className="mx-3.5 mb-4 flex-shrink-0 flex items-center justify-center gap-1.5 w-[calc(100%-1.75rem)] px-3 py-3 rounded-xl bg-transparent hover:bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium transition cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 text-red-400" />
+                  <span>Provider Settings</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
   </div>
 );
 }

@@ -147,6 +147,11 @@ interface AppState {
   debugData: DebugData | null;
   setDebugData: (data: DebugData | null) => void;
 
+  // Real, live token accounting for the current conversation (used by the
+  // usage quota ring in the chat input).
+  conversationUsage: { usedTokens: number; maxTokens: number; messageCount: number };
+  setConversationUsage: (usage: { usedTokens: number; maxTokens: number; messageCount: number }) => void;
+
   activeTools: {
     webSearch: boolean;
     fileSearch: boolean;
@@ -340,6 +345,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   debugData: null,
   setDebugData: (data) => set({ debugData: data }),
+
+  conversationUsage: { usedTokens: 0, maxTokens: 128000, messageCount: 0 },
+  setConversationUsage: (usage) => set({ conversationUsage: usage }),
 
   activeTools: {
     webSearch: false,

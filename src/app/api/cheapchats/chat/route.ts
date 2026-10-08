@@ -14,6 +14,7 @@ import {
   captureScreenshot,
   searchYouTubeWithPlaywright,
 } from '../../../../../cheapchats/backend/lib/playwrightService';
+import { SYSTEM_PROMPT as DEFAULT_SYSTEM_PROMPT } from '../../../../../cheapchats/frontend/lib/systemPrompt';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
       providerId,
       apiKey: userApiKey,
       isIncognito = false,
-      systemPrompt = 'You are a helpful, brilliant AI assistant.',
+      systemPrompt = DEFAULT_SYSTEM_PROMPT,
       attachments = [],
       temperature = 0.7,
       contextWindow = '128k',
@@ -53,7 +54,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
-    let activeSystemPrompt = systemPrompt;
+    let activeSystemPrompt = (systemPrompt && systemPrompt.trim() !== 'You are a helpful, brilliant AI assistant.')
+      ? systemPrompt
+      : DEFAULT_SYSTEM_PROMPT;
     const selectedSkillNames = Array.isArray(selectedSkills)
       ? selectedSkills.filter((name: unknown): name is string => typeof name === 'string').map((name: string) => name.trim().toLowerCase())
       : [];
@@ -195,15 +198,17 @@ ${scrapeResult.markdown}
       }
     }
 
-    // 2. YOUTUBE SEARCH & PLAYBACK (e.g. "youtube pe lofi music search karo aur 3rd video play kar do", "koi bhi video play kar do", "youtube ka tab khol do")
+    // 2. YOUTUBE SEARCH & PLAYBACK (e.g. "youtube ka window kholo", "youtube open karo", "youtube pe lofi video chalao")
+    const lowerMessage = message.toLowerCase();
     const isYouTubeGeneralOpen =
       /\byoutube\b/i.test(message) &&
-      /\b(tab|kholo|open|khol)\b/i.test(message) &&
+      (/\b(window|tab|kholo|open|khol|browser|launch)\b/i.test(message) ||
+        lowerMessage.includes("youtube") && (lowerMessage.includes("window") || lowerMessage.includes("tab") || lowerMessage.includes("open") || lowerMessage.includes("kholo"))) &&
       !/\b(search|dhoondo|find|video|song|gaana|play|3rd|third|teesri|2nd|second|doosri|1st|first|pehli)\b/i.test(message);
 
     const isYouTubeSearchAndPlay =
       (/\byoutube\b/i.test(message) &&
-        /\b(search|dhoondo|play|chalao|video|song|gaana|kholo|tab|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|3rd|1st|2nd|koi bhi|any)\b/i.test(
+        /\b(search|dhoondo|play|chalao|video|song|gaana|kholo|tab|window|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|3rd|1st|2nd|koi bhi|any)\b/i.test(
           message
         )) ||
       (/\b(video|gaana|song)\b/i.test(message) &&
@@ -211,16 +216,17 @@ ${scrapeResult.markdown}
 
     if (isYouTubeGeneralOpen) {
       activeSystemPrompt += `\n\n<youtube_action_instruction>
-The user requested to open YouTube in a new browser tab.
-You MUST output this exact XML tag:
+The user requested to open YouTube in a new browser window/tab.
+You MUST output this exact XML action tag:
 <cheapchatAgent action="open_browser" data="https://www.youtube.com" />
-Confirm to the user in fluent Roman Urdu / English that the YouTube tab has been opened.
+Confirm warmly to the user in fluent Roman Urdu / English: "Maine YouTube ka window / tab open kar diya hai!"
+Include the direct clickable link [Open YouTube](https://www.youtube.com).
 </youtube_action_instruction>\n`;
     } else if (isYouTubeSearchAndPlay) {
       let ytQuery = message
         .replace(/https?:\/\/[^\s]+/gi, '')
         .replace(
-          /\b(youtube|par|pe|mein|kholo|open|khol|do|dhoondo|search|karke|kar do|kardo|play|chalao|video|song|gaana|tab|aur|bhi|koi|any|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|fourth|chauthi|1st|2nd|3rd|4th)\b/gi,
+          /\b(youtube|par|pe|mein|kholo|open|khol|do|dhoondo|search|karke|kar do|kardo|play|chalao|video|song|gaana|tab|window|aur|bhi|koi|any|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|fourth|chauthi|1st|2nd|3rd|4th)\b/gi,
           ' '
         )
         .replace(/\s+/g, ' ')
@@ -269,33 +275,63 @@ MANDATORY INSTRUCTIONS FOR ASSISTANT:
 1. To automatically launch and play this video in the user's browser, you MUST output this XML tag:
    <cheapchatAgent action="open_browser" data="${selectedVideo.link}" />
 2. State clearly in natural Roman Urdu or English:
-   "Maine YouTube par '${selectedVideo.title}' (${ordinalLabel}) play karne ke liye tab open kar diya hai."
+   "Maine YouTube par '${selectedVideo.title}' (${ordinalLabel}) play karne ke liye tab/window open kar diya hai."
 3. Include the direct clickable link [${selectedVideo.title}](${selectedVideo.link}) so the user can easily click or view it.
+</youtube_search_and_playback>\n`;
+        } else {
+          const fallbackLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+          activeSystemPrompt += `\n\n<youtube_search_and_playback>
+YouTube Search Query: "${ytQuery}"
+MANDATORY INSTRUCTIONS FOR ASSISTANT:
+1. Output this XML tag:
+   <cheapchatAgent action="open_browser" data="${fallbackLink}" />
+2. Confirm in natural Roman Urdu or English:
+   "Maine YouTube par '${ytQuery}' search karne ke liye tab/window open kar diya hai."
+3. Include the direct clickable link [Search YouTube for '${ytQuery}'](${fallbackLink}).
 </youtube_search_and_playback>\n`;
         }
       } catch (err) {
         console.warn('[Playwright YouTube] Search failed:', err);
+        const fallbackLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+        activeSystemPrompt += `\n\n<youtube_search_and_playback>
+YouTube Search Query: "${ytQuery}"
+MANDATORY INSTRUCTIONS FOR ASSISTANT:
+1. Output this XML tag:
+   <cheapchatAgent action="open_browser" data="${fallbackLink}" />
+2. Confirm in natural Roman Urdu or English that the window/tab has been opened: [Search YouTube for '${ytQuery}'](${fallbackLink}).
+</youtube_search_and_playback>\n`;
       }
     }
 
     // 3. MULTI-ENGINE WEB SEARCH (DuckDuckGo, Bing, Tavily, Wikipedia, CoinGecko)
     const isExplicitSearchRequest =
       Boolean(tools?.webSearch) ||
-      (/\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape|live|price|rate|bhao|result|nikal|nikalo|check|current|today|bitcoin|crypto|nvidia|browse|fetch)\b/i.test(
+      (/\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape|live|price|rate|bhao|result|nikal|nikalo|check|current|today|bitcoin|btc|crypto|ethereum|eth|solana|sol|nvidia|browse|fetch)\b/i.test(
         message
       ) &&
         !isYouTubeSearchAndPlay &&
         !isYouTubeGeneralOpen);
 
+    let liveSearchContextText = '';
+    let executedCleanedQuery = '';
+
     if (isExplicitSearchRequest && !urlMatch) {
       try {
         const cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, '').trim();
+        executedCleanedQuery = cleanedQuery;
         if (cleanedQuery) {
           console.log('[AGENT REACH] Executing web search for:', cleanedQuery);
           const searchData = await searchWebWithReach(cleanedQuery, 5);
           if (searchData.results && searchData.results.length > 0) {
-            const wantsTabOpened = /\b(tab|kholo|open|browser)\b/i.test(message);
+            const wantsTabOpened = /\b(tab|kholo|open|browser|window)\b/i.test(message);
             const topLink = searchData.results[0]?.link;
+
+            liveSearchContextText = searchData.results
+              .map(
+                (r: any, idx: number) =>
+                  `[Source ${idx + 1}]: ${r.title}\nLink: ${r.link}\nDetails: ${r.snippet}`
+              )
+              .join('\n\n');
 
             activeSystemPrompt += `\n\n<web_search_results engine="${searchData.source}">
 Query: "${cleanedQuery}"
@@ -304,10 +340,18 @@ Results:
 ${searchData.results.map((r: any) => `- **${r.title}** (${r.link})\n  ${r.snippet}`).join('\n')}
 ${
   wantsTabOpened && topLink
-    ? `\nINSTRUCTION: The user asked to open the tab. Include the XML tag: <cheapchatAgent action="open_browser" data="${topLink}" /> to open the top result in a new tab.\n`
+    ? `\nINSTRUCTION: The user asked to open the tab/window. Include the XML tag: <cheapchatAgent action="open_browser" data="${topLink}" /> to open the top result in a new tab/window.\n`
     : ''
 }
+CRITICAL MANDATORY DIRECTIVE:
+Real-time verified live web data has been retrieved above via Agent Reach and DuckDuckGo / Wikipedia.
+You MUST directly and accurately answer the user's question using these exact findings and current data.
+NEVER say "I am not able to search", "mere paas real-time access nahi hai", or "I lack real-time data". You HAVE the live research data right here. State the facts clearly in natural Roman Urdu or English!
 </web_search_results>\n`;
+          } else {
+            activeSystemPrompt += `\n\n<web_search_status>
+Live web search was executed for "${cleanedQuery}". Provide the most accurate answer and cite that you performed a live web search. DO NOT refuse or claim that you cannot search.
+</web_search_status>\n`;
           }
         }
       } catch (err) {
@@ -315,25 +359,31 @@ ${
       }
     }
 
-    // 4. OPEN TAB INSTRUCTION FOR POPULAR SERVICES
+    // 4. OPEN TAB / WINDOW INSTRUCTION FOR POPULAR SERVICES
     const tabMatch =
-      message.match(/\b(open|kholo|tab)\b.*\b(google|github|twitter|x|reddit|bing|wikipedia|facebook|instagram)\b/i) ||
-      message.match(/\b(google|github|twitter|x|reddit|bing|wikipedia|facebook|instagram)\b.*\b(tab|kholo|open)\b/i);
+      message.match(/\b(open|kholo|tab|window)\b.*\b(google|youtube|github|twitter|x|reddit|bing|wikipedia|facebook|instagram)\b/i) ||
+      message.match(/\b(google|youtube|github|twitter|x|reddit|bing|wikipedia|facebook|instagram)\b.*\b(tab|kholo|open|window)\b/i);
     if (tabMatch && !isYouTubeGeneralOpen && !isYouTubeSearchAndPlay) {
       const site = tabMatch[0].toLowerCase();
       let targetSiteUrl = 'https://www.google.com';
-      if (site.includes('github')) targetSiteUrl = 'https://github.com';
+      if (site.includes('youtube')) targetSiteUrl = 'https://www.youtube.com';
+      else if (site.includes('github')) targetSiteUrl = 'https://github.com';
       else if (site.includes('twitter') || site.includes(' x ')) targetSiteUrl = 'https://x.com';
       else if (site.includes('reddit')) targetSiteUrl = 'https://reddit.com';
       else if (site.includes('bing')) targetSiteUrl = 'https://bing.com';
       else if (site.includes('wikipedia')) targetSiteUrl = 'https://wikipedia.org';
 
       activeSystemPrompt += `\n\n<open_tab_instruction>
-The user requested to open ${targetSiteUrl} in browser.
+The user requested to open ${targetSiteUrl} in browser window/tab.
 Output this tag: <cheapchatAgent action="open_browser" data="${targetSiteUrl}" />
-Confirm to the user that the tab has been opened.
+Confirm warmly to the user that the window/tab has been opened: [Open ${targetSiteUrl}](${targetSiteUrl}).
 </open_tab_instruction>\n`;
     }
+
+    // Prepare active user prompt with search context injected if search was executed
+    const effectiveUserContent = liveSearchContextText
+      ? `[CURRENT LIVE WEB DATA & RESEARCH DOSSIER FOR: "${executedCleanedQuery}"]\n${liveSearchContextText}\n\n[USER QUERY]:\n${message}`
+      : message;
 
     // 5. Build message payload
     const formattedMessages: any[] = [
@@ -358,9 +408,17 @@ Confirm to the user that the tab has been opened.
             });
           }
         }
+        // If the last message in history is the user's current message, augment it with live research
+        if (
+          formattedMessages.length > 1 &&
+          formattedMessages[formattedMessages.length - 1].role === 'user' &&
+          liveSearchContextText
+        ) {
+          formattedMessages[formattedMessages.length - 1].content = effectiveUserContent;
+        }
       } catch {}
     } else {
-      formattedMessages.push({ role: 'user', content: message });
+      formattedMessages.push({ role: 'user', content: effectiveUserContent });
     }
 
     // If activeKey is available, stream directly from the upstream provider!

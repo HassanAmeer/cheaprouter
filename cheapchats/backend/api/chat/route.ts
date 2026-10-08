@@ -488,15 +488,18 @@ ${scrapeResult.markdown}
       }
     }
 
-    // YOUTUBE SEARCH & PLAYBACK (e.g. "youtube pe lofi music search karo aur 3rd video play kar do", "koi bhi video play kar do", "youtube ka tab khol do")
+
+    // YOUTUBE SEARCH & PLAYBACK (e.g. "youtube ka window kholo", "youtube open karo", "youtube pe lofi video chalao")
+    const lowerMessage = message.toLowerCase();
     const isYouTubeGeneralOpen =
       /\byoutube\b/i.test(message) &&
-      /\b(tab|kholo|open|khol)\b/i.test(message) &&
+      (/\b(window|tab|kholo|open|khol|browser|launch)\b/i.test(message) ||
+        lowerMessage.includes("youtube") && (lowerMessage.includes("window") || lowerMessage.includes("tab") || lowerMessage.includes("open") || lowerMessage.includes("kholo"))) &&
       !/\b(search|dhoondo|find|video|song|gaana|play|3rd|third|teesri|2nd|second|doosri|1st|first|pehli)\b/i.test(message);
 
     const isYouTubeSearchAndPlay =
       (/\byoutube\b/i.test(message) &&
-        /\b(search|dhoondo|play|chalao|video|song|gaana|kholo|tab|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|3rd|1st|2nd|koi bhi|any)\b/i.test(
+        /\b(search|dhoondo|play|chalao|video|song|gaana|kholo|tab|window|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|3rd|1st|2nd|koi bhi|any)\b/i.test(
           message
         )) ||
       (/\b(video|gaana|song)\b/i.test(message) &&
@@ -504,16 +507,17 @@ ${scrapeResult.markdown}
 
     if (isYouTubeGeneralOpen) {
       finalSystemPrompt += `\n\n<youtube_action_instruction>
-The user requested to open YouTube in a new browser tab.
-You MUST output this exact XML tag:
+The user requested to open YouTube in a new browser window/tab.
+You MUST output this exact XML action tag:
 <cheapchatAgent action="open_browser" data="https://www.youtube.com" />
-Confirm to the user in fluent Roman Urdu / English that the YouTube tab has been opened.
+Confirm warmly to the user in fluent Roman Urdu / English: "Maine YouTube ka window / tab open kar diya hai!"
+Include the direct clickable link [Open YouTube](https://www.youtube.com).
 </youtube_action_instruction>\n`;
     } else if (isYouTubeSearchAndPlay) {
       let ytQuery = message
         .replace(/https?:\/\/[^\s]+/gi, "")
         .replace(
-          /\b(youtube|par|pe|mein|kholo|open|khol|do|dhoondo|search|karke|kar do|kardo|play|chalao|video|song|gaana|tab|aur|bhi|koi|any|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|fourth|chauthi|1st|2nd|3rd|4th)\b/gi,
+          /\b(youtube|par|pe|mein|kholo|open|khol|do|dhoondo|search|karke|kar do|kardo|play|chalao|video|song|gaana|tab|window|aur|bhi|koi|any|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|fourth|chauthi|1st|2nd|3rd|4th)\b/gi,
           " "
         )
         .replace(/\s+/g, " ")
@@ -562,24 +566,54 @@ MANDATORY INSTRUCTIONS FOR ASSISTANT:
 1. To automatically launch and play this video in the user's browser, you MUST output this XML tag:
    <cheapchatAgent action="open_browser" data="${selectedVideo.link}" />
 2. State clearly in natural Roman Urdu or English:
-   "Maine YouTube par '${selectedVideo.title}' (${ordinalLabel}) play karne ke liye tab open kar diya hai."
+   "Maine YouTube par '${selectedVideo.title}' (${ordinalLabel}) play karne ke liye tab/window open kar diya hai."
 3. Include the direct clickable link [${selectedVideo.title}](${selectedVideo.link}) so the user can easily click or view it.
+</youtube_search_and_playback>\n`;
+        } else {
+          const fallbackLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+          finalSystemPrompt += `\n\n<youtube_search_and_playback>
+YouTube Search Query: "${ytQuery}"
+MANDATORY INSTRUCTIONS FOR ASSISTANT:
+1. Output this XML tag:
+   <cheapchatAgent action="open_browser" data="${fallbackLink}" />
+2. Confirm in natural Roman Urdu or English:
+   "Maine YouTube par '${ytQuery}' search karne ke liye tab/window open kar diya hai."
+3. Include the direct clickable link [Search YouTube for '${ytQuery}'](${fallbackLink}).
 </youtube_search_and_playback>\n`;
         }
       } catch (err) {
         console.warn("[Playwright YouTube] Search failed:", err);
+        const fallbackLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+        finalSystemPrompt += `\n\n<youtube_search_and_playback>
+YouTube Search Query: "${ytQuery}"
+MANDATORY INSTRUCTIONS FOR ASSISTANT:
+1. Output this XML tag:
+   <cheapchatAgent action="open_browser" data="${fallbackLink}" />
+2. Confirm in natural Roman Urdu or English that the window/tab has been opened: [Search YouTube for '${ytQuery}'](${fallbackLink}).
+</youtube_search_and_playback>\n`;
       }
     }
+
+    let liveSearchContextText = "";
+    let executedCleanedQuery = "";
 
     if (tools?.webSearch || (isExplicitSearchRequest && !urlMatch && !isYouTubeGeneralOpen && !isYouTubeSearchAndPlay)) {
       try {
         const cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, "").trim();
+        executedCleanedQuery = cleanedQuery;
         if (cleanedQuery) {
           console.log("[AGENT REACH] Executing web search for:", cleanedQuery);
           const searchData = await searchWebWithReach(cleanedQuery, 5);
           if (searchData.results && searchData.results.length > 0) {
-            const wantsTabOpened = /\b(tab|kholo|open|browser)\b/i.test(message);
+            const wantsTabOpened = /\b(tab|kholo|open|browser|window)\b/i.test(message);
             const topLink = searchData.results[0]?.link;
+
+            liveSearchContextText = searchData.results
+              .map(
+                (r: any, idx: number) =>
+                  `[Source ${idx + 1}]: ${r.title}\nLink: ${r.link}\nDetails: ${r.snippet}`
+              )
+              .join("\n\n");
 
             finalSystemPrompt += `\n\n<web_search_results engine="${searchData.source}">
 Query: "${cleanedQuery}"
@@ -590,10 +624,18 @@ ${searchData.results
   .join("\n")}
 ${
   wantsTabOpened && topLink
-    ? `\nINSTRUCTION: The user asked to open the tab. Include the XML tag: <cheapchatAgent action="open_browser" data="${topLink}" /> to open the top result in a new tab.\n`
+    ? `\nINSTRUCTION: The user asked to open the tab/window. Include the XML tag: <cheapchatAgent action="open_browser" data="${topLink}" /> to open the top result in a new tab/window.\n`
     : ""
 }
+CRITICAL MANDATORY DIRECTIVE:
+Real-time verified live web data has been retrieved above via Agent Reach and DuckDuckGo / Wikipedia.
+You MUST directly and accurately answer the user's question using these exact findings and current data.
+NEVER say "I am not able to search", "mere paas real-time access nahi hai", or "I lack real-time data". You HAVE the live research data right here. State the facts clearly in natural Roman Urdu or English!
 </web_search_results>\n`;
+          } else {
+            finalSystemPrompt += `\n\n<web_search_status>
+Live web search was executed for "${cleanedQuery}". Provide the most accurate answer and cite that you performed a live web search. DO NOT refuse or claim that you cannot search.
+</web_search_status>\n`;
           }
         }
       } catch (err) {
@@ -932,11 +974,15 @@ NOTIFICATION & AGENT DISPATCH INSTRUCTIONS:
     }
 
     // PREPARE MESSAGE & ATTACHMENTS CONTENT
-    let chatUserContent: any = message;
+    const effectiveUserPrompt = liveSearchContextText
+      ? `[CURRENT LIVE WEB DATA & RESEARCH DOSSIER FOR: "${executedCleanedQuery}"]\n${liveSearchContextText}\n\n[USER QUERY]:\n${message}`
+      : message;
+
+    let chatUserContent: any = effectiveUserPrompt;
     if (attachments && attachments.length > 0) {
       chatUserContent = [];
       if (message) {
-        chatUserContent.push({ type: "text", text: message });
+        chatUserContent.push({ type: "text", text: effectiveUserPrompt });
       }
       for (const att of attachments) {
         const isImage = att.type === "image" || (att.name && att.name.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i));
