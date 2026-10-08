@@ -402,7 +402,6 @@ export default function SpeechAudioSettings() {
     // Auto-align STT language when a persona is picked
     if (
       persona.flag === "🇵🇰" ||
-      persona.id === "zoya" ||
       persona.id === "bilal" ||
       persona.id === "pari" ||
       persona.id === "sameer" ||
