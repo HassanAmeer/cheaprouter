@@ -103,6 +103,7 @@ export default function SpeechAudioSettings() {
   const [testText, setTestText] = useState(currentLangOption.samplePhrase);
   const [isPlayingTts, setIsPlayingTts] = useState(false);
   const [playingPersonaId, setPlayingPersonaId] = useState<string | null>(null);
+  const [loadingPersonaId, setLoadingPersonaId] = useState<string | null>(null);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load browser voices & speech recognition support
@@ -304,6 +305,7 @@ export default function SpeechAudioSettings() {
     if (isPlayingTts && !overrideText && (!personaId || playingPersonaId === personaId)) {
       setIsPlayingTts(false);
       setPlayingPersonaId(null);
+      setLoadingPersonaId(null);
       return;
     }
 
@@ -326,9 +328,8 @@ export default function SpeechAudioSettings() {
       ? (persona.id.startsWith("azure:") ? persona.id : `persona:${persona.id}`)
       : ttsVoice;
 
-    setIsPlayingTts(true);
     if (personaId) {
-      setPlayingPersonaId(personaId);
+      setLoadingPersonaId(personaId);
     }
 
     const isAzureTarget =
@@ -353,14 +354,24 @@ export default function SpeechAudioSettings() {
           const audio = new Audio(audioUrl);
           activeAudioRef.current = audio;
 
+          audio.onplay = () => {
+            setLoadingPersonaId(null);
+            setIsPlayingTts(true);
+            if (personaId) {
+              setPlayingPersonaId(personaId);
+            }
+          };
+
           audio.onended = () => {
             setIsPlayingTts(false);
             setPlayingPersonaId(null);
+            setLoadingPersonaId(null);
             activeAudioRef.current = null;
           };
 
           audio.onerror = () => {
             activeAudioRef.current = null;
+            setLoadingPersonaId(null);
             fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
           };
 
@@ -372,6 +383,7 @@ export default function SpeechAudioSettings() {
       }
     }
 
+    setLoadingPersonaId(null);
     fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
   };
 
@@ -1109,6 +1121,7 @@ export default function SpeechAudioSettings() {
                 {filteredAzurePersonas.map((azureP) => {
                   const isSelected = ttsVoice === azureP.id;
                   const isPlayingThis = isPlayingTts && playingPersonaId === azureP.id;
+                  const isLoadingThis = loadingPersonaId === azureP.id;
 
                   return (
                     <div
@@ -1174,6 +1187,7 @@ export default function SpeechAudioSettings() {
                       <div className="flex items-center justify-between pt-2 border-t border-white/5">
                         <button
                           type="button"
+                          disabled={isLoadingThis}
                           onClick={(e) => {
                             e.stopPropagation();
                             playTtsTest(azureP.samplePhrase, azureP.id);
@@ -1181,10 +1195,17 @@ export default function SpeechAudioSettings() {
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                             isPlayingThis
                               ? "bg-purple-600 text-white animate-pulse"
+                              : isLoadingThis
+                              ? "bg-purple-900/60 text-purple-200 border border-purple-500/40"
                               : "bg-zinc-800 hover:bg-zinc-700 text-purple-300 hover:text-purple-200 border border-purple-500/20"
                           }`}
                         >
-                          {isPlayingThis ? (
+                          {isLoadingThis ? (
+                            <>
+                              <RefreshCw className="w-3 h-3 animate-spin text-purple-300" />
+                              <span>Loading...</span>
+                            </>
+                          ) : isPlayingThis ? (
                             <>
                               <Square className="w-3 h-3 fill-current" />
                               <span>Stop</span>
