@@ -271,6 +271,80 @@ export async function searchWithPlaywright(
   }
 }
 
+export interface YouTubeSearchResult {
+  title: string;
+  link: string;
+  videoId?: string;
+}
+
+/**
+ * Search YouTube using Playwright browser automation with fallback to multi-engine search.
+ * Returns direct video titles, links, and video IDs.
+ */
+export async function searchYouTubeWithPlaywright(
+  query: string,
+  maxResults = 5
+): Promise<YouTubeSearchResult[]> {
+  let browser: Browser | null = null;
+  try {
+    browser = await launchBrowser();
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    });
+
+    const page = await context.newPage();
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
+    await page.waitForTimeout(2000);
+
+    const videos = await page.evaluate((max) => {
+      const items: { title: string; link: string; videoId?: string }[] = [];
+      const seen = new Set<string>();
+      document.querySelectorAll("a#video-title").forEach((a) => {
+        if (items.length >= max) return;
+        const href = (a as HTMLAnchorElement).href || "";
+        const title = ((a as HTMLElement).title || a.textContent || "").trim();
+        if (href && href.includes("/watch?v=") && title && !seen.has(href)) {
+          seen.add(href);
+          const match = href.match(/[?&]v=([^&]+)/);
+          items.push({
+            title,
+            link: href,
+            videoId: match ? match[1] : undefined,
+          });
+        }
+      });
+      return items;
+    }, maxResults);
+
+    if (videos && videos.length > 0) {
+      return videos;
+    }
+  } catch (err: any) {
+    console.warn("[Playwright] YouTube direct scrape error, attempting fallback:", err.message);
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+  }
+
+  // Fallback: search Bing for YouTube videos
+  try {
+    const fallbackResults = await searchWithPlaywright(`site:youtube.com/watch ${query}`, maxResults);
+    return fallbackResults
+      .filter((r) => r.link && r.link.includes("youtube.com/watch"))
+      .map((r) => ({
+        title: r.title.replace(/ - YouTube$/, ""),
+        link: r.link,
+        videoId: r.link.match(/[?&]v=([^&]+)/)?.[1],
+      }));
+  } catch (fbErr) {
+    console.warn("[Playwright] YouTube fallback search failed:", fbErr);
+    return [];
+  }
+}
+
 /**
  * Execute multi-step browser automation script.
  */

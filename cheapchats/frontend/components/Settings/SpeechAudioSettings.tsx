@@ -22,6 +22,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
+import { useToast } from "@/components/ui/toast";
 import {
   SPEECH_LANGUAGES,
   SpeechLanguageOption,
@@ -33,10 +34,26 @@ import {
   getBestVoice,
   cleanTextForSpeech,
   transliterateToRomanUrdu,
+  romanUrduToUrduScript,
   getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 
+/**
+ * Roman Urdu personas are typed in Latin script, but Urdu neural voices read Latin
+ * text letter-by-letter (which sounds broken). So we send these personas through the
+ * Azure Urdu neural voices and convert the text to native Urdu script first.
+ */
+const ROMAN_URDU_AZURE_VOICES: Record<string, string> = {
+  "persona:urdu-male": "ur-PK-AsadNeural",
+  "persona:urdu-female": "ur-PK-UzmaNeural",
+  "persona:kashif": "ur-PK-AsadNeural",
+  "persona:ayesha": "ur-PK-UzmaNeural",
+  "persona:vikram-roman": "ur-PK-AsadNeural",
+  "persona:neha-roman": "ur-PK-UzmaNeural",
+};
+
 export default function SpeechAudioSettings() {
+  const { toast } = useToast();
   const {
     isSttEnabled,
     setIsSttEnabled,
@@ -251,6 +268,7 @@ export default function SpeechAudioSettings() {
     const utterance = new SpeechSynthesisUtterance(cleaned);
 
     if (persona) {
+      setLoadingPersonaId(persona.id);
       utterance.rate = persona.rate;
       utterance.pitch = persona.pitch;
     } else {
@@ -267,6 +285,7 @@ export default function SpeechAudioSettings() {
 
     utterance.onstart = () => {
       setIsPlayingTts(true);
+      setLoadingPersonaId(null);
       if (persona) {
         setPlayingPersonaId(persona.id);
       }
@@ -275,6 +294,7 @@ export default function SpeechAudioSettings() {
     utterance.onend = () => {
       setIsPlayingTts(false);
       setPlayingPersonaId(null);
+      setLoadingPersonaId(null);
     };
 
     utterance.onerror = (e) => {
@@ -283,6 +303,7 @@ export default function SpeechAudioSettings() {
       }
       setIsPlayingTts(false);
       setPlayingPersonaId(null);
+      setLoadingPersonaId(null);
     };
 
     window.speechSynthesis.speak(utterance);
@@ -333,7 +354,8 @@ export default function SpeechAudioSettings() {
 
     const isAzureTarget =
       targetVoiceKey.startsWith("azure:") ||
-      (ttsEngine === "azure" && !targetVoiceKey.startsWith("persona:"));
+      (ttsEngine === "azure" && !targetVoiceKey.startsWith("persona:")) ||
+      ROMAN_URDU_AZURE_VOICES[targetVoiceKey] !== undefined;
 
     // 1. Play Ultra-Realistic Free Edge Neural AI Voice
     if (isAzureTarget) {
@@ -342,8 +364,12 @@ export default function SpeechAudioSettings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: cleaned,
-            voice: targetVoiceKey,
+            text: ROMAN_URDU_AZURE_VOICES[targetVoiceKey]
+              ? romanUrduToUrduScript(cleaned)
+              : cleaned,
+            voice: ROMAN_URDU_AZURE_VOICES[targetVoiceKey]
+              ? `azure:${ROMAN_URDU_AZURE_VOICES[targetVoiceKey]}`
+              : targetVoiceKey,
           }),
         });
 
@@ -382,13 +408,13 @@ export default function SpeechAudioSettings() {
       }
     }
 
-    setLoadingPersonaId(null);
     fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
   };
 
   const handleSelectAzurePersona = (azureP: AzureVoicePersona) => {
     setTtsEngine("azure");
     setTtsVoice(azureP.id);
+    toast(`${azureP.flag} ${azureP.name} accent saved!`, "success");
 
     // Auto-align STT language when an Azure persona is picked
     if (azureP.flag === "🇵🇰") {
@@ -409,17 +435,17 @@ export default function SpeechAudioSettings() {
     setTtsVoice(`persona:${persona.id}`);
     handleRateChange(persona.rate);
     handlePitchChange(persona.pitch);
+    toast(`${persona.flag} ${persona.name} accent saved!`, "success");
 
     // Auto-align STT language when a persona is picked
-    if (
-      persona.flag === "🇵🇰" ||
-      persona.id === "bilal" ||
-      persona.id === "pari" ||
-      persona.id === "ayesha" ||
-      persona.id === "asad"
+    if (persona.id === "urdu-male" || persona.id === "urdu-female") {
+      setSttLang("ur-PK");
+    } else if (
+      persona.id === "kashif" ||
+      persona.id === "ayesha"
     ) {
       setSttLang("ur-roman");
-    } else if (persona.id === "swara" || persona.id === "madhur") {
+    } else if (persona.id === "swara" || persona.id === "vikram-roman" || persona.id === "neha-roman") {
       setSttLang("hi-IN");
     } else if (persona.id === "neerja" || persona.id === "rohan") {
       setSttLang("en-IN");
@@ -706,7 +732,10 @@ export default function SpeechAudioSettings() {
                 return (
                   <div
                     key={lang.id}
-                    onClick={() => setSttLang(lang.id)}
+                    onClick={() => {
+                      setSttLang(lang.id);
+                      toast(`${lang.flag} ${lang.label} (STT) accent saved!`, "success");
+                    }}
                     className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? "bg-gradient-to-br from-rose-950/70 via-zinc-900 to-zinc-950 border-rose-500 shadow-md shadow-rose-950/40 ring-1 ring-rose-500/50"
@@ -741,6 +770,7 @@ export default function SpeechAudioSettings() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSttLang(lang.id);
+                          toast(`${lang.flag} ${lang.label} (STT) accent saved!`, "success");
                           startMicTest(lang.id);
                         }}
                         className="text-[10.5px] font-medium text-rose-400 hover:text-rose-300 flex items-center gap-1 transition"
@@ -834,7 +864,7 @@ export default function SpeechAudioSettings() {
           {/* ── Bottom: Unified Voice Accent Cards Grid (One Place!) ─────────── */}
           <div className="space-y-3">
             {/* ── Sub-tabs: [⚡ By API (Azure Neural HD)] vs [🌐 Built-in Accents (Browser)] ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-black/60 border border-purple-500/20 rounded-2xl shadow-inner">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-zinc-800/80 border border-white/5 rounded-2xl shadow-inner">
               <button
                 type="button"
                 onClick={() => {
@@ -842,10 +872,11 @@ export default function SpeechAudioSettings() {
                   if (!ttsVoice.startsWith("azure:")) {
                     setTtsVoice("azure:ur-PK-AsadNeural");
                   }
+                  toast("⚡ Azure Neural voice mode enabled and saved!", "success");
                 }}
                 className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                   ttsEngine === "azure"
-                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-600/30 ring-1 ring-purple-400/50"
+                    ? "bg-zinc-600 text-white shadow-md"
                     : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
                 }`}
               >
@@ -857,12 +888,13 @@ export default function SpeechAudioSettings() {
                 onClick={() => {
                   setTtsEngine("browser");
                   if (ttsVoice.startsWith("azure:")) {
-                    setTtsVoice("persona:asad");
+                    setTtsVoice("persona:ayesha");
                   }
+                  toast("🌐 Built-in (Offline) voice mode enabled and saved!", "success");
                 }}
                 className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                   ttsEngine === "browser"
-                    ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-600/30 ring-1 ring-purple-400/50"
+                    ? "bg-zinc-600 text-white shadow-md"
                     : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
                 }`}
               >
@@ -993,6 +1025,7 @@ export default function SpeechAudioSettings() {
                 {filteredPersonas.map((persona) => {
                   const isPersonaSelected = ttsVoice === `persona:${persona.id}`;
                   const isPlayingThisPersona = isPlayingTts && playingPersonaId === persona.id;
+                  const isLoadingThisPersona = loadingPersonaId === persona.id;
 
                   return (
                     <div
@@ -1062,13 +1095,21 @@ export default function SpeechAudioSettings() {
                             e.stopPropagation();
                             playTtsTest(persona.samplePhrase, persona.id);
                           }}
+                          disabled={isLoadingThisPersona}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                             isPlayingThisPersona
                               ? "bg-purple-600 text-white animate-pulse"
+                              : isLoadingThisPersona
+                              ? "bg-purple-900/60 text-purple-200 border border-purple-500/40"
                               : "bg-zinc-800 hover:bg-zinc-700 text-purple-300 hover:text-purple-200 border border-purple-500/20"
                           }`}
                         >
-                          {isPlayingThisPersona ? (
+                          {isLoadingThisPersona ? (
+                            <>
+                              <RefreshCw className="w-3 h-3 animate-spin text-purple-300" />
+                              <span>Loading...</span>
+                            </>
+                          ) : isPlayingThisPersona ? (
                             <>
                               <Square className="w-3 h-3 fill-current" />
                               <span>Stop</span>

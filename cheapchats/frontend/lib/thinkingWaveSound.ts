@@ -28,9 +28,9 @@ export function startThinkingWaveSound() {
     noise.loop = true;
 
     const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.value = 1200;
-    bandpass.Q.value = 0.8;
+    bandpass.type = "lowpass";
+    bandpass.frequency.value = 400;
+    bandpass.Q.value = 0.5;
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
@@ -41,23 +41,24 @@ export function startThinkingWaveSound() {
 
     noise.start();
 
-    // Wave rhythm: slow swell → 1s steady → fast pulse → slow down → repeat
+    // Ocean-wave style: slow swell in (whoosh), crest shimmer, slow fade out, pause, repeat
     const scheduleWave = () => {
       const now = ctx.currentTime;
       gain.gain.cancelScheduledValues(now);
-      gain.gain.setValueAtTime(0.02, now);
-      // 1. slow swelling wave
-      gain.gain.linearRampToValueAtTime(0.08, now + 1.2);
-      // 2. one second steady
-      gain.gain.setValueAtTime(0.08, now + 2.2);
-      // 3. fast rise and fall
-      gain.gain.linearRampToValueAtTime(0.16, now + 2.5);
-      gain.gain.linearRampToValueAtTime(0.03, now + 2.9);
-      // 4. slow down to idle
-      gain.gain.linearRampToValueAtTime(0.02, now + 4.2);
+      bandpass.frequency.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(0.0001, now);
+      bandpass.frequency.setValueAtTime(300, now);
+      // wave slowly builds
+      gain.gain.linearRampToValueAtTime(0.14, now + 1.6);
+      bandpass.frequency.linearRampToValueAtTime(900, now + 1.6);
+      // crest
+      gain.gain.linearRampToValueAtTime(0.10, now + 2.2);
+      // wave washes out
+      gain.gain.linearRampToValueAtTime(0.0001, now + 3.4);
+      bandpass.frequency.linearRampToValueAtTime(250, now + 3.4);
     };
     scheduleWave();
-    waveTimer = setInterval(scheduleWave, 4300);
+    waveTimer = setInterval(scheduleWave, 4600);
 
     thinkingNoise = noise;
     thinkingGain = gain;

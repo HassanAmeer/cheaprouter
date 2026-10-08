@@ -18,6 +18,7 @@ import {
 } from "@cheapchats/frontend/lib/responseCompletionSound";
 import {
   CustomProvider,
+  getCustomProviderKey,
   isAllowedCustomProviderUrl,
   readCustomProviders,
 } from "@cheapchats/frontend/lib/customProviders";
@@ -62,6 +63,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(Boolean(initialConversationId));
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId || null);
 
   interface QueuedMessage {
@@ -79,6 +81,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
 
     if (initialConversationId) {
       setActiveConvId(initialConversationId);
+      setIsLoadingConversation(true);
       let isCancelled = false;
 
       fetch(`/api/cheapchats/conversations/${initialConversationId}`)
@@ -125,15 +128,23 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
             if (restoredArtifact) setActiveArtifact(restoredArtifact);
 
             if (data.conversation?.model) {
-              setSelectedProviderAndModel(
-                data.conversation.provider || "OpenRouter",
-                data.conversation.model
+              const rawProv = data.conversation.provider || "OpenRouter";
+              const matchedCustom = readCustomProviders().find(
+                (p) =>
+                  p.name.toLowerCase() === rawProv.toLowerCase() ||
+                  p.id.toLowerCase() === rawProv.toLowerCase() ||
+                  getCustomProviderKey(p.id) === rawProv
               );
+              const effProv = matchedCustom ? getCustomProviderKey(matchedCustom.id) : rawProv;
+              setSelectedProviderAndModel(effProv, data.conversation.model);
             }
           }
         })
         .catch(() => {
           if (!isCancelled) setMessages([]);
+        })
+        .finally(() => {
+          if (!isCancelled) setIsLoadingConversation(false);
         });
 
       return () => {
@@ -142,6 +153,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     } else {
       setActiveConvId(null);
       setMessages([]);
+      setIsLoadingConversation(false);
     }
   }, [initialConversationId, setActiveArtifact, setSelectedProviderAndModel]);
 
@@ -171,11 +183,19 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     }
 
     let customProvider: CustomProvider | undefined;
-    if (selectedProvider?.startsWith("custom:")) {
-      const customProviderId = selectedProvider.slice("custom:".length);
-      customProvider = readCustomProviders().find((provider) => provider.id === customProviderId);
-      if (!customProvider) {
-        throw new Error("This custom provider is no longer saved in Settings.");
+    if (selectedProvider) {
+      if (selectedProvider.startsWith("custom:")) {
+        const customProviderId = selectedProvider.slice("custom:".length);
+        customProvider = readCustomProviders().find((provider) => provider.id === customProviderId);
+        if (!customProvider) {
+          throw new Error("This custom provider is no longer saved in Settings.");
+        }
+      } else {
+        customProvider = readCustomProviders().find(
+          (provider) =>
+            provider.name.toLowerCase() === selectedProvider.toLowerCase() ||
+            provider.id.toLowerCase() === selectedProvider.toLowerCase()
+        );
       }
     }
 
@@ -226,10 +246,29 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       const raw = localStorage.getItem("cheapchats_provider_keys");
       if (raw) {
         const keys = JSON.parse(raw);
-        const pName = (selectedProvider || "openrouter").toLowerCase();
-        userKey = customProvider
-          ? keys[customProvider.id]
-          : keys[pName] || keys[`ap_${pName}`];
+        if (customProvider) {
+          userKey = keys[customProvider.id];
+        } else {
+          const pName = (selectedProvider || "openrouter").toLowerCase();
+          const pNorm = pName.replace(/[^a-z0-9]/g, "");
+          userKey =
+            keys[selectedProvider || ""] ||
+            keys[pName] ||
+            keys[`ap_${pName}`] ||
+            keys[`ap_${pNorm}`] ||
+            keys[pNorm];
+          if (!userKey) {
+            for (const [k, v] of Object.entries(keys)) {
+              const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+              if (kNorm && pNorm && (kNorm === pNorm || pNorm.includes(kNorm) || kNorm.includes(pNorm))) {
+                if (typeof v === "string" && v.trim()) {
+                  userKey = v;
+                  break;
+                }
+              }
+            }
+          }
+        }
       }
     } catch {}
 
@@ -725,6 +764,7 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
           onRegenerate={handleRegenerate}
           onEditUserMessage={handleEditUserMessage}
           isStreaming={isStreaming}
+          isLoading={isLoadingConversation}
         />
         <ChatInput
           onSend={handleSendMessage}

@@ -44,9 +44,11 @@ import {
   cleanTextForSpeech,
   getBestVoice,
   containsStopKeyword,
+  containsEndCallKeyword,
   getEffectiveSttLang,
   SPEECH_LANGUAGES,
   transliterateToRomanUrdu,
+  romanUrduToUrduScript,
   getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 import { startThinkingWaveSound, stopThinkingWaveSound } from "@cheapchats/frontend/lib/thinkingWaveSound";
@@ -162,9 +164,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const speechQueueRef = useRef<string[]>([]);
   const isSpeakingUtteranceRef = useRef(false);
   const isStreamFinishedRef = useRef(false);
+  const didStreamSpeakRef = useRef(false);
+  const turnIdRef = useRef(0);
 
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
+    if (typeof window !== "undefined") {
+      (window as any).__cheapchats_is_call_active = isCallActive;
+    }
   }, [isCallActive]);
 
   useEffect(() => {
@@ -623,7 +630,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
   // Play a soft wave sound while AI is thinking during call
   useEffect(() => {
-    if (isCallActive && callStatus === "thinking") {
+    if (isCallActive && callStatus === "thinking" && useAppStore.getState().chatPreferences.thinkingWaveSound !== false) {
       startThinkingWaveSound();
     } else {
       stopThinkingWaveSound();
@@ -739,6 +746,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       return;
     }
 
+    // Mutex lock: if an audio chunk is currently being fetched or spoken, wait for it to finish!
     if (isSpeakingUtteranceRef.current) {
       return;
     }
@@ -746,6 +754,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (speechQueueRef.current.length === 0) {
       if (isStreamFinishedRef.current) {
         currentUtteranceRef.current = null;
+        currentAudioElementRef.current = null;
+        isSpeakingUtteranceRef.current = false;
         setIsSpeaking(false);
         setCallStatus("listening");
         callStatusRef.current = "listening";
@@ -761,8 +771,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       return;
     }
 
+    // ACQUIRE LOCK IMMEDIATELY to prevent duplicate concurrent playback
+    isSpeakingUtteranceRef.current = true;
+    const currentTurn = turnIdRef.current;
+
     const playBrowserFallback = (chunk: string) => {
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      if (typeof window === "undefined" || !("speechSynthesis" in window) || !isCallActiveRef.current || turnIdRef.current !== currentTurn) {
         isSpeakingUtteranceRef.current = false;
         drainSpeechQueue();
         return;
@@ -795,8 +809,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
 
       utterance.onstart = () => {
-        if (!isCallActiveRef.current) {
+        if (!isCallActiveRef.current || turnIdRef.current !== currentTurn) {
           window.speechSynthesis.cancel();
+          isSpeakingUtteranceRef.current = false;
           return;
         }
         setCallStatus("speaking");
@@ -822,8 +837,27 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       window.speechSynthesis.speak(utterance);
     };
 
-    // If user explicitly configured browser built-in accents and did not select an Azure voice:
-    if (ttsEngine === "browser" && !ttsVoice.startsWith("azure:")) {
+    // Pure Urdu personas: browser voices can't pronounce Urdu script correctly,
+    // so always route them through the Azure neural Urdu voices (perfect Urdu).
+    // Roman/Latin-script personas must be spoken by an Urdu neural voice, otherwise
+    // the voice reads every Latin letter separately and sounds broken. Text is
+    // converted to native Urdu script before synthesis (see romanUrduToUrduScript).
+    const pureUrduAzureVoice =
+      ttsVoice === "persona:urdu-male"
+        ? "azure:ur-PK-AsadNeural"
+        : ttsVoice === "persona:urdu-female"
+        ? "azure:ur-PK-UzmaNeural"
+        : ttsVoice === "persona:kashif"
+        ? "azure:ur-PK-AsadNeural"
+        : ttsVoice === "persona:ayesha"
+        ? "azure:ur-PK-UzmaNeural"
+        : ttsVoice === "persona:vikram-roman"
+        ? "azure:ur-PK-AsadNeural"
+        : ttsVoice === "persona:neha-roman"
+        ? "azure:ur-PK-UzmaNeural"
+        : null;
+
+    if (ttsEngine === "browser" && !ttsVoice.startsWith("azure:") && !pureUrduAzureVoice) {
       playBrowserFallback(nextChunk);
       return;
     }
@@ -834,20 +868,28 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: nextChunk,
-          voice: ttsVoice,
+          text: pureUrduAzureVoice ? romanUrduToUrduScript(nextChunk) : nextChunk,
+          voice: pureUrduAzureVoice || ttsVoice,
         }),
       });
 
-      if (resp.ok && isCallActiveRef.current) {
+      // Discard chunk if turn changed or call ended while awaiting network
+      if (turnIdRef.current !== currentTurn || !isCallActiveRef.current) {
+        isSpeakingUtteranceRef.current = false;
+        return;
+      }
+
+      if (resp.ok) {
         const blob = await resp.blob();
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         currentAudioElementRef.current = audio;
 
         audio.onplay = () => {
-          if (!isCallActiveRef.current) {
+          if (!isCallActiveRef.current || turnIdRef.current !== currentTurn) {
             audio.pause();
+            currentAudioElementRef.current = null;
+            isSpeakingUtteranceRef.current = false;
             return;
           }
           setCallStatus("speaking");
@@ -873,7 +915,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       // Network or audio error fallback
     }
 
-    playBrowserFallback(nextChunk);
+    if (turnIdRef.current === currentTurn && isCallActiveRef.current) {
+      playBrowserFallback(nextChunk);
+    } else {
+      isSpeakingUtteranceRef.current = false;
+    }
   };
 
   const processStreamBuffer = (isFinal = false) => {
@@ -887,10 +933,10 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       sentenceRegex.lastIndex = 0;
       let match = sentenceRegex.exec(buf);
 
-      // Only break on clause if buffer has accumulated many words (> 22 words) without punctuation
+      // Fast initial response: break on clause if buffer has accumulated >= 10 words without sentence punctuation
       if (!match) {
         const words = buf.trim().split(/\s+/).filter(Boolean);
-        if (words.length >= 22) {
+        if (words.length >= 10) {
           const clauseRegex = /([,;:—])(\s+)/g;
           match = clauseRegex.exec(buf);
         }
@@ -935,6 +981,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       if (!isCallActiveRef.current) return;
       const token = e.detail?.token;
       if (typeof token === "string" && token) {
+        didStreamSpeakRef.current = true;
         streamingTtsBufferRef.current += token;
         processStreamBuffer(false);
       }
@@ -965,6 +1012,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       startCallRecognition();
       return;
     }
+    didStreamSpeakRef.current = true;
     streamingTtsBufferRef.current = cleaned;
     isStreamFinishedRef.current = true;
     processStreamBuffer(true);
@@ -980,15 +1028,26 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       } catch {}
     }
 
-    // Reset streaming TTS queue & buffer for new response
+    // Advance turn ID so any obsolete in-flight audio fetches or utterances are discarded
+    turnIdRef.current += 1;
+
+    // Reset streaming TTS queue & pause active audio elements for new response
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
+    }
+    if (currentAudioElementRef.current) {
+      try {
+        currentAudioElementRef.current.pause();
+        currentAudioElementRef.current.currentTime = 0;
+      } catch {}
+      currentAudioElementRef.current = null;
     }
     currentUtteranceRef.current = null;
     speechQueueRef.current = [];
     streamingTtsBufferRef.current = "";
     isSpeakingUtteranceRef.current = false;
     isStreamFinishedRef.current = false;
+    didStreamSpeakRef.current = false;
 
     setCallStatus("thinking");
     callStatusRef.current = "thinking";
@@ -1007,8 +1066,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         isStreamFinishedRef.current = true;
         processStreamBuffer(true);
 
-        // If nothing was generated or queued (e.g. empty reply), return to listening
-        if (!isSpeakingUtteranceRef.current && speechQueueRef.current.length === 0) {
+        // Fallback: ONLY if no streaming speech was ever queued or spoken, speak once
+        if (!didStreamSpeakRef.current && !isSpeakingUtteranceRef.current && speechQueueRef.current.length === 0) {
           if (assistantReply && assistantReply.trim()) {
             speakCallResponse(assistantReply);
           } else {
@@ -1088,6 +1147,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         combinedText = transliterateToRomanUrdu(combinedText);
       }
 
+      if (containsEndCallKeyword(combinedText)) {
+        handleEndCall();
+        return;
+      }
+
       if (callStatusRef.current === "speaking") {
         if (containsStopKeyword(combinedText)) {
           stopCallSpeaking();
@@ -1120,7 +1184,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               triggerCallSend(spokenText);
             }
           }
-        }, 1800);
+        }, 1000);
       }
     };
 
@@ -1195,11 +1259,21 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     // Resolve user's active BYOK key and custom provider if applicable
     let customProvider: CustomProvider | undefined;
-    if (selectedProvider && selectedProvider.startsWith("custom:")) {
-      const customProviderId = selectedProvider.slice("custom:".length);
-      try {
-        customProvider = readCustomProviders().find((provider) => provider.id === customProviderId);
-      } catch {}
+    if (selectedProvider) {
+      if (selectedProvider.startsWith("custom:")) {
+        const customProviderId = selectedProvider.slice("custom:".length);
+        try {
+          customProvider = readCustomProviders().find((provider) => provider.id === customProviderId);
+        } catch {}
+      } else {
+        try {
+          customProvider = readCustomProviders().find(
+            (provider) =>
+              provider.name.toLowerCase() === selectedProvider.toLowerCase() ||
+              provider.id.toLowerCase() === selectedProvider.toLowerCase()
+          );
+        } catch {}
+      }
     }
 
     let userKey: string | undefined;
@@ -1486,7 +1560,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         <ModelSelector />
       </div>
 
-      {/* Container wrapping Main Input Box and Call Assistant button right outside */}
+      {/* Container wrapping Main Input Box */}
       <div className="flex items-end gap-2.5">
         <div
           onDragOver={(e) => {
@@ -1504,7 +1578,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               uploadFiles(e.dataTransfer.files);
             }
           }}
-          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
+          className={`relative flex-1 min-w-0 bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
             isStreaming
               ? styles.streamingBorder
               : isDraggingOver
@@ -1512,6 +1586,26 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
                 : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
           }`}
         >
+        {/* Call Assistant Button: absolutely at top-right, just above the input field */}
+        <div className="absolute top-2 right-2 z-10">
+            <button
+              type="button"
+              onClick={isCallActive ? handleEndCall : handleStartCall}
+              className={`p-0 transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center ${
+                isCallActive
+                  ? "text-red-500 hover:text-red-400 animate-pulse"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+              aria-label={isCallActive ? "End Call" : "Start Voice Call"}
+            >
+              {isCallActive ? (
+                <PhoneOff className="w-5 h-5 stroke-[2.2]" />
+              ) : (
+                <PhoneCall className="w-5 h-5 stroke-[2]" />
+              )}
+            </button>
+        </div>
+
         {/* Attachments Row */}
         {(attachments.length > 0 || isUploading) && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
@@ -1632,7 +1726,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           }
           rows={1}
           disabled={disabled}
-          className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed ${styles.messageTextarea}`}
+          className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed pr-6 ${styles.messageTextarea}`}
         />
 
         {/* Bottom Area: If isCallActive, show full-width sound waves; else show normal tools */}
@@ -1776,7 +1870,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
                   type="button"
                   onClick={handleSend}
                   disabled={isUploading}
-                  className="p-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 text-zinc-200 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
+                  className="p-1.5 rounded-xl border border-zinc-700/60 bg-zinc-800/60 text-zinc-200 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
                   title="Send Message"
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -1785,7 +1879,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
                 <button
                   type="button"
                   onClick={onStop}
-                  className="p-2 rounded-xl border border-red-900/80 bg-red-950/80 text-rose-200 hover:bg-red-900/80 hover:text-white transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
+                  className="p-1.5 rounded-xl border border-red-900/80 bg-red-950/80 text-rose-200 hover:bg-red-900/80 hover:text-white transition-all duration-150 flex items-center justify-center shadow-sm cursor-pointer"
                   title="Stop generating"
                   aria-label="Stop generating"
                 >
@@ -1796,7 +1890,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
                   type="button"
                   onClick={toggleSpeechRecognition}
                   disabled={!isSttEnabled}
-                  className={`p-2 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
+                  className={`p-1.5 rounded-xl border transition-all duration-150 flex items-center justify-center select-none cursor-pointer ${isListening
                       ? "bg-red-600 text-white border-red-500 animate-pulse shadow-lg shadow-red-600/50"
                       : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/70 hover:border-zinc-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                     }`}
@@ -1810,26 +1904,6 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         )}
       </div>
 
-      {/* Call Assistant Icon Button (Placed right outside the message field) */}
-      <Tooltip content={isCallActive ? "End Call" : "Start Voice Call"} side="top">
-        <button
-          type="button"
-          onClick={isCallActive ? handleEndCall : handleStartCall}
-          className={`p-2.5 mb-1 transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0 cursor-pointer flex items-center justify-center rounded-2xl ${
-            isCallActive
-              ? "text-red-500 hover:text-red-400 animate-pulse hover:bg-red-500/10"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-          }`}
-          title={isCallActive ? "End Call" : "Start Voice Call"}
-          aria-label={isCallActive ? "End Call" : "Start Voice Call"}
-        >
-          {isCallActive ? (
-            <PhoneOff className="w-5 h-5 stroke-[2.2]" />
-          ) : (
-            <PhoneCall className="w-5 h-5 stroke-[2]" />
-          )}
-        </button>
-      </Tooltip>
     </div>
 
       {/* Centered Footer Text */}

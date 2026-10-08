@@ -49,14 +49,22 @@ export async function POST(req: NextRequest) {
       selectedVoice = selectedVoice.replace("azure:", "");
     } else if (selectedVoice.startsWith("persona:")) {
       const pId = selectedVoice.replace("persona:", "");
-      if (pId === "asad") {
+      if (pId === "urdu-male") {
+        selectedVoice = "ur-PK-AsadNeural";
+      } else if (pId === "urdu-female") {
+        selectedVoice = "ur-PK-UzmaNeural";
+      } else if (pId === "vikram-roman") {
+        selectedVoice = "hi-IN-MadhurNeural";
+      } else if (pId === "neha-roman") {
+        selectedVoice = "hi-IN-SwaraNeural";
+      } else if (pId === "asad") {
         selectedVoice = "ur-PK-AsadNeural";
       } else if (pId === "bilal") {
         selectedVoice = "ur-PK-AsadNeural";
       } else if (pId === "ayesha") {
         selectedVoice = "ur-PK-UzmaNeural";
-      } else if (pId === "pari") {
-        selectedVoice = "hi-IN-SwaraNeural";
+      } else if (pId === "kashif") {
+        selectedVoice = "hi-IN-MadhurNeural";
       } else if (pId === "swara") {
         selectedVoice = "hi-IN-SwaraNeural";
       } else if (pId === "madhur") {
@@ -112,19 +120,42 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 3. Synthesize via Edge Neural AI ────────────────────────────────────
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    // Edge TTS occasionally times out on the first websocket handshake, so retry once.
+    let audioBuffer: Buffer | null = null;
+    let lastError: any = null;
 
-    const { audioStream } = tts.toStream(cleanText);
+    for (let attempt = 0; attempt < 2 && !audioBuffer; attempt++) {
+      try {
+        const tts = new MsEdgeTTS();
+        await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
-      audioStream.on("end", () => resolve());
-      audioStream.on("error", (err: any) => reject(err));
-    });
+        const { audioStream } = tts.toStream(cleanText);
 
-    const audioBuffer = Buffer.concat(chunks);
+        const chunks: Buffer[] = [];
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Edge TTS timeout")), 15000);
+          audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
+          audioStream.on("end", () => {
+            clearTimeout(timer);
+            resolve();
+          });
+          audioStream.on("error", (err: any) => {
+            clearTimeout(timer);
+            reject(err);
+          });
+        });
+
+        audioBuffer = Buffer.concat(chunks);
+      } catch (err: any) {
+        lastError = err;
+        audioBuffer = null;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 600));
+      }
+    }
+
+    if (!audioBuffer || audioBuffer.length === 0) {
+      throw lastError || new Error("Edge TTS synthesis failed");
+    }
 
     // Save to memory and disk cache for instantaneous future plays
     if (audioBuffer.length > 500) {

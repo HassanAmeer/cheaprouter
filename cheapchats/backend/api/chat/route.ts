@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@cheapchats/backend/db";
 import { getSession } from "@cheapchats/backend/lib/auth";
-import { conversations, messages, globalConfig, memories, skills as skillsTable, attachments as attachmentsTable, mcpServers as mcpServersTable, notifications as notificationsTable } from "@cheapchats/backend/db/schema";
+import { conversations, messages, globalConfig, memories, skills as skillsTable, attachments as attachmentsTable, mcpServers as mcpServersTable, notifications as notificationsTable, agents as agentsTable } from "@cheapchats/backend/db/schema";
 import { providerEndpoints } from "@cheapchats/backend/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { SYSTEM_PROMPT as DEFAULT_SYSTEM_PROMPT } from "@cheapchats/frontend/lib/systemPrompt";
@@ -16,7 +16,7 @@ import {
   searchWebWithReach,
   getYoutubeTranscriptWithReach,
 } from "@cheapchats/backend/lib/agentReachService";
-import { browsePage, captureScreenshot } from "@cheapchats/backend/lib/playwrightService";
+import { browsePage, captureScreenshot, searchYouTubeWithPlaywright } from "@cheapchats/backend/lib/playwrightService";
 
 function saveCodeCheckpointToMemory(convId: string | null, userId: string, fullContent: string, targetModel: string) {
   if (!convId) return;
@@ -256,6 +256,17 @@ export async function POST(req: Request) {
         if (existingConv?.systemPrompt) {
           effectiveSystemPrompt = existingConv.systemPrompt;
         }
+        if (existingConv?.agentId) {
+          const agentEntry = db.select().from(agentsTable).where(eq(agentsTable.id, existingConv.agentId)).get();
+          if (agentEntry?.capabilities) {
+            try {
+              const caps = JSON.parse(agentEntry.capabilities);
+              if (caps.webSearch || caps.agentReach || caps.playwright) {
+                tools.webSearch = true;
+              }
+            } catch {}
+          }
+        }
       } catch {}
     }
 
@@ -452,7 +463,7 @@ The user is requesting a game or playable interactive experience. You MUST inclu
     const urlMatch = message.match(/https?:\/\/[^\s<>'"]+/i);
     const isExplicitSearchRequest =
       Boolean(tools?.webSearch) ||
-      /\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape)\b/i.test(
+      /\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape|live|price|rate|bhao|result|nikal|nikalo|check|current|today|bitcoin|crypto|nvidia|youtube|video|play|chalao|kholo|browse|fetch)\b/i.test(
         message
       );
 
@@ -477,13 +488,99 @@ ${scrapeResult.markdown}
       }
     }
 
-    if (tools?.webSearch || (isExplicitSearchRequest && !urlMatch)) {
+    // YOUTUBE SEARCH & PLAYBACK (e.g. "youtube pe lofi music search karo aur 3rd video play kar do", "koi bhi video play kar do", "youtube ka tab khol do")
+    const isYouTubeGeneralOpen =
+      /\byoutube\b/i.test(message) &&
+      /\b(tab|kholo|open|khol)\b/i.test(message) &&
+      !/\b(search|dhoondo|find|video|song|gaana|play|3rd|third|teesri|2nd|second|doosri|1st|first|pehli)\b/i.test(message);
+
+    const isYouTubeSearchAndPlay =
+      (/\byoutube\b/i.test(message) &&
+        /\b(search|dhoondo|play|chalao|video|song|gaana|kholo|tab|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|3rd|1st|2nd|koi bhi|any)\b/i.test(
+          message
+        )) ||
+      (/\b(video|gaana|song)\b/i.test(message) &&
+        /\b(play|chalao|search|dhoondo|kholo|third|teesri|teesra|3rd)\b/i.test(message));
+
+    if (isYouTubeGeneralOpen) {
+      finalSystemPrompt += `\n\n<youtube_action_instruction>
+The user requested to open YouTube in a new browser tab.
+You MUST output this exact XML tag:
+<cheapchatAgent action="open_browser" data="https://www.youtube.com" />
+Confirm to the user in fluent Roman Urdu / English that the YouTube tab has been opened.
+</youtube_action_instruction>\n`;
+    } else if (isYouTubeSearchAndPlay) {
+      let ytQuery = message
+        .replace(/https?:\/\/[^\s]+/gi, "")
+        .replace(
+          /\b(youtube|par|pe|mein|kholo|open|khol|do|dhoondo|search|karke|kar do|kardo|play|chalao|video|song|gaana|tab|aur|bhi|koi|any|third|teesri|teesra|first|pehli|pehla|second|doosri|doosra|fourth|chauthi|1st|2nd|3rd|4th)\b/gi,
+          " "
+        )
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!ytQuery) {
+        ytQuery = message.replace(/https?:\/\/[^\s]+/gi, "").trim();
+      }
+
+      console.log("[Playwright YouTube] Searching YouTube for:", ytQuery);
+      try {
+        const ytVideos = await searchYouTubeWithPlaywright(ytQuery, 5);
+        if (ytVideos && ytVideos.length > 0) {
+          let targetIndex = 0;
+          let ordinalLabel = "1st Video";
+          if (/\b(third|3rd|teesri|teesra|3)\b/i.test(message)) {
+            targetIndex = 2;
+            ordinalLabel = "3rd Video (Teesri Video)";
+          } else if (/\b(second|2nd|doosri|doosra|2)\b/i.test(message)) {
+            targetIndex = 1;
+            ordinalLabel = "2nd Video (Doosri Video)";
+          } else if (/\b(fourth|4th|chauthi|chautha|4)\b/i.test(message)) {
+            targetIndex = 3;
+            ordinalLabel = "4th Video (Chauthi Video)";
+          } else if (/\b(fifth|5th|panchwi|5)\b/i.test(message)) {
+            targetIndex = 4;
+            ordinalLabel = "5th Video (Panchwi Video)";
+          } else if (/\b(first|1st|pehli|pehla|1)\b/i.test(message)) {
+            targetIndex = 0;
+            ordinalLabel = "1st Video (Pehli Video)";
+          }
+
+          const selectedVideo = ytVideos[targetIndex] || ytVideos[0];
+          finalSystemPrompt += `\n\n<youtube_search_and_playback>
+YouTube Search Query: "${ytQuery}"
+Requested Target: ${ordinalLabel}
+Selected Video:
+- Title: "${selectedVideo.title}"
+- URL: "${selectedVideo.link}"
+- Video ID: "${selectedVideo.videoId || ""}"
+
+Found Search Results:
+${ytVideos.map((v, idx) => `${idx + 1}. [${v.title}](${v.link})`).join("\n")}
+
+MANDATORY INSTRUCTIONS FOR ASSISTANT:
+1. To automatically launch and play this video in the user's browser, you MUST output this XML tag:
+   <cheapchatAgent action="open_browser" data="${selectedVideo.link}" />
+2. State clearly in natural Roman Urdu or English:
+   "Maine YouTube par '${selectedVideo.title}' (${ordinalLabel}) play karne ke liye tab open kar diya hai."
+3. Include the direct clickable link [${selectedVideo.title}](${selectedVideo.link}) so the user can easily click or view it.
+</youtube_search_and_playback>\n`;
+        }
+      } catch (err) {
+        console.warn("[Playwright YouTube] Search failed:", err);
+      }
+    }
+
+    if (tools?.webSearch || (isExplicitSearchRequest && !urlMatch && !isYouTubeGeneralOpen && !isYouTubeSearchAndPlay)) {
       try {
         const cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, "").trim();
         if (cleanedQuery) {
           console.log("[AGENT REACH] Executing web search for:", cleanedQuery);
           const searchData = await searchWebWithReach(cleanedQuery, 5);
           if (searchData.results && searchData.results.length > 0) {
+            const wantsTabOpened = /\b(tab|kholo|open|browser)\b/i.test(message);
+            const topLink = searchData.results[0]?.link;
+
             finalSystemPrompt += `\n\n<web_search_results engine="${searchData.source}">
 Query: "${cleanedQuery}"
 ${searchData.summary ? `Summary: ${searchData.summary}\n` : ""}
@@ -491,6 +588,11 @@ Results:
 ${searchData.results
   .map((r: any) => `- **${r.title}** (${r.link})\n  ${r.snippet}`)
   .join("\n")}
+${
+  wantsTabOpened && topLink
+    ? `\nINSTRUCTION: The user asked to open the tab. Include the XML tag: <cheapchatAgent action="open_browser" data="${topLink}" /> to open the top result in a new tab.\n`
+    : ""
+}
 </web_search_results>\n`;
           }
         }

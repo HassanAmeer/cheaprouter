@@ -3,20 +3,24 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { X, Server, Plus, CheckCircle, Terminal } from "lucide-react";
+import { ModalListSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 export default function MCPServerModal() {
   const { activeModal, setActiveModal } = useAppStore();
   const [servers, setServers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [type, setType] = useState("stdio");
   const [urlOrCommand, setUrlOrCommand] = useState("");
 
-
   useEffect(() => {
     if (activeModal === "mcpServer") {
+      setLoading(true);
       fetch("/api/mcp")
         .then((r) => r.json())
-        .then((d) => setServers(d.servers || []));
+        .then((d) => setServers(d.servers || []))
+        .catch((e) => console.error(e))
+        .finally(() => setLoading(false));
     }
   }, [activeModal]);
 
@@ -65,29 +69,35 @@ export default function MCPServerModal() {
         <div className="space-y-2">
           <label className="font-semibold text-slate-300">Registered MCP Connectors</label>
           <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-            {servers.map((s) => (
-              <div key={s.id} className="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between group">
-                <div>
-                  <div className="font-semibold text-white flex items-center gap-1.5">
-                    <span>{s.name}</span>
-                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
-                      {s.type}
-                    </span>
+            {loading ? (
+              <ModalListSkeleton count={2} />
+            ) : servers.length === 0 ? (
+              <div className="py-4 text-center text-slate-500 italic">No MCP servers registered yet</div>
+            ) : (
+              servers.map((s) => (
+                <div key={s.id} className="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between group">
+                  <div>
+                    <div className="font-semibold text-white flex items-center gap-1.5">
+                      <span>{s.name}</span>
+                      <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
+                        {s.type}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.urlOrCommand}</div>
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.urlOrCommand}</div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <button
+                      onClick={() => handleDeleteServer(s.id)}
+                      className="p-1 rounded text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+                      title="Remove Server"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <button
-                    onClick={() => handleDeleteServer(s.id)}
-                    className="p-1 rounded text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                    title="Remove Server"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

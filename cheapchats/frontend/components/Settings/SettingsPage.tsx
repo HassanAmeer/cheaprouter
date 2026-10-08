@@ -1067,6 +1067,30 @@ export default function SettingsPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Thinking Wave Sound */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                    <div className="flex items-start gap-2.5">
+                      <Volume2 className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                      <div>
+                        <p className="text-xs font-semibold text-slate-200">
+                          Thinking wave sound
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Play a soft wave sound while the AI is thinking during a call.
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={chatPreferences.thinkingWaveSound !== false}
+                      onChange={(e) =>
+                        setChatPreferences({ thinkingWaveSound: e.target.checked })
+                      }
+                      aria-label="Thinking wave sound"
+                      className="h-4 w-4 shrink-0 cursor-pointer rounded accent-rose-400"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

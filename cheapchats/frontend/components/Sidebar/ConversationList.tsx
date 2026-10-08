@@ -22,6 +22,7 @@ import {
   Heart,
   Check,
 } from "lucide-react";
+import { SidebarChatsSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 interface ProjectFolder {
   id: string;
@@ -51,6 +52,7 @@ export default function ConversationList({ favouritesOnly = false }: Conversatio
 
   const { isIncognito, toggleIncognito, activeProjectId, setActiveProjectId } = useAppStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isProjectsOpen, setIsProjectsOpen] = useState(false);
   const [isChatsOpen, setIsChatsOpen] = useState(true);
@@ -112,6 +114,8 @@ export default function ConversationList({ favouritesOnly = false }: Conversatio
       }
     } catch (err) {
       console.error("Failed to load conversations:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -706,7 +710,9 @@ export default function ConversationList({ favouritesOnly = false }: Conversatio
 
         {isChatsOpen && (
           <div className="mt-1">
-            {normalChats.length === 0 ? (
+            {loading && conversations.length === 0 ? (
+              <SidebarChatsSkeleton count={7} />
+            ) : normalChats.length === 0 ? (
               <div className="px-3 py-2 text-[11px] text-slate-500 font-medium">
                 {favouritesOnly ? "No favourite chats yet. Add a chat to Favourites from its menu." : "No active chats found"}
               </div>

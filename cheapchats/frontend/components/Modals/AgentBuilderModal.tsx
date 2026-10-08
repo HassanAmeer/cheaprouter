@@ -14,11 +14,17 @@ export default function AgentBuilderModal() {
   const [model, setModel] = useState("openai/gpt-4o");
   const [capabilities, setCapabilities] = useState({
     webSearch: true,
+    agentReach: true,
+    playwright: true,
     mcpTools: true,
     skills: true,
     fileSearch: true,
     artifacts: true,
   });
+
+  const [sources, setSources] = useState<string[]>(["google", "reddit", "youtube"]);
+  const [mode, setMode] = useState<"background" | "tabs" | "both">("background");
+  const [schedule, setSchedule] = useState("none");
 
   if (activeModal !== "agentBuilder") return null;
 
@@ -38,7 +44,12 @@ export default function AgentBuilderModal() {
         systemPrompt,
         temperature,
         model,
-        capabilities,
+        capabilities: {
+          ...capabilities,
+          sources,
+          mode,
+          schedule,
+        },
         isPublic: true,
       }),
     });
@@ -123,6 +134,28 @@ export default function AgentBuilderModal() {
 
             <button
               type="button"
+              onClick={() => setCapabilities({ ...capabilities, agentReach: !capabilities.agentReach })}
+              className={`flex items-center gap-2 p-2 rounded-xl border text-left transition ${
+                capabilities.agentReach ? "bg-teal-500/20 border-teal-500/40 text-teal-300" : "bg-slate-900 border-white/10 text-slate-400"
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              <span>Agent Reach</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCapabilities({ ...capabilities, playwright: !capabilities.playwright })}
+              className={`flex items-center gap-2 p-2 rounded-xl border text-left transition ${
+                capabilities.playwright ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-slate-900 border-white/10 text-slate-400"
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              <span>Playwright Web</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setCapabilities({ ...capabilities, mcpTools: !capabilities.mcpTools })}
               className={`flex items-center gap-2 p-2 rounded-xl border text-left transition ${
                 capabilities.mcpTools ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-slate-900 border-white/10 text-slate-400"
@@ -142,6 +175,63 @@ export default function AgentBuilderModal() {
               <Layout className="w-4 h-4" />
               <span>Live Preview Engine</span>
             </button>
+          </div>
+        </div>
+
+        {/* Research Sources & Platforms */}
+        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-900/60 border border-white/10">
+          <label className="font-semibold text-slate-300 text-xs flex items-center justify-between">
+            <span>Research Platforms & Targets</span>
+            <span className="text-[10px] text-purple-400 font-normal">{sources.length} selected</span>
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { id: "google", label: "Google / Web" },
+              { id: "twitter", label: "Twitter / X" },
+              { id: "reddit", label: "Reddit" },
+              { id: "linkedin", label: "LinkedIn" },
+              { id: "youtube", label: "YouTube" },
+              { id: "github", label: "GitHub" },
+              { id: "facebook", label: "Facebook" },
+              { id: "instagram", label: "Instagram" },
+              { id: "others", label: "Others / Custom" },
+            ].map((s) => {
+              const active = sources.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    if (active) setSources(sources.filter((x) => x !== s.id));
+                    else setSources([...sources, s.id]);
+                  }}
+                  className={`p-1.5 rounded-xl border text-[11px] font-medium text-left transition flex items-center justify-between ${
+                    active ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-slate-900 border-white/10 text-slate-400"
+                  }`}
+                >
+                  <span className="truncate">{s.label}</span>
+                  {active && <span className="text-purple-400 text-xs">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between pt-1 text-[11px]">
+            <span className="text-slate-400">Automation Mode:</span>
+            <div className="flex gap-1">
+              {(["background", "tabs", "both"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={`px-2 py-0.5 rounded-lg border capitalize transition ${
+                    mode === m ? "bg-purple-500/20 border-purple-500/40 text-purple-300 font-semibold" : "border-white/5 text-slate-400"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

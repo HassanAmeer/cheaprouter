@@ -39,7 +39,27 @@ export async function POST(req: Request) {
     const userId = session?.id || "usr_user1";
 
     const body = await req.json();
-    const id = `agt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const id = body.id || `agt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    if (body.id) {
+      const existing = db.select().from(agents).where(eq(agents.id, body.id)).get();
+      if (existing) {
+        db.update(agents)
+          .set({
+            name: body.name || existing.name,
+            description: body.description !== undefined ? body.description : existing.description,
+            avatar: body.avatar || existing.avatar,
+            systemPrompt: body.systemPrompt || existing.systemPrompt,
+            temperature: typeof body.temperature === "number" ? body.temperature : existing.temperature,
+            model: body.model || existing.model,
+            capabilities: JSON.stringify(body.capabilities || {}),
+            isPublic: body.isPublic ? 1 : 0,
+          })
+          .where(eq(agents.id, body.id))
+          .run();
+        return NextResponse.json({ success: true, agentId: body.id });
+      }
+    }
 
     await db.insert(agents).values({
       id,

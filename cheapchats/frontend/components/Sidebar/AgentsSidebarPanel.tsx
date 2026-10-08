@@ -27,9 +27,13 @@ import {
   MessageSquare,
   Paperclip,
   FileText,
+  Play,
+  Pause,
+  Clock,
+  Monitor,
+  RefreshCw,
 } from "lucide-react";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
-import ToolLibraryModal from "@cheapchats/frontend/components/Modals/ToolLibraryModal";
 import { SidebarCardsSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 const AVAILABLE_MODELS = [
@@ -44,6 +48,8 @@ const CATEGORIES = ["general", "coding", "writing", "productivity", "research", 
 
 const PRESET_TOOLS = [
   { id: "web_search", name: "Web Search", description: "Search the live web for real-time information", icon: Globe },
+  { id: "agent_reach", name: "Agent Reach", description: "Zero-fee web reader, YouTube transcripts, and GitHub explorer", icon: Globe },
+  { id: "playwright", name: "Playwright Automation", description: "Headless Chromium browser automation, SPA crawler & screenshots", icon: Layout },
   { id: "file_search", name: "File Search", description: "Search uploaded workspace files & docs", icon: FileSearch },
   { id: "code_execution", name: "Code Interpreter", description: "Run Python & JS code in sandbox", icon: Code2 },
   { id: "mcp_tools", name: "MCP Tools", description: "Access connected Model Context Protocol servers", icon: Wrench },
@@ -59,6 +65,18 @@ const PRESET_SKILLS = [
   { id: "api-design", name: "REST & GraphQL API Design", category: "Backend" },
   { id: "testing", name: "Jest & Integration Testing", category: "DevOps" },
   { id: "database-tools", name: "PostgreSQL & SQLite Queries", category: "Utility" }
+];
+
+const RESEARCH_SOURCES = [
+  { id: "google", label: "Google / Web", color: "text-blue-400" },
+  { id: "twitter", label: "Twitter / X", color: "text-sky-400" },
+  { id: "reddit", label: "Reddit", color: "text-orange-400" },
+  { id: "linkedin", label: "LinkedIn", color: "text-indigo-400" },
+  { id: "youtube", label: "YouTube", color: "text-red-400" },
+  { id: "github", label: "GitHub", color: "text-emerald-400" },
+  { id: "facebook", label: "Facebook", color: "text-blue-500" },
+  { id: "instagram", label: "Instagram", color: "text-pink-400" },
+  { id: "others", label: "Others / Custom URL", color: "text-purple-400" },
 ];
 
 const AVATAR_OPTIONS = ["🤖", "🧠", "⚡", "🔮", "🛠️", "🚀", "🎨", "💻", "🛡️", "📊"];
@@ -85,9 +103,15 @@ export default function AgentsSidebarPanel() {
   const [instructions, setInstructions] = useState("");
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
 
+  // Autonomous Research & Multi-Source Automation States
+  const [sources, setSources] = useState<string[]>(["google", "reddit", "youtube"]);
+  const [automationMode, setAutomationMode] = useState<"background" | "tabs" | "both">("background");
+  const [schedule, setSchedule] = useState<string>("none");
+  const [targetUrlsInput, setTargetUrlsInput] = useState<string>("");
+  const [agentRunningMap, setAgentRunningMap] = useState<Record<string, { state: string; step?: string }>>({});
+
   // Tools & Skills
   const [tools, setTools] = useState<string[]>([]);
-  const [showToolsPicker, setShowToolsPicker] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [useAllSkills, setUseAllSkills] = useState(false);
   const [showSkillsPicker, setShowSkillsPicker] = useState(false);
@@ -156,6 +180,10 @@ export default function AgentsSidebarPanel() {
     setTools([]);
     setSkills([]);
     setUseAllSkills(false);
+    setSources(["google", "reddit", "youtube"]);
+    setAutomationMode("background");
+    setSchedule("none");
+    setTargetUrlsInput("");
     setSupportName("");
     setSupportEmail("");
     setMaxSteps("System");
@@ -179,12 +207,64 @@ export default function AgentsSidebarPanel() {
       setTools(caps.tools || (caps.webSearch ? ["Web Search", "MCP Tools"] : []));
       setSkills(caps.skillsList || []);
       setUseAllSkills(!!caps.useAllSkills);
+      setSources(caps.sources || ["google", "reddit", "youtube"]);
+      setAutomationMode(caps.mode || "background");
+      setSchedule(caps.schedule || "none");
+      setTargetUrlsInput((caps.targetUrls || []).join(", "));
     } catch (e) {
       setTools([]);
       setSkills([]);
+      setSources(["google", "reddit", "youtube"]);
+      setAutomationMode("background");
     }
 
     setDropdownOpen(false);
+  };
+
+  // Toggle Autonomous Play / Pause for an Agent
+  const handleTogglePlay = async (agent: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const current = agentRunningMap[agent.id]?.state;
+    if (current === "running") {
+      setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "paused", step: "Paused" } }));
+      await fetch(`/api/agents/${agent.id}/pause`, { method: "POST" });
+    } else {
+      setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "running", step: "Starting research..." } }));
+      try {
+        const res = await fetch(`/api/agents/${agent.id}/play`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: agent.name }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Poll status every 2 seconds until done
+          const intervalId = setInterval(async () => {
+            try {
+              const statusRes = await fetch(`/api/agents/${agent.id}/status`);
+              const statusData = await statusRes.json();
+              if (statusData.state === "completed") {
+                clearInterval(intervalId);
+                setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "completed", step: "Briefing created" } }));
+                setSuccessMsg(`Research briefing delivered to Chat & Project!`);
+                setTimeout(() => setSuccessMsg(""), 4000);
+              } else if (statusData.state === "paused" || statusData.state === "error") {
+                clearInterval(intervalId);
+                setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: statusData.state, step: statusData.currentStep } }));
+              } else {
+                setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "running", step: statusData.currentStep || "Researching..." } }));
+              }
+            } catch {
+              clearInterval(intervalId);
+            }
+          }, 2000);
+        } else {
+          setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "idle" } }));
+        }
+      } catch (err) {
+        setAgentRunningMap((prev) => ({ ...prev, [agent.id]: { state: "idle" } }));
+      }
+    }
   };
 
   // Save or Create agent handler
@@ -200,10 +280,16 @@ export default function AgentsSidebarPanel() {
       tools,
       skillsList: skills,
       useAllSkills,
-      webSearch: tools.includes("Web Search"),
+      webSearch: tools.includes("Web Search") || tools.includes("Agent Reach"),
+      agentReach: tools.includes("Agent Reach"),
+      playwright: tools.includes("Playwright Automation"),
       mcpTools: tools.includes("MCP Tools"),
       fileSearch: tools.includes("File Search"),
       artifacts: tools.includes("Live Preview Engine") || tools.includes("Artifacts Engine"),
+      sources,
+      mode: automationMode,
+      schedule,
+      targetUrls: targetUrlsInput.split(",").map((s) => s.trim()).filter(Boolean),
       maxSteps,
       handoffs,
       supportName,
@@ -320,26 +406,50 @@ export default function AgentsSidebarPanel() {
                   <SidebarCardsSkeleton count={2} />
                 </div>
               ) : (
-                agents.map((ag) => (
-                  <div
-                    key={ag.id}
-                    onClick={() => handleSelectAgent(ag)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition ${
-                      selectedAgentId === ag.id ? "bg-red-950/40 text-white border border-red-500/30" : "hover:bg-white/5 text-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="text-sm">{ag.avatar || "🤖"}</span>
-                      <span className="font-medium truncate text-xs">{ag.name}</span>
-                    </div>
-                    <button
-                      onClick={(e) => handleDelete(ag.id, e)}
-                      className="p-1 text-slate-500 hover:text-red-400 rounded transition"
+                agents.map((ag) => {
+                  const isRunning = agentRunningMap[ag.id]?.state === "running";
+                  return (
+                    <div
+                      key={ag.id}
+                      onClick={() => handleSelectAgent(ag)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition ${
+                        selectedAgentId === ag.id ? "bg-red-950/40 text-white border border-red-500/30" : "hover:bg-white/5 text-slate-300"
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-sm">{ag.avatar || "🤖"}</span>
+                        <div className="flex flex-col truncate">
+                          <span className="font-medium truncate text-xs">{ag.name}</span>
+                          {isRunning && (
+                            <span className="text-[9px] text-emerald-400 flex items-center gap-1 font-semibold animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Researching...
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleTogglePlay(ag, e)}
+                          title={isRunning ? "Pause Agent Research" : "Run Autonomous Research"}
+                          className={`p-1.5 rounded-lg border transition ${
+                            isRunning
+                              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 animate-pulse"
+                              : "bg-white/5 border-white/10 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/30"
+                          }`}
+                        >
+                          {isRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(ag.id, e)}
+                          className="p-1 text-slate-500 hover:text-red-400 rounded transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -526,20 +636,10 @@ export default function AgentsSidebarPanel() {
                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
                   TOOLS
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowToolsPicker(!showToolsPicker)}
-                  className="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add
-                </button>
               </div>
 
               {tools.length === 0 ? (
-                <div
-                  onClick={() => setShowToolsPicker(true)}
-                  className="border border-dashed border-[#383838] hover:border-white/20 bg-[#191919] rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition"
-                >
+                <div className="border border-dashed border-[#383838] bg-[#191919] rounded-2xl p-5 flex flex-col items-center justify-center text-center">
                   <Plus className="w-5 h-5 text-slate-500 mb-1" />
                   <p className="text-xs font-semibold text-slate-200">No tools yet</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
@@ -565,20 +665,142 @@ export default function AgentsSidebarPanel() {
                   ))}
                 </div>
               )}
+            </div>
 
-              {/* Tool Library Modal Popup */}
-              <ToolLibraryModal
-                isOpen={showToolsPicker}
-                onClose={() => setShowToolsPicker(false)}
-                selectedTools={tools}
-                onToggleTool={(toolName) => {
-                  if (tools.includes(toolName)) {
-                    setTools(tools.filter((t) => t !== toolName));
-                  } else {
-                    setTools([...tools, toolName]);
-                  }
-                }}
-              />
+            {/* RESEARCH SOURCES & PLATFORMS Section */}
+            <div className="flex flex-col gap-2 p-3 bg-[#1e1e1e] border border-[#333333] rounded-2xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-red-400" /> RESEARCH SOURCES & TARGETS
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {sources.length} active
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Select platforms where this agent scans and collects data autonomously:
+              </p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {RESEARCH_SOURCES.map((src) => {
+                  const isChecked = sources.includes(src.id);
+                  return (
+                    <button
+                      key={src.id}
+                      type="button"
+                      onClick={() => {
+                        if (isChecked) {
+                          setSources(sources.filter((s) => s !== src.id));
+                        } else {
+                          setSources([...sources, src.id]);
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-xl border text-[11px] font-medium text-left transition flex items-center justify-between ${
+                        isChecked
+                          ? "bg-red-500/20 border-red-500/40 text-red-300 shadow-sm"
+                          : "bg-[#252525] border-[#393939] text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span className="truncate">{src.label}</span>
+                      {isChecked && <Check className="w-3 h-3 text-red-400 flex-shrink-0 ml-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Target URLs input if 'others' is checked */}
+              {sources.includes("others") && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[10px] font-semibold text-slate-300">
+                    Custom Target URLs (comma-separated):
+                  </label>
+                  <input
+                    type="text"
+                    value={targetUrlsInput}
+                    onChange={(e) => setTargetUrlsInput(e.target.value)}
+                    placeholder="https://example.com, https://news.ycombinator.com"
+                    className="w-full bg-[#181818] border border-[#333333] rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/60"
+                  />
+                </div>
+              )}
+
+              {/* Automation Mode Selector */}
+              <div className="pt-2 border-t border-white/5 flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5 text-purple-400" /> EXECUTION MODE
+                </span>
+                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setAutomationMode("background")}
+                    className={`py-1.5 px-2 rounded-xl border font-medium text-center transition ${
+                      automationMode === "background"
+                        ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
+                        : "bg-[#252525] border-[#393939] text-slate-400"
+                    }`}
+                  >
+                    ⚡ Background
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAutomationMode("tabs")}
+                    className={`py-1.5 px-2 rounded-xl border font-medium text-center transition ${
+                      automationMode === "tabs"
+                        ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
+                        : "bg-[#252525] border-[#393939] text-slate-400"
+                    }`}
+                  >
+                    🪟 Live Tabs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAutomationMode("both")}
+                    className={`py-1.5 px-2 rounded-xl border font-medium text-center transition ${
+                      automationMode === "both"
+                        ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
+                        : "bg-[#252525] border-[#393939] text-slate-400"
+                    }`}
+                  >
+                    🔄 Both
+                  </button>
+                </div>
+              </div>
+
+              {/* Schedule Selector */}
+              <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" /> SCHEDULE
+                </span>
+                <select
+                  value={schedule}
+                  onChange={(e) => setSchedule(e.target.value)}
+                  className="bg-[#252525] border border-[#393939] rounded-xl px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-400/60"
+                >
+                  <option value="none">⚡ Instant / On-Demand</option>
+                  <option value="hourly">⏰ Hourly Auto-Run</option>
+                  <option value="daily">📅 Daily Digest</option>
+                </select>
+              </div>
+
+              {/* Run Research Button */}
+              {selectedAgent && (
+                <div className="pt-2 border-t border-white/5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => handleTogglePlay(selectedAgent, e)}
+                    className="w-full py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition"
+                  >
+                    {agentRunningMap[selectedAgent.id]?.state === "running" ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5" /> Pause Research Task
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" /> Run Autonomous Research Now
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* SKILLS Section */}

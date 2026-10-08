@@ -63,6 +63,7 @@ export interface ChatPreferences {
   streamResponse: boolean;
   autoOpenArtifacts: boolean;
   responseCompletionSound: boolean;
+  thinkingWaveSound: boolean;
   rollingWindowLimit: number;
 }
 
@@ -202,9 +203,39 @@ export const useAppStore = create<AppState>((set) => ({
   setNotificationsOpen: (open) => set({ isNotificationsOpen: open }),
   toggleNotifications: () => set((state) => ({ isNotificationsOpen: !state.isNotificationsOpen })),
 
-  selectedProvider: "OpenAI",
-  selectedModel: "gpt-4o",
-  setSelectedProviderAndModel: (provider, model) => set({ selectedProvider: provider, selectedModel: model }),
+  selectedProvider: (() => {
+    if (typeof window === "undefined") return "OpenAI";
+    try {
+      const saved = localStorage.getItem("cheapchats_selected_provider");
+      if (saved) return saved;
+    } catch {}
+    return "OpenAI";
+  })(),
+  selectedModel: (() => {
+    if (typeof window === "undefined") return "gpt-4o";
+    try {
+      const saved = localStorage.getItem("cheapchats_selected_model");
+      if (saved) return saved;
+    } catch {}
+    return "gpt-4o";
+  })(),
+  setSelectedProviderAndModel: (provider, model) => {
+    try {
+      if (typeof window !== "undefined") {
+        if (provider) {
+          localStorage.setItem("cheapchats_selected_provider", provider);
+        } else {
+          localStorage.removeItem("cheapchats_selected_provider");
+        }
+        if (model) {
+          localStorage.setItem("cheapchats_selected_model", model);
+        } else {
+          localStorage.removeItem("cheapchats_selected_model");
+        }
+      }
+    } catch {}
+    set({ selectedProvider: provider, selectedModel: model });
+  },
 
   isIncognito: false,
   setIncognito: (incognito) => set({ isIncognito: incognito }),
@@ -374,6 +405,7 @@ export const useAppStore = create<AppState>((set) => ({
       streamResponse: true,
       autoOpenArtifacts: true,
       responseCompletionSound: true,
+      thinkingWaveSound: true,
       rollingWindowLimit: 20,
     };
     if (typeof window === "undefined") return defaultPrefs;

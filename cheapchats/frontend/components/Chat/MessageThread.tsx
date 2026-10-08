@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import MessageItem, { Message } from "./MessageItem";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { getSuggestionSkillName } from "@cheapchats/frontend/lib/suggestionSkills";
+import { ConversationThreadSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 import { Sparkles, Code, Globe, Zap, ArrowDown, FileText, Workflow, Gamepad2 } from "lucide-react";
 
 interface MessageThreadProps {
@@ -12,6 +13,7 @@ interface MessageThreadProps {
   onRegenerate?: () => void;
   onEditUserMessage?: (newContent: string) => void;
   isStreaming?: boolean;
+  isLoading?: boolean;
 }
 
 export default function MessageThread({
@@ -20,6 +22,7 @@ export default function MessageThread({
   onRegenerate,
   onEditUserMessage,
   isStreaming = false,
+  isLoading = false,
 }: MessageThreadProps) {
   const { setActiveSuggestionChip, addSelectedSkill } = useAppStore();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -37,6 +40,10 @@ export default function MessageThread({
     const skillName = getSuggestionSkillName(label, type);
     if (skillName) addSelectedSkill(skillName);
   };
+
+  if (isLoading) {
+    return <ConversationThreadSkeleton />;
+  }
 
   if (messages.length === 0) {
     return (

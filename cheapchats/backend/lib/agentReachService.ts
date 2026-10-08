@@ -1,8 +1,11 @@
 import { exec } from "child_process";
 import util from "util";
 import { browsePage, searchWithPlaywright, SearchResultItem } from "./playwrightService";
+import { executeTier1WithQueue, getTier1RateLimiter } from "./tier1RateLimiter";
 
 const execPromise = util.promisify(exec);
+
+export { getTier1RateLimiter };
 
 export interface AgentReachResponse {
   source: "jina_reader" | "playwright" | "agent_reach_cli" | "tavily" | "wikipedia" | "github_api";
@@ -12,6 +15,7 @@ export interface AgentReachResponse {
   markdown: string;
   metadata?: Record<string, any>;
   error?: string;
+  isQueued?: boolean;
 }
 
 export interface WebSearchEngineResult {
@@ -19,13 +23,17 @@ export interface WebSearchEngineResult {
   source: string;
   summary?: string;
   results: SearchResultItem[];
+  isQueued?: boolean;
 }
 
 /**
  * Read any web page into clean, LLM-ready markdown using Jina Reader (zero API fee),
- * with seamless automatic fallback to Playwright for JS-heavy web apps.
+ * with sliding 200 req/min rate limit queue & auto-retry, and seamless Playwright fallback.
  */
-export async function readWebPageWithReach(url: string): Promise<AgentReachResponse> {
+export async function readWebPageWithReach(
+  url: string,
+  options: { isBackground?: boolean; maxRetries?: number } = {}
+): Promise<AgentReachResponse> {
   if (!url || !url.startsWith("http")) {
     return {
       source: "jina_reader",
@@ -35,36 +43,54 @@ export async function readWebPageWithReach(url: string): Promise<AgentReachRespo
     };
   }
 
-  // Tier 1: Jina Reader (Zero API key required, converts live HTML to clean markdown)
+  // Tier 1: Jina Reader with sliding 200/min queue & auto-retry
   try {
-    const jinaUrl = `https://r.jina.ai/${url}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const rawMarkdown = await executeTier1WithQueue(
+      async () => {
+        const jinaUrl = `https://r.jina.ai/${url}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 14000);
 
-    const res = await fetch(jinaUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
-        Accept: "text/plain, text/markdown",
+        const res = await fetch(jinaUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
+            Accept: "text/plain, text/markdown",
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (res.status === 429) {
+          const err: any = new Error("429 Too Many Requests from Jina Reader");
+          err.status = 429;
+          throw err;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Jina Reader HTTP error ${res.status}`);
+        }
+
+        return await res.text();
       },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const text = await res.text();
-      if (text && text.length > 50 && !text.includes("403 Forbidden") && !text.includes("Access Denied")) {
-        const titleMatch = text.match(/^Title:\s*(.+)$/m);
-        return {
-          source: "jina_reader",
-          success: true,
-          title: titleMatch ? titleMatch[1].trim() : url,
-          url,
-          markdown: text.slice(0, 15000), // Cap at 15k chars for optimal LLM context
-        };
+      {
+        isBackground: options.isBackground ?? false,
+        maxRetries: options.maxRetries ?? (options.isBackground ? 5 : 2),
+        label: `Jina: ${url.slice(0, 45)}`,
       }
+    );
+
+    if (rawMarkdown && rawMarkdown.length > 50 && !rawMarkdown.includes("403 Forbidden") && !rawMarkdown.includes("Access Denied")) {
+      const titleMatch = rawMarkdown.match(/^Title:\s*(.+)$/m);
+      return {
+        source: "jina_reader",
+        success: true,
+        title: titleMatch ? titleMatch[1].trim() : url,
+        url,
+        markdown: rawMarkdown.slice(0, 15000), // Cap at 15k chars for optimal LLM context
+      };
     }
   } catch (jinaErr: any) {
-    console.warn("[Agent Reach] Jina reader failed, trying Playwright fallback:", jinaErr.message);
+    console.warn("[Agent Reach] Jina reader failed after queue/retries, attempting Playwright fallback:", jinaErr.message);
   }
 
   // Tier 2: Playwright Headless Browser fallback
@@ -107,10 +133,48 @@ export async function readWebPageWithReach(url: string): Promise<AgentReachRespo
  */
 export async function searchWebWithReach(
   query: string,
-  limit = 5
+  limit = 5,
+  options: { isBackground?: boolean; maxRetries?: number } = {}
 ): Promise<WebSearchEngineResult> {
   const q = query.trim();
   if (!q) return { query: "", source: "none", results: [] };
+
+  // 0. Instant Crypto Live Price (Free, Real-Time, Sub-second)
+  if (/\b(bitcoin|btc|ethereum|eth|solana|sol|crypto)\b/i.test(q)) {
+    try {
+      const coinId = /\b(ethereum|eth)\b/i.test(q)
+        ? "ethereum"
+        : /\b(solana|sol)\b/i.test(q)
+        ? "solana"
+        : "bitcoin";
+      const cgRes = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
+      );
+      if (cgRes.ok) {
+        const cgData = await cgRes.json();
+        if (cgData[coinId]) {
+          const price = cgData[coinId].usd;
+          const change = cgData[coinId].usd_24h_change !== undefined ? Number(cgData[coinId].usd_24h_change).toFixed(2) : "0";
+          const name = coinId.toUpperCase();
+          const summary = `Live Real-time Market Data: ${name} is currently trading at $${Number(price).toLocaleString()} USD (${Number(change) >= 0 ? "+" : ""}${change}% in 24h).`;
+          return {
+            query: q,
+            source: "coingecko_live",
+            summary,
+            results: [
+              {
+                title: `${name} Live Price & Market Cap`,
+                link: `https://www.coingecko.com/en/coins/${coinId}`,
+                snippet: summary,
+              },
+            ],
+          };
+        }
+      }
+    } catch (cgErr) {
+      console.warn("[Agent Reach] CoinGecko live price failed:", cgErr);
+    }
+  }
 
   // Tier 1: Tavily API
   const tavilyKey = process.env.TAVILY_API_KEY;

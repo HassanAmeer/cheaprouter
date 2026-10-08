@@ -253,3 +253,61 @@ export function SettingsProviderGridSkeleton({ count = 6 }: { count?: number }) 
     </div>
   );
 }
+
+/**
+ * ModelSelectorSkeleton
+ * Shimmer skeleton for models list inside ModelSelector dropdown
+ */
+export function ModelSelectorSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <div className="space-y-1.5 p-2 select-none animate-in fade-in duration-150">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={`model-skel-${i}`}
+          className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl border border-white/[0.04] bg-white/[0.02]"
+        >
+          <div className="flex items-center justify-between">
+            <div
+              className="h-3.5 rounded-md shimmer-effect"
+              style={{ width: `${Math.max(40, 75 - (i % 3) * 15)}%` }}
+            />
+            <div className="w-12 h-3 rounded shimmer-effect opacity-50" />
+          </div>
+          <div
+            className="h-2.5 rounded shimmer-effect opacity-40"
+            style={{ width: `${Math.max(60, 90 - (i % 2) * 20)}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * ModalListSkeleton
+ * Shimmer skeleton for items inside Prompts, MCP, and custom modals
+ */
+export function ModalListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-2 select-none animate-in fade-in duration-150">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={`modal-skel-${i}`}
+          className="p-3.5 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between gap-3"
+        >
+          <div className="flex-1 space-y-2 min-w-0">
+            <div className="flex items-center gap-2">
+              <div
+                className="h-3.5 rounded shimmer-effect"
+                style={{ width: `${Math.max(35, 60 - (i % 2) * 15)}%` }}
+              />
+              <div className="h-3 w-14 rounded-full shimmer-effect-red opacity-60" />
+            </div>
+            <div className="h-2.5 w-[85%] rounded shimmer-effect opacity-50" />
+          </div>
+          <div className="w-7 h-7 rounded-lg shimmer-effect opacity-60 flex-shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}

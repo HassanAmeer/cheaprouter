@@ -6,30 +6,43 @@ import {
   readGithubWithReach,
   callAgentReachCli,
   getAgentReachDoctorReport,
+  getTier1RateLimiter,
 } from "@cheapchats/backend/lib/agentReachService";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  const metrics = getTier1RateLimiter().getMetrics();
+  return NextResponse.json({ success: true, metrics });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action = "read", url, query, owner, repo, itemPath, channel, limit = 5 } = body;
+    const { action = "read", url, query, owner, repo, itemPath, channel, limit = 5, isBackground = false, maxRetries } = body;
 
     switch (action) {
       case "read": {
         if (!url) {
           return NextResponse.json({ error: "URL is required for read action" }, { status: 400 });
         }
-        const res = await readWebPageWithReach(url);
-        return NextResponse.json(res);
+        const res = await readWebPageWithReach(url, { isBackground: !!isBackground, maxRetries });
+        const metrics = getTier1RateLimiter().getMetrics();
+        return NextResponse.json({ ...res, metrics });
       }
 
       case "search": {
         if (!query) {
           return NextResponse.json({ error: "Query is required for search action" }, { status: 400 });
         }
-        const res = await searchWebWithReach(query, Number(limit) || 5);
-        return NextResponse.json({ success: true, ...res });
+        const res = await searchWebWithReach(query, Number(limit) || 5, { isBackground: !!isBackground, maxRetries });
+        const metrics = getTier1RateLimiter().getMetrics();
+        return NextResponse.json({ success: true, ...res, metrics });
+      }
+
+      case "metrics": {
+        const metrics = getTier1RateLimiter().getMetrics();
+        return NextResponse.json({ success: true, metrics });
       }
 
       case "youtube": {

@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@cheapchats/frontend/lib/store";
 import { X, FolderPlus, Search, Copy, Check } from "lucide-react";
+import { ModalListSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 export default function PromptsModal() {
   const { activeModal, setActiveModal } = useAppStore();
   const [prompts, setPrompts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("General");
@@ -15,9 +17,12 @@ export default function PromptsModal() {
 
   useEffect(() => {
     if (activeModal === "prompts") {
+      setLoading(true);
       fetch("/api/prompts")
         .then((r) => r.json())
-        .then((d) => setPrompts(d.prompts || []));
+        .then((d) => setPrompts(d.prompts || []))
+        .catch((err) => console.error("Failed to load prompts", err))
+        .finally(() => setLoading(false));
     }
   }, [activeModal]);
 
@@ -75,25 +80,31 @@ export default function PromptsModal() {
         </div>
 
         <div className="max-h-52 overflow-y-auto space-y-2 pr-1">
-          {filtered.map((p) => (
-            <div key={p.id} className="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 font-semibold text-white">
-                  <span>{p.title}</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono">
-                    {p.category}
-                  </span>
+          {loading ? (
+            <ModalListSkeleton count={3} />
+          ) : filtered.length === 0 ? (
+            <div className="py-6 text-center text-slate-500 italic">No prompts found</div>
+          ) : (
+            filtered.map((p) => (
+              <div key={p.id} className="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 font-semibold text-white">
+                    <span>{p.title}</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono">
+                      {p.category}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 line-clamp-2 mt-1 font-mono">{p.content}</div>
                 </div>
-                <div className="text-[11px] text-slate-300 line-clamp-2 mt-1 font-mono">{p.content}</div>
+                <button
+                  onClick={() => handleCopyPrompt(p)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                >
+                  {copiedId === p.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
-              <button
-                onClick={() => handleCopyPrompt(p)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-              >
-                {copiedId === p.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Create Prompt Form */}

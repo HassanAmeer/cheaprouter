@@ -24,6 +24,7 @@ import {
   RotateCw,
   Loader2,
 } from "lucide-react";
+import { ModelSelectorSkeleton } from "@cheapchats/frontend/components/Common/SkeletonLoader";
 
 interface ModelItem {
   id: string;
@@ -225,7 +226,15 @@ export default function ModelSelector() {
     ) {
       return true;
     }
-    // 2. Check BYOK userKeys
+    // 2. Currently selected provider is always active and visible
+    if (pKey === selectedProvider) {
+      return true;
+    }
+    // 3. OpenRouter is available by default through the backend proxy
+    if (pKey.toLowerCase() === "openrouter") {
+      return true;
+    }
+    // 4. Check BYOK userKeys
     const pNorm = pKey.toLowerCase().replace(/[^a-z0-9]/g, "");
     for (const [k, v] of Object.entries(userKeys)) {
       if (!v || typeof v !== "string" || !v.trim()) continue;
@@ -245,21 +254,24 @@ export default function ModelSelector() {
   // Only display providers that are actively connected / configured
   const allProviderKeys = Object.keys(providersData);
   const configuredProviderKeys = allProviderKeys.filter(isProviderConfigured);
-  const regularProviders = configuredProviderKeys.filter((p) => p !== "Custom API");
-  const sortedProviderKeys = configuredProviderKeys.includes("Custom API")
+  const effectiveProviderKeys = configuredProviderKeys.length > 0 ? configuredProviderKeys : allProviderKeys;
+  const regularProviders = effectiveProviderKeys.filter((p) => p !== "Custom API");
+  const sortedProviderKeys = effectiveProviderKeys.includes("Custom API")
     ? [...regularProviders, "Custom API"]
     : regularProviders;
   const providerName = (provider: string) => customProviderNames[provider] || provider;
 
   useEffect(() => {
     if (sortedProviderKeys.length > 0) {
-      if (!activeHoverProvider || !sortedProviderKeys.includes(activeHoverProvider)) {
+      if (selectedProvider && sortedProviderKeys.includes(selectedProvider)) {
+        setActiveHoverProvider(selectedProvider);
+      } else if (!activeHoverProvider || !sortedProviderKeys.includes(activeHoverProvider)) {
         setActiveHoverProvider(sortedProviderKeys[0]);
       }
     } else {
       setActiveHoverProvider(null);
     }
-  }, [sortedProviderKeys.length, activeHoverProvider]);
+  }, [sortedProviderKeys.length, selectedProvider]);
 
   const rawList = activeHoverProvider && providersData[activeHoverProvider] ? providersData[activeHoverProvider] : [];
   const filteredList = searchQuery.trim()
@@ -314,7 +326,7 @@ export default function ModelSelector() {
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-0 bottom-full mb-2.5 w-80 sm:w-[480px] md:w-[540px] bg-[#140b0d]/98 backdrop-blur-2xl rounded-2xl z-50 border border-red-500/30 shadow-2xl shadow-black/90 flex flex-col select-none overflow-hidden"
+          className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:left-0 sm:bottom-full sm:mb-2.5 w-full sm:w-[480px] md:w-[540px] bg-[#140b0d]/98 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl z-50 border border-red-500/30 shadow-2xl shadow-black/90 flex flex-col select-none overflow-hidden max-h-[85vh] sm:max-h-none"
         >
           {/* Top Header Bar with Title, Refresh, and Close (X) Icon Button */}
           <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#1b0d10] border-b border-red-500/20">
@@ -372,7 +384,130 @@ export default function ModelSelector() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-2.5 p-2.5">
+            <>
+            {/* MOBILE: bottom-sheet flow — provider select, then light grey "Select AI Model" label, then models */}
+            <div className="sm:hidden flex flex-col overflow-y-auto custom-scrollbar">
+              <div className="px-3.5 pt-3 pb-2">
+                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Select Provider
+                </span>
+                <div className="relative">
+                  <select
+                    value={activeHoverProvider || ""}
+                    onChange={(e) => setActiveHoverProvider(e.target.value)}
+                    className="w-full appearance-none bg-[#200f13] border border-red-950/50 rounded-xl pl-8 pr-8 py-2.5 text-sm text-white outline-none focus:border-red-900/60"
+                  >
+                    {sortedProviderKeys.map((key) => (
+                      <option key={key} value={key}>
+                        {providerName(key)} ({providersData[key]?.length || 0})
+                      </option>
+                    ))}
+                  </select>
+                  {activeHoverProvider && (
+                    <img
+                      src={getProviderIcon(activeHoverProvider)}
+                      alt=""
+                      className="w-4 h-4 object-contain absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none rounded-xs"
+                      onError={(e) => {
+                        (e.currentTarget as any).style.display = "none";
+                      }}
+                    />
+                  )}
+                  <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="px-3.5 pt-1 pb-1.5 flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500">Select AI Model</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    activeHoverProvider?.startsWith("custom:")
+                      ? loadCustomProviderModels(activeHoverProvider)
+                      : fetchModels(true)
+                  }
+                  disabled={isRefreshing || isLoadingCustomModels}
+                  className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-white transition cursor-pointer"
+                >
+                  <RotateCw
+                    className={`w-3 h-3 ${
+                      isRefreshing || isLoadingCustomModels ? "animate-spin text-red-400" : ""
+                    }`}
+                  />
+                  <span>{activeHoverProvider?.startsWith("custom:") ? "load" : "refresh"}</span>
+                </button>
+              </div>
+
+              <div className="relative px-3.5 pb-2">
+                <Search className="w-3.5 h-3.5 absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search models..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#200f13] border border-red-950/50 rounded-xl pl-8 pr-2 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-red-900/60"
+                />
+              </div>
+
+              <div className="px-3.5 pb-3 space-y-1">
+                {activeHoverProvider?.startsWith("custom:") && isLoadingCustomModels ? (
+                  <ModelSelectorSkeleton count={4} />
+                ) : customModelsError && activeHoverProvider?.startsWith("custom:") ? (
+                  <div className="py-6 text-xs text-amber-200/90 text-center leading-relaxed">
+                    {customModelsError}
+                  </div>
+                ) : loading ? (
+                  <ModelSelectorSkeleton count={4} />
+                ) : filteredList.length > 0 ? (
+                  filteredList.map((m) => {
+                    const isSel = selectedModel === m.id && selectedProvider === activeHoverProvider;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleSelectModel(activeHoverProvider!, m.id)}
+                        className={`w-full flex flex-col text-left px-3 py-3 rounded-xl text-sm transition duration-150 border cursor-pointer ${
+                          isSel
+                            ? "bg-red-500/20 border-red-500/40 text-red-200 font-semibold"
+                            : "border-white/5 text-slate-200 active:bg-[#251417]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate">{m.name}</span>
+                          {isSel && <Check className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                        </div>
+                        {m.description && (
+                          <span className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {m.description}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="py-6 text-xs text-slate-400 text-center leading-relaxed">
+                    {activeHoverProvider?.startsWith("custom:")
+                      ? "No models listed. Tap “load” above to fetch them from this API."
+                      : "No matching models found."}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setActiveModal("settings");
+                }}
+                className="mx-3.5 mb-4 flex items-center justify-center gap-1.5 w-[calc(100%-1.75rem)] px-3 py-3 rounded-xl bg-transparent hover:bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium transition cursor-pointer"
+              >
+                <Settings className="w-4 h-4 text-red-400" />
+                <span>Provider Settings</span>
+              </button>
+            </div>
+
+            {/* DESKTOP: two-column provider + models layout */}
+            <div className="hidden sm:flex flex-col sm:flex-row gap-2.5 p-2.5">
               {/* Provider List (Left side) */}
             <div className="w-full sm:w-48 flex flex-col gap-1 border-b sm:border-b-0 sm:border-r border-red-500/15 pb-2 sm:pb-0 sm:pr-2">
               <div className="flex items-center justify-between px-2 py-1">
@@ -392,7 +527,6 @@ export default function ModelSelector() {
               <div className="max-h-64 overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar">
                 {sortedProviderKeys.map((providerKey) => {
                   const Icon = PROVIDER_ICONS[providerKey] || Server;
-                  const isSelected = selectedProvider === providerKey;
                   const isHovered = activeHoverProvider === providerKey;
                   const count = providersData[providerKey]?.length || 0;
                   const isCustom = providerKey === "Custom API";
@@ -401,13 +535,12 @@ export default function ModelSelector() {
                     <div
                       key={providerKey}
                       className={`group flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs font-medium transition duration-150 cursor-pointer ${
-                        isHovered || isSelected
+                        isHovered
                           ? "bg-red-500/20 text-white border border-red-500/30"
                           : isCustom
                           ? "text-red-200 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20"
                           : "text-slate-300 hover:bg-[#251417] border border-transparent"
                       }`}
-                      onMouseEnter={() => setActiveHoverProvider(providerKey)}
                       onClick={() => setActiveHoverProvider(providerKey)}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -494,19 +627,13 @@ export default function ModelSelector() {
               </div>
 
               {activeHoverProvider?.startsWith("custom:") && isLoadingCustomModels ? (
-                <div className="px-3 py-8 text-xs text-slate-400 text-center flex flex-col items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-red-400" />
-                  <span>Loading models from API...</span>
-                </div>
+                <ModelSelectorSkeleton count={5} />
               ) : customModelsError && activeHoverProvider?.startsWith("custom:") ? (
                 <div className="px-3 py-6 text-xs text-amber-200/90 text-center leading-relaxed">
                   {customModelsError}
                 </div>
               ) : loading ? (
-                <div className="px-3 py-8 text-xs text-slate-400 text-center flex flex-col items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-red-400" />
-                  <span>Loading models...</span>
-                </div>
+                <ModelSelectorSkeleton count={5} />
               ) : filteredList.length > 0 ? (
                 filteredList.map((m) => {
                   const isSelected = selectedModel === m.id && selectedProvider === activeHoverProvider;
@@ -541,6 +668,7 @@ export default function ModelSelector() {
               )}
             </div>
           </div>
+          </>
         )}
       </div>
     )}

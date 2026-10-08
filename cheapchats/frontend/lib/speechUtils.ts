@@ -21,6 +21,24 @@ export const STOP_WORDS = [
   "stop please",
 ];
 
+export const END_CALL_WORDS = [
+  "bye",
+  "goodbye",
+  "good bye",
+  "baad mein milte hain",
+  "baad me milte hain",
+  "bad mein milte hain",
+  "allah hafiz",
+  "khuda hafiz",
+  "end call",
+  "call end",
+  "call khatam",
+  "call band karo",
+  "call tor do",
+  "stop call",
+  "phone rakh do",
+];
+
 export interface SpeechLanguageOption {
   id: string;
   label: string;
@@ -297,34 +315,79 @@ export const VOICE_PERSONAS: VoicePersona[] = [
   // GROUP 2: PAKISTANI & HINDI ACCENTS (LOWER SECTION - ROMAN URDU & DESI)
   // ═══════════════════════════════════════════════════════════════════════════
   {
-    id: "bilal",
-    name: "Bilal (بلال)",
+    id: "vikram-roman",
+    name: "Vikram (विक्रम)",
     gender: "male",
-    accentTitle: "Roman Urdu (Bhari Aawaz / Father-like Deep Male)",
-    flag: "🇵🇰",
-    badge: "Bhari Aawaz / Father",
-    tags: ["Roman Urdu", "Bhari Aawaz", "Father-like", "Deep Male"],
-    description: "Heavy, respectful father-like masculine tone. Guaranteed deep male voice.",
-    samplePhrase: "Assalam-o-Alaikum! Main Bilal hoon. Boliye beta aaj main aap ki kya madad kar sakta hoon?",
-    preferredKeywords: ["madhur", "prabhat", "ravi", "male", "guy", "david", "mark"],
-    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
-    pitch: 0.74,
-    rate: 1.05,
+    accentTitle: "Roman Hindi (Natural Male)",
+    flag: "🇮🇳",
+    badge: "Roman Hindi Male",
+    tags: ["Roman Hindi", "Natural", "Desi Male"],
+    description: "Clear, natural Roman Hindi masculine tone for everyday conversation.",
+    samplePhrase: "Namaste! Main Vikram hoon. Batayiye, aaj main aapki kya madad kar sakta hoon?",
+    preferredKeywords: ["ravi", "prabhat", "kumar", "madhur", "male", "hi-in"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 0.95,
+    rate: 1.0,
   },
   {
-    id: "pari",
-    name: "Pari (پری / Choti Bachi)",
+    id: "neha-roman",
+    name: "Neha (नेहा)",
     gender: "female",
-    accentTitle: "Roman Urdu (Child Girl / Cute Kid)",
+    accentTitle: "Roman Hindi (Natural Female)",
+    flag: "🇮🇳",
+    badge: "Roman Hindi Female",
+    tags: ["Roman Hindi", "Natural", "Desi Female"],
+    description: "Warm, friendly Roman Hindi feminine tone with a natural desi cadence.",
+    samplePhrase: "Namaste! Main Neha hoon. Boliye, aaj main aapki kya seva kar sakti hoon?",
+    preferredKeywords: ["kalpana", "neerja", "swara", "female", "hi-in"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 1.05,
+    rate: 1.02,
+  },
+  {
+    id: "urdu-male",
+    name: "Tariq (طارق)",
+    gender: "male",
+    accentTitle: "Urdu (Pure Native Male)",
     flag: "🇵🇰",
-    badge: "Child Girl",
-    tags: ["Roman Urdu", "Child Voice", "Cute Tone", "Fast"],
-    description: "Playful, sweet and high-pitched child girl voice for lighthearted conversation.",
-    samplePhrase: "Hello! Mera naam Pari hai! CheapChats bohot acha hai, mujh se koi bhi baat karein!",
-    preferredKeywords: ["swara", "kalpana", "neerja", "female"],
-    langCodes: ["hi-in", "en-in", "hi"],
-    pitch: 1.38,
-    rate: 1.14,
+    badge: "Pure Urdu Male",
+    tags: ["Urdu", "Pure", "Native Male"],
+    description: "Pure, clear native Urdu masculine voice with proper Urdu pronunciation.",
+    samplePhrase: "السلام علیکم! میں طارق ہوں۔ بتائیے، آج میں آپ کی کیا مدد کر سکتا ہوں؟",
+    preferredKeywords: ["asad", "hidayat", "tariq", "urdu", "ur-pk", "male"],
+    langCodes: ["ur-pk", "ur"],
+    pitch: 0.95,
+    rate: 1.0,
+  },
+  {
+    id: "urdu-female",
+    name: "Hira (حرا)",
+    gender: "female",
+    accentTitle: "Urdu (Pure Native Female)",
+    flag: "🇵🇰",
+    badge: "Pure Urdu Female",
+    tags: ["Urdu", "Pure", "Native Female"],
+    description: "Pure, clear native Urdu feminine voice with proper Urdu pronunciation.",
+    samplePhrase: "السلام علیکم! میں حرا ہوں۔ بتائیے، آج میں آپ کی کیا مدد کر سکتی ہوں؟",
+    preferredKeywords: ["uzma", "heera", "gul", "hira", "urdu", "ur-pk", "female"],
+    langCodes: ["ur-pk", "ur"],
+    pitch: 1.05,
+    rate: 1.0,
+  },
+  {
+    id: "kashif",
+    name: "Kashif (کاشف)",
+    gender: "male",
+    accentTitle: "Roman Urdu (Clear Young Male)",
+    flag: "🇵🇰",
+    badge: "Young Male",
+    tags: ["Roman Urdu", "Young Male", "Clear", "Fast"],
+    description: "Young, clear and energetic masculine Roman Urdu tone for quick chat.",
+    samplePhrase: "Assalam-o-Alaikum! Main Kashif hoon. Boliye, aaj kya karna hai humein?",
+    preferredKeywords: ["ravi", "prabhat", "madhur", "hemant", "male", "india"],
+    langCodes: ["en-in", "hi-in", "hi"],
+    pitch: 1.02,
+    rate: 1.1,
   },
   {
     id: "ayesha",
@@ -357,21 +420,6 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     rate: 1.0,
   },
   {
-    id: "madhur",
-    name: "Madhur (मधुर)",
-    gender: "male",
-    accentTitle: "Hindi / Hinglish (Neural Deep Male)",
-    flag: "🇮🇳",
-    badge: "Neural Male",
-    tags: ["Hindi", "Hinglish", "Deep Male"],
-    description: "Calm, rich and heavy masculine persona for natural Hindi conversation.",
-    samplePhrase: "नमस्ते! मैं मधुर हूँ। आज हम किस विषय पर चर्चा करना चाहते हैं?",
-    preferredKeywords: ["madhur", "prabhat", "ravi", "male"],
-    langCodes: ["hi-in", "hi"],
-    pitch: 0.78,
-    rate: 0.96,
-  },
-  {
     id: "neerja",
     name: "Neerja (नीरजा)",
     gender: "female",
@@ -400,21 +448,6 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     langCodes: ["en-in", "hi-in"],
     pitch: 0.86,
     rate: 1.02,
-  },
-  {
-    id: "asad",
-    name: "Asad (اسد)",
-    gender: "male",
-    accentTitle: "Urdu Native (Classic Elder Male)",
-    flag: "🇵🇰",
-    badge: "Elder Male",
-    tags: ["Urdu", "Elder Male", "Ba-Waqar", "Formal", "Fast"],
-    description: "Dignified native Urdu elder masculine voice with prompt, respectful answers.",
-    samplePhrase: "Assalam-o-Alaikum! Main Asad hoon. Batayein beta main aap ki kya madad kar sakta hoon?",
-    preferredKeywords: ["asad", "urdu", "ur-pk", "ur_pk", "tariq", "madhur", "prabhat", "ravi"],
-    langCodes: ["ur-pk", "ur", "hi-in", "en-in", "hi", "ar-sa", "ar"],
-    pitch: 0.70,
-    rate: 1.10,
   },
 ];
 
@@ -1137,6 +1170,314 @@ export function transliterateToRomanUrdu(rawText: string): string {
   return result;
 }
 
+// ─── ROMAN URDU → URDU SCRIPT (so Urdu neural voices speak it perfectly) ───────
+
+/** Extra Roman Urdu → Urdu script words used in everyday chat (not in the Urdu→Roman dict). */
+const EXTRA_ROMAN_URDU: [string, string][] = [
+  ["assalam o alaikum", "السلام علیکم"],
+  ["assalam-o-alaikum", "السلام علیکم"],
+  ["walaikum assalam", "وعلیکم السلام"],
+  ["alhamdulillah", "الحمد للہ"],
+  ["mashallah", "ماشاءاللہ"],
+  ["inshaallah", "انشاءاللہ"],
+  ["jazakallahu", "جزاک اللہ"],
+  ["khuda hafiz", "خدا حافظ"],
+  ["allah hafiz", "اللہ حافظ"],
+  ["baat karein", "بات کریں"],
+  ["baat kareen", "بات کریں"],
+  ["kya madad", "کیا مدد"],
+  ["kya karna", "کیا کرنا"],
+  ["kya karna hai", "کیا کرنا ہے"],
+  ["aap ki madad", "آپ کی مدد"],
+  ["aapki madad", "آپ کی مدد"],
+  ["mera naam", "میرا نام"],
+  ["mujh se", "مجھ سے"],
+  ["koi baat", "کوئی بات"],
+  ["kuch bhi", "کچھ بھی"],
+  ["bohot acha", "بہت اچھا"],
+  ["bohat acha", "بہت اچھا"],
+  ["bataiye", "بتائیے"],
+  ["batayein", "بتائیے"],
+  ["bata den", "بتا دیں"],
+  ["abhi", "ابھی"],
+  ["bolein", "بولیں"],
+  ["boliye", "بولیے"],
+  ["chahiye", "چاہیے"],
+  ["zaroorat", "ضرورت"],
+  ["waqt", "وقت"],
+  ["madad", "مدد"],
+  ["shukriya", "شکریہ"],
+  ["shukriya", "شکریہ"],
+  ["janab", "جناب"],
+  ["bhai", "بھائی"],
+  ["beta", "بیٹا"],
+  ["yaar", "یار"],
+  ["phir", "پھر"],
+  ["sir", " sir"],
+  ["batao", "بتاؤ"],
+  ["dekho", "دیکھو"],
+  ["banao", "بناؤ"],
+  ["kitna", "کتنا"],
+  ["kitni", "کتنی"],
+  ["kaise", "کیسے"],
+  ["kaisi", "کیسی"],
+  ["kahan", "کہاں"],
+  ["kyun", "کیوں"],
+  ["kyon", "کیوں"],
+  ["mujhe", "مجھے"],
+  ["aapko", "آپ کو"],
+  ["mujhe", "مجھے"],
+  ["hamara", "ہمارا"],
+  ["hamari", "ہماری"],
+  ["tumhare", "tumhare"],
+  ["sab", "سب"],
+  ["sabhi", "سبھی"],
+  ["bohat", "بہت"],
+  ["bohot", "بہت"],
+  ["acha", "اچھا"],
+  ["theek", "ٹھیک"],
+  ["halal", "حلال"],
+  ["assalam", "السلام"],
+  ["waalaikum", "وعلیکم"],
+  ["kya", "کیا"],
+  ["main", "میں"],
+  ["mein", "میں"],
+  ["hum", "ہم"],
+  ["ham", "ہم"],
+  ["aap", "آپ"],
+  ["mera", "میرا"],
+  ["meri", "میری"],
+  ["tera", "تیرا"],
+  ["uska", "اس کا"],
+  ["uski", "اس کی"],
+  ["unka", "ان کا"],
+  ["unki", "ان کی"],
+  ["hai", "ہے"],
+  ["hain", "ہیں"],
+  ["hoon", "ہوں"],
+  ["hoon?", "ہوں؟"],
+  ["karna", "کرنا"],
+  ["karte", "کرتے"],
+  ["karna hai", "کرنا ہے"],
+  ["kro", "کرو"],
+  ["kar", "کر"],
+  ["karke", "کر کے"],
+  ["kar ke", "کر کے"],
+  ["bata", "بتا"],
+  ["batao yaad", "بتاؤ یاد"],
+  ["raha", "رہا"],
+  ["rahi", "رہی"],
+  ["rahe", "رہے"],
+  ["gaya", "گیا"],
+  ["gayi", "گئی"],
+  ["liye", "لیے"],
+  ["waqt", "وقت"],
+  ["saath", "ساتھ"],
+  ["andar", "اندر"],
+  ["upar", "اوپر"],
+  ["neeche", "نیچے"],
+  ["pehle", "پہلے"],
+  ["baad", "بعد"],
+  ["sirf", "صرف"],
+  ["bohat zyada", "بہت زیادہ"],
+  ["thora", "تھوڑا"],
+  ["bohot bara", "بہت بڑا"],
+  ["chota", "چھوٹا"],
+  ["naya", "نیا"],
+  ["purana", "پرانا"],
+  ["sabse", "سب سے"],
+  ["waqt khatam", "وقت ختم"],
+  ["shukriya bohat", "شکریہ بہت"],
+  ["khush raha", "خوش رہا"],
+  ["khush hoon", "خوش ہوں"],
+  ["mashee", "ماشاءاللہ"],
+  ["inshallah", "انشاءاللہ"],
+  ["sawaal", "سوال"],
+  ["sawalan", "سوال"],
+  ["pooch", "پوچھ"],
+  ["poochh", "پوچھ"],
+  ["pooch sakte", "پوچھ سکتے"],
+  ["bila jhijhak", "بلا جھجک"],
+  ["jhijhak", "جھجک"],
+  ["mausam", "موسم"],
+  ["kaisa", "کیسا"],
+  ["kaisi", "کیسی"],
+  ["kya kar raha", "کیا کر رہا"],
+  ["kya kar rahi", "کیا کر رہی"],
+  ["kya ho raha", "کیا ہو رہا"],
+  ["kya hua", "کیا ہوا"],
+  ["abhi tak", "ابھی تک"],
+  ["jaldi", "جلدی"],
+  ["dheere", "دھیرے"],
+  ["aam", "عام"],
+  ["khana", "خانا"],
+  ["pani", "پانی"],
+  ["kaha", "کہاں"],
+  ["kitne", "کتنے"],
+  ["sasta", "سستا"],
+  ["mahaanga", "مہنگا"],
+  ["passa", "پسے"],
+  ["rupees", "روپے"],
+  ["kitna paisa", "کتنا پیسہ"],
+  ["agla", "اگلا"],
+  ["pehla", "پہلا"],
+  ["aakhri", "آخری"],
+  ["beech", "بیچ"],
+  ["sath", "ساتھ"],
+  ["bina", "بغیر"],
+  ["liye", "لیے"],
+  ["waqt", "وقت"],
+  ["kuch", "کچھ"],
+  ["sab kuch", "سب کچھ"],
+  ["bohat achi", "بہت اچھی"],
+  ["bohat khoobsurat", "بہت خوبصورت"],
+  ["khoobsurat", "خوبصورت"],
+  ["shandar", "شاندار"],
+  ["mashallah", "ماشاءاللہ"],
+  ["Allah Hafiz", "اللہ حافظ"],
+  ["phir milenge", "پھر ملیں گے"],
+  ["milte hain", "ملتے ہیں"],
+  ["baad mein milte", "بعد میں ملتے"],
+  ["kya matlab", "کیا مطلب"],
+  ["matlab", "مطلب"],
+  ["sirf yehi", "صرف یہی"],
+  ["bhi bol", "بھی بول"],
+  ["thora sa", "تھوڑا سا"],
+  ["jaldi batao", "جلدی بتاؤ"],
+  ["soch raha", "سوچ رہا"],
+  ["samajh aaya", "سمجھ آیا"],
+  ["pata nahi", "پتا نہیں"],
+  ["koi masla", "کوئی مسئلہ"],
+  ["masla", "مسئلہ"],
+  ["hal", "حل"],
+  ["bata deta", "بتا دیتا"],
+  ["shukriya bohat bohat", "شکریہ بہت بہت"],
+  ["bohat shukriya", "بہت شکریہ"],
+  // Common Urdu names (persona names) so they are not read letter-by-letter
+  ["kashif", "کاشف"],
+  ["ayesha", "عائشہ"],
+  ["tariq", "طارق"],
+  ["hira", "حرا"],
+  ["vikram", "विक्रम"],
+  ["neha", "नेहा"],
+  ["asad", "اسد"],
+  ["uzma", "عظمیٰ"],
+  ["salman", "سلمان"],
+  ["gul", "گل"],
+  ["madhur", "मधुर"],
+  ["swara", "स्वरा"],
+  ["imran", "عمران"],
+  ["usman", "عثمان"],
+  ["bilal", "بلال"],
+  ["ayesha?", "عائشہ؟"],
+  ["kashif?", "کاشف؟"],
+];
+
+/**
+ * Very common English words must NOT be converted: Roman Urdu text mixes English
+ * heavily, and rewriting "to"/"the" into Urdu badly mangles normal sentences.
+ */
+const ROMAN_URDU_STOPWORDS = new Set([
+  "a", "an", "the", "to", "of", "in", "on", "at", "is", "are", "am", "was", "were", "be", "been",
+  "and", "or", "but", "so", "if", "as", "it", "its", "he", "she", "they", "we", "you", "i",
+  "do", "did", "does", "can", "will", "would", "shall", "should", "have", "has", "had",
+  "this", "that", "these", "those", "not", "no", "yes", "for", "from", "with", "by", "up",
+  "out", "my", "me", "us", "all", "any", "some", "one", "two", "ok", "okay", "yes",
+  // Common English / technical words that must stay in English
+  "please", "write", "function", "method", "class", "string", "list", "array", "file",
+  "folder", "api", "html", "css", "game", "app", "website", "server", "database", "test",
+  "run", "create", "make", "add", "delete", "update", "fix", "bug", "error", "install",
+  "download", "upload", "open", "save", "print", "show", "help", "thanks", "code", "script",
+  "python", "javascript", "typescript", "react", "next", "node", "npm", "bun", "git",
+  "email", "link", "url", "json", "sql", "csv", "pdf", "image", "video", "audio", "text",
+  "user", "users", "data", "value", "values", "key", "name", "number", "type", "types",
+  "first", "last", "next", "back", "start", "stop", "end", "new", "old", "big", "small",
+]);
+
+let ROMAN_TO_URDU_PHRASES: [string, string][] | null = null;
+let ROMAN_TO_URDU_WORDS: Record<string, string> | null = null;
+
+function buildRomanToUrduMaps() {
+  if (ROMAN_TO_URDU_PHRASES && ROMAN_TO_URDU_WORDS) return;
+
+  const phrases: [string, string][] = [];
+  const words: Record<string, string> = {};
+
+  // Invert the existing Urdu → Roman dictionaries for extra coverage
+  for (const [urdu, roman] of URDU_PHRASES_DICT) {
+    const key = roman.toLowerCase().replace(/\s+/g, " ").trim();
+    if (key && key.length > 2 && !/[\u0600-\u06FF]/.test(key)) phrases.push([key, urdu]);
+  }
+  for (const urdu of Object.keys(URDU_TO_ROMAN_DICT)) {
+    const roman = URDU_TO_ROMAN_DICT[urdu];
+    if (!roman) continue;
+    const key = roman.toLowerCase().trim();
+    if (!key || key.includes(" ") || /[\u0600-\u06FF]/.test(key)) continue;
+    if (ROMAN_URDU_STOPWORDS.has(key)) continue;
+    if (!words[key]) words[key] = urdu;
+  }
+
+  for (const [roman, urdu] of EXTRA_ROMAN_URDU) {
+    const key = roman.toLowerCase().replace(/\s+/g, " ").trim();
+    if (key.includes(" ")) phrases.push([key, urdu]);
+    else if (!words[key]) words[key] = urdu;
+  }
+
+  // Longest phrases first so multi-word expressions win
+  phrases.sort((a, b) => b[0].length - a[0].length);
+
+  ROMAN_TO_URDU_PHRASES = phrases;
+  ROMAN_TO_URDU_WORDS = words;
+}
+
+/**
+ * Converts Roman Urdu (Latin script) into native Urdu script so that Urdu neural
+ * voices (Asad / Uzma / Salman / Gul) pronounce it perfectly instead of reading
+ * every Latin letter separately. Unknown words are left untouched.
+ */
+export function romanUrduToUrduScript(rawText: string): string {
+  if (!rawText) return "";
+  buildRomanToUrduMaps();
+  const phrases = ROMAN_TO_URDU_PHRASES!;
+  const words = ROMAN_TO_URDU_WORDS!;
+
+  let text = rawText;
+
+  // 1. Multi-word phrases (longest first)
+  for (const [roman, urdu] of phrases) {
+    const pattern = new RegExp(`\\b${roman.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")}\\b`, "gi");
+    if (pattern.test(text)) {
+      text = text.replace(pattern, ` ${urdu} `);
+    }
+  }
+
+  // 2. Single words (preserving whitespace and punctuation)
+  const tokens = text.split(/(\s+|[.,!?:;()"'“”‘’])/);
+  const out = tokens.map((token) => {
+    if (!token || /^\s+$/.test(token)) return token;
+    const key = token.toLowerCase();
+    if (words[key]) return words[key];
+    // Hyphenated Roman Urdu words like "bila-jhijhak" → map each part
+    if (token.includes("-")) {
+      return token
+        .split("-")
+        .map((part) => {
+          const k = part.toLowerCase();
+          if (ROMAN_URDU_STOPWORDS.has(k)) return part;
+          return words[k] || part;
+        })
+        .join("-");
+    }
+    return token;
+  });
+
+  return out
+    .join("")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([.,!?:;])/g, "$1")
+    .trim();
+}
+
 /**
  * Returns the effective BCP-47 language tag for Chrome SpeechRecognition.
  */
@@ -1158,6 +1499,18 @@ export function containsStopKeyword(transcript: string): boolean {
   if (!transcript) return false;
   const lower = transcript.toLowerCase().trim();
   return STOP_WORDS.some((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, "i");
+    return regex.test(lower) || lower.includes(word);
+  });
+}
+
+/**
+ * Checks if the spoken transcript asks to end the call.
+ */
+export function containsEndCallKeyword(transcript: string): boolean {
+  if (!transcript) return false;
+  const lower = transcript.toLowerCase().trim();
+  return END_CALL_WORDS.some((word) => {
     const regex = new RegExp(`\\b${word}\\b`, "i");
     return regex.test(lower) || lower.includes(word);
   });
@@ -1209,10 +1562,10 @@ export function getBestVoice(
       const isFemale = persona.gender === "female";
 
       const isKnownFemaleVoice = (v: SpeechSynthesisVoice) =>
-        /female|woman|girl|zira|swara|kalpana|neerja|heera|susan|hazel|jenny|sonia|fatima|zoya|pari|ayesha|veena/i.test(v.name);
+        /female|woman|girl|zira|swara|kalpana|neerja|heera|susan|hazel|jenny|sonia|fatima|zoya|pari|ayesha|veena|uzma|gul|hira/i.test(v.name);
 
       const isKnownMaleVoice = (v: SpeechSynthesisVoice) =>
-        /male|man|boy|guy|david|george|mark|ravi|prabhat|madhur|rohan|james|tariq|hamdan|asad|bilal|aryan|alex|gul|sameer|hamza/i.test(v.name);
+        /male|man|boy|guy|david|george|mark|ravi|prabhat|madhur|rohan|james|tariq|hamdan|asad|bilal|aryan|alex|sameer|hamza/i.test(v.name);
 
       // Pass 1: Match preferred keywords with strict gender filter
       for (const kw of persona.preferredKeywords) {
@@ -1237,9 +1590,15 @@ export function getBestVoice(
 
         // If persona prefers Urdu / Desi languages, prioritize Urdu or Hindi voices before foreign English
         const isDesiPersona = persona.langCodes.some((lc) => lc.startsWith("ur") || lc.startsWith("hi"));
+        // Roman-script personas must NOT use Urdu (ur) voices: Urdu voices read Latin letters
+        // letter-by-letter, which sounds broken. Stick to Hindi / Indian English voices instead.
+        const isRomanScriptPersona = persona.langCodes.some((lc) => lc === "en-in");
         if (isDesiPersona) {
           const desiUrduOrHindi = voices.find(
-            (v) => (v.lang.toLowerCase().startsWith("ur") || v.lang.toLowerCase().startsWith("hi")) && !isKnownFemaleVoice(v)
+            (v) =>
+              (v.lang.toLowerCase().startsWith("hi") ||
+                (!isRomanScriptPersona && v.lang.toLowerCase().startsWith("ur"))) &&
+              !isKnownFemaleVoice(v)
           );
           if (desiUrduOrHindi) return desiUrduOrHindi;
         }
@@ -1265,9 +1624,13 @@ export function getBestVoice(
         }
 
         const isDesiPersona = persona.langCodes.some((lc) => lc.startsWith("ur") || lc.startsWith("hi"));
+        const isRomanScriptPersona = persona.langCodes.some((lc) => lc === "en-in");
         if (isDesiPersona) {
           const desiUrduOrHindi = voices.find(
-            (v) => (v.lang.toLowerCase().startsWith("ur") || v.lang.toLowerCase().startsWith("hi")) && !isKnownMaleVoice(v)
+            (v) =>
+              (v.lang.toLowerCase().startsWith("hi") ||
+                (!isRomanScriptPersona && v.lang.toLowerCase().startsWith("ur"))) &&
+              !isKnownMaleVoice(v)
           );
           if (desiUrduOrHindi) return desiUrduOrHindi;
         }

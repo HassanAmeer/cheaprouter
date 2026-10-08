@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Brain,
   Globe,
+  Play,
   Sparkles,
   AlertTriangle,
   User,
@@ -67,7 +68,8 @@ function renderMarkdown(
   text: string,
   onOpenArtifact?: (lang: string, code: string) => void,
   isStreaming = false,
-  messageHasError = false
+  messageHasError = false,
+  onRetry?: () => void
 ): React.ReactNode {
   // Strip out memory XML tags so they don't show up in the UI (forgiving regex for AI typos)
   const cleanedText = text.replace(/<cheapchat(?:Memory)?[^>]*>[\s\S]*?<\/cheapchat(?:Memory)?>/gi, "");
@@ -364,6 +366,101 @@ function renderMarkdown(
             )}
           </div>
         );
+      } else if (
+        bqContent.includes("Rate limit") ||
+        bqContent.includes("429") ||
+        bqContent.includes("Too Many Requests") ||
+        bqContent.includes("Queue Limit") ||
+        bqContent.includes("rate-limited")
+      ) {
+        result.push(
+          <div key={`bq-rl-${i}`} className="my-3 p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40 flex items-center justify-between gap-3 shadow-lg shadow-amber-950/40">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 flex-shrink-0">
+                <RotateCw className="w-4 h-4 animate-spin text-amber-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">Tier 1 Queue (200 req/min limit)</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Auto-Retrying</span>
+                </div>
+                <p className="text-xs text-amber-200/90 mt-0.5 truncate">
+                  {parseInline(bqContent)}
+                </p>
+              </div>
+            </div>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 shadow-md shadow-amber-900/50 cursor-pointer"
+                title="Retry immediately"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+                <span>Retry Now</span>
+              </button>
+            )}
+          </div>
+        );
+      } else if (
+        bqContent.includes("🌐 **Browser Opened:**") ||
+        bqContent.includes("📺 **YouTube Video Tab Opened:**") ||
+        bqContent.includes("🎭 **Playwright Automation:**")
+      ) {
+        const urlMatch = bqContent.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/) || bqContent.match(/(https?:\/\/[^\s\)]+)/);
+        const dataUrl = urlMatch ? (urlMatch[2] || urlMatch[1]) : "";
+        const isYouTube = Boolean(dataUrl && (dataUrl.includes("youtube.com") || dataUrl.includes("youtu.be")));
+        const ytIdMatch = isYouTube ? dataUrl.match(/(?:watch\?v=|youtu\.be\/|embed\/)([^&?#/]+)/) : null;
+        const videoId = ytIdMatch ? ytIdMatch[1] : null;
+
+        result.push(
+          <div key={`bq-browser-${i}`} className="my-3 p-3.5 rounded-2xl bg-gradient-to-r from-red-950/40 via-[#180f12] to-slate-900/80 border border-red-500/30 flex flex-col gap-2.5 shadow-xl">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border flex-shrink-0 ${isYouTube ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                  {isYouTube ? <Play className="w-4 h-4 fill-current text-red-500" /> : <Globe className="w-4 h-4 text-rose-400" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-rose-300 uppercase tracking-wide">
+                      {isYouTube ? "YouTube Video Tab Launched" : "Browser Tab Navigated"}
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+                  </div>
+                  <p className="text-xs text-slate-200 mt-0.5 truncate font-mono">
+                    {dataUrl || parseInline(bqContent)}
+                  </p>
+                </div>
+              </div>
+
+              {dataUrl && dataUrl.startsWith("http") && (
+                <button
+                  type="button"
+                  onClick={() => window.open(dataUrl, "_blank")}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md shadow-red-950/60 transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                >
+                  <span>{isYouTube ? "Open Video" : "Open Tab"}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Inline video player embed for YouTube */}
+            {videoId && (
+              <div className="mt-1 w-full max-w-lg aspect-video rounded-xl overflow-hidden border border-red-500/30 shadow-lg bg-black">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              </div>
+            )}
+          </div>
+        );
       } else {
         result.push(
           <blockquote key={`bq-${i}`} className="border-l-2 border-red-400/50 pl-3 my-2 text-slate-300 italic text-sm">
@@ -534,8 +631,11 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
     // Detect when streaming finishes (isStreaming changes from true to false)
     if (prevStreamingRef.current === true && isStreaming === false) {
       setIsThinkingOpen(false);
-      if (!isUser && isAutoVoiceEnabled && isTtsEnabled && message.content.trim()) {
-        // Trigger auto speak
+      const isCallActive =
+        typeof window !== "undefined" &&
+        Boolean((window as any).__cheapchats_is_call_active);
+      if (!isCallActive && !isUser && isAutoVoiceEnabled && isTtsEnabled && message.content.trim()) {
+        // Trigger auto speak only when not in a voice call
         handleToggleAudio();
       }
     }
@@ -885,7 +985,7 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
                       content: code,
                     });
                   }
-                }, isStreaming, message.isError)
+                }, isStreaming, message.isError, onRegenerate)
               ) : null}
             </div>
 
