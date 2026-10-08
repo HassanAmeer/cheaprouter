@@ -96,6 +96,14 @@ function getAttachmentIcon(type?: string, name?: string) {
   return <File className="w-3.5 h-3.5 text-slate-400" />;
 }
 
+const WAVE_BAR_FACTORS = [
+  0.22, 0.32, 0.45, 0.38, 0.6, 0.78, 0.52, 0.88, 0.72, 0.98,
+  0.82, 0.58, 0.92, 0.68, 0.82, 0.48, 0.72, 0.88, 0.58, 0.98,
+  0.78, 0.62, 0.92, 0.72, 0.84, 0.72, 0.92, 0.62, 0.78, 0.98,
+  0.58, 0.88, 0.72, 0.48, 0.82, 0.68, 0.92, 0.58, 0.82, 0.98,
+  0.72, 0.88, 0.52, 0.78, 0.6, 0.38, 0.45, 0.32, 0.22, 0.18
+];
+
 export default function ChatInput({ onSend, onStop, disabled = false, isStreaming = false }: ChatInputProps) {
   const {
     activeTools,
@@ -133,6 +141,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const callRecognitionRef = useRef<any>(null);
   const callSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const userSpeakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
@@ -449,6 +459,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     setCallStatus("idle");
     callStatusRef.current = "idle";
     setIsSpeaking(false);
+    setIsUserSpeaking(false);
+    if (userSpeakingTimeoutRef.current) {
+      clearTimeout(userSpeakingTimeoutRef.current);
+      userSpeakingTimeoutRef.current = null;
+    }
 
     if (callSilenceTimerRef.current) {
       clearTimeout(callSilenceTimerRef.current);
@@ -554,6 +569,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     setCallStatus("thinking");
     callStatusRef.current = "thinking";
+    setIsUserSpeaking(false);
+    if (userSpeakingTimeoutRef.current) {
+      clearTimeout(userSpeakingTimeoutRef.current);
+      userSpeakingTimeoutRef.current = null;
+    }
     setContent("");
 
     try {
@@ -596,6 +616,30 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     recognition.lang = getEffectiveSttLang(sttLang);
     callRecognitionRef.current = recognition;
 
+    recognition.onspeechstart = () => {
+      if (isCallActiveRef.current && callStatusRef.current === "listening") {
+        setIsUserSpeaking(true);
+      }
+    };
+
+    recognition.onspeechend = () => {
+      if (isCallActiveRef.current) {
+        setIsUserSpeaking(false);
+      }
+    };
+
+    recognition.onsoundstart = () => {
+      if (isCallActiveRef.current && callStatusRef.current === "listening") {
+        setIsUserSpeaking(true);
+      }
+    };
+
+    recognition.onsoundend = () => {
+      if (isCallActiveRef.current) {
+        setIsUserSpeaking(false);
+      }
+    };
+
     recognition.onresult = (event: any) => {
       if (!isCallActiveRef.current) return;
 
@@ -621,6 +665,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
 
       if (callStatusRef.current === "listening") {
+        if (combinedText) {
+          setIsUserSpeaking(true);
+          if (userSpeakingTimeoutRef.current) {
+            clearTimeout(userSpeakingTimeoutRef.current);
+          }
+          userSpeakingTimeoutRef.current = setTimeout(() => {
+            setIsUserSpeaking(false);
+          }, 1400);
+        }
         if (final) {
           setContent((prev) => (prev ? `${prev} ${final}` : final).trim());
         } else if (interim) {
@@ -1019,14 +1072,65 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               uploadFiles(e.dataTransfer.files);
             }
           }}
-          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl pt-3 px-3.5 pb-2 border transition-all duration-150 shadow-2xl flex flex-col gap-2 ${
-            isStreaming
-              ? styles.streamingBorder
-              : isDraggingOver
-                ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
-                : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
+          className={`flex-1 min-w-0 bg-[#1b1013] rounded-3xl border transition-all duration-200 shadow-2xl flex ${
+            isCallActive
+              ? "h-14 px-3 sm:px-4 items-center justify-center border-red-500/30 shadow-red-950/20"
+              : "pt-3 px-3.5 pb-2 flex-col gap-2 " + (
+                  isStreaming
+                    ? styles.streamingBorder
+                    : isDraggingOver
+                      ? "border-emerald-500/80 ring-2 ring-emerald-500/30 bg-[#16201b]"
+                      : "border-red-500/20 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/30"
+                )
           }`}
         >
+        {isCallActive ? (
+          <div className="w-full h-11 sm:h-12 flex items-center justify-between gap-[2px] sm:gap-1 px-1 sm:px-2 select-none overflow-hidden animate-in fade-in duration-200">
+            {WAVE_BAR_FACTORS.map((factor, i) => {
+              const isSpeaking = callStatus === "speaking";
+              const isThinking = callStatus === "thinking";
+              const isUserTalking = callStatus === "listening" && isUserSpeaking;
+
+              let barClass = "bg-gradient-to-t from-zinc-600 via-zinc-500 to-zinc-400/80";
+              let height = Math.max(4, Math.round(factor * 12));
+              let animDuration = "1.8s";
+              let animDelay = (i * 75) % 1200;
+
+              if (isSpeaking) {
+                // Assistant speaking: Dark red to purple gradient
+                barClass = "bg-gradient-to-t from-red-800 via-rose-600 to-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
+                height = Math.max(6, Math.round(factor * 36));
+                animDuration = "0.65s";
+                animDelay = (i * 45) % 800;
+              } else if (isUserTalking) {
+                // User speaking: Vibrant red
+                barClass = "bg-gradient-to-t from-red-600 via-rose-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.45)]";
+                height = Math.max(6, Math.round(factor * 32));
+                animDuration = "0.55s";
+                animDelay = (i * 50) % 700;
+              } else if (isThinking) {
+                // AI generating/thinking
+                barClass = "bg-gradient-to-t from-red-800 via-orange-600 to-amber-400";
+                height = Math.max(5, Math.round(factor * 18));
+                animDuration = "1.1s";
+                animDelay = (i * 60) % 900;
+              }
+
+              return (
+                <span
+                  key={i}
+                  className={`flex-1 min-w-[2px] max-w-[8px] rounded-full transition-all duration-150 animate-pulse ${barClass}`}
+                  style={{
+                    height: `${height}px`,
+                    animationDelay: `${animDelay}ms`,
+                    animationDuration: animDuration,
+                  }}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <>
         {/* Attachments Row */}
         {(attachments.length > 0 || isUploading) && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
@@ -1139,13 +1243,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder={
-            isCallActive
-              ? callStatus === "speaking"
-                ? 'AI Speaking... (Say "Stop" or click Stop to interrupt)'
-                : callStatus === "thinking"
-                ? "AI Thinking & Generating answer..."
-                : "Listening to your voice... (pause ~2s to send)"
-              : activeSuggestionChip
+            activeSuggestionChip
               ? `Add details for ${activeSuggestionChip.label}...`
               : "Ask anything — / for types or skills"
           }
@@ -1154,106 +1252,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           className={`w-full bg-transparent border-none text-slate-100 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus-visible:outline-none resize-none max-h-44 leading-relaxed ${styles.messageTextarea}`}
         />
 
-        {/* Bottom Bar: If isCallActive, show Dynamic Sound Wave Visualizer, else show normal tools */}
-        {isCallActive ? (
-          <div className="flex items-center justify-between pt-1.5 pb-1 px-1 text-xs gap-2 min-w-0 border-t border-zinc-800/80 animate-in fade-in duration-200 select-none">
-            {/* Left: Live Status Pill */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="flex h-2.5 w-2.5 relative">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    callStatus === "speaking"
-                      ? "bg-purple-400"
-                      : callStatus === "thinking"
-                      ? "bg-amber-400"
-                      : "bg-emerald-400"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                    callStatus === "speaking"
-                      ? "bg-purple-500"
-                      : callStatus === "thinking"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                  }`}
-                />
-              </span>
-              <span
-                className={`text-[12px] font-semibold tracking-wide ${
-                  callStatus === "speaking"
-                    ? "text-purple-300"
-                    : callStatus === "thinking"
-                    ? "text-amber-300"
-                    : "text-emerald-300"
-                }`}
-              >
-                {callStatus === "speaking"
-                  ? "Assistant Speaking..."
-                  : callStatus === "thinking"
-                  ? "AI Generating..."
-                  : "Listening to you..."}
-              </span>
-            </div>
-
-            {/* Center: Dynamic Sound Wave Frequency Bars */}
-            <div className="flex items-center gap-1 sm:gap-1.5 px-3 py-0.5 justify-center flex-1 max-w-xs">
-              {[35, 75, 50, 95, 60, 100, 80, 90, 45, 85, 55, 70, 40].map((h, i) => (
-                <span
-                  key={i}
-                  className={`w-1 sm:w-1.5 rounded-full transition-all duration-150 ${
-                    callStatus === "speaking"
-                      ? "bg-gradient-to-t from-purple-500 via-pink-400 to-rose-300 animate-pulse"
-                      : callStatus === "thinking"
-                      ? "bg-gradient-to-t from-amber-500 to-orange-400 animate-pulse"
-                      : "bg-gradient-to-t from-emerald-500 to-teal-300 animate-pulse"
-                  }`}
-                  style={{
-                    height:
-                      callStatus === "speaking"
-                        ? `${Math.max(6, (h / 100) * 26)}px`
-                        : callStatus === "listening"
-                        ? `${Math.max(4, ((h * 0.7) / 100) * 20)}px`
-                        : `${Math.max(3, ((h * 0.3) / 100) * 14)}px`,
-                    animationDelay: `${i * 80}ms`,
-                    animationDuration: callStatus === "speaking" ? "0.65s" : "1.3s",
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Right: Controls (Language Role badge, Stop Voice button, or status hints) */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveModal("settings")}
-                className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-800/90 hover:bg-zinc-700/90 text-[11px] font-medium text-zinc-300 hover:text-white border border-zinc-700/70 transition cursor-pointer"
-                title="Active Voice & Accent Role (Click to modify in Settings)"
-              >
-                <span>{SPEECH_LANGUAGES.find((l) => l.id === sttLang)?.label.split("(")[0].trim() || "Auto-Detect"}</span>
-              </button>
-
-              {callStatus === "speaking" ? (
-                <button
-                  type="button"
-                  onClick={stopCallSpeaking}
-                  className="px-2.5 py-1 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/50 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm animate-pulse"
-                  title="Stop Assistant Voice (Or say 'Stop')"
-                >
-                  <Square className="w-3 h-3 fill-current" />
-                  <span>Stop Voice</span>
-                </button>
-              ) : (
-                <span className="text-[11px] text-zinc-500 italic hidden sm:inline">
-                  {callStatus === "thinking"
-                    ? "Generating answer..."
-                    : "Pause ~2s to send"}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
+        {/* Normal Bottom Bar Tools */}
+        <div className="flex items-center justify-between pt-0.5 text-xs gap-1.5 min-w-0">
             {/* Left Pinned Tools Bar */}
             <div className="flex items-center gap-1.5 overflow-visible min-w-0 flex-shrink-0">
               {/* Attachment Button */}
@@ -1385,26 +1385,27 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
               )}
             </div>
           </div>
-        )}
+        </>
+      )}
       </div>
 
-      {/* Call Assistant Button (Placed right outside the message field) */}
-      <Tooltip content={isCallActive ? "End Call (Turn off mic)" : "Start Voice Call"} side="top">
+      {/* Call Assistant Icon Button (Placed right outside the message field) */}
+      <Tooltip content={isCallActive ? "End Call" : "Start Voice Call"} side="top">
         <button
           type="button"
           onClick={isCallActive ? handleEndCall : handleStartCall}
-          className={`h-11 w-11 mb-1 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0 cursor-pointer shadow-xl ${
+          className={`p-2.5 mb-1 transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0 cursor-pointer flex items-center justify-center rounded-2xl ${
             isCallActive
-              ? "bg-red-600 hover:bg-red-500 text-white shadow-red-950/70 border border-red-500 animate-pulse ring-2 ring-red-500/30"
-              : "bg-[#1b1013] hover:bg-emerald-950/70 border border-zinc-800 hover:border-emerald-500/60 text-emerald-400 hover:text-emerald-300 shadow-black/50"
+              ? "text-red-500 hover:text-red-400 animate-pulse hover:bg-red-500/10"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
           }`}
           title={isCallActive ? "End Call" : "Start Voice Call"}
           aria-label={isCallActive ? "End Call" : "Start Voice Call"}
         >
           {isCallActive ? (
-            <PhoneOff className="w-5 h-5 text-white" />
+            <PhoneOff className="w-5 h-5 stroke-[2.2]" />
           ) : (
-            <PhoneCall className="w-5 h-5 transition-transform group-hover:scale-110" />
+            <PhoneCall className="w-5 h-5 stroke-[2]" />
           )}
         </button>
       </Tooltip>
