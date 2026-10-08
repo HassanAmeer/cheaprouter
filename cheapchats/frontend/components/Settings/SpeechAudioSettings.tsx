@@ -99,6 +99,7 @@ export default function SpeechAudioSettings() {
   const [testText, setTestText] = useState(currentLangOption.samplePhrase);
   const [isPlayingTts, setIsPlayingTts] = useState(false);
   const [playingPersonaId, setPlayingPersonaId] = useState<string | null>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load browser voices & speech recognition support
   useEffect(() => {
@@ -219,36 +220,21 @@ export default function SpeechAudioSettings() {
     setMicStatusText("Stopped.");
   };
 
-  // ─── TTS (Voice Playback) Test Handlers ───────────────────────────────────────
-  const playTtsTest = (overrideText?: string, personaId?: string) => {
+  const fallbackToBrowserSpeech = (
+    textToSpeak: string,
+    persona: VoicePersona | null,
+    targetVoiceKey: string
+  ) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      alert("Speech synthesis is not supported in this browser.");
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    if (isPlayingTts && !personaId && !overrideText) {
       setIsPlayingTts(false);
       setPlayingPersonaId(null);
       return;
     }
 
-    const persona = personaId ? VOICE_PERSONAS.find((p) => p.id === personaId) : null;
-    const phraseToSpeak = (
-      overrideText ||
-      (persona ? persona.samplePhrase : testText) ||
-      "Hello, this is a voice test."
-    ).trim();
-
-    let cleaned = cleanTextForSpeech(phraseToSpeak);
-    if (!cleaned) return;
-
-    const targetVoiceKey = persona ? `persona:${persona.id}` : ttsVoice;
+    let cleaned = textToSpeak;
     const targetRole = persona ? persona.langCodes[0] : sttLang;
     const bestVoice = getBestVoice(browserVoices, targetVoiceKey, cleaned, targetRole);
 
-    // If text contains Urdu script and chosen voice is not native Urdu/Arabic, transliterate to Roman Urdu for voice playback
     if (/[\u0600-\u06FF]/.test(cleaned)) {
       const isNativeUrduOrArabic =
         bestVoice &&
@@ -277,8 +263,8 @@ export default function SpeechAudioSettings() {
 
     utterance.onstart = () => {
       setIsPlayingTts(true);
-      if (personaId) {
-        setPlayingPersonaId(personaId);
+      if (persona) {
+        setPlayingPersonaId(persona.id);
       }
     };
 
@@ -296,6 +282,80 @@ export default function SpeechAudioSettings() {
     };
 
     window.speechSynthesis.speak(utterance);
+  };
+
+  // ─── TTS (Voice Playback) Test Handlers ───────────────────────────────────────
+  const playTtsTest = async (overrideText?: string, personaId?: string) => {
+    if (activeAudioRef.current) {
+      try {
+        activeAudioRef.current.pause();
+      } catch {}
+      activeAudioRef.current = null;
+    }
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    if (isPlayingTts && !overrideText && (!personaId || playingPersonaId === personaId)) {
+      setIsPlayingTts(false);
+      setPlayingPersonaId(null);
+      return;
+    }
+
+    const persona = personaId ? VOICE_PERSONAS.find((p) => p.id === personaId) || null : null;
+    const phraseToSpeak = (
+      overrideText ||
+      (persona ? persona.samplePhrase : testText) ||
+      "Hello, this is a voice test."
+    ).trim();
+
+    const cleaned = cleanTextForSpeech(phraseToSpeak);
+    if (!cleaned) return;
+
+    const targetVoiceKey = persona ? `persona:${persona.id}` : ttsVoice;
+
+    setIsPlayingTts(true);
+    if (personaId) {
+      setPlayingPersonaId(personaId);
+    }
+
+    // 1. Play Ultra-Realistic Free Edge Neural AI Voice
+    try {
+      const resp = await fetch("/api/cheapchats/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: cleaned,
+          voice: targetVoiceKey,
+        }),
+      });
+
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        activeAudioRef.current = audio;
+
+        audio.onended = () => {
+          setIsPlayingTts(false);
+          setPlayingPersonaId(null);
+          activeAudioRef.current = null;
+        };
+
+        audio.onerror = () => {
+          activeAudioRef.current = null;
+          fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
+        };
+
+        await audio.play();
+        return;
+      }
+    } catch {
+      // Fallback on network failure
+    }
+
+    fallbackToBrowserSpeech(cleaned, persona, targetVoiceKey);
   };
 
   const handleSelectPersona = (persona: VoicePersona) => {

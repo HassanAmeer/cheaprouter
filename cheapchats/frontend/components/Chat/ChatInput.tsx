@@ -143,6 +143,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   const callRecognitionRef = useRef<any>(null);
   const callSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const userSpeakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isUserSpeakingRef = useRef(false);
@@ -463,6 +464,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   };
 
   const handleStopSpeaking = () => {
+    if (currentAudioElementRef.current) {
+      try {
+        currentAudioElementRef.current.pause();
+      } catch {}
+      currentAudioElementRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
@@ -471,6 +478,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
   // Inline Call Assistant Handlers
   const stopCallSpeaking = () => {
+    if (currentAudioElementRef.current) {
+      try {
+        currentAudioElementRef.current.pause();
+      } catch {}
+      currentAudioElementRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
@@ -542,6 +555,12 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   };
 
   const handleEndCall = () => {
+    if (currentAudioElementRef.current) {
+      try {
+        currentAudioElementRef.current.pause();
+      } catch {}
+      currentAudioElementRef.current = null;
+    }
     setIsCallActive(false);
     isCallActiveRef.current = false;
     setCallAssistantOpen(false);
@@ -697,7 +716,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   }, [isCallActive]);
 
   // Drains speech queue sentence by sentence as they stream in
-  const drainSpeechQueue = () => {
+  const drainSpeechQueue = async () => {
     if (!isCallActiveRef.current) {
       speechQueueRef.current = [];
       streamingTtsBufferRef.current = "";
@@ -727,67 +746,113 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       return;
     }
 
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      return;
-    }
-
-    isSpeakingUtteranceRef.current = true;
-    setCallStatus("speaking");
-    callStatusRef.current = "speaking";
-    setIsSpeaking(true);
-
-    const voices = window.speechSynthesis.getVoices();
-    const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);
-
-    let chunkToSpeak = nextChunk;
-    if (/[\u0600-\u06FF]/.test(chunkToSpeak)) {
-      const isNativeUrduOrArabic =
-        bestVoice &&
-        (bestVoice.lang.toLowerCase().startsWith("ur") || bestVoice.lang.toLowerCase().startsWith("ar"));
-      if (!isNativeUrduOrArabic) {
-        chunkToSpeak = transliterateToRomanUrdu(chunkToSpeak);
-      }
-    }
-
-    const utterance = new SpeechSynthesisUtterance(chunkToSpeak);
-    currentUtteranceRef.current = utterance;
-    const ttsSettings = getEffectiveTtsSettings(ttsVoice);
-    utterance.rate = ttsSettings.rate;
-    utterance.pitch = ttsSettings.pitch;
-
-    if (bestVoice) {
-      utterance.voice = bestVoice;
-      if (bestVoice.lang) {
-        utterance.lang = bestVoice.lang;
-      }
-    }
-
-    utterance.onstart = () => {
-      if (!isCallActiveRef.current) {
-        window.speechSynthesis.cancel();
+    const playBrowserFallback = (chunk: string) => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        isSpeakingUtteranceRef.current = false;
+        drainSpeechQueue();
         return;
       }
-      setCallStatus("speaking");
-      callStatusRef.current = "speaking";
-      setIsSpeaking(true);
-    };
 
-    utterance.onend = () => {
-      currentUtteranceRef.current = null;
-      isSpeakingUtteranceRef.current = false;
-      drainSpeechQueue();
-    };
+      const voices = window.speechSynthesis.getVoices();
+      const bestVoice = getBestVoice(voices, ttsVoice, chunk, sttLang);
 
-    utterance.onerror = (e) => {
-      if (e.error !== "canceled" && e.error !== "interrupted") {
-        console.warn("Speech synthesis chunk error:", e);
+      let chunkToSpeak = chunk;
+      if (/[\u0600-\u06FF]/.test(chunkToSpeak)) {
+        const isNativeUrduOrArabic =
+          bestVoice &&
+          (bestVoice.lang.toLowerCase().startsWith("ur") || bestVoice.lang.toLowerCase().startsWith("ar"));
+        if (!isNativeUrduOrArabic) {
+          chunkToSpeak = transliterateToRomanUrdu(chunkToSpeak);
+        }
       }
-      currentUtteranceRef.current = null;
-      isSpeakingUtteranceRef.current = false;
-      drainSpeechQueue();
+
+      const utterance = new SpeechSynthesisUtterance(chunkToSpeak);
+      currentUtteranceRef.current = utterance;
+      const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+      utterance.rate = ttsSettings.rate;
+      utterance.pitch = ttsSettings.pitch;
+
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+        if (bestVoice.lang) {
+          utterance.lang = bestVoice.lang;
+        }
+      }
+
+      utterance.onstart = () => {
+        if (!isCallActiveRef.current) {
+          window.speechSynthesis.cancel();
+          return;
+        }
+        setCallStatus("speaking");
+        callStatusRef.current = "speaking";
+        setIsSpeaking(true);
+      };
+
+      utterance.onend = () => {
+        currentUtteranceRef.current = null;
+        isSpeakingUtteranceRef.current = false;
+        drainSpeechQueue();
+      };
+
+      utterance.onerror = (e) => {
+        if (e.error !== "canceled" && e.error !== "interrupted") {
+          console.warn("Speech synthesis chunk error:", e);
+        }
+        currentUtteranceRef.current = null;
+        isSpeakingUtteranceRef.current = false;
+        drainSpeechQueue();
+      };
+
+      window.speechSynthesis.speak(utterance);
     };
 
-    window.speechSynthesis.speak(utterance);
+    // 1. Try Free Ultra-Realistic Edge Neural Voice from backend API
+    try {
+      const resp = await fetch("/api/cheapchats/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: nextChunk,
+          voice: ttsVoice,
+        }),
+      });
+
+      if (resp.ok && isCallActiveRef.current) {
+        const blob = await resp.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        currentAudioElementRef.current = audio;
+
+        audio.onplay = () => {
+          if (!isCallActiveRef.current) {
+            audio.pause();
+            return;
+          }
+          setCallStatus("speaking");
+          callStatusRef.current = "speaking";
+          setIsSpeaking(true);
+        };
+
+        audio.onended = () => {
+          currentAudioElementRef.current = null;
+          isSpeakingUtteranceRef.current = false;
+          drainSpeechQueue();
+        };
+
+        audio.onerror = () => {
+          currentAudioElementRef.current = null;
+          playBrowserFallback(nextChunk);
+        };
+
+        await audio.play();
+        return;
+      }
+    } catch {
+      // Network or audio error fallback
+    }
+
+    playBrowserFallback(nextChunk);
   };
 
   const processStreamBuffer = (isFinal = false) => {
