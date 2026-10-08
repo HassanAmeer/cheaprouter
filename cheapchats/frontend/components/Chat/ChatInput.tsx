@@ -47,7 +47,7 @@ import {
   getEffectiveSttLang,
   SPEECH_LANGUAGES,
   transliterateToRomanUrdu,
-  getPersonaSettings,
+  getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 
 interface ChatInputProps {
@@ -734,9 +734,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     const utterance = new SpeechSynthesisUtterance(nextChunk);
     currentUtteranceRef.current = utterance;
-    const personaSettings = getPersonaSettings(ttsVoice);
-    utterance.rate = personaSettings.rate || 1.0;
-    utterance.pitch = personaSettings.pitch || 1.0;
+    const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+    utterance.rate = ttsSettings.rate;
+    utterance.pitch = ttsSettings.pitch;
 
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = getBestVoice(voices, ttsVoice, nextChunk, sttLang);

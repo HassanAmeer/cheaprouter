@@ -214,142 +214,18 @@ export interface VoicePersona {
 }
 
 export const VOICE_PERSONAS: VoicePersona[] = [
-  // ─── Roman Urdu & Desi Personas ──────────────────────────────────────────────
-  {
-    id: "zoya",
-    name: "Zoya (زویا)",
-    gender: "female",
-    accentTitle: "Roman Urdu (Natural Female)",
-    flag: "🇵🇰",
-    badge: "Popular",
-    tags: ["Roman Urdu", "Desi Accent", "Warm"],
-    description: "Friendly and natural Desi female voice tuned for conversational Roman Urdu.",
-    samplePhrase: "Assalam-o-Alaikum! Main Zoya hoon. CheapChats par aap ki madad ke liye hazir hoon.",
-    preferredKeywords: ["swara", "heera", "kalpana", "neerja", "google हिन्दी", "hindi", "en-in", "urdu"],
-    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
-    pitch: 1.05,
-    rate: 0.95,
-  },
-  {
-    id: "bilal",
-    name: "Bilal (بلال)",
-    gender: "male",
-    accentTitle: "Roman Urdu (Deep Male)",
-    flag: "🇵🇰",
-    badge: "Recommended",
-    tags: ["Roman Urdu", "Desi Accent", "Professional"],
-    description: "Deep, respectful male tone with clear Hindustani/Roman Urdu phonetics.",
-    samplePhrase: "Assalam-o-Alaikum! Main Bilal hoon. Boliye aaj main aap ki kya madad kar sakta hoon?",
-    preferredKeywords: ["madhur", "prabhat", "ravi", "google हिन्दी", "en-in", "hindi", "urdu"],
-    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
-    pitch: 0.95,
-    rate: 0.95,
-  },
-  {
-    id: "ayesha",
-    name: "Ayesha (عائشہ)",
-    gender: "female",
-    accentTitle: "Roman Urdu (Soft & Clear)",
-    flag: "🇵🇰",
-    badge: "Soft Tone",
-    tags: ["Roman Urdu", "Clear", "Expressive"],
-    description: "Gentle and articulate tone, ideal for long explanations and chat summaries.",
-    samplePhrase: "Hello! Main Ayesha hoon. Koi bhi sawaal ho to bila-jhijhak pooch sakte hain.",
-    preferredKeywords: ["kalpana", "swara", "neerja", "google हिन्दी", "en-in"],
-    langCodes: ["hi-in", "en-in", "hi"],
-    pitch: 1.0,
-    rate: 0.92,
-  },
-
-  // ─── Hindi & Hinglish Personas ───────────────────────────────────────────────
-  {
-    id: "swara",
-    name: "Swara (स्वरा)",
-    gender: "female",
-    accentTitle: "Hindi / Hinglish (Neural Female)",
-    flag: "🇮🇳",
-    badge: "Neural HD",
-    tags: ["Hindi", "Hinglish", "Clear"],
-    description: "Crisp and standard Indian accent with authentic Hindi & Hinglish pronunciation.",
-    samplePhrase: "नमस्ते! मैं स्वरा हूँ, CheapChats में आपका स्वागत है। बताइए आज क्या करना है?",
-    preferredKeywords: ["swara", "google हिन्दी", "kalpana", "hi-in", "hi"],
-    langCodes: ["hi-in", "hi"],
-    pitch: 1.0,
-    rate: 1.0,
-  },
-  {
-    id: "madhur",
-    name: "Madhur (मधुर)",
-    gender: "male",
-    accentTitle: "Hindi / Hinglish (Neural Male)",
-    flag: "🇮🇳",
-    badge: "Neural HD",
-    tags: ["Hindi", "Hinglish", "Smooth"],
-    description: "Calm, rich male persona tailored for natural Hindi conversation.",
-    samplePhrase: "नमस्ते! मैं मधुर हूँ। आज हम किस विषय पर चर्चा करना चाहते हैं?",
-    preferredKeywords: ["madhur", "prabhat", "google हिन्दी", "hi-in", "hi"],
-    langCodes: ["hi-in", "hi"],
-    pitch: 0.96,
-    rate: 0.98,
-  },
-  {
-    id: "neerja",
-    name: "Neerja (नीरजा)",
-    gender: "female",
-    accentTitle: "Indian English (Professional)",
-    flag: "🇮🇳",
-    badge: "Fluent",
-    tags: ["Indian English", "Bilingual", "Formal"],
-    description: "Fluent bilingual Indian English persona with clear diction.",
-    samplePhrase: "Hello! I am Neerja, ready to assist you with quick and accurate answers.",
-    preferredKeywords: ["neerja", "en-in", "swara", "heera"],
-    langCodes: ["en-in", "hi-in"],
-    pitch: 1.02,
-    rate: 1.0,
-  },
-
-  // ─── Native Urdu Personas ───────────────────────────────────────────────────
-  {
-    id: "asad",
-    name: "Asad (اسد)",
-    gender: "male",
-    accentTitle: "Urdu Native (Classic Male)",
-    flag: "🇵🇰",
-    badge: "Native Script",
-    tags: ["Urdu Script", "Formal", "Classic"],
-    description: "Classic native Urdu voice tuned for Nastaliq and standard Urdu text.",
-    samplePhrase: "السلام علیکم! میں اسد ہوں، چیپ چیٹس پر آپ کی خدمت میں حاضر ہوں۔",
-    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "arabic", "ar-sa"],
-    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
-    pitch: 0.92,
-    rate: 0.90,
-  },
-  {
-    id: "gul",
-    name: "Gul (گل)",
-    gender: "female",
-    accentTitle: "Urdu Native (Melodic Female)",
-    flag: "🇵🇰",
-    badge: "Native Script",
-    tags: ["Urdu Script", "Melodic", "Polite"],
-    description: "Polite and traditional native Urdu voice for literary and conversational text.",
-    samplePhrase: "السلام علیکم! میرا نام گل ہے۔ فرمائیے میں آج آپ کی کیا رہنمائی کر سکتی ہوں؟",
-    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "female", "arabic"],
-    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
-    pitch: 1.05,
-    rate: 0.92,
-  },
-
-  // ─── English & Global Personas ──────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 1: FAMOUS INTERNATIONAL ACCENTS (TOP SECTION)
+  // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "jenny",
     name: "Jenny",
     gender: "female",
     accentTitle: "English US (Natural Female)",
     flag: "🇺🇸",
-    badge: "Popular",
-    tags: ["English US", "Friendly", "Fast"],
-    description: "Engaging and clear modern American English female persona.",
+    badge: "Famous",
+    tags: ["English US", "Friendly", "Natural"],
+    description: "Engaging, crisp and clear modern American English female persona.",
     samplePhrase: "Hi there! I'm Jenny. I can help brainstorm ideas, code, or answer questions.",
     preferredKeywords: ["jenny", "natural", "zira", "google us english", "en-us"],
     langCodes: ["en-us", "en"],
@@ -360,15 +236,15 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     id: "guy",
     name: "Guy",
     gender: "male",
-    accentTitle: "English US (Confident Male)",
+    accentTitle: "English US (Bhari Aawaz / Deep Male)",
     flag: "🇺🇸",
-    badge: "Studio",
-    tags: ["English US", "Confident", "Casual"],
-    description: "Deep, approachable American male persona.",
+    badge: "Heavy Male",
+    tags: ["English US", "Bhari Aawaz", "Confident"],
+    description: "Deep, powerful masculine tone for authoritative American English.",
     samplePhrase: "Hey! I'm Guy. Let's make things happen with CheapChats today.",
-    preferredKeywords: ["guy", "natural", "david", "google us english", "en-us"],
+    preferredKeywords: ["guy", "david", "mark", "male", "google us english", "en-us"],
     langCodes: ["en-us", "en"],
-    pitch: 0.96,
+    pitch: 0.78,
     rate: 1.0,
   },
   {
@@ -379,7 +255,7 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     flag: "🇬🇧",
     badge: "British",
     tags: ["English UK", "Polished", "Articulate"],
-    description: "Crisp and sophisticated British Received Pronunciation voice.",
+    description: "Sophisticated British Received Pronunciation female voice.",
     samplePhrase: "Good day! I'm Sonia. It is a genuine pleasure to assist you with your tasks.",
     preferredKeywords: ["sonia", "libby", "hazel", "google uk", "en-gb"],
     langCodes: ["en-gb", "en"],
@@ -387,19 +263,19 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     rate: 0.98,
   },
   {
-    id: "rohan",
-    name: "Rohan",
+    id: "hamdan",
+    name: "Hamdan (حمدان)",
     gender: "male",
-    accentTitle: "English India (Dynamic Male)",
-    flag: "🇮🇳",
-    badge: "Desi English",
-    tags: ["Indian English", "Fast", "Dynamic"],
-    description: "Energetic Indian English male voice, great for technical queries.",
-    samplePhrase: "Hello! I am Rohan. Let's dive straight into your coding questions.",
-    preferredKeywords: ["rohan", "ravi", "prabhat", "en-in"],
-    langCodes: ["en-in", "hi-in"],
-    pitch: 0.96,
-    rate: 1.0,
+    accentTitle: "Gulf Arabic (Executive Deep Male)",
+    flag: "🇦🇪",
+    badge: "Famous Gulf",
+    tags: ["Gulf Arabic", "Confident", "Deep Male"],
+    description: "Executive Gulf Arabic masculine persona with natural cadence.",
+    samplePhrase: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار أو مهمة.",
+    preferredKeywords: ["hamdan", "tariq", "naayf", "male", "ar-ae", "arabic"],
+    langCodes: ["ar-ae", "ar"],
+    pitch: 0.80,
+    rate: 0.95,
   },
   {
     id: "fatima",
@@ -409,27 +285,181 @@ export const VOICE_PERSONAS: VoicePersona[] = [
     flag: "🇸🇦",
     badge: "Fusha",
     tags: ["Arabic", "Modern Standard", "Warm"],
-    description: "Clear and warm Modern Standard Arabic female voice.",
+    description: "Clear and polite Modern Standard Arabic female voice.",
     samplePhrase: "مرحباً بك! أنا فاطمة، كيف يمكنني مساعدتك في شات اليوم؟",
-    preferredKeywords: ["fatima", "zeina", "mouna", "ar-sa", "arabic"],
+    preferredKeywords: ["fatima", "zeina", "mouna", "female", "ar-sa", "arabic"],
     langCodes: ["ar-sa", "ar"],
-    pitch: 1.0,
+    pitch: 1.05,
+    rate: 0.95,
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 2: PAKISTANI & HINDI ACCENTS (LOWER SECTION - ROMAN URDU & DESI)
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "bilal",
+    name: "Bilal (بلال)",
+    gender: "male",
+    accentTitle: "Roman Urdu (Bhari Aawaz / Father-like Deep Male)",
+    flag: "🇵🇰",
+    badge: "Bhari Aawaz / Father",
+    tags: ["Roman Urdu", "Bhari Aawaz", "Father-like", "Deep Male"],
+    description: "Heavy, respectful father-like masculine tone. Guaranteed deep male voice.",
+    samplePhrase: "Assalam-o-Alaikum! Main Bilal hoon. Boliye beta aaj main aap ki kya madad kar sakta hoon?",
+    preferredKeywords: ["madhur", "prabhat", "ravi", "male", "guy", "david", "mark"],
+    langCodes: ["hi-in", "en-in", "ur-pk", "hi"],
+    pitch: 0.74,
     rate: 0.95,
   },
   {
-    id: "hamdan",
-    name: "Hamdan (حمدان)",
+    id: "aryan",
+    name: "Aryan (آرین / Naujawan)",
     gender: "male",
-    accentTitle: "Gulf Arabic (Executive Male)",
-    flag: "🇦🇪",
-    badge: "Gulf",
-    tags: ["Gulf Arabic", "Confident", "Clear"],
-    description: "Confident Gulf Arabic male persona with natural cadence.",
-    samplePhrase: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار أو مهمة.",
-    preferredKeywords: ["hamdan", "tariq", "ar-ae", "arabic"],
-    langCodes: ["ar-ae", "ar"],
-    pitch: 0.95,
-    rate: 0.95,
+    accentTitle: "Roman Urdu (Young Boy / Energetic Male)",
+    flag: "🇵🇰",
+    badge: "Young Boy",
+    tags: ["Roman Urdu", "Young Boy", "Naujawan", "Fast"],
+    description: "Crisp and energetic youthful boy voice, fast and enthusiastic.",
+    samplePhrase: "Assalam-o-Alaikum! Main Aryan hoon. Aaj kya naya banana hai? Chalein shuru karte hain!",
+    preferredKeywords: ["madhur", "prabhat", "ravi", "rohan", "male"],
+    langCodes: ["hi-in", "en-in", "hi"],
+    pitch: 1.10,
+    rate: 1.06,
+  },
+  {
+    id: "pari",
+    name: "Pari (پری / Choti Bachi)",
+    gender: "female",
+    accentTitle: "Roman Urdu (Child / Kid Voice)",
+    flag: "🇵🇰",
+    badge: "Child / Kid",
+    tags: ["Roman Urdu", "Child Voice", "Cute Tone"],
+    description: "Playful, sweet and high-pitched child voice for lighthearted conversation.",
+    samplePhrase: "Hello! Mera naam Pari hai! CheapChats bohot acha hai, mujh se koi bhi baat karein!",
+    preferredKeywords: ["swara", "kalpana", "neerja", "female"],
+    langCodes: ["hi-in", "en-in", "hi"],
+    pitch: 1.38,
+    rate: 1.10,
+  },
+  {
+    id: "zoya",
+    name: "Zoya (زویا)",
+    gender: "female",
+    accentTitle: "Roman Urdu (Natural Human Female)",
+    flag: "🇵🇰",
+    badge: "Human Female",
+    tags: ["Roman Urdu", "Desi Accent", "Warm Female"],
+    description: "Friendly, soft and natural conversational Desi female voice.",
+    samplePhrase: "Assalam-o-Alaikum! Main Zoya hoon. CheapChats par aap ki madad ke liye hazir hoon.",
+    preferredKeywords: ["swara", "heera", "kalpana", "neerja", "female"],
+    langCodes: ["hi-in", "en-in", "hi"],
+    pitch: 1.06,
+    rate: 0.98,
+  },
+  {
+    id: "ayesha",
+    name: "Ayesha (عائشہ)",
+    gender: "female",
+    accentTitle: "Roman Urdu (Soft & Clear Female)",
+    flag: "🇵🇰",
+    badge: "Soft Tone",
+    tags: ["Roman Urdu", "Soft", "Clear Female"],
+    description: "Gentle and articulate feminine tone, ideal for long explanations.",
+    samplePhrase: "Hello! Main Ayesha hoon. Koi bhi sawaal ho to bila-jhijhak pooch sakte hain.",
+    preferredKeywords: ["kalpana", "swara", "neerja", "female"],
+    langCodes: ["hi-in", "en-in", "hi"],
+    pitch: 1.0,
+    rate: 0.92,
+  },
+  {
+    id: "swara",
+    name: "Swara (स्वरा)",
+    gender: "female",
+    accentTitle: "Hindi / Hinglish (Neural Modern Female)",
+    flag: "🇮🇳",
+    badge: "Neural HD",
+    tags: ["Hindi", "Hinglish", "Clear Female"],
+    description: "Crisp and standard Indian accent with authentic Hindi & Hinglish diction.",
+    samplePhrase: "नमस्ते! मैं स्वरा हूँ, CheapChats में आपका स्वागत है। बताइए आज क्या करना है?",
+    preferredKeywords: ["swara", "google हिन्दी", "kalpana", "hi-in", "female"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 1.02,
+    rate: 1.0,
+  },
+  {
+    id: "madhur",
+    name: "Madhur (मधुर)",
+    gender: "male",
+    accentTitle: "Hindi / Hinglish (Neural Deep Male)",
+    flag: "🇮🇳",
+    badge: "Neural Male",
+    tags: ["Hindi", "Hinglish", "Deep Male"],
+    description: "Calm, rich and heavy masculine persona for natural Hindi conversation.",
+    samplePhrase: "नमस्ते! मैं मधुर हूँ। आज हम किस विषय पर चर्चा करना चाहते हैं?",
+    preferredKeywords: ["madhur", "prabhat", "ravi", "male"],
+    langCodes: ["hi-in", "hi"],
+    pitch: 0.78,
+    rate: 0.96,
+  },
+  {
+    id: "neerja",
+    name: "Neerja (नीरजा)",
+    gender: "female",
+    accentTitle: "Indian English (Professional Female)",
+    flag: "🇮🇳",
+    badge: "Bilingual",
+    tags: ["Indian English", "Fluent", "Female"],
+    description: "Fluent bilingual Indian English persona with clear diction.",
+    samplePhrase: "Hello! I am Neerja, ready to assist you with quick and accurate answers.",
+    preferredKeywords: ["neerja", "en-in", "swara", "female"],
+    langCodes: ["en-in", "hi-in"],
+    pitch: 1.02,
+    rate: 1.0,
+  },
+  {
+    id: "rohan",
+    name: "Rohan",
+    gender: "male",
+    accentTitle: "Indian English (Dynamic Tech Male)",
+    flag: "🇮🇳",
+    badge: "Tech Male",
+    tags: ["Indian English", "Dynamic", "Male"],
+    description: "Energetic Indian English male voice, great for technical queries.",
+    samplePhrase: "Hello! I am Rohan. Let's dive straight into your coding questions.",
+    preferredKeywords: ["rohan", "ravi", "prabhat", "male", "en-in"],
+    langCodes: ["en-in", "hi-in"],
+    pitch: 0.86,
+    rate: 1.02,
+  },
+  {
+    id: "asad",
+    name: "Asad (اسد)",
+    gender: "male",
+    accentTitle: "Urdu Native (Classic Elder Male)",
+    flag: "🇵🇰",
+    badge: "Elder Male",
+    tags: ["Urdu Script", "Formal", "Elder Male"],
+    description: "Classic native Urdu voice with dignified, elder masculine timbre.",
+    samplePhrase: "السلام علیکم! میں اسد ہوں، چیپ چیٹس پر آپ کی خدمت میں حاضر ہوں۔",
+    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "male", "arabic"],
+    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
+    pitch: 0.74,
+    rate: 0.88,
+  },
+  {
+    id: "gul",
+    name: "Gul (گل)",
+    gender: "female",
+    accentTitle: "Urdu Native (Melodic Female)",
+    flag: "🇵🇰",
+    badge: "Melodic Female",
+    tags: ["Urdu Script", "Melodic", "Polite Female"],
+    description: "Polite and traditional native Urdu voice for literary text.",
+    samplePhrase: "السلام علیکم! میرا نام گل ہے۔ فرمائیے میں آج آپ کی کیا رہنمائی کر سکتی ہوں؟",
+    preferredKeywords: ["urdu", "ur-pk", "ur_pk", "female"],
+    langCodes: ["ur-pk", "ur", "ar-sa", "ar"],
+    pitch: 1.06,
+    rate: 0.92,
   },
 ];
 
@@ -445,6 +475,34 @@ export function getPersonaSettings(ttsVoiceUri?: string): { rate: number; pitch:
     }
   }
   return { rate: 1.0, pitch: 1.0 };
+}
+
+/**
+ * Reads user's customized rate and pitch from localStorage (or fallback to persona defaults).
+ * This ensures that when the user adjusts sliders in Settings, the Chat Assistant always speaks with that exact speed!
+ */
+export function getEffectiveTtsSettings(ttsVoiceUri?: string): { rate: number; pitch: number } {
+  let savedRate: number | null = null;
+  let savedPitch: number | null = null;
+
+  if (typeof window !== "undefined") {
+    const r = localStorage.getItem("cheapchat_tts_rate");
+    const p = localStorage.getItem("cheapchat_tts_pitch");
+    if (r !== null && r !== "") savedRate = parseFloat(r);
+    if (p !== null && p !== "") savedPitch = parseFloat(p);
+  }
+
+  const persona = ttsVoiceUri && ttsVoiceUri.startsWith("persona:")
+    ? VOICE_PERSONAS.find((p) => p.id === ttsVoiceUri.replace("persona:", ""))
+    : null;
+
+  const defaultRate = persona?.rate ?? 1.0;
+  const defaultPitch = persona?.pitch ?? 1.0;
+
+  return {
+    rate: savedRate !== null && !isNaN(savedRate) ? savedRate : defaultRate,
+    pitch: savedPitch !== null && !isNaN(savedPitch) ? savedPitch : defaultPitch,
+  };
 }
 
 // ─── ROMAN URDU TRANSLITERATION ENGINE ──────────────────────────────────────────
@@ -1024,21 +1082,63 @@ export function getBestVoice(
 ): SpeechSynthesisVoice | null {
   if (!voices || voices.length === 0) return null;
 
-  // 1. Check if user configured a Persona (e.g. "persona:zoya")
+  // 1. Check if user configured a Persona (e.g. "persona:bilal")
   if (ttsVoiceUri && ttsVoiceUri.startsWith("persona:")) {
     const personaId = ttsVoiceUri.replace("persona:", "");
     const persona = VOICE_PERSONAS.find((p) => p.id === personaId);
     if (persona) {
-      // Find matching voice by persona keywords
+      const isMale = persona.gender === "male";
+      const isFemale = persona.gender === "female";
+
+      const isKnownFemaleVoice = (v: SpeechSynthesisVoice) =>
+        /female|woman|girl|zira|swara|kalpana|neerja|heera|susan|hazel|jenny|sonia|fatima|gul|zoya|pari|ayesha|veena/i.test(v.name);
+
+      const isKnownMaleVoice = (v: SpeechSynthesisVoice) =>
+        /male|man|boy|guy|david|george|mark|ravi|prabhat|madhur|rohan|james|tariq|hamdan|asad|bilal|aryan|alex/i.test(v.name);
+
+      // Pass 1: Match preferred keywords with strict gender filter
       for (const kw of persona.preferredKeywords) {
-        const match = voices.find(
-          (v) =>
-            v.name.toLowerCase().includes(kw) ||
-            v.voiceURI.toLowerCase().includes(kw)
-        );
+        const match = voices.find((v) => {
+          const nameMatches = v.name.toLowerCase().includes(kw) || v.voiceURI.toLowerCase().includes(kw);
+          if (!nameMatches) return false;
+          if (isMale && isKnownFemaleVoice(v)) return false;
+          if (isFemale && isKnownMaleVoice(v)) return false;
+          return true;
+        });
         if (match) return match;
       }
-      // Match by language code
+
+      // Pass 2: If male, look for any male voice in matching languages
+      if (isMale) {
+        for (const lc of persona.langCodes) {
+          const maleLangMatch = voices.find(
+            (v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()) && isKnownMaleVoice(v) && !isKnownFemaleVoice(v)
+          );
+          if (maleLangMatch) return maleLangMatch;
+        }
+
+        // Check for any Desi/Indian English male voice
+        const anyDesiMale = voices.find(
+          (v) => (v.lang.toLowerCase().startsWith("en-in") || v.lang.toLowerCase().startsWith("hi")) && isKnownMaleVoice(v)
+        );
+        if (anyDesiMale) return anyDesiMale;
+
+        // Check for any English or system male voice
+        const anyMale = voices.find((v) => isKnownMaleVoice(v) && !isKnownFemaleVoice(v));
+        if (anyMale) return anyMale;
+      }
+
+      // Pass 3: If female, look for female voice in matching languages
+      if (isFemale) {
+        for (const lc of persona.langCodes) {
+          const femaleLangMatch = voices.find(
+            (v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()) && !isKnownMaleVoice(v)
+          );
+          if (femaleLangMatch) return femaleLangMatch;
+        }
+      }
+
+      // Pass 4: Fallback to language code
       for (const lc of persona.langCodes) {
         const match = voices.find((v) => v.lang.toLowerCase().startsWith(lc.toLowerCase()));
         if (match) return match;

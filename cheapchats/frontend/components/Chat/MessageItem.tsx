@@ -9,6 +9,7 @@ import {
 import {
   cleanTextForSpeech,
   getBestVoice,
+  getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 import Tooltip from "@cheapchats/frontend/components/Common/Tooltip";
 import {
@@ -503,6 +504,10 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
       window.speechSynthesis.cancel(); // cancel any active speech first
       const utterance = new SpeechSynthesisUtterance(speechText);
       
+      const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+      utterance.rate = ttsSettings.rate;
+      utterance.pitch = ttsSettings.pitch;
+
       const voices = window.speechSynthesis.getVoices();
       const selectedVoice = getBestVoice(voices, ttsVoice, speechText, sttLang);
 

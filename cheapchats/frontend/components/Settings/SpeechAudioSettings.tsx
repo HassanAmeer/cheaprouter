@@ -31,7 +31,7 @@ import {
   getBestVoice,
   cleanTextForSpeech,
   transliterateToRomanUrdu,
-  getPersonaSettings,
+  getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
 
 export default function SpeechAudioSettings() {
@@ -46,6 +46,10 @@ export default function SpeechAudioSettings() {
     setSttLang,
     ttsVoice,
     setTtsVoice,
+    ttsRate,
+    setTtsRate,
+    ttsPitch,
+    setTtsPitch,
   } = useAppStore();
 
   // Active Tab: "mic" (Speech to Text) or "speech" (Text to Speech)
@@ -58,35 +62,26 @@ export default function SpeechAudioSettings() {
   });
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // Speech Customization Sliders (Persisted in localStorage)
-  const [playbackRate, setPlaybackRate] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cheapchat_tts_rate");
-      if (saved) return Number(saved) || 1.0;
-    }
-    return 1.0;
-  });
+  // Local state initialized from store / localStorage
+  const [playbackRate, setPlaybackRate] = useState<number>(() => ttsRate || 1.0);
+  const [pitch, setPitch] = useState<number>(() => ttsPitch || 1.0);
 
-  const [pitch, setPitch] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cheapchat_tts_pitch");
-      if (saved) return Number(saved) || 1.0;
-    }
-    return 1.0;
-  });
+  useEffect(() => {
+    if (ttsRate) setPlaybackRate(ttsRate);
+  }, [ttsRate]);
+
+  useEffect(() => {
+    if (ttsPitch) setPitch(ttsPitch);
+  }, [ttsPitch]);
 
   const handleRateChange = (newRate: number) => {
     setPlaybackRate(newRate);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cheapchat_tts_rate", String(newRate));
-    }
+    setTtsRate(newRate);
   };
 
   const handlePitchChange = (newPitch: number) => {
     setPitch(newPitch);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cheapchat_tts_pitch", String(newPitch));
-    }
+    setTtsPitch(newPitch);
   };
 
   // STT Testing State
@@ -97,7 +92,7 @@ export default function SpeechAudioSettings() {
 
   // Filters for Accent Cards
   const [sttFilter, setSttFilter] = useState<"all" | "pakistan" | "india" | "global">("all");
-  const [speechFilter, setSpeechFilter] = useState<"all" | "pakistan" | "india" | "global">("all");
+  const [speechFilter, setSpeechFilter] = useState<"all" | "famous" | "pakistan" | "india">("all");
 
   // TTS Testing State
   const currentLangOption = SPEECH_LANGUAGES.find((l) => l.id === sttLang) || SPEECH_LANGUAGES[0];
@@ -295,7 +290,13 @@ export default function SpeechAudioSettings() {
     handlePitchChange(persona.pitch);
 
     // Auto-align STT language when a persona is picked
-    if (persona.id === "zoya" || persona.id === "bilal" || persona.id === "ayesha") {
+    if (
+      persona.id === "zoya" ||
+      persona.id === "bilal" ||
+      persona.id === "aryan" ||
+      persona.id === "pari" ||
+      persona.id === "ayesha"
+    ) {
       setSttLang("ur-roman");
     } else if (persona.id === "swara" || persona.id === "madhur") {
       setSttLang("hi-IN");
@@ -321,12 +322,12 @@ export default function SpeechAudioSettings() {
     return true;
   });
 
-  // Filtered Speech Personas
+  // Filtered Speech Personas (Famous on top, Pakistan & Hindi below)
   const filteredPersonas = VOICE_PERSONAS.filter((p) => {
     if (speechFilter === "all") return true;
-    if (speechFilter === "pakistan") return p.id === "zoya" || p.id === "bilal" || p.id === "ayesha" || p.id === "asad" || p.id === "gul";
+    if (speechFilter === "famous") return p.id === "jenny" || p.id === "guy" || p.id === "sonia" || p.id === "hamdan" || p.id === "fatima";
+    if (speechFilter === "pakistan") return p.id === "bilal" || p.id === "aryan" || p.id === "pari" || p.id === "zoya" || p.id === "ayesha" || p.id === "asad" || p.id === "gul";
     if (speechFilter === "india") return p.id === "swara" || p.id === "madhur" || p.id === "neerja" || p.id === "rohan";
-    if (speechFilter === "global") return p.id === "jenny" || p.id === "guy" || p.id === "sonia" || p.id === "fatima" || p.id === "hamdan";
     return true;
   });
 
@@ -685,7 +686,7 @@ export default function SpeechAudioSettings() {
                   Voice Audio & Pronunciation Customization
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Voice playback on/off karein, speed aur pitch sliders customize karein.
+                  Voice playback on/off karein, speed aur pitch sliders customize karein (Chat Assistant par automatically apply hoga).
                 </p>
               </div>
 
@@ -753,11 +754,12 @@ export default function SpeechAudioSettings() {
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                 <span className="text-[10px] text-slate-500">Quick tests:</span>
                 {[
-                  { label: "🇵🇰 Zoya (Roman Urdu)", text: "Assalam-o-Alaikum! CheapChats ka voice system bohot pyara chal raha hai." },
-                  { label: "🇵🇰 Bilal (Roman Urdu)", text: "Assalam-o-Alaikum! Main Bilal hoon. Boliye aaj aap kya poochna chahte hain?" },
-                  { label: "🇮🇳 Swara (Hindi)", text: "नमस्ते! CheapChats का आवाज़ सिस्टम बहुत स्पष्ट और स्वाभाविक है।" },
-                  { label: "🇮🇳 Madhur (Hindi)", text: "नमस्ते! मैं मधुर हूँ, आज हम किस विषय पर चर्चा करेंगे?" },
-                  { label: "🇺🇸 Jenny (English)", text: "Hello! CheapChats voice system is responding instantaneously." },
+                  { label: "🇵🇰 Bilal (Bhari Aawaz)", text: "Assalam-o-Alaikum! Main Bilal hoon. Boliye beta aaj main aap ki kya madad kar sakta hoon?" },
+                  { label: "🇵🇰 Aryan (Young Boy)", text: "Assalam-o-Alaikum! Main Aryan hoon. Aaj kya naya banana hai?" },
+                  { label: "🇵🇰 Pari (Child Kid)", text: "Hello! Mera naam Pari hai, mujh se koi bhi baat karein!" },
+                  { label: "🇵🇰 Zoya (Human Female)", text: "Assalam-o-Alaikum! Main Zoya hoon, CheapChats par aap ki madad ke liye hazir hoon." },
+                  { label: "🇺🇸 Jenny (English US)", text: "Hello! CheapChats voice system is responding instantaneously and clearly." },
+                  { label: "🇦🇪 Hamdan (Arabic)", text: "أهلاً وسهلاً! أنا حمدان، جاهز لمساعدتك في أي استفسار." },
                 ].map((pill, i) => (
                   <button
                     key={i}
@@ -774,7 +776,7 @@ export default function SpeechAudioSettings() {
               </div>
             </div>
 
-            {/* Speed & Pitch Sliders */}
+            {/* Speed & Pitch Sliders - Saves Automatically & Applies to Chat! */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-white/5">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-slate-300">
@@ -806,7 +808,7 @@ export default function SpeechAudioSettings() {
                 <div className="flex items-center justify-between text-xs text-slate-300">
                   <span className="flex items-center gap-1.5">
                     <Radio className="w-3.5 h-3.5 text-purple-400" />
-                    Voice Pitch
+                    Voice Pitch (Bhari Aawaz / High Pitch)
                   </span>
                   <span className="font-mono text-[11px] text-purple-300 bg-purple-950/50 px-1.5 py-0.5 rounded border border-purple-800/40">
                     {pitch.toFixed(2)}x
@@ -814,17 +816,17 @@ export default function SpeechAudioSettings() {
                 </div>
                 <input
                   type="range"
-                  min="0.7"
-                  max="1.4"
+                  min="0.65"
+                  max="1.45"
                   step="0.05"
                   value={pitch}
                   onChange={(e) => handlePitchChange(Number(e.target.value))}
                   className="w-full accent-purple-500 cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-slate-500">
-                  <span>0.7 Deep</span>
-                  <span>1.0 Natural</span>
-                  <span>1.4 High</span>
+                  <span>0.70 Bhari / Deep Male</span>
+                  <span>1.00 Natural</span>
+                  <span>1.40 Child / High</span>
                 </div>
               </div>
             </div>
@@ -866,10 +868,10 @@ export default function SpeechAudioSettings() {
               <div>
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                   <Star className="w-4 h-4 text-purple-400 fill-purple-400" />
-                  Voice Accent Cards (Ek Sath Grid - Different Names & Accents)
+                  Voice Accent Cards (Famous Accents Upar, Pakistani & Hindi Neeche)
                 </h4>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Har card par "Preview" click karke aawaz sunein, aur click karne par foran save ho jayega.
+                  Famous international accents upar hain, aur Pakistani & Hindi accents neeche hain. Card click karne se foran save ho jayega.
                 </p>
               </div>
 
@@ -883,6 +885,15 @@ export default function SpeechAudioSettings() {
                   }`}
                 >
                   All ({VOICE_PERSONAS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpeechFilter("famous")}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                    speechFilter === "famous" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  🌐 Famous International
                 </button>
                 <button
                   type="button"
@@ -902,19 +913,10 @@ export default function SpeechAudioSettings() {
                 >
                   🇮🇳 India
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSpeechFilter("global")}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                    speechFilter === "global" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  🌐 Global
-                </button>
               </div>
             </div>
 
-            {/* The Unified Personas / Voice Accents Grid */}
+            {/* The Unified Personas Grid: Famous on top, Pakistani & Hindi below */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filteredPersonas.map((persona) => {
                 const isPersonaSelected = ttsVoice === `persona:${persona.id}`;

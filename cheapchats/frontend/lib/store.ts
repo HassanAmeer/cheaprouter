@@ -117,6 +117,12 @@ interface AppState {
   ttsVoice: string;
   setTtsVoice: (voice: string) => void;
 
+  ttsRate: number;
+  setTtsRate: (rate: number) => void;
+
+  ttsPitch: number;
+  setTtsPitch: (pitch: number) => void;
+
   isArtifactsOpen: boolean;
   setArtifactsOpen: (open: boolean) => void;
   toggleArtifacts: () => void;
@@ -257,6 +263,22 @@ export const useAppStore = create<AppState>((set) => ({
   setTtsVoice: (voice) => {
     if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_voice", voice);
     set({ ttsVoice: voice });
+  },
+
+  ttsRate: typeof window !== "undefined" && localStorage.getItem("cheapchat_tts_rate") !== null
+    ? Number(localStorage.getItem("cheapchat_tts_rate")) || 1.0
+    : 1.0,
+  setTtsRate: (rate) => {
+    if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_rate", String(rate));
+    set({ ttsRate: rate });
+  },
+
+  ttsPitch: typeof window !== "undefined" && localStorage.getItem("cheapchat_tts_pitch") !== null
+    ? Number(localStorage.getItem("cheapchat_tts_pitch")) || 1.0
+    : 1.0,
+  setTtsPitch: (pitch) => {
+    if (typeof window !== "undefined") localStorage.setItem("cheapchat_tts_pitch", String(pitch));
+    set({ ttsPitch: pitch });
   },
 
   isArtifactsOpen: false,
