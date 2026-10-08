@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import SpeechAudioSettings from "@cheapchats/frontend/components/Settings/SpeechAudioSettings";
 
 type SettingsTab = "general" | "chat" | "providers" | "speech" | "privacy" | "account" | "about";
 
@@ -336,7 +337,7 @@ export default function SettingsModal() {
     { id: "general", label: "General", icon: Sliders },
     { id: "chat", label: "Chat", icon: MessageSquare },
     { id: "providers", label: "Providers", icon: Cpu },
-    { id: "speech", label: "Speech", icon: Volume2 },
+    { id: "speech", label: "Speech & Audio", icon: Volume2 },
     { id: "privacy", label: "Data & Privacy", icon: ShieldCheck },
     { id: "account", label: "Account", icon: User },
     { id: "about", label: "About", icon: Info },
@@ -999,167 +1000,8 @@ export default function SettingsModal() {
               </div>
             )}
 
-            {/* ── Speech Tab (Exact Screenshot 1 Design) ─────────────────── */}
-            {activeTab === "speech" && (
-              <div className="space-y-6 max-w-2xl">
-                {/* Section 1: SPEECH TO TEXT */}
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                    SPEECH TO TEXT
-                  </h3>
-                  <div className="space-y-2">
-                    <SettingRow
-                      label="Speech to Text"
-                      checked={isSttEnabled}
-                      onChange={setIsSttEnabled}
-                    />
-                    <SettingRow
-                      label="Engine"
-                      rightElement={
-                        <select
-                          value={sttEngine}
-                          onChange={(e) => setSttEngine(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer"
-                        >
-                          <option value="Browser">Browser</option>
-                          <option value="Whisper">Whisper API</option>
-                        </select>
-                      }
-                    />
-                    <SettingRow
-                      label="Voice Language & Accent Role"
-                      rightElement={
-                        <select
-                          value={sttLang}
-                          onChange={(e) => setSttLang(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer"
-                        >
-                          <option value="auto">🌐 Auto-Detect (Default: English)</option>
-                          <option value="ur-roman">🇵🇰 Urdu / Roman Urdu (اردو)</option>
-                          <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
-                          <option value="en-US">🇺🇸 English (United States)</option>
-                          <option value="en-GB">🇬🇧 English (United Kingdom)</option>
-                          <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
-                        </select>
-                      }
-                    />
-                    <SettingRow
-                      label="Auto transcribe audio"
-                      checked={autoTranscribe}
-                      onChange={setAutoTranscribe}
-                    />
-                    <SettingRow
-                      label="Decibel sensitivity (default: -45)"
-                      rightElement={
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="range"
-                            min="-100"
-                            max="0"
-                            value={decibelSensitivity}
-                            onChange={(e) => setDecibelSensitivity(Number(e.target.value))}
-                            className="w-28 accent-white cursor-pointer"
-                          />
-                          <span className="bg-[#222] border border-white/10 px-2 py-0.5 rounded-lg text-[11px] font-mono text-slate-300">
-                            {decibelSensitivity}
-                          </span>
-                        </div>
-                      }
-                    />
-                    <SettingRow
-                      label="Auto send text"
-                      checked={autoSendText}
-                      onChange={setAutoSendText}
-                    />
-                  </div>
-                </div>
-
-                {/* Section 2: TEXT TO SPEECH */}
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                    TEXT TO SPEECH
-                  </h3>
-                  <div className="space-y-2">
-                    <SettingRow
-                      label="Text to Speech"
-                      checked={isTtsEnabled}
-                      onChange={setIsTtsEnabled}
-                    />
-                    <SettingRow
-                      label="Engine"
-                      rightElement={
-                        <select
-                          value={ttsEngine}
-                          onChange={(e) => setTtsEngine(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer"
-                        >
-                          <option value="Browser">Browser</option>
-                          <option value="OpenAI TTS">OpenAI TTS</option>
-                        </select>
-                      }
-                    />
-                    <SettingRow
-                      label="Voice Accent / Profile"
-                      rightElement={
-                        <select
-                          value={ttsVoice}
-                          onChange={(e) => setTtsVoice(e.target.value)}
-                          className="bg-[#222] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none cursor-pointer max-w-[200px]"
-                        >
-                          <option value="default">
-                            Auto (Match Role: {sttLang === "ur-roman" ? "Urdu / Roman Urdu" : sttLang === "hi-IN" ? "Hindi" : sttLang === "ar-SA" ? "Arabic" : "English"})
-                          </option>
-                          {browserVoices.map((voice) => (
-                            <option key={voice.voiceURI} value={voice.voiceURI}>
-                              {voice.name} ({voice.lang})
-                            </option>
-                          ))}
-                        </select>
-                      }
-                    />
-                    <SettingRow
-                      label="Conversation Mode"
-                      checked={conversationMode}
-                      onChange={setConversationMode}
-                    />
-                    <SettingRow
-                      label="Autoplay Latest Message"
-                      checked={autoplayLatest}
-                      onChange={setAutoplayLatest}
-                    />
-                    <SettingRow
-                      label="Use cloud-based voices"
-                      checked={useCloudVoices}
-                      onChange={setUseCloudVoices}
-                    />
-                    <SettingRow
-                      label="Audio Playback Rate (default: 1)"
-                      rightElement={
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="range"
-                            min="0.5"
-                            max="2"
-                            step="0.1"
-                            value={playbackRate}
-                            onChange={(e) => setPlaybackRate(Number(e.target.value))}
-                            className="w-28 accent-white cursor-pointer"
-                          />
-                          <span className="bg-[#222] border border-white/10 px-2 py-0.5 rounded-lg text-[11px] font-mono text-slate-300">
-                            {playbackRate}
-                          </span>
-                        </div>
-                      }
-                    />
-                    <SettingRow
-                      label="Enable cache TTS"
-                      checked={enableCacheTts}
-                      onChange={setEnableCacheTts}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* ── Speech & Audio Tab ─────────────────────────────────────── */}
+            {activeTab === "speech" && <SpeechAudioSettings />}
 
             {/* ── Data & Privacy Tab (Exact Screenshot 2 Design) ─────────── */}
             {activeTab === "privacy" && (

@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import ProviderKeyDrawer, { ProviderItem } from "./ProviderKeyDrawer";
 import CustomProviderDialog from "./CustomProviderDialog";
+import SpeechAudioSettings from "./SpeechAudioSettings";
 import {
   CustomProvider,
   readCustomProviders,
@@ -1072,118 +1073,7 @@ export default function SettingsPage() {
           )}
 
           {/* TAB 3: SPEECH & AUDIO */}
-          {activeTab === "speech" && (
-            <div className="space-y-6 max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Mic className="w-5 h-5 text-rose-300" />
-                  Speech & Audio
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Uses speech recognition and voices provided by Chrome and your operating system.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#20242c] via-[#171a20] to-[#111419] p-6 shadow-lg shadow-black/20 space-y-5">
-                <section className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-100">Speech to text</h3>
-                      <p className="mt-1 text-[11px] text-slate-400">Use Chrome’s built-in speech recognition for microphone input.</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-medium ${speechSupport.recognition ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-amber-500/25 bg-amber-500/10 text-amber-200"}`}>
-                      {speechSupport.recognition ? "Available" : "Not available"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-4">
-                    <div>
-                      <p className="text-xs font-medium text-slate-200">Microphone input</p>
-                      <p className="text-[11px] text-slate-500">Enable or disable voice input in chat.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={isSttEnabled}
-                      onChange={toggleSttEnabled}
-                      disabled={!speechSupport.recognition}
-                      className="h-4 w-4 cursor-pointer accent-rose-400 disabled:cursor-not-allowed disabled:opacity-40"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-recognition-language">
-                      Voice Language & Accent Role
-                    </label>
-                    <select
-                      id="speech-recognition-language"
-                      value={sttLang}
-                      onChange={(e) => setSttLang(e.target.value)}
-                      disabled={!speechSupport.recognition}
-                      className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="auto">🌐 Auto-Detect (Default: English)</option>
-                      <option value="ur-roman">🇵🇰 Urdu / Roman Urdu (اردو)</option>
-                      <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
-                      <option value="en-US">🇺🇸 English (United States)</option>
-                      <option value="en-GB">🇬🇧 English (United Kingdom)</option>
-                      <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
-                    </select>
-                    <p className="text-[11px] text-slate-400">
-                      Controls speech recognition and AI voice accent. "Urdu / Roman Urdu" mode uses native phonetics so Roman Urdu and Urdu are recognized and spoken naturally.
-                    </p>
-                  </div>
-                </section>
-
-                <section className="space-y-4 border-t border-white/10 pt-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                        <Volume2 className="h-4 w-4 text-rose-300" />
-                        Text to speech
-                      </h3>
-                      <p className="mt-1 text-[11px] text-slate-400">Read assistant responses aloud with voices installed in your browser or system.</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-medium ${speechSupport.synthesis ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-amber-500/25 bg-amber-500/10 text-amber-200"}`}>
-                      {speechSupport.synthesis ? `${browserVoices.length} voices` : "Not available"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-4">
-                    <div>
-                      <p className="text-xs font-medium text-slate-200">Speech playback</p>
-                      <p className="text-[11px] text-slate-500">Enable or disable read-aloud controls on messages.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={isTtsEnabled}
-                      onChange={toggleTtsEnabled}
-                      disabled={!speechSupport.synthesis}
-                      className="h-4 w-4 cursor-pointer accent-rose-400 disabled:cursor-not-allowed disabled:opacity-40"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-200" htmlFor="speech-voice">Browser voice accent</label>
-                    <select
-                      id="speech-voice"
-                      value={browserVoices.some((voice) => voice.voiceURI === ttsVoice) ? ttsVoice : "default"}
-                      onChange={(e) => setTtsVoice(e.target.value)}
-                      disabled={!speechSupport.synthesis || !isTtsEnabled || browserVoices.length === 0}
-                      className="w-full rounded-xl border border-white/10 bg-black/30 p-2.5 text-xs text-white outline-none focus:border-rose-300/35 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="default">
-                        Automatic (Match Role: {sttLang === "ur-roman" ? "Urdu / Roman Urdu" : sttLang === "hi-IN" ? "Hindi" : sttLang === "ar-SA" ? "Arabic" : "English"})
-                      </option>
-                      {browserVoices.map((voice) => (
-                        <option key={voice.voiceURI} value={voice.voiceURI}>
-                          {voice.name} · {voice.lang}{voice.default ? " · Default" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {speechSupport.synthesis && browserVoices.length === 0 && (
-                      <p className="text-[11px] text-amber-200/80">Chrome has not reported any available voices yet. Check your system’s speech settings and reload this page.</p>
-                    )}
-                  </div>
-                </section>
-              </div>
-            </div>
-          )}
+          {activeTab === "speech" && <SpeechAudioSettings />}
 
         </div>
       </main>
