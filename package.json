@@ -9,7 +9,8 @@
     "dev": "concurrently -k \"next dev\" \"cd backend && bun dev\"",
     "build": "next build",
     "start": "next start",
-    "seed:chats": "bun cheapchats/backend/db/seed.ts"
+    "seed:chats": "bun cheapchats/backend/db/seed.ts",
+    "postinstall": "node scripts/patch-msedge-tts.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",
