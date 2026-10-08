@@ -49,6 +49,7 @@ import {
   transliterateToRomanUrdu,
   getEffectiveTtsSettings,
 } from "@cheapchats/frontend/lib/speechUtils";
+import { startThinkingWaveSound, stopThinkingWaveSound } from "@cheapchats/frontend/lib/thinkingWaveSound";
 
 interface ChatInputProps {
   onSend: (message: string, attachments: any[], isRetry?: boolean, isCallMode?: boolean) => Promise<string | undefined> | void;
@@ -619,6 +620,19 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
     };
   }, []);
+
+  // Play a soft wave sound while AI is thinking during call
+  useEffect(() => {
+    if (isCallActive && callStatus === "thinking") {
+      startThinkingWaveSound();
+    } else {
+      stopThinkingWaveSound();
+    }
+
+    return () => {
+      stopThinkingWaveSound();
+    };
+  }, [isCallActive, callStatus]);
 
   // Audio-reactive visualizer loop that reacts to real sound (STT) and voice cadence (TTS)
   useEffect(() => {

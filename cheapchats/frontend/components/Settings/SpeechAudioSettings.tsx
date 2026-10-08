@@ -464,42 +464,18 @@ export default function SpeechAudioSettings() {
             Speech & Audio Settings
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Configure live microphone recognition accents and AI speech synthesis personas.
+            Manage accent for speech and audio listening.
           </p>
         </div>
 
-        {/* Chrome Capability Badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium ${
-              speechSupport.recognition
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5" />
-            <span>{speechSupport.recognition ? "Mic STT Ready" : "Mic Limited"}</span>
-          </div>
-
-          <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium ${
-              speechSupport.synthesis
-                ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
-                : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-            }`}
-          >
-            <Volume2 className="w-3.5 h-3.5" />
-            <span>{speechSupport.synthesis ? `${browserVoices.length} Voices Ready` : "TTS Unavailable"}</span>
-          </div>
-        </div>
       </div>
 
       {/* ─── 2 MAIN TABS: "Mic" and "Speech" ───────────────────────────────────── */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-inner">
+      <div className="flex items-center gap-1 p-1 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-inner">
         <button
           type="button"
           onClick={() => setActiveTab("mic")}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === "mic"
               ? "bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg shadow-rose-600/30 font-bold"
               : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
@@ -515,7 +491,7 @@ export default function SpeechAudioSettings() {
         <button
           type="button"
           onClick={() => setActiveTab("speech")}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === "speech"
               ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-600/30 font-bold"
               : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
@@ -798,24 +774,6 @@ export default function SpeechAudioSettings() {
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* ── Top Customization & Voice Audio Settings ─────────────────────── */}
           <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-[#1b1220] via-[#141018] to-[#101012] p-4.5 shadow-xl shadow-purple-950/20 space-y-4">
-            {/* Test Phrase Input & Quick Pills */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-300">
-                <span className="font-semibold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                  Custom Voice Sound Test
-                </span>
-              </div>
-
-              <input
-                type="text"
-                value={testText}
-                onChange={(e) => setTestText(e.target.value)}
-                placeholder="Type any sentence to test voice pronunciation..."
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400/50"
-              />
-            </div>
-
             {/* Speed & Pitch Sliders - Saves Automatically & Applies to Chat! */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-white/5">
               <div className="space-y-1.5">
@@ -891,11 +849,7 @@ export default function SpeechAudioSettings() {
                     : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
                 }`}
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>⚡ By API (Azure Neural HD - Free)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hidden sm:inline-block">
-                  100% Human Sound
-                </span>
+                <span>⚡ By API (Server can be slow 2 to 5s)</span>
               </button>
 
               <button
@@ -912,11 +866,7 @@ export default function SpeechAudioSettings() {
                     : "text-slate-400 hover:text-white hover:bg-zinc-800/60"
                 }`}
               >
-                <Globe2 className="w-4 h-4 text-purple-300" />
-                <span>🌐 Built-in Accents (Browser)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700 text-slate-300 border border-white/10 hidden sm:inline-block">
-                  Offline Local
-                </span>
+                <span>🌐 Built-in Accents (Offline - Fastly)</span>
               </button>
             </div>
 
@@ -1146,6 +1096,7 @@ export default function SpeechAudioSettings() {
                 })}
               </div>
             )}
+
           </div>
         </div>
       )}

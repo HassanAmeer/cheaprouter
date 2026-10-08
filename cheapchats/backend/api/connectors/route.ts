@@ -108,12 +108,47 @@ const defaultConnectors: ConnectorInfo[] = [
     accounts: [],
     tools: ["send_email", "get_unread_emails", "reply_to_email"],
   },
+  {
+    id: "playwright",
+    name: "Playwright Automation",
+    type: "builtin",
+    icon: "Globe",
+    status: "connected",
+    color: "text-amber-400",
+    description: "Headless browser automation engine for dynamic JavaScript SPAs, web scraping, screenshot capture, and interactive web flows.",
+    accounts: [
+      {
+        id: "acc_playwright_1",
+        label: "Headless Chromium / Google Chrome Engine",
+        createdAt: Date.now(),
+      },
+    ],
+    tools: ["playwright_browse", "playwright_screenshot", "playwright_search", "playwright_automate"],
+  },
+  {
+    id: "agent_reach",
+    name: "Agent Reach",
+    type: "builtin",
+    icon: "Globe",
+    status: "connected",
+    color: "text-teal-400",
+    description: "Give your AI agent eyes across the whole internet: Jina Reader, YouTube transcripts, GitHub, and live multi-source web search with zero API fees.",
+    accounts: [
+      {
+        id: "acc_agent_reach_1",
+        label: "Panniantong/agent-reach + Jina Reader Hub",
+        createdAt: Date.now(),
+      },
+    ],
+    tools: ["agent_reach_read", "agent_reach_search", "agent_reach_youtube", "agent_reach_github"],
+  },
 ];
 
 export async function GET() {
   try {
     // Read all custom MCP servers from database
-    const customServers = db.select().from(mcpServers).orderBy(desc(mcpServers.createdAt)).all();
+    const serverRows: any = await db.select().from(mcpServers).orderBy(desc(mcpServers.createdAt));
+    const customServers: any[] = Array.isArray(serverRows) ? serverRows : [];
 
     // Map default connectors with database override status and accounts if saved
     const mergedConnectors: ConnectorInfo[] = defaultConnectors.map((connector) => {

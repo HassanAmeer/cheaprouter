@@ -11,6 +11,12 @@ import {
 } from "@cheapchats/frontend/lib/artifactParser";
 import fs from "fs";
 import path from "path";
+import {
+  readWebPageWithReach,
+  searchWebWithReach,
+  getYoutubeTranscriptWithReach,
+} from "@cheapchats/backend/lib/agentReachService";
+import { browsePage, captureScreenshot } from "@cheapchats/backend/lib/playwrightService";
 
 function saveCodeCheckpointToMemory(convId: string | null, userId: string, fullContent: string, targetModel: string) {
   if (!convId) return;
@@ -442,30 +448,54 @@ The user is requesting a game or playable interactive experience. You MUST inclu
       }
     }
 
-    // WEB SEARCH IMPLEMENTATION
-    if (tools?.webSearch) {
+    // AGENT REACH & PLAYWRIGHT WEB AUTOMATION & LIVE SEARCH IMPLEMENTATION
+    const urlMatch = message.match(/https?:\/\/[^\s<>'"]+/i);
+    const isExplicitSearchRequest =
+      Boolean(tools?.webSearch) ||
+      /\b(search|dhoondo|find|latest|news|google|khabar|update|taza|playwright|agent reach|scrape)\b/i.test(
+        message
+      );
+
+    if (urlMatch) {
+      const targetUrl = urlMatch[0];
       try {
-        const tavilyKey = process.env.TAVILY_API_KEY;
-        if (tavilyKey) {
-          const searchRes = await fetch("https://api.tavily.com/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ api_key: tavilyKey, query: message, include_answer: true, max_results: 3 })
-          });
-          const searchData = await searchRes.json();
-          if (searchData.answer || searchData.results) {
-            finalSystemPrompt += `\n\n<web_search_results>\nThe user performed a web search. Here are the results:\n${searchData.answer || ""}\n${searchData.results?.map((r:any) => `- ${r.title}: ${r.content}`).join("\n")}\n</web_search_results>\n`;
-          }
-        } else {
-          // Fallback to Wikipedia API if no Tavily Key
-          const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(message)}&utf8=&format=json`);
-          const searchData = await searchRes.json();
-          if (searchData.query?.search) {
-            finalSystemPrompt += `\n\n<web_search_results>\nThe user performed a web search. Here are the Wikipedia results:\n${searchData.query.search.slice(0, 3).map((r:any) => `- ${r.title}: ${r.snippet.replace(/<\/?[^>]+(>|$)/g, "")}`).join("\n")}\n</web_search_results>\n`;
+        console.log("[AGENT REACH] Live extracting URL:", targetUrl);
+        const isYoutube = /youtube\.com|youtu\.be/i.test(targetUrl);
+        const scrapeResult = isYoutube
+          ? await getYoutubeTranscriptWithReach(targetUrl)
+          : await readWebPageWithReach(targetUrl);
+
+        if (scrapeResult && scrapeResult.success && scrapeResult.markdown) {
+          finalSystemPrompt += `\n\n<agent_reach_scraped_content url="${targetUrl}" source="${scrapeResult.source}">
+Title: ${scrapeResult.title || targetUrl}
+Content:
+${scrapeResult.markdown}
+</agent_reach_scraped_content>\n`;
+        }
+      } catch (err) {
+        console.warn("[AGENT REACH] Scrape URL failed:", err);
+      }
+    }
+
+    if (tools?.webSearch || (isExplicitSearchRequest && !urlMatch)) {
+      try {
+        const cleanedQuery = message.replace(/https?:\/\/[^\s]+/gi, "").trim();
+        if (cleanedQuery) {
+          console.log("[AGENT REACH] Executing web search for:", cleanedQuery);
+          const searchData = await searchWebWithReach(cleanedQuery, 5);
+          if (searchData.results && searchData.results.length > 0) {
+            finalSystemPrompt += `\n\n<web_search_results engine="${searchData.source}">
+Query: "${cleanedQuery}"
+${searchData.summary ? `Summary: ${searchData.summary}\n` : ""}
+Results:
+${searchData.results
+  .map((r: any) => `- **${r.title}** (${r.link})\n  ${r.snippet}`)
+  .join("\n")}
+</web_search_results>\n`;
           }
         }
       } catch (err) {
-        console.warn("Web search failed:", err);
+        console.warn("[AGENT REACH] Web search failed:", err);
       }
     }
 

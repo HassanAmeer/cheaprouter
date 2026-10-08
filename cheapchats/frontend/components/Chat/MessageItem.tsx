@@ -583,7 +583,23 @@ export default function MessageItem({ message, onRegenerate, onEdit, isStreaming
   const agentRegex = /<cheapchatAgent\s+action="([^"]+)"\s+data="([^"]+)"\s*\/?>(?:<\/cheapchatAgent>)?/gi;
   if (processedContent.match(agentRegex)) {
     processedContent = processedContent.replace(agentRegex, (match, action, data) => {
-      return `\n\n> 🤖 **Agent Action:** Executed \`${action}\` on \`${data}\`\n\n`;
+      const isUrl = data && (data.startsWith("http://") || data.startsWith("https://"));
+      const linkedData = isUrl ? `[${data}](${data})` : `\`${data}\``;
+
+      switch (action) {
+        case "playwright_browse":
+          return `\n\n> 🎭 **Playwright Automation:** Headless Chromium browsed ${linkedData}\n\n`;
+        case "playwright_screenshot":
+          return `\n\n> 📸 **Playwright Visual Snapshot:** Captured page screenshot for ${linkedData}\n\n`;
+        case "agent_reach":
+          return `\n\n> 🦅 **Agent Reach:** Live content extracted via Jina Reader / Zero-Fee Reach on ${linkedData}\n\n`;
+        case "web_search":
+          return `\n\n> 🔍 **Agent Reach Search:** Live multi-source search executed for *"${data}"*\n\n`;
+        case "open_browser":
+          return `\n\n> 🌐 **Browser Opened:** Navigated to ${linkedData}\n\n`;
+        default:
+          return `\n\n> 🤖 **Agent Action:** Executed \`${action}\` on ${linkedData}\n\n`;
+      }
     });
   }
   

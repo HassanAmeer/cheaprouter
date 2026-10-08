@@ -23,19 +23,23 @@ export async function playResponseCompletionSound() {
     await audioContext.resume();
   }
 
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
   const now = audioContext.currentTime;
 
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(740, now);
-  oscillator.frequency.exponentialRampToValueAtTime(988, now + 0.11);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.045, now + 0.018);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+  const playNote = (freq: number, start: number, duration: number, peak: number) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peak, start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  };
 
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  oscillator.start(now);
-  oscillator.stop(now + 0.23);
+  // Soft professional two-tone chime (E5 → C5)
+  playNote(659.25, now, 0.18, 0.5);
+  playNote(523.25, now + 0.14, 0.28, 0.45);
 }
