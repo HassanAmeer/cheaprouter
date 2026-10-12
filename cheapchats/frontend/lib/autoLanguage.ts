@@ -19,7 +19,7 @@ function hashText(t: string): string {
   return `${h}`;
 }
 
-export async function detectLanguageWithAI(text: string, timeoutMs = 4000): Promise<string> {
+export async function detectLanguageWithAI(text: string, timeoutMs = 2000): Promise<string> {
   const clean = (text || "").trim();
   if (!clean) return "en-US";
 
@@ -27,7 +27,12 @@ export async function detectLanguageWithAI(text: string, timeoutMs = 4000): Prom
   const memo = CACHE.get(key);
   if (memo) return memo;
 
+  // Instant local detection: Roman Urdu, Urdu script, Hindi, Arabic etc. return in 0ms!
   const local = detectSpeechLanguage(clean);
+  if (local !== "en-US") {
+    CACHE.set(key, local);
+    return local;
+  }
 
   try {
     const store = useAppStore.getState();

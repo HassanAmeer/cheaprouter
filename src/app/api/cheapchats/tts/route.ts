@@ -15,8 +15,8 @@ if (!fs.existsSync(CACHE_DIR)) {
 // Ultra-fast in-memory cache for 0ms repeated / preview playback
 const memoryCache = new Map<string, Buffer>();
 
-function getCacheKey(voice: string, text: string): string {
-  const hash = crypto.createHash("md5").update(`${voice}:::${text}`).digest("hex");
+function getCacheKey(voice: string, text: string, rate?: string | number): string {
+  const hash = crypto.createHash("md5").update(`${voice}:::${rate ?? "default"}:::${text}`).digest("hex");
   return hash;
 }
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1. Check in-memory cache first (0ms latency) ───────────────────────
-    const cacheKey = getCacheKey(selectedVoice, cleanText);
+    const cacheKey = getCacheKey(selectedVoice, cleanText, rate);
     if (memoryCache.has(cacheKey)) {
       const cachedBuffer = memoryCache.get(cacheKey)!;
       return new Response(cachedBuffer as any, {
@@ -125,12 +125,30 @@ export async function POST(req: NextRequest) {
     let audioBuffer: Buffer | null = null;
     let lastError: any = null;
 
+    const prosody: any = {};
+    if (rate) {
+      if (typeof rate === "number") {
+        const pct = Math.round((rate - 1) * 100);
+        prosody.rate = pct >= 0 ? `+${pct}%` : `${pct}%`;
+      } else if (typeof rate === "string") {
+        prosody.rate = rate.startsWith("+") || rate.startsWith("-") ? rate : `+${rate}`;
+      }
+    } else {
+      prosody.rate = "+8%"; // Natural brisk conversational pace
+    }
+    if (pitch) {
+      prosody.pitch = pitch;
+    }
+
     for (let attempt = 0; attempt < 2 && !audioBuffer; attempt++) {
       try {
         const tts = new MsEdgeTTS();
         await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
-        const { audioStream } = tts.toStream(cleanText);
+        const { audioStream } = tts.toStream(
+          cleanText,
+          Object.keys(prosody).length > 0 ? prosody : undefined
+        );
 
         const chunks: Buffer[] = [];
         await new Promise<void>((resolve, reject) => {

@@ -1467,13 +1467,41 @@ const EXTRA_ROMAN_URDU: [string, string][] = [
   ["bilal", "بلال"],
   ["ayesha?", "عائشہ؟"],
   ["kashif?", "کاشف؟"],
+  // Common conversational, crypto, and currency terms
+  ["rate", "ریٹ"],
+  ["dollar", "ڈالر"],
+  ["dollars", "ڈالر"],
+  ["rupiya", "روپیہ"],
+  ["rupiye", "روپے"],
+  ["rupaye", "روپے"],
+  ["pkr", "پی کے آر"],
+  ["usdt", "یو ایس ڈی ٹی"],
+  ["usd", "یو ایس ڈی"],
+  ["bitcoin", "بٹ کوائن"],
+  ["crypto", "کرپٹو"],
+  ["btc", "بی ٹی سی"],
+  ["convert", "کنورٹ"],
+  ["batao", "بتاؤ"],
+  ["bataen", "بتائیں"],
+  ["batayein", "بتائیں"],
+  ["hoga", "ہوگا"],
+  ["hogi", "ہوگی"],
+  ["honge", "ہوں گے"],
+  ["aaj", "آج"],
+  ["ek", "ایک"],
+  ["do", "دو"],
+  ["teen", "تین"],
+  ["char", "چار"],
+  ["paanch", "پانچ"],
+  ["hazar", "ہزار"],
+  ["lakh", "لاکھ"],
 ];
 
 /**
  * Very common English words must NOT be converted: Roman Urdu text mixes English
  * heavily, and rewriting "to"/"the" into Urdu badly mangles normal sentences.
  */
-const ROMAN_URDU_STOPWORDS = new Set([
+const ENGLISH_EXCLUDE_WORDS = new Set([
   "a", "an", "the", "to", "of", "in", "on", "at", "is", "are", "am", "was", "were", "be", "been",
   "and", "or", "but", "so", "if", "as", "it", "its", "he", "she", "they", "we", "you", "i",
   "do", "did", "does", "can", "will", "would", "shall", "should", "have", "has", "had",
@@ -1488,6 +1516,44 @@ const ROMAN_URDU_STOPWORDS = new Set([
   "email", "link", "url", "json", "sql", "csv", "pdf", "image", "video", "audio", "text",
   "user", "users", "data", "value", "values", "key", "name", "number", "type", "types",
   "first", "last", "next", "back", "start", "stop", "end", "new", "old", "big", "small",
+]);
+
+/**
+ * Markers for detecting Roman Urdu in Latin script even from 1-3 words.
+ */
+export const ROMAN_URDU_MARKERS = new Set([
+  // Pronouns & Demonstratives
+  "ye", "yeh", "wo", "woh", "main", "mai", "me", "mein", "hum", "humein", "hamein",
+  "aap", "ap", "tum", "tu", "mera", "meri", "mere", "hamara", "humara", "hamari", "humari", "hamare", "humare",
+  "tera", "teri", "tere", "apka", "aapka", "apki", "aapki", "apke", "aapke",
+  "iska", "iski", "iske", "uska", "uski", "uske", "inka", "inki", "inke", "unka", "unki", "unke",
+  "ise", "use", "inhein", "unhein", "mujhe", "tujhe", "apna", "apni", "apne", "khud",
+  // Postpositions / Particles
+  "ka", "ki", "ke", "ko", "se", "par", "pe", "tak", "ne", "liye", "saath", "sath",
+  "bhi", "to", "toh", "hi", "sirf",
+  // Question words
+  "kya", "kyun", "kyu", "kaise", "kese", "kahan", "kidhar", "kab", "kitna", "kitne", "kitni", "kaun", "kon", "konsa", "konsi", "konse",
+  // Verbs & Auxiliaries
+  "hai", "hain", "ho", "hoon", "hun", "tha", "thi", "the", "hoga", "hogi", "hoge", "honge",
+  "raha", "rahi", "rahe", "hona", "hota", "hoti", "hote",
+  "karo", "karen", "karein", "karna", "karta", "karti", "karte", "kiya", "kiye", "kiyi",
+  "batao", "bataen", "batayein", "batana", "bata", "bolo", "bol", "bole", "boliye",
+  "suno", "sun", "dekho", "dekh", "samjho", "samajh",
+  "chahiye", "sakta", "sakti", "sakte", "sake", "sakenge", "sakengi",
+  "aao", "jaao", "chalo", "chal", "aaye", "gaye", "aaya", "gaya",
+  "mil", "mila", "mile", "milega", "milegi", "milte",
+  // Adverbs, Negations, Affirmations
+  "nahi", "nahin", "na", "mat", "haan", "theek", "thik", "sahi", "galat",
+  "acha", "achha", "achi", "ache", "bohat", "bahut", "zyada", "ziyada", "kam",
+  "thora", "thori", "thore", "bada", "badi", "chota", "choti",
+  "kuch", "koi", "sab", "sabhi", "har",
+  "aaj", "kal", "parso", "ab", "abhi", "phir", "pehle", "baad", "jab", "tab",
+  "yahan", "wahan", "idhar", "udhar",
+  // Common nouns, greetings, financial / crypto
+  "shukriya", "meherbani", "salam", "assalam", "alaikum", "walaikum", "khuda", "hafiz", "allah",
+  "bhai", "dost", "janab", "sahib", "saheb", "madad", "masla", "naam", "kaam", "baat",
+  "rupya", "rupaye", "rupiya", "rupiye", "pkr", "rate", "qeemat", "keemat", "paise", "paisa",
+  "dollar", "dollars", "crypto", "bitcoin", "btc", "usdt", "usd", "convert",
 ]);
 
 let ROMAN_TO_URDU_PHRASES: [string, string][] | null = null;
@@ -1509,7 +1575,7 @@ function buildRomanToUrduMaps() {
     if (!roman) continue;
     const key = roman.toLowerCase().trim();
     if (!key || key.includes(" ") || /[\u0600-\u06FF]/.test(key)) continue;
-    if (ROMAN_URDU_STOPWORDS.has(key)) continue;
+    if (ENGLISH_EXCLUDE_WORDS.has(key)) continue;
     if (!words[key]) words[key] = urdu;
   }
 
@@ -1559,7 +1625,7 @@ export function romanUrduToUrduScript(rawText: string): string {
         .split("-")
         .map((part) => {
           const k = part.toLowerCase();
-          if (ROMAN_URDU_STOPWORDS.has(k)) return part;
+          if (ENGLISH_EXCLUDE_WORDS.has(k)) return part;
           return words[k] || part;
         })
         .join("-");
@@ -1676,11 +1742,18 @@ export function detectSpeechLanguage(text: string): string {
   // Thai
   if (/[\u0E00-\u0E7F]/.test(t)) return "th-TH";
 
-  // Roman Urdu written in Latin letters: common Urdu words
+// Roman Urdu written in Latin letters: common Urdu words
   const words = t.toLowerCase().match(/[a-z]+/g) || [];
   if (words.length) {
-    const urduHits = words.filter((w) => ROMAN_URDU_STOPWORDS.has(w)).length;
-    if (urduHits >= 2 || (words.length <= 4 && urduHits >= 1)) return "ur-roman";
+    const urduHits = words.filter((w) => ROMAN_URDU_MARKERS.has(w)).length;
+    // Fast detection: if 1 match in short phrases (<= 4 words), or >= 2 matches, or > 20% of words match
+    if (
+      (words.length <= 4 && urduHits >= 1) ||
+      urduHits >= 2 ||
+      (urduHits / words.length >= 0.2)
+    ) {
+      return "ur-roman";
+    }
   }
 
   // Default: English
@@ -1726,9 +1799,8 @@ const MALE_HINTS = /(male|man|boy|daniel|alex|fred|thomas|guy|ryan|david|mark|as
 
 /**
  * Best device voice for the detected language + chosen gender.
- * Fallback chain: exact language -> base language -> any voice of that gender ->
- * any default voice -> first available. So a missing language never leaves the
- * user without a matching male/female voice.
+ * Fallback chain: exact language -> base language -> (if Urdu, Hindi/Desi fallback) ->
+ * any voice of that gender -> any default voice -> first available.
  */
 export function getAutoBrowserVoice(
   voices: SpeechSynthesisVoice[],
@@ -1756,11 +1828,22 @@ export function getAutoBrowserVoice(
   const hitBase = sameBase.find(matches);
   if (hitBase) return hitBase;
 
-  // 3) any voice with that gender (language not installed on this device)
+  // 3) For Roman Urdu / Urdu, if no native Urdu browser voice exists, check Hindi (hi) or Indian English (en-in)
+  if (base === "ur" || lang === "ur-roman") {
+    const hindiVoices = voices.filter((v) => norm(v).startsWith("hi"));
+    const hitHindi = hindiVoices.find(matches) || hindiVoices[0];
+    if (hitHindi) return hitHindi;
+
+    const desiEnVoices = voices.filter((v) => norm(v) === "en-in" || norm(v).startsWith("en-in"));
+    const hitDesiEn = desiEnVoices.find(matches) || desiEnVoices[0];
+    if (hitDesiEn) return hitDesiEn;
+  }
+
+  // 4) any voice with that gender (language not installed on this device)
   const anyGender = voices.find(matches);
   if (anyGender) return anyGender;
 
-  // 4) anything at all
+  // 5) anything at all
   return voices.find((v) => v.default) || voices[0] || null;
 }
 

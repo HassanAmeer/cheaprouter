@@ -53,6 +53,7 @@ import {
   getAutoAzureVoice,
   getAutoBrowserVoice,
   getEffectiveTtsSettings,
+  detectSpeechLanguage,
 } from "@cheapchats/frontend/lib/speechUtils";
 import { startThinkingWaveSound, stopThinkingWaveSound } from "@cheapchats/frontend/lib/thinkingWaveSound";
 
@@ -148,9 +149,8 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   // How long the mic must stay quiet before the sentence is sent. Lower = faster
   // reply, higher = safer for slow speakers / noisy rooms.
   const CALL_SILENCE_MS = 550;
-  // Speak the first chunk after this many words (before a sentence ends), so the
-  // agent starts talking while the rest of the answer is still streaming.
-  const CALL_FIRST_CHUNK_WORDS = 5;
+  // Complete sentences are prioritized for fluent phrasing; clause-breaking is only a safety fallback
+  const CALL_FIRST_CHUNK_WORDS = 15;
 
   const [callStatus, setCallStatus] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
   const [callSpeechError, setCallSpeechError] = useState(false);
@@ -188,7 +188,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
   // Language detected by the AI for the current spoken turn (Auto Detect accents)
   const callLangRef = useRef<string | null>(null);
   const callLangPromiseRef = useRef<Promise<string> | null>(null);
+  const audioPrefetchCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
   const lastSpokenTranscriptRef = useRef<string>("");
+  const baseCallTextRef = useRef<string>("");
+  // Timestamp when assistant last finished speaking to shield mic against acoustic speaker echo
+  const lastSpeechEndTimeRef = useRef<number>(0);
 
   useEffect(() => {
     isCallActiveRef.current = isCallActive;
@@ -531,11 +535,17 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     if (isCallActiveRef.current) {
       setCallStatus("listening");
       callStatusRef.current = "listening";
+      lastSpeechEndTimeRef.current = Date.now();
       setContent("");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
-      }
-      startCallRecognition();
+      contentRef.current = "";
+      baseCallTextRef.current = "";
+
+      // Delay 300ms before starting mic so speaker echo does not get transcribed
+      setTimeout(() => {
+        if (isCallActiveRef.current && callStatusRef.current === "listening") {
+          startCallRecognition();
+        }
+      }, 300);
     }
   };
 
@@ -566,7 +576,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
 
       if (!mediaStreamRef.current && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
         mediaStreamRef.current = stream;
 
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -618,6 +634,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     isStreamFinishedRef.current = true;
 
     lastSpokenTranscriptRef.current = "";
+    baseCallTextRef.current = "";
+    setContent("");
+    contentRef.current = "";
     cleanupMicAudioAnalyser();
 
     if (callSilenceTimerRef.current) {
@@ -764,6 +783,38 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     };
   }, [isCallActive]);
 
+  // Pre-fetches upcoming TTS audio in background so speech queue has 0ms latency between sentences
+  const prefetchAudioChunk = (chunkText: string, callProfile?: SpeechProfile | null, lang?: string) => {
+    const prof = callProfile || resolveSpeechProfile(ttsEngine, ttsVoice);
+    if (!prof || prof.engine === "browser" || !chunkText.trim() || !isCallActiveRef.current) return;
+    const detectedLang = lang || callLangRef.current || detectSpeechLanguage(chunkText);
+    const resolvedVoice = prof.auto
+      ? getAutoAzureVoice(chunkText, prof.gender, detectedLang)
+      : prof.apiVoice;
+    const isUrdu = prof.auto
+      ? (detectedLang === "ur-roman" || detectedLang.startsWith("ur") || resolvedVoice.includes("ur-PK"))
+      : prof.script === "urdu";
+    const textToSynthesize = isUrdu ? romanUrduToUrduScript(chunkText) : chunkText;
+    const voiceToUse = prof.auto ? `azure:${resolvedVoice}` : prof.apiVoice;
+
+    const cacheKey = `${voiceToUse}:::${textToSynthesize}`;
+    if (audioPrefetchCacheRef.current.has(cacheKey)) return;
+
+    const promise = fetch("/api/cheapchats/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: textToSynthesize,
+        voice: voiceToUse,
+      }),
+    }).then(async (resp) => {
+      if (!resp.ok) throw new Error("TTS fetch failed");
+      return await resp.blob();
+    });
+
+    audioPrefetchCacheRef.current.set(cacheKey, promise);
+  };
+
   // Drains speech queue sentence by sentence as they stream in
   const drainSpeechQueue = async () => {
     if (!isCallActiveRef.current) {
@@ -786,14 +837,18 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         setIsSpeaking(false);
         setCallStatus("listening");
         callStatusRef.current = "listening";
+
+        lastSpeechEndTimeRef.current = Date.now();
         setContent("");
+        contentRef.current = "";
+        baseCallTextRef.current = "";
 
-        // Notify ChatWorkspace to batch process any queued sender messages accumulated in the conversation!
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
-        }
-
-        startCallRecognition();
+        // Wait 300ms for room echo / speaker reverberation to dissipate before turning mic back on!
+        setTimeout(() => {
+          if (isCallActiveRef.current && callStatusRef.current === "listening") {
+            startCallRecognition();
+          }
+        }, 300);
       }
       return;
     }
@@ -816,30 +871,28 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       }
 
       const voices = window.speechSynthesis.getVoices();
+      const detectedLang = callLangRef.current || detectSpeechLanguage(chunk);
       const bestVoice = callProfile?.auto
-        ? getAutoBrowserVoice(voices, callProfile.gender, chunk, callLangRef.current || undefined)
+        ? getAutoBrowserVoice(voices, callProfile.gender, chunk, detectedLang)
         : getBestVoice(voices, voiceKey ?? ttsVoice, chunk, sttLang);
 
       let chunkToSpeak = chunk;
-      if (
-        callProfile?.auto &&
-        getAutoAzureVoice(chunk, callProfile.gender, callLangRef.current || undefined).includes("ur-PK")
-      ) {
-        chunkToSpeak = romanUrduToUrduScript(chunk);
-      }
-      if (/[\u0600-\u06FF]/.test(chunkToSpeak)) {
+      const isUrdu = detectedLang === "ur-roman" || detectedLang.startsWith("ur");
+      if (isUrdu) {
         const isNativeUrduOrArabic =
           bestVoice &&
           (bestVoice.lang.toLowerCase().startsWith("ur") || bestVoice.lang.toLowerCase().startsWith("ar"));
-        if (!isNativeUrduOrArabic) {
-          chunkToSpeak = transliterateToRomanUrdu(chunkToSpeak);
+        if (isNativeUrduOrArabic) {
+          chunkToSpeak = romanUrduToUrduScript(chunk);
+        } else {
+          chunkToSpeak = transliterateToRomanUrdu(chunk);
         }
       }
 
       const utterance = new SpeechSynthesisUtterance(chunkToSpeak);
       currentUtteranceRef.current = utterance;
       const ttsSettings = getEffectiveTtsSettings(ttsVoice);
-      utterance.rate = ttsSettings.rate;
+      utterance.rate = Math.max(0.95, Math.min(1.4, ttsSettings.rate || 1.08));
       utterance.pitch = ttsSettings.pitch;
 
       if (bestVoice) {
@@ -858,6 +911,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         setCallStatus("speaking");
         callStatusRef.current = "speaking";
         setIsSpeaking(true);
+
+        // Mute mic recognition while AI is speaking so mic does not hear speaker sound
+        try {
+          if (callRecognitionRef.current) {
+            callRecognitionRef.current.abort();
+          }
+        } catch {}
       };
 
       utterance.onend = () => {
@@ -891,13 +951,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     // Auto Detect: AI identifies the language once per turn, every chunk of this
     // answer then uses the accent that matches it.
     if (profile.auto) {
-      if (!callLangPromiseRef.current) {
-        callLangPromiseRef.current = detectLanguageWithAI(nextChunk).then((lang) => {
-          callLangRef.current = lang;
-          return lang;
-        });
+      if (!callLangRef.current) {
+        if (!callLangPromiseRef.current) {
+          callLangPromiseRef.current = detectLanguageWithAI(nextChunk).then((lang) => {
+            callLangRef.current = lang;
+            return lang;
+          });
+        }
+        await callLangPromiseRef.current;
       }
-      await callLangPromiseRef.current;
       if (turnIdRef.current !== currentTurn || !isCallActiveRef.current) {
         isSpeakingUtteranceRef.current = false;
         return;
@@ -911,22 +973,40 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     // By API: Azure neural voice (Roman-Urdu personas get native Urdu script)
     try {
-      const resp = await fetch("/api/cheapchats/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: profile.auto
-            ? getAutoAzureVoice(nextChunk, profile.gender).includes("ur-PK")
-              ? romanUrduToUrduScript(nextChunk)
-              : nextChunk
-            : profile.script === "urdu"
-            ? romanUrduToUrduScript(nextChunk)
-            : nextChunk,
-          voice: profile.auto
-            ? `azure:${getAutoAzureVoice(nextChunk, profile.gender)}`
-            : profile.apiVoice,
-        }),
-      });
+      const detectedLang = callLangRef.current || detectSpeechLanguage(nextChunk);
+      const resolvedVoice = profile.auto
+        ? getAutoAzureVoice(nextChunk, profile.gender, detectedLang)
+        : profile.apiVoice;
+
+      const isUrdu = profile.auto
+        ? (detectedLang === "ur-roman" || detectedLang.startsWith("ur") || resolvedVoice.includes("ur-PK"))
+        : profile.script === "urdu";
+
+      const textToSynthesize = isUrdu ? romanUrduToUrduScript(nextChunk) : nextChunk;
+      const voiceToUse = profile.auto ? `azure:${resolvedVoice}` : profile.apiVoice;
+
+      // Immediately prefetch the next chunk waiting in queue so it plays with 0ms gap
+      if (speechQueueRef.current.length > 0) {
+        prefetchAudioChunk(speechQueueRef.current[0], profile, detectedLang);
+      }
+
+      const cacheKey = `${voiceToUse}:::${textToSynthesize}`;
+      let blobPromise = audioPrefetchCacheRef.current.get(cacheKey);
+      if (!blobPromise) {
+        blobPromise = fetch("/api/cheapchats/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: textToSynthesize,
+            voice: voiceToUse,
+          }),
+        }).then(async (resp) => {
+          if (!resp.ok) throw new Error("TTS fetch failed");
+          return await resp.blob();
+        });
+      }
+
+      const blob = await blobPromise;
 
       // Discard chunk if turn changed or call ended while awaiting network
       if (turnIdRef.current !== currentTurn || !isCallActiveRef.current) {
@@ -934,39 +1014,51 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         return;
       }
 
-      if (resp.ok) {
-        const blob = await resp.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        currentAudioElementRef.current = audio;
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      currentAudioElementRef.current = audio;
 
-        audio.onplay = () => {
-          if (!isCallActiveRef.current || turnIdRef.current !== currentTurn) {
-            audio.pause();
-            currentAudioElementRef.current = null;
-            isSpeakingUtteranceRef.current = false;
-            return;
+      const ttsSettings = getEffectiveTtsSettings(ttsVoice);
+      audio.playbackRate = Math.max(0.95, Math.min(1.4, ttsSettings.rate || 1.08));
+
+      audio.onplay = () => {
+        if (!isCallActiveRef.current || turnIdRef.current !== currentTurn) {
+          audio.pause();
+          currentAudioElementRef.current = null;
+          isSpeakingUtteranceRef.current = false;
+          return;
+        }
+        setCallStatus("speaking");
+        callStatusRef.current = "speaking";
+        setIsSpeaking(true);
+
+        // Mute mic recognition while AI is speaking so mic does not hear speaker sound
+        try {
+          if (callRecognitionRef.current) {
+            callRecognitionRef.current.abort();
           }
-          setCallStatus("speaking");
-          callStatusRef.current = "speaking";
-          setIsSpeaking(true);
-        };
+        } catch {}
 
-        audio.onended = () => {
-          currentAudioElementRef.current = null;
-          isSpeakingUtteranceRef.current = false;
-          drainSpeechQueue();
-        };
+        // While this audio plays, continue prefetching any subsequent chunks in the background
+        if (speechQueueRef.current.length > 0) {
+          prefetchAudioChunk(speechQueueRef.current[0], profile, detectedLang);
+        }
+      };
 
-        audio.onerror = () => {
-          currentAudioElementRef.current = null;
-          isSpeakingUtteranceRef.current = false;
-          reportCallSpeechError();
-        };
+      audio.onended = () => {
+        currentAudioElementRef.current = null;
+        isSpeakingUtteranceRef.current = false;
+        drainSpeechQueue();
+      };
 
-        await audio.play();
-        return;
-      }
+      audio.onerror = () => {
+        currentAudioElementRef.current = null;
+        isSpeakingUtteranceRef.current = false;
+        reportCallSpeechError();
+      };
+
+      await audio.play();
+      return;
     } catch {
       // Network error: stay on the same selected voice, skip this chunk
     }
@@ -986,7 +1078,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       sentenceRegex.lastIndex = 0;
       let match = sentenceRegex.exec(buf);
 
-      // Fast initial response: break on clause if buffer has accumulated >= 10 words without sentence punctuation
+      // Fast initial response: break on clause if buffer has accumulated >= 15 words without sentence punctuation
       if (!match) {
         const words = buf.trim().split(/\s+/).filter(Boolean);
         if (words.length >= CALL_FIRST_CHUNK_WORDS) {
@@ -1004,6 +1096,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           const cleaned = cleanTextForSpeech(rawChunk);
           if (cleaned) {
             speechQueueRef.current.push(cleaned);
+            prefetchAudioChunk(cleaned, undefined, callLangRef.current || undefined);
           }
         }
       } else {
@@ -1017,6 +1110,7 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         const cleaned = cleanTextForSpeech(remaining);
         if (cleaned) {
           speechQueueRef.current.push(cleaned);
+          prefetchAudioChunk(cleaned, undefined, callLangRef.current || undefined);
         }
       }
       buf = "";
@@ -1083,8 +1177,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     // Advance turn ID so any obsolete in-flight audio fetches or utterances are discarded
     turnIdRef.current += 1;
-    callLangRef.current = null;
-    callLangPromiseRef.current = null;
+    audioPrefetchCacheRef.current.clear();
+    // Pre-seed language directly from user's spoken words so zero delay is incurred
+    const promptLang = detectSpeechLanguage(cleanPrompt);
+    callLangRef.current = promptLang;
+    callLangPromiseRef.current = Promise.resolve(promptLang);
 
     // Reset streaming TTS queue & pause active audio elements for new response
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -1111,14 +1208,16 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
       clearTimeout(userSpeakingTimeoutRef.current);
       userSpeakingTimeoutRef.current = null;
     }
+    baseCallTextRef.current = "";
     setContent("");
+    contentRef.current = "";
 
-    // Restart speech recognition so it actively listens and queues any user words during thinking/speaking!
-    setTimeout(() => {
-      if (isCallActiveRef.current) {
-        startCallRecognition();
+    // Ensure mic is paused while AI is generating and preparing to speak
+    try {
+      if (callRecognitionRef.current) {
+        callRecognitionRef.current.abort();
       }
-    }, 150);
+    } catch {}
 
     try {
       const assistantReply = await onSend(cleanPrompt, attachmentsRef.current, false, true);
@@ -1135,11 +1234,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           } else {
             setCallStatus("listening");
             callStatusRef.current = "listening";
+            lastSpeechEndTimeRef.current = Date.now();
             setContent("");
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
-            }
-            startCallRecognition();
+            contentRef.current = "";
+            baseCallTextRef.current = "";
+            setTimeout(() => {
+              if (isCallActiveRef.current && callStatusRef.current === "listening") {
+                startCallRecognition();
+              }
+            }, 300);
           }
         }
       }
@@ -1150,10 +1253,18 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         if (!isSpeakingUtteranceRef.current && speechQueueRef.current.length === 0) {
           setCallStatus("listening");
           callStatusRef.current = "listening";
-          setContent("");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("cheapchat:call_turn_finished"));
+
+          const accumulatedPending = (contentRef.current || baseCallTextRef.current).trim();
+          if (accumulatedPending && isCallActiveRef.current) {
+            baseCallTextRef.current = "";
+            setContent("");
+            contentRef.current = "";
+            triggerCallSend(accumulatedPending);
+            return;
           }
+
+          setContent("");
+          baseCallTextRef.current = "";
           startCallRecognition();
         }
       }
@@ -1206,6 +1317,15 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     recognition.onresult = (event: any) => {
       if (!isCallActiveRef.current) return;
 
+      // Anti-Echo / Anti-Loopback Shield:
+      // If AI is currently speaking, thinking, or finished speaking within 450ms,
+      // the microphone is picking up acoustic feedback from the device speakers.
+      const isAiBusy =
+        callStatusRef.current === "speaking" ||
+        callStatusRef.current === "thinking" ||
+        isSpeakingUtteranceRef.current ||
+        Date.now() - lastSpeechEndTimeRef.current < 450;
+
       let fullTranscript = "";
       for (let i = 0; i < event.results.length; i++) {
         fullTranscript += event.results[i][0].transcript;
@@ -1225,6 +1345,11 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
         return;
       }
 
+      // If AI is speaking or thinking, drop all speaker sound so system never transcribes itself!
+      if (isAiBusy) {
+        return;
+      }
+
       if (combinedText) {
         setIsUserSpeaking(true);
         if (userSpeakingTimeoutRef.current) {
@@ -1234,7 +1359,13 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
           setIsUserSpeaking(false);
         }, 800);
 
-        lastSpokenTranscriptRef.current = combinedText;
+        // Real-time accumulation in input field (textarea)
+        const fullAccumulated = baseCallTextRef.current
+          ? `${baseCallTextRef.current} ${combinedText}`.trim()
+          : combinedText;
+
+        setContent(fullAccumulated);
+        contentRef.current = fullAccumulated;
 
         if (callSilenceTimerRef.current) {
           clearTimeout(callSilenceTimerRef.current);
@@ -1242,22 +1373,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
         callSilenceTimerRef.current = setTimeout(() => {
           if (!isCallActiveRef.current) return;
-          const textToSend = lastSpokenTranscriptRef.current.trim();
-          lastSpokenTranscriptRef.current = "";
-          if (textToSend) {
-            // NEVER put text into input field! Directly send into conversation thread as sender bubble box!
-            if (callStatusRef.current === "listening") {
-              triggerCallSend(textToSend);
-            } else {
-              // Assistant is thinking or speaking: onSend creates a queued user sender bubble in the chat thread!
-              onSend(textToSend, [], false, true);
-            }
 
-            try {
-              if (callRecognitionRef.current) {
-                callRecognitionRef.current.abort();
-              }
-            } catch {}
+          // Only send when system is in listening state!
+          if (callStatusRef.current === "listening") {
+            const textToSend = contentRef.current.trim();
+            if (textToSend) {
+              baseCallTextRef.current = "";
+              triggerCallSend(textToSend);
+            }
           }
         }, CALL_SILENCE_MS);
       }
@@ -1274,6 +1397,14 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
 
     recognition.onend = () => {
       if (isCallActiveRef.current && callRecognitionRef.current === recognition) {
+        // Do NOT auto-restart if AI is speaking or thinking
+        if (
+          callStatusRef.current === "speaking" ||
+          callStatusRef.current === "thinking" ||
+          isSpeakingUtteranceRef.current
+        ) {
+          return;
+        }
         try {
           recognition.start();
         } catch {}
@@ -1305,7 +1436,9 @@ export default function ChatInput({ onSend, onStop, disabled = false, isStreamin
     }
     setCallStatus("listening");
     callStatusRef.current = "listening";
+    baseCallTextRef.current = "";
     setContent("");
+    contentRef.current = "";
 
     // Warm up the offline speech engine so the very first reply is not delayed
     if (ttsEngine === "browser" && typeof window !== "undefined" && "speechSynthesis" in window) {

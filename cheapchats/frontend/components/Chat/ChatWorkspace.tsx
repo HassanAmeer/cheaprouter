@@ -325,12 +325,18 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
       ? `${baseSystemPrompt}
 
 [CRITICAL INSTRUCTIONS FOR LIVE VOICE TELEPHONE CALL]:
-1. You are talking to the user on a REAL-TIME TELEPHONE / VOICE CALL. The user is speaking to you via microphone and hearing your spoken response through speech synthesis.
-2. Speak like a natural, warm, helpful human on a live telephone call.
-3. Keep ALL responses SHORT, CONCISE, and direct (strictly 1 to 3 short spoken sentences). Never write long paragraphs, essays, or multiple sections unless the user explicitly asks for deep detail.
-4. Do NOT use markdown symbols, bullet points (*, -), numbered lists, asterisks (**bold**), hashtags (#), or code snippets because your response is being read aloud to the user.
-5. If the user asks if you can hear them ("meri aawaz aa rahi hai?", "can you hear me?", "hello?", etc.), immediately and warmly confirm (e.g. "Jee haan! Aap ki aawaz bilkul saaf aa rahi hai. Farmayein, main aap ki kya madad kar sakta hoon?").
-6. Answer directly to save the user time. Only explain in deep detail if the user explicitly asks for details.`
+1. REAL-TIME CALL ASSISTANT: You are actively speaking to the user on a live telephone call. Your words are spoken aloud via text-to-speech.
+2. STRICT TO-THE-POINT ONE-LINE RULE: For quick factual questions (prices, crypto rates, currency conversion, definitions, status, time, etc.), answer in STRICTLY ONE DIRECT SENTENCE.
+   - Example: User asks "Aaj ka Bitcoin ka rate kya hai?" -> Answer: "Aaj Bitcoin ka rate 88,000 dollar hai."
+   - Example: User asks "USDT ka PKR mein kya rate hai?" -> Answer: "Ek USDT ka rate 277 rupiya PKR hai."
+   - Example: User asks "What is the capital of France?" -> Answer: "The capital of France is Paris."
+   - Absolutely NO conversational filler, NO introductory phrases, NO disclaimers, NO follow-up questions ("aur koi madad?"), NO second or third sentences unless the user explicitly asked for detail or explanation.
+3. EXACT LANGUAGE & SCRIPT MIRRORING:
+   - If the user speaks in Roman Urdu (Latin letters like "kya rate hai"), reply STRICTLY in natural Roman Urdu (e.g., "Aaj Bitcoin ka rate 88,000 dollar hai.").
+   - If the user speaks in English, reply in English.
+   - If the user speaks in native Urdu script, reply in Urdu script.
+4. SPOKEN-READY: Never use markdown symbols, bullet points (*, -), numbered lists, asterisks (**bold**), hashtags (#), or code snippets. Speak plain text with numbers.
+5. LIVENESS CHECK: If the user asks if you can hear them ("meri aawaz aa rahi hai?", "can you hear me?", "hello?"), reply immediately in one direct sentence: "Jee haan, aap ki aawaz bilkul saaf aa rahi hai."`
       : baseSystemPrompt;
 
     const requestPayloadObj = {
@@ -756,26 +762,6 @@ export default function ChatWorkspace({ initialConversationId }: ChatWorkspacePr
     }
     return assistantMsgContent;
   };
-
-  // When a voice call assistant finishes speaking, batch process all queued messages accumulated in the conversation
-  useEffect(() => {
-    const handleCallTurnFinished = () => {
-      if (messageQueueRef.current.length > 0) {
-        const queuedItems = [...messageQueueRef.current];
-        messageQueueRef.current = [];
-        const queuedIds = queuedItems.map((item) => item.id);
-        const combinedContent = queuedItems.map((item) => item.content).join(" ");
-        setTimeout(() => {
-          executeSend(combinedContent, [], false, undefined, undefined, true, queuedIds);
-        }, 150);
-      }
-    };
-
-    window.addEventListener("cheapchat:call_turn_finished", handleCallTurnFinished);
-    return () => {
-      window.removeEventListener("cheapchat:call_turn_finished", handleCallTurnFinished);
-    };
-  }, []);
 
   const handleSendMessage = async (
     content: string,
